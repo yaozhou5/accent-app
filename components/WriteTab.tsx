@@ -26,11 +26,21 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
     if (!text.trim()) return;
     setLangError(null);
 
-    // Language detection — skip for short texts or undetermined
+    // Language detection — only block clearly non-English text
+    // franc is unreliable for short English text (often returns Scots, etc.)
+    // So we only check texts 30+ words AND only block non-Latin scripts
     const wordCount = text.trim().split(/\s+/).length;
-    if (wordCount >= 10) {
-      const detected = franc(text, { minLength: 10 });
-      if (detected !== "eng" && detected !== "und") {
+    if (wordCount >= 30) {
+      const detected = franc(text, { minLength: 20 });
+      // Allow English and any closely related Latin-script languages
+      // Only block clearly non-English: Chinese, Japanese, Korean, Arabic, etc.
+      const latinLangs = [
+        "eng", "und", "sco", "fra", "deu", "spa", "ita", "por",
+        "nld", "dan", "nor", "swe", "cat", "ron", "pol", "ces",
+        "slk", "hrv", "slv", "fin", "est", "hun", "tur", "ind",
+        "msa", "tgl", "vie", "lat",
+      ];
+      if (!latinLangs.includes(detected)) {
         setLangError(
           "Accent currently supports English only. More languages coming soon."
         );
