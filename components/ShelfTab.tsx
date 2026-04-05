@@ -67,7 +67,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
               document.querySelector<HTMLButtonElement>("[data-auth-trigger]");
             signInBtn?.click();
           }}
-          className="px-6 py-2.5 rounded-full bg-coral text-white text-sm font-sans font-medium hover:bg-coral/90 transition-colors"
+          className="px-6 py-2.5 rounded-full bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors"
         >
           Sign in
         </button>
@@ -135,7 +135,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
                 e.stopPropagation();
                 handleDelete(entry.id);
               }}
-              className="text-xs font-sans text-ink/30 hover:text-coral transition-colors min-h-[44px] px-2"
+              className="text-xs font-sans text-ink/30 hover:text-ink/60 transition-colors min-h-[44px] px-2"
               aria-label="Delete entry"
             >
               Delete

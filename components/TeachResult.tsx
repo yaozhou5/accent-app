@@ -5,6 +5,7 @@ import type { CheckResponse, Issue } from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { saveToShelf } from "@/lib/supabase/shelf";
+import { useKeyboardHeight } from "@/lib/use-keyboard-height";
 
 interface TeachResultProps {
   original: string;
@@ -60,14 +61,11 @@ function HighlightedText({
   color?: "coral" | "teal";
 }) {
   const idx = text.indexOf(phrase);
-  const baseClass =
-    color === "coral"
-      ? "font-sans text-sm leading-relaxed text-ink/60"
-      : "font-sans text-sm leading-relaxed text-ink font-medium";
+  const baseClass = "font-sans text-sm leading-relaxed text-ink font-medium";
   const highlightClass =
     color === "coral"
-      ? "bg-[#FAECE7] text-[#993C1D] rounded-[3px] px-1 py-px"
-      : "bg-[#E1F5EE] text-[#0F6E56] rounded-[3px] px-1 py-px";
+      ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
+      : "bg-[#E8F0EB] text-[#1B3A2D] rounded-[3px] px-1 py-px";
 
   if (idx === -1) return <p className={baseClass}>{text}</p>;
 
@@ -87,6 +85,7 @@ export function TeachResult({
   onNew,
 }: TeachResultProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const keyboardHeight = useKeyboardHeight();
 
   if (isStreaming || !result) {
     return (
@@ -146,7 +145,7 @@ export function TeachResult({
         <span
           key={i}
           className={`w-1.5 h-1.5 rounded-full transition-colors ${
-            i <= activePipIndex ? "bg-coral" : "bg-ink/15"
+            i <= activePipIndex ? "bg-coral" : "bg-[#D4D0C8]"
           }`}
         />
       ))}
@@ -172,9 +171,9 @@ export function TeachResult({
             {result.issues.map((issue, i) => (
               <li
                 key={i}
-                className="flex gap-2 text-sm font-sans text-ink/70"
+                className="flex gap-2 text-sm font-sans text-ink"
               >
-                <span className="text-coral font-medium shrink-0">
+                <span className="text-teal font-medium shrink-0">
                   {i + 1}.
                 </span>
                 <span>{issue.lesson_title || issue.title}</span>
@@ -216,7 +215,7 @@ export function TeachResult({
       <div className="mb-3">{pips}</div>
 
       {/* Card */}
-      <div className="pb-[100px]">
+      <div className="pb-[100px] md:pb-20">
         <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-3">
           {/* Issue card */}
           {card.type === "issue" && (
@@ -227,7 +226,7 @@ export function TeachResult({
               <h3 className="font-serif font-bold text-lg text-ink">{issue.title}</h3>
 
               <div>
-                <span className="text-[11px] font-sans text-ink/40">
+                <span className="text-[11px] font-sans text-ink/50 font-medium">
                   Before
                 </span>
                 <div className="mt-0.5 bg-coral-light/50 rounded-[8px] px-3 py-2">
@@ -236,7 +235,7 @@ export function TeachResult({
               </div>
 
               <div>
-                <span className="text-[11px] font-sans text-[#0F6E56] font-medium">
+                <span className="text-[11px] font-sans text-ink/50 font-medium">
                   After
                 </span>
                 <div className="mt-0.5 bg-teal-light/50 rounded-[8px] px-3 py-2">
@@ -274,7 +273,7 @@ export function TeachResult({
                   <div key={i} className="space-y-4">
                     {/* Wrong version */}
                     <div className="flex gap-2.5 items-start">
-                      <span className="text-coral text-sm mt-1 shrink-0">&#10007;</span>
+                      <span className="text-ink/40 text-sm mt-1 shrink-0">&#10007;</span>
                       <div className="flex-1 bg-[#F1EFE8] rounded-[8px] px-3.5 py-2.5">
                         <p className="font-sans text-[15px] leading-[1.6] text-ink/60 line-through decoration-coral/50">
                           {ex.bad}
@@ -284,8 +283,8 @@ export function TeachResult({
                     {/* Right version */}
                     <div className="flex gap-2.5 items-start">
                       <span className="text-teal text-sm mt-1 shrink-0">&#10003;</span>
-                      <div className="flex-1 bg-[#E1F5EE] rounded-[8px] px-3.5 py-2.5">
-                        <p className="font-sans text-[16px] leading-[1.6] font-medium text-[#0F6E56]">
+                      <div className="flex-1 bg-[#E8F0EB] rounded-[8px] px-3.5 py-2.5">
+                        <p className="font-sans text-[16px] leading-[1.6] font-medium text-[#1B3A2D]">
                           {ex.good}
                         </p>
                       </div>
@@ -298,9 +297,12 @@ export function TeachResult({
         </div>
       </div>
 
-      {/* Fixed bottom CTA row */}
-      <div className="fixed bottom-0 left-0 right-0 bg-paper px-5 pb-8 pt-4">
-        <div className="max-w-[480px] md:max-w-[600px] mx-auto px-4 md:px-6 flex gap-2">
+      {/* CTA row — fixed on mobile (keyboard-aware), sticky on desktop (zoom-proof) */}
+      <div
+        className="fixed left-0 right-0 bg-paper px-5 pb-8 pt-4 md:sticky md:bottom-0 md:left-auto md:right-auto md:px-0 md:pb-4"
+        style={{ bottom: keyboardHeight }}
+      >
+        <div className="max-w-[480px] md:max-w-none mx-auto px-4 md:px-0 flex gap-2">
           {currentIndex > 0 && (
             <button
               onClick={goBack}
@@ -311,7 +313,7 @@ export function TeachResult({
           )}
           <button
             onClick={goNext}
-            className={`py-3 min-h-[48px] rounded-[12px] bg-coral text-white text-sm font-sans font-medium hover:bg-coral/90 transition-colors ${
+            className={`py-3 min-h-[48px] rounded-[12px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors ${
               currentIndex > 0 ? "w-[65%]" : "w-full"
             }`}
           >

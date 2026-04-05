@@ -13,7 +13,7 @@ export function WordCounter({ text }: WordCounterProps) {
   return (
     <p
       className={`mt-1.5 text-xs font-sans text-right ${
-        isOver ? "text-coral font-medium" : "text-ink/30"
+        isOver ? "text-ink font-medium" : "text-ink/30"
       }`}
     >
       {wordCount} / {WORD_LIMIT} words

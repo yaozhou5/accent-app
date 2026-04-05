@@ -62,8 +62,8 @@ function HighlightedText({
       : "font-sans text-sm leading-relaxed text-ink font-medium";
   const hlCls =
     color === "coral"
-      ? "bg-[#FAECE7] text-[#993C1D] rounded-[3px] px-1 py-px"
-      : "bg-[#E1F5EE] text-[#0F6E56] rounded-[3px] px-1 py-px";
+      ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
+      : "bg-[#E8F0EB] text-[#1B3A2D] rounded-[3px] px-1 py-px";
 
   return (
     <p className={baseCls}>
@@ -89,15 +89,15 @@ function LessonPill({ lesson }: { lesson: Issue }) {
         onClick={() => setExpanded(!expanded)}
         className={`text-[12px] font-sans rounded-full px-3 py-1 transition-colors ${
           expanded
-            ? "bg-[#FAEEDA] text-[#633806]"
-            : "bg-warm text-ink/50 hover:bg-[#FAEEDA] hover:text-[#633806]"
+            ? "bg-[#FDF3CC] text-[#7A6010]"
+            : "bg-warm text-ink/50 hover:bg-[#FDF3CC] hover:text-[#7A6010]"
         }`}
       >
         {lesson.title}
       </button>
       {expanded && (
-        <div className="mt-2 bg-[#FAEEDA]/50 rounded-[8px] px-3.5 py-3 space-y-1.5">
-          <p className="font-sans text-sm font-medium text-[#633806]">
+        <div className="mt-2 bg-[#FDF3CC]/50 rounded-[8px] px-3.5 py-3 space-y-1.5">
+          <p className="font-sans text-sm font-medium text-[#7A6010]">
             {lesson.lesson_title || lesson.title}
           </p>
           <p
@@ -162,7 +162,7 @@ export function ShelfDetail({
 
       {/* Original */}
       <div className="border-l-[3px] border-coral/40 rounded-[8px] bg-coral-light/50 px-4 py-3">
-        <span className="text-xs font-sans font-semibold text-coral tracking-wide">
+        <span className="text-xs font-sans font-semibold text-ink tracking-wide">
           Your original
         </span>
         <div className="mt-1.5">
@@ -215,8 +215,8 @@ export function ShelfDetail({
           copyState === "copied"
             ? "bg-teal text-white"
             : copyState === "copying"
-              ? "bg-coral/70 text-white"
-              : "bg-coral text-white hover:bg-coral/90"
+              ? "bg-coral/70 text-[#1B3A2D]"
+              : "bg-coral text-[#1B3A2D] hover:bg-coral/90"
         }`}
       >
         {copyState === "copied"
@@ -237,7 +237,7 @@ export function ShelfDetail({
       {/* Delete */}
       <button
         onClick={handleDelete}
-        className="w-full text-[13px] font-sans text-ink/30 hover:text-coral transition-colors py-1 text-center"
+        className="w-full text-[13px] font-sans text-ink/30 hover:text-ink/60 transition-colors py-1 text-center"
       >
         {confirmDelete ? "Tap again to confirm delete" : "Delete this entry"}
       </button>

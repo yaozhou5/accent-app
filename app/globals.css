@@ -3,12 +3,12 @@
 @theme inline {
   --color-paper: #F7F4EF;
   --color-sand: #D0CFC1;
-  --color-coral: #D85A30;
-  --color-teal: #1D9E75;
+  --color-coral: #F5C842;
+  --color-teal: #1B3A2D;
   --color-warm: #F0ECE4;
   --color-ink: #1C1917;
-  --color-coral-light: #FEF2EF;
-  --color-teal-light: #EDFAF4;
+  --color-coral-light: #FDF3CC;
+  --color-teal-light: #E8F0EB;
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
@@ -41,18 +41,18 @@ body {
   }
 }
 
-/* Reset browser default mark styling */
+/* Lesson body mark styling */
 mark {
-  background: #FAEEDA;
-  color: #633806;
+  background: #FDF3CC;
+  color: #7A6010;
   border-radius: 3px;
   padding: 1px 4px;
   font-style: normal;
 }
 
 .lesson-body mark {
-  background: #FAEEDA;
-  color: #633806;
+  background: #FDF3CC;
+  color: #7A6010;
   border-radius: 3px;
   padding: 1px 4px;
   font-style: normal;

@@ -1,5 +1,8 @@
 export type Locale = "en" | "zh" | "nl";
 
+// Flip to true when ready to support multiple languages
+export const SHOW_LANGUAGE_SELECTOR = false;
+
 export const localeNames: Record<Locale, string> = {
   en: "English",
   zh: "中文",

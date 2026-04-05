@@ -35,7 +35,7 @@ export function PassageCard({ passage, locale }: PassageCardProps) {
 
       <button
         onClick={() => setShowPrompt(!showPrompt)}
-        className="text-sm font-sans font-medium text-coral hover:text-coral/80 transition-colors min-h-[44px] px-2"
+        className="text-sm font-sans font-medium text-ink hover:text-ink/70 transition-colors min-h-[44px] px-2"
       >
         {showPrompt ? t("close") : t("tryIt")}
       </button>

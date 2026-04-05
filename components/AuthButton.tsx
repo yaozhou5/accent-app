@@ -86,7 +86,7 @@ export function AuthButton() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-[8px] bg-coral text-white text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-[8px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
               >
                 {loading ? "Sending..." : "Send magic link"}
               </button>

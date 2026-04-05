@@ -60,7 +60,7 @@ export function PracticeBox({
       <button
         onClick={handleCheck}
         disabled={!attempt.trim() || loading}
-        className="text-sm font-sans font-medium text-coral hover:text-coral/80 transition-colors disabled:text-ink/40 min-h-[44px] px-2"
+        className="text-sm font-sans font-medium text-ink hover:text-ink/70 transition-colors disabled:text-ink/40 min-h-[44px] px-2"
       >
         {loading ? "..." : feedback ? t("checkAgain") : t("submit")}
       </button>
@@ -70,7 +70,7 @@ export function PracticeBox({
           className={`rounded-md px-3 py-2 text-sm font-sans ${
             feedback.isImproved
               ? "bg-sage-light text-sage"
-              : "bg-coral-light text-coral"
+              : "bg-coral-light text-ink"
           }`}
         >
           <p>{feedback.feedback}</p>

@@ -12,7 +12,7 @@ export function Header({ activeTab, onTabChange, tabLabels }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-ink/10">
       <h1 className="font-serif font-bold text-xl tracking-tight">
-        accent<span className="text-coral">.</span>
+        accent<span className="text-teal">.</span>
       </h1>
       <div className="flex items-center gap-2 md:gap-5">
         <AuthButton />

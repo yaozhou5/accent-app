@@ -62,20 +62,28 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
 
   const showResult = streamState === "streaming" || streamState === "done";
 
-  // Mode toggle
+  // Mode toggle — segmented control with sliding pill
   const modeToggle = (
-    <div className="flex rounded-[12px] border border-ink/10 overflow-hidden">
+    <div className="relative flex rounded-[12px] border border-ink/15 bg-ink/[0.03] p-1">
+      {/* Sliding active pill */}
+      <div
+        className="absolute top-1 bottom-1 bg-white rounded-[8px] shadow-sm transition-all duration-200 ease-out"
+        style={{
+          left: mode === "quick" ? "4px" : "50%",
+          right: mode === "quick" ? "50%" : "4px",
+        }}
+      />
       {(["quick", "teach"] as const).map((m) => (
         <button
           key={m}
           onClick={() => setMode(m)}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 min-h-[44px] text-sm font-sans font-medium transition-colors ${
+          title={m === "quick" ? "Fix your writing instantly" : "Learn why each change was made"}
+          className={`relative z-10 flex-1 flex items-center justify-center py-2.5 min-h-[44px] text-[15px] font-sans transition-colors duration-200 tracking-[-0.1px] ${
             mode === m
-              ? "bg-white text-ink"
-              : "bg-ink/[0.03] text-ink/40 hover:text-ink/60"
+              ? "text-ink font-semibold"
+              : "text-ink/50 font-normal hover:text-ink/70"
           }`}
         >
-          <span>{m === "quick" ? "\u26A1" : "\uD83D\uDCD6"}</span>
           {m === "quick" ? "Quick fix" : "Teach me"}
         </button>
       ))}
