@@ -1,32 +1,39 @@
 "use client";
 
-import { Locale, localeNames } from "@/lib/i18n";
+import { AuthButton } from "./AuthButton";
 
 interface HeaderProps {
-  locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
+  activeTab: "write" | "shelf";
+  onTabChange: (tab: "write" | "shelf") => void;
+  tabLabels: { write: string; shelf: string };
 }
 
-export function Header({ locale, onLocaleChange }: HeaderProps) {
+export function Header({ activeTab, onTabChange, tabLabels }: HeaderProps) {
   return (
-    <header className="flex items-center justify-between px-4 py-3">
-      <h1 className="font-serif text-xl font-semibold tracking-tight">
-        Accent
+    <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-ink/10">
+      <h1 className="font-serif font-bold text-xl tracking-tight">
+        accent<span className="text-coral">.</span>
       </h1>
-      <select
-        value={locale}
-        onChange={(e) => onLocaleChange(e.target.value as Locale)}
-        className="bg-warm border border-sand rounded-md px-2 py-1 text-sm font-sans text-ink cursor-pointer focus:outline-none focus:ring-2 focus:ring-coral/30"
-        aria-label="Language"
-      >
-        {(Object.entries(localeNames) as [Locale, string][]).map(
-          ([code, name]) => (
-            <option key={code} value={code}>
-              {name}
-            </option>
-          )
-        )}
-      </select>
+      <div className="flex items-center gap-2 md:gap-5">
+        <AuthButton />
+        <nav className="flex items-center gap-1" role="tablist">
+          {(["write", "shelf"] as const).map((tab) => (
+            <button
+              key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => onTabChange(tab)}
+              className={`px-3.5 py-2 min-h-[44px] rounded-[8px] text-sm font-sans font-medium transition-colors ${
+                activeTab === tab
+                  ? "bg-ink text-paper"
+                  : "text-ink/50 hover:text-ink/70"
+              }`}
+            >
+              {tabLabels[tab]}
+            </button>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 }

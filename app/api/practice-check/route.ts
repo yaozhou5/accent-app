@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildPracticeCheckPrompt } from "@/lib/prompts";
 import type { PracticeCheckRequest, PracticeCheckResponse } from "@/lib/types";
 
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({ maxRetries: 3 });
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     );
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: "claude-opus-4-6",
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     });
@@ -38,7 +38,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsed = JSON.parse(content.text) as PracticeCheckResponse;
+    // Extract JSON from response — strip code fences and trailing text
+    let jsonText = content.text.trim();
+    if (jsonText.startsWith("```")) {
+      jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+    }
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return NextResponse.json(
+        { error: "Failed to parse response" },
+        { status: 500 }
+      );
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as PracticeCheckResponse;
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Practice check API error:", error);

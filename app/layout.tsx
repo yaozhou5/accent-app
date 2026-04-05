@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Literata, JetBrains_Mono, DM_Sans } from "next/font/google";
+import { Fraunces, JetBrains_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const literata = Literata({
+const fraunces = Fraunces({
+  weight: "700",
   subsets: ["latin"],
-  variable: "--font-literata",
+  variable: "--font-fraunces",
   display: "swap",
 });
 
@@ -33,9 +34,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${literata.variable} ${jetbrains.variable} ${dmSans.variable}`}
+      className={`${fraunces.variable} ${jetbrains.variable} ${dmSans.variable}`}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

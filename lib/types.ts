@@ -1,50 +1,26 @@
-export type Verdict = "great" | "mostly_good" | "needs_work";
-export type WriteMode = "quick" | "learn";
+export type WriteMode = "quick" | "teach";
 
-// Quick mode
-export interface QuickCheckRequest {
+// Unified API response for /api/check
+export interface Issue {
+  phrase: string;
+  fixed_phrase: string;
+  title: string;
+  revised_sentence: string;
+  lesson_title: string;
+  lesson_body: string;
+  examples: Array<{ bad: string; good: string }>;
+}
+
+export interface CheckRequest {
   text: string;
-  mode: "quick";
   language: string;
   sessionCount: number;
 }
 
-export interface QuickCheckResponse {
-  verdict: Verdict;
-  rewrite: string | null;
-  microLesson: string | null;
-  original: string;
-  suggestions?: string[];
+export interface CheckResponse {
+  issues: Issue[];
+  improved_full: string;
 }
-
-// Learn mode
-export interface AnnotatedPhrase {
-  text: string;
-  type: "improve" | "voice";
-  startIndex: number;
-  endIndex: number;
-  explanation?: string;
-  rewrites?: string[];
-}
-
-export interface LearnCheckRequest {
-  text: string;
-  mode: "learn";
-  language: string;
-  sessionCount: number;
-  keptPhrases?: string[];
-}
-
-export interface LearnCheckResponse {
-  verdict: Verdict;
-  annotatedPhrases: AnnotatedPhrase[];
-  teachingNotes: string;
-  practicePrompts: string[];
-  original: string;
-}
-
-export type CheckRequest = QuickCheckRequest | LearnCheckRequest;
-export type CheckResponse = QuickCheckResponse | LearnCheckResponse;
 
 // Practice check
 export interface PracticeCheckRequest {

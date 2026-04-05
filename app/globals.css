@@ -1,18 +1,31 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-paper: #FFFEF4;
+  --color-paper: #F7F4EF;
   --color-sand: #D0CFC1;
-  --color-coral: #E8593C;
-  --color-sage: #4A7C5F;
-  --color-warm: #F5F0E8;
+  --color-coral: #D85A30;
+  --color-teal: #1D9E75;
+  --color-warm: #F0ECE4;
   --color-ink: #1C1917;
   --color-coral-light: #FEF2EF;
-  --color-sage-light: #F0FAF4;
+  --color-teal-light: #EDFAF4;
 
-  --font-serif: var(--font-literata), Georgia, serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+
+  --animate-pulse-subtle: pulse-subtle 1.2s ease-in-out infinite;
+  --animate-blink: blink 1s step-end infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 body {
@@ -20,4 +33,27 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 768px) {
+  body {
+    background: #EEEBE4;
+  }
+}
+
+/* Reset browser default mark styling */
+mark {
+  background: #FAEEDA;
+  color: #633806;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-style: normal;
+}
+
+.lesson-body mark {
+  background: #FAEEDA;
+  color: #633806;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-style: normal;
 }
