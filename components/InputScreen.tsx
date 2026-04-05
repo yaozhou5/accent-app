@@ -14,6 +14,7 @@ interface InputScreenProps {
   onSubmit: () => void;
   loading: boolean;
   error: string | null;
+  langError?: string | null;
 }
 
 export function InputScreen({
@@ -25,9 +26,10 @@ export function InputScreen({
   onSubmit,
   loading,
   error,
+  langError,
 }: InputScreenProps) {
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const canSubmit = !!text.trim() && wordCount <= 500 && !loading;
+  const canSubmit = !!text.trim() && wordCount <= 500 && !loading && !langError;
 
   const subtitle =
     mode === "quick"
@@ -87,6 +89,12 @@ export function InputScreen({
         <div className="bg-coral-light border border-coral/20 rounded-[8px] px-4 py-3 text-coral font-sans text-sm">
           {error}
         </div>
+      )}
+
+      {langError && (
+        <p className="text-[13px] font-sans text-ink/40 text-center">
+          {langError}
+        </p>
       )}
     </div>
   );

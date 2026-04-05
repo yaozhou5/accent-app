@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { franc } from "franc";
 import type { Locale } from "@/lib/i18n";
 import type { WriteMode } from "@/lib/types";
 import { getSessionCount, saveSession } from "@/lib/voice-profile";
@@ -17,11 +18,26 @@ interface WriteTabProps {
 export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
   const [mode, setMode] = useState<WriteMode>("quick");
   const [text, setText] = useState("");
+  const [langError, setLangError] = useState<string | null>(null);
   const { streamState, streamedText, result, error, submit, reset } =
     useStreamingCheck();
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
+    setLangError(null);
+
+    // Language detection — skip for short texts or undetermined
+    const wordCount = text.trim().split(/\s+/).length;
+    if (wordCount >= 10) {
+      const detected = franc(text, { minLength: 10 });
+      if (detected !== "eng" && detected !== "und") {
+        setLangError(
+          "Accent currently supports English only. More languages coming soon."
+        );
+        return;
+      }
+    }
+
     await submit(text, locale, getSessionCount());
 
     saveSession({
@@ -35,7 +51,13 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
 
   const handleNew = () => {
     setText("");
+    setLangError(null);
     reset();
+  };
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+    if (langError) setLangError(null);
   };
 
   const showResult = streamState === "streaming" || streamState === "done";
@@ -69,10 +91,11 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
           onLocaleChange={onLocaleChange}
           mode={mode}
           text={text}
-          onTextChange={setText}
+          onTextChange={handleTextChange}
           onSubmit={handleSubmit}
           loading={false}
           error={error}
+          langError={langError}
         />
       </div>
     );
