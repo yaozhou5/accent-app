@@ -211,11 +211,10 @@ export function TeachResult({
   const issueNum = card.issueIndex + 1;
 
   return (
-    <div className="relative min-h-[calc(100vh-200px)]">
-      <div className="mb-3">{pips}</div>
-
-      {/* Card */}
-      <div className="pb-[100px] md:pb-20">
+    <div className="flex flex-col h-[calc(100dvh-140px)] overflow-hidden -mx-4 md:-mx-6">
+      {/* Scrollable card area */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-2 pb-4">
+        <div className="mb-3">{pips}</div>
         <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-3">
           {/* Issue card */}
           {card.type === "issue" && (
@@ -297,12 +296,12 @@ export function TeachResult({
         </div>
       </div>
 
-      {/* CTA row — fixed on mobile (keyboard-aware), sticky on desktop (zoom-proof) */}
+      {/* CTA row — flex-shrink-0, always at bottom */}
       <div
-        className="fixed left-0 right-0 bg-paper px-5 pb-8 pt-4 md:sticky md:bottom-0 md:left-auto md:right-auto md:px-0 md:pb-4"
-        style={{ bottom: keyboardHeight }}
+        className="shrink-0 bg-paper border-t border-ink/10 px-4 md:px-6 pt-4 pb-8"
+        style={{ paddingBottom: `calc(2rem + ${keyboardHeight}px)` }}
       >
-        <div className="max-w-[480px] md:max-w-none mx-auto px-4 md:px-0 flex gap-2">
+        <div className="flex gap-2">
           {currentIndex > 0 && (
             <button
               onClick={goBack}
