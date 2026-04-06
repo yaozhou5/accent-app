@@ -22,8 +22,11 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Accent",
-  description: "Writing improvement for second-language English writers",
+  title: "accent.",
+  description: "AI writing tools make you average. This one makes you you.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
