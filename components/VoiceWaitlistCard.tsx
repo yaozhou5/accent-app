@@ -20,7 +20,7 @@ export function VoiceWaitlistCard({ sessionCount }: VoiceWaitlistCardProps) {
   const [signedInToastVisible, setSignedInToastVisible] = useState(false);
 
   useEffect(() => {
-    if (sessionCount !== 3) return;
+    if (sessionCount < 3) return;
 
     // Check dismissed / joined flags
     const joined = localStorage.getItem(JOINED_KEY) === "true";
