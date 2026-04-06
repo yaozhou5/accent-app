@@ -272,7 +272,7 @@ export function TeachResult({
                   <div key={i} className="space-y-4">
                     {/* Wrong version */}
                     <div className="flex gap-2.5 items-start">
-                      <span className="text-ink/40 text-sm mt-1 shrink-0">&#10007;</span>
+                      <span className="text-[#3D3B38] font-semibold text-sm mt-1 shrink-0">&#10007;</span>
                       <div className="flex-1 bg-[#F1EFE8] rounded-[8px] px-3.5 py-2.5">
                         <p className="font-sans text-[15px] leading-[1.6] text-ink/60 line-through decoration-coral/50">
                           {ex.bad}
