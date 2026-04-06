@@ -11,8 +11,12 @@ interface HeaderProps {
 export function Header({ activeTab, onTabChange, tabLabels }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-ink/10">
-      <h1 className="font-serif font-bold text-xl tracking-tight">
-        accent<span className="text-teal">.</span>
+      <h1 className="font-serif font-bold text-xl tracking-tight text-teal inline-flex items-start">
+        <span>accent</span>
+        <span
+          className="bg-coral rounded-full shrink-0"
+          style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6 }}
+        />
       </h1>
       <div className="flex items-center gap-2 md:gap-5">
         <AuthButton />
