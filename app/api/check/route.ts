@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildCheckPrompt } from "@/lib/prompts";
 import type { CheckRequest, CheckResponse } from "@/lib/types";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const anthropic = new Anthropic({ maxRetries: 3 });
 
@@ -11,7 +12,16 @@ export async function POST(request: NextRequest) {
     // Rate limit: 10 requests per IP per 60 minutes
     const ip = getClientIp(request);
     const rateLimit = checkRateLimit(ip);
+    const distinctId = request.headers.get("X-POSTHOG-DISTINCT-ID") || ip;
+
     if (!rateLimit.allowed) {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId,
+        event: "api_check_rate_limited",
+        properties: { ip },
+      });
+      await posthog.shutdown();
       return NextResponse.json(
         { error: "Too many requests, please try again later." },
         {
@@ -84,6 +94,19 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId,
+      event: "api_check_completed",
+      properties: {
+        issues_count: parsed.issues.length,
+        had_changes: parsed.issues.length > 0,
+        language,
+        session_count: sessionCount,
+      },
+    });
+    await posthog.shutdown();
+
     return NextResponse.json(parsed);
   } catch (error: unknown) {
     console.error("Check API error:", error);

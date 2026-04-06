@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { franc } from "franc";
+import posthog from "posthog-js";
 import type { Locale } from "@/lib/i18n";
 import type { WriteMode } from "@/lib/types";
 import { getSessionCount, saveSession } from "@/lib/voice-profile";
@@ -48,7 +49,22 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       }
     }
 
-    await submit(text, locale, getSessionCount());
+    posthog.capture("writing_submitted", {
+      mode,
+      word_count: wordCount,
+      session_count: getSessionCount(),
+    });
+
+    const checkResult = await submit(text, locale, getSessionCount());
+
+    if (checkResult) {
+      posthog.capture("writing_result_completed", {
+        mode,
+        issues_count: checkResult.issues.length,
+        had_changes: checkResult.issues.length > 0,
+        word_count: wordCount,
+      });
+    }
 
     saveSession({
       date: new Date().toISOString(),
@@ -57,6 +73,13 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       phrasesReplaced: [],
       wordFrequency: {},
     });
+  };
+
+  const handleModeSwitch = (m: WriteMode) => {
+    if (m !== mode) {
+      posthog.capture("mode_switched", { mode: m });
+    }
+    setMode(m);
   };
 
   const handleNew = () => {
@@ -86,7 +109,7 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       {(["quick", "teach"] as const).map((m) => (
         <button
           key={m}
-          onClick={() => setMode(m)}
+          onClick={() => handleModeSwitch(m)}
           title={m === "quick" ? "Fix your writing instantly" : "Learn why each change was made"}
           className={`relative z-10 flex-1 flex items-center justify-center py-2.5 min-h-[44px] text-[15px] font-sans transition-colors duration-200 tracking-[-0.1px] ${
             mode === m

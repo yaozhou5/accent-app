@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import posthog from "posthog-js";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,8 +20,14 @@ export function AuthButton() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (event === "SIGNED_IN" && currentUser) {
+        posthog.identify(currentUser.id, { email: currentUser.email });
+      } else if (event === "SIGNED_OUT") {
+        posthog.reset();
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -39,7 +46,10 @@ export function AuthButton() {
     });
 
     setLoading(false);
-    if (!error) setSent(true);
+    if (!error) {
+      setSent(true);
+      posthog.capture("magic_link_requested");
+    }
   };
 
   const handleSignOut = async () => {
@@ -111,7 +121,7 @@ export function AuthButton() {
   return (
     <button
       data-auth-trigger
-      onClick={() => setShowLogin(true)}
+      onClick={() => { setShowLogin(true); posthog.capture("sign_in_initiated"); }}
       className="text-xs font-sans text-ink/40 hover:text-ink/60 transition-colors"
     >
       Sign in

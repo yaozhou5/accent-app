@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 import { joinVoiceWaitlist } from "@/lib/supabase/waitlist";
 
@@ -50,12 +51,14 @@ export function VoiceWaitlistCard({ sessionCount }: VoiceWaitlistCardProps) {
     if (ok) {
       localStorage.setItem(JOINED_KEY, "true");
       setSubmitted(true);
+      posthog.capture("voice_waitlist_joined", { session_count: sessionCount });
     }
   };
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "true");
     setShow(false);
+    posthog.capture("voice_waitlist_dismissed", { session_count: sessionCount });
   };
 
   if (isSignedIn && signedInToastVisible) {

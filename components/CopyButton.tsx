@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 
 type CopyState = "default" | "copying" | "copied";
@@ -32,6 +33,7 @@ export function CopyButton({ text, onSave, className }: CopyButtonProps) {
     if (state !== "default") return;
     setState("copying");
     await navigator.clipboard.writeText(text);
+    posthog.capture("result_copied", { saved_to_shelf: isSignedIn });
     if (isSignedIn) {
       onSave?.();
     }

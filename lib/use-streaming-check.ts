@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import posthog from "posthog-js";
 import type { CheckResponse } from "./types";
 
 export type StreamState = "idle" | "streaming" | "done" | "error";
@@ -24,7 +25,10 @@ export function useStreamingCheck() {
       try {
         const res = await fetch("/api/check", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-POSTHOG-DISTINCT-ID": posthog.get_distinct_id(),
+          },
           body: JSON.stringify({ text, language, sessionCount }),
           signal: controller.signal,
         });
@@ -41,6 +45,7 @@ export function useStreamingCheck() {
         setResult(parsed);
         setStreamedText(parsed.improved_full);
         setStreamState("done");
+        return parsed;
       } catch (err: unknown) {
         if ((err as Error).name === "AbortError") return;
         console.error("Fetch error:", err);

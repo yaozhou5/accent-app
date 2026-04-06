@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import posthog from "posthog-js";
 import type { Locale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -40,6 +41,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
     if (success) {
       setEntries((prev) => prev.filter((e) => e.id !== id));
       if (selectedEntry?.id === id) setSelectedEntry(null);
+      posthog.capture("shelf_entry_deleted");
     }
   };
 
@@ -112,7 +114,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
       {entries.map((entry) => (
         <div
           key={entry.id}
-          onClick={() => setSelectedEntry(entry)}
+          onClick={() => { posthog.capture("shelf_entry_opened", { mode: entry.mode }); setSelectedEntry(entry); }}
           className="bg-white border border-ink/10 rounded-[12px] px-4 py-4 space-y-2 cursor-pointer hover:bg-warm/50 transition-colors"
         >
           <div className="flex items-center justify-between">
