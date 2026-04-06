@@ -2,11 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildPracticeCheckPrompt } from "@/lib/prompts";
 import type { PracticeCheckRequest, PracticeCheckResponse } from "@/lib/types";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic({ maxRetries: 3 });
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rateLimit = checkRateLimit(ip);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": String(rateLimit.resetAt),
+          },
+        }
+      );
+    }
+
     const body = (await request.json()) as PracticeCheckRequest;
     const { original, userAttempt, context, language } = body;
 
