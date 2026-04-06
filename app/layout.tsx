@@ -23,10 +23,27 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://myaccent.io"),
   title: "accent.",
-  description: "AI writing tools make you average. This one makes you you.",
+  description: "The tool that makes you a better writer.",
   icons: {
     icon: "/favicon.svg",
+  },
+  openGraph: {
+    title: "Stop sounding like AI. Start sounding like you.",
+    description: "The tool that makes you a better writer.",
+    url: "https://myaccent.io",
+    siteName: "accent.",
+    images: [
+      { url: "https://myaccent.io/api/og", width: 1200, height: 630 },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Stop sounding like AI. Start sounding like you.",
+    description: "The tool that makes you a better writer.",
+    images: ["https://myaccent.io/api/og"],
   },
 };
 
