@@ -83,12 +83,12 @@ export function InputScreen({
         </p>
       )}
 
-      {/* Fixed bottom CTA — adjusts for keyboard */}
+      {/* CTA — fixed on mobile (keyboard-aware), sticky within column on desktop */}
       <div
-        className="fixed left-0 right-0 bg-paper px-4 md:px-6 pb-6 pt-3"
+        className="fixed left-0 right-0 bg-paper px-4 pb-6 pt-3 md:sticky md:left-auto md:right-auto md:bottom-0 md:px-0 md:pb-6 md:pt-4"
         style={{ bottom: keyboardHeight }}
       >
-        <div className="max-w-[480px] md:max-w-[600px] mx-auto flex gap-2.5">
+        <div className="max-w-[480px] md:max-w-none mx-auto px-0 flex gap-2.5">
           {SHOW_LANGUAGE_SELECTOR && (
             <select
               value={locale}
