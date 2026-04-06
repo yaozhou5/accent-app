@@ -129,6 +129,7 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
           result={result}
           isStreaming={streamState === "streaming"}
           onNew={handleNew}
+          sessionCount={getSessionCount()}
         />
       )}
       {mode === "teach" && (

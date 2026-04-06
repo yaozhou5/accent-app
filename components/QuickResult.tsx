@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { CheckResponse } from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
+import { VoiceWaitlistCard } from "./VoiceWaitlistCard";
 import { saveToShelf } from "@/lib/supabase/shelf";
 
 interface QuickResultProps {
@@ -12,6 +13,7 @@ interface QuickResultProps {
   result: CheckResponse | null;
   isStreaming: boolean;
   onNew: () => void;
+  sessionCount: number;
 }
 
 function HighlightedOriginal({
@@ -134,6 +136,7 @@ export function QuickResult({
   result,
   isStreaming,
   onNew,
+  sessionCount,
 }: QuickResultProps) {
   const phrases = useMemo(
     () => result?.issues.map((i) => i.phrase) ?? [],
@@ -189,6 +192,9 @@ export function QuickResult({
               </p>
             </div>
           )}
+
+          {/* Voice waitlist prompt — shows once at session 3 */}
+          <VoiceWaitlistCard sessionCount={sessionCount} />
 
           {/* Actions */}
           <div className="flex gap-2">
