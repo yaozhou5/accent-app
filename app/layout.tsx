@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, JetBrains_Mono, DM_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { PostHogProvider } from "@/components/PostHogProvider";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -59,7 +60,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen" suppressHydrationWarning>
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
         <Analytics />
       </body>
     </html>
