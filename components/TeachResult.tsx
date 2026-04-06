@@ -211,9 +211,12 @@ export function TeachResult({
   const issueNum = card.issueIndex + 1;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-140px)] overflow-hidden -mx-4 md:-mx-6">
-      {/* Scrollable card area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-2 pb-4">
+    <div
+      className="grid grid-rows-[1fr_auto] overflow-hidden -mx-4 md:-mx-6"
+      style={{ height: "calc(100dvh - 140px)" }}
+    >
+      {/* Scrollable card area — min-h-0 prevents grid blowout */}
+      <div className="overflow-y-auto min-h-0 px-4 md:px-6 pt-2 pb-4">
         <div className="mb-3">{pips}</div>
         <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-3">
           {/* Issue card */}
@@ -296,9 +299,9 @@ export function TeachResult({
         </div>
       </div>
 
-      {/* CTA row — flex-shrink-0, always at bottom */}
+      {/* CTA row — grid auto row, always at bottom */}
       <div
-        className="shrink-0 bg-paper border-t border-ink/10 px-4 md:px-6 pt-4 pb-8"
+        className="bg-paper border-t border-ink/10 px-4 md:px-6 pt-4"
         style={{ paddingBottom: `calc(2rem + ${keyboardHeight}px)` }}
       >
         <div className="flex gap-2">
