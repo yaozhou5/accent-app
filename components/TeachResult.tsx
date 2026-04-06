@@ -65,7 +65,7 @@ function HighlightedText({
   const highlightClass =
     color === "coral"
       ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
-      : "bg-[#E8F0EB] text-[#1B3A2D] rounded-[3px] px-1 py-px";
+      : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
 
   if (idx === -1) return <p className={baseClass}>{text}</p>;
 
@@ -282,7 +282,7 @@ export function TeachResult({
                     {/* Right version */}
                     <div className="flex gap-2.5 items-start">
                       <span className="text-teal text-sm mt-1 shrink-0">&#10003;</span>
-                      <div className="flex-1 bg-[#E8F0EB] rounded-[8px] px-3.5 py-2.5">
+                      <div className="flex-1 bg-[#C8DDD5] rounded-[8px] px-3.5 py-2.5">
                         <p className="font-sans text-[16px] leading-[1.6] font-medium text-[#1B3A2D]">
                           {ex.good}
                         </p>

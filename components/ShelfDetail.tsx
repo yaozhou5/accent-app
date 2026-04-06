@@ -63,7 +63,7 @@ function HighlightedText({
   const hlCls =
     color === "coral"
       ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
-      : "bg-[#E8F0EB] text-[#1B3A2D] rounded-[3px] px-1 py-px";
+      : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
 
   return (
     <p className={baseCls}>

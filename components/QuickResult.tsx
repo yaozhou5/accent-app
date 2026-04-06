@@ -111,7 +111,7 @@ function HighlightedImproved({
     <p className="font-sans text-sm leading-relaxed text-ink font-medium">
       {segments.map((seg, i) =>
         seg.highlight ? (
-          <span key={i} className="bg-[#E8F0EB] text-[#1B3A2D] rounded-[3px] px-1 py-px">
+          <span key={i} className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px">
             {seg.text}
           </span>
         ) : (
