@@ -154,7 +154,7 @@ export function QuickResult({
     <div className="space-y-4">
       {/* Original — always visible immediately */}
       <div className="border-l-[3px] border-coral pl-4">
-        <span className="text-[11px] font-sans font-medium text-ink uppercase tracking-wider">
+        <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
           Your original
         </span>
         <div className="mt-1.5">
@@ -178,7 +178,7 @@ export function QuickResult({
           {/* Improved — shown only when stream is fully complete */}
           {hasIssues ? (
             <div className="border-l-[3px] border-teal pl-4">
-              <span className="text-[11px] font-sans font-medium text-ink uppercase tracking-wider">
+              <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
                 Improved
               </span>
               <div className="mt-1.5">
