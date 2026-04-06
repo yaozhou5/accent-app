@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, JetBrains_Mono, DM_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -40,7 +41,10 @@ export default function RootLayout({
       className={`${fraunces.variable} ${jetbrains.variable} ${dmSans.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen" suppressHydrationWarning>{children}</body>
+      <body className="min-h-screen" suppressHydrationWarning>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
