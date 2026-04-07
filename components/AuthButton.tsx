@@ -104,35 +104,19 @@ export function AuthButton() {
     setLoading(true);
 
     const cleanEmail = email.trim().toLowerCase();
-    // Try email type first (works for both signup and magiclink in recent Supabase)
-    let { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       email: cleanEmail,
       token: code,
       type: "email",
     });
-    // Fallback to magiclink type
-    if (error) {
-      const result = await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: code,
-        type: "magiclink",
-      });
-      error = result.error;
-    }
-    // Fallback to signup type for new users
-    if (error) {
-      const result = await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: code,
-        type: "signup",
-      });
-      error = result.error;
-    }
 
     setLoading(false);
     if (error) {
-      console.error("OTP verify error:", error);
-      setCodeError("Invalid or expired code. Please try again.");
+      console.error("[OTP] verify error:", error);
+      console.error("[OTP] error details:", JSON.stringify(error, null, 2));
+      setCodeError(error.message || "Invalid or expired code. Please try again.");
+    } else {
+      console.log("[OTP] success:", data);
     }
   };
 
