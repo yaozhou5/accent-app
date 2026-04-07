@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { CheckResponse, QuickCheckResponse, Issue } from "@/lib/types";
+import type { QuickCheckResponse, Issue } from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { VoiceWaitlistCard } from "./VoiceWaitlistCard";
@@ -9,29 +9,15 @@ import { saveToShelf } from "@/lib/supabase/shelf";
 
 interface QuickResultProps {
   original: string;
-  streamedText: string;
-  result: CheckResponse | null;
-  isStreaming: boolean;
+  fixResult: QuickCheckResponse | null;
+  isFixing: boolean;
   onNew: () => void;
   sessionCount: number;
 }
 
-function extractPhrases(
-  result: CheckResponse | null
-): Array<{ phrase: string; fixed_phrase: string }> {
+function getIssuesForShelf(result: QuickCheckResponse | null): Issue[] {
   if (!result) return [];
-  if ("phrases" in result) return result.phrases;
-  return result.issues.map((i: Issue) => ({
-    phrase: i.phrase,
-    fixed_phrase: i.fixed_phrase,
-  }));
-}
-
-function getIssuesForShelf(result: CheckResponse | null): Issue[] {
-  if (!result) return [];
-  if ("issues" in result) return result.issues;
-  // Synthesize minimal Issue objects from phrases for shelf storage
-  return (result as QuickCheckResponse).phrases.map((p) => ({
+  return result.phrases.map((p) => ({
     phrase: p.phrase,
     fixed_phrase: p.fixed_phrase,
     title: "",
@@ -158,13 +144,15 @@ const QUICK_MESSAGES = [
 
 export function QuickResult({
   original,
-  streamedText,
-  result,
-  isStreaming,
+  fixResult,
+  isFixing,
   onNew,
   sessionCount,
 }: QuickResultProps) {
-  const phraseList = useMemo(() => extractPhrases(result), [result]);
+  const phraseList = useMemo(
+    () => fixResult?.phrases ?? [],
+    [fixResult]
+  );
   const phrases = useMemo(
     () => phraseList.map((p) => p.phrase),
     [phraseList]
@@ -173,9 +161,9 @@ export function QuickResult({
     () => phraseList.map((p) => p.fixed_phrase).filter(Boolean),
     [phraseList]
   );
-  const hasIssues = result ? phraseList.length > 0 : true;
-  const isDone = !!result && !isStreaming;
-  const displayText = result?.improved_full || "";
+  const hasIssues = fixResult ? phraseList.length > 0 : true;
+  const isDone = !!fixResult && !isFixing;
+  const displayText = fixResult?.improved_full || "";
 
   return (
     <div className="space-y-4">
@@ -185,7 +173,7 @@ export function QuickResult({
           Your original
         </span>
         <div className="mt-1.5">
-          {result ? (
+          {fixResult ? (
             <HighlightedOriginal text={original} phrases={phrases} />
           ) : (
             <p className="font-sans text-sm leading-relaxed text-ink">
@@ -228,11 +216,11 @@ export function QuickResult({
             <CopyButton
               text={displayText}
               onSave={() => {
-                if (result) {
+                if (fixResult) {
                   saveToShelf(
                     original,
-                    result.improved_full,
-                    getIssuesForShelf(result),
+                    fixResult.improved_full,
+                    getIssuesForShelf(fixResult),
                     "quick"
                   );
                 }

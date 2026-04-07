@@ -10,24 +10,14 @@ export interface Issue {
   examples: Array<{ bad: string; good: string }>;
 }
 
-export interface CheckRequest {
-  text: string;
-  language: string;
-  sessionCount: number;
-  mode: WriteMode;
-}
-
 export interface QuickCheckResponse {
   improved_full: string;
   phrases: Array<{ phrase: string; fixed_phrase: string }>;
 }
 
-export interface TeachCheckResponse {
-  improved_full: string;
+export interface ExplainResponse {
   issues: Issue[];
 }
-
-export type CheckResponse = QuickCheckResponse | TeachCheckResponse;
 
 // Practice check
 export interface PracticeCheckRequest {

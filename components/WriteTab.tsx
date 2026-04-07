@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { franc } from "franc";
 import posthog from "posthog-js";
 import type { Locale } from "@/lib/i18n";
@@ -20,21 +20,24 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
   const [mode, setMode] = useState<WriteMode>("quick");
   const [text, setText] = useState("");
   const [langError, setLangError] = useState<string | null>(null);
-  const { streamState, streamedText, result, error, submit, reset } =
-    useStreamingCheck();
+  const {
+    fixState,
+    explainState,
+    fixResult,
+    issues,
+    error,
+    submitFix,
+    requestExplain,
+    reset,
+  } = useStreamingCheck();
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
     setLangError(null);
 
-    // Language detection — only block clearly non-English text
-    // franc is unreliable for short English text (often returns Scots, etc.)
-    // So we only check texts 30+ words AND only block non-Latin scripts
     const wordCount = text.trim().split(/\s+/).length;
     if (wordCount >= 30) {
       const detected = franc(text, { minLength: 20 });
-      // Allow English and any closely related Latin-script languages
-      // Only block clearly non-English: Chinese, Japanese, Korean, Arabic, etc.
       const latinLangs = [
         "eng", "und", "sco", "fra", "deu", "spa", "ita", "por",
         "nld", "dan", "nor", "swe", "cat", "ron", "pol", "ces",
@@ -55,19 +58,20 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       session_count: getSessionCount(),
     });
 
-    const checkResult = await submit(text, locale, getSessionCount(), mode);
+    const fix = await submitFix(text);
 
-    if (checkResult) {
-      const itemCount =
-        "issues" in checkResult
-          ? checkResult.issues.length
-          : checkResult.phrases.length;
+    if (fix) {
       posthog.capture("writing_result_completed", {
         mode,
-        issues_count: itemCount,
-        had_changes: itemCount > 0,
+        phrases_count: fix.phrases.length,
+        had_changes: fix.phrases.length > 0,
         word_count: wordCount,
       });
+
+      // If user is in Teach mode, kick off Step 2 immediately
+      if (mode === "teach") {
+        requestExplain(text, fix);
+      }
     }
 
     saveSession({
@@ -79,12 +83,21 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
     });
   };
 
+  // If user switches to Teach mode after fix is done, lazily request explain
+  useEffect(() => {
+    if (
+      mode === "teach" &&
+      fixResult &&
+      explainState === "idle" &&
+      issues === null
+    ) {
+      requestExplain(text, fixResult);
+    }
+  }, [mode, fixResult, explainState, issues, text, requestExplain]);
+
   const handleModeSwitch = (m: WriteMode) => {
     if (m !== mode) {
       posthog.capture("mode_switched", { mode: m });
-      // Different modes use different prompts/response shapes — reset result
-      // so the user re-submits to get the right data for the new mode
-      if (result) reset();
     }
     setMode(m);
   };
@@ -100,12 +113,11 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
     if (langError) setLangError(null);
   };
 
-  const showResult = streamState === "streaming" || streamState === "done";
+  const showResult = fixState === "fixing" || fixState === "done";
 
   // Mode toggle — segmented control with sliding pill
   const modeToggle = (
     <div className="relative flex rounded-[12px] border border-ink/15 bg-ink/[0.03] p-1">
-      {/* Sliding active pill */}
       <div
         className="absolute top-1 bottom-1 bg-white rounded-[8px] shadow-sm transition-all duration-200 ease-out"
         style={{
@@ -117,7 +129,11 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
         <button
           key={m}
           onClick={() => handleModeSwitch(m)}
-          title={m === "quick" ? "Fix your writing instantly" : "Learn why each change was made"}
+          title={
+            m === "quick"
+              ? "Fix your writing instantly"
+              : "Learn why each change was made"
+          }
           className={`relative z-10 flex-1 flex items-center justify-center py-2.5 min-h-[44px] text-[15px] font-sans transition-colors duration-200 tracking-[-0.1px] ${
             mode === m
               ? "text-ink font-semibold"
@@ -155,9 +171,8 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       {mode === "quick" && (
         <QuickResult
           original={text}
-          streamedText={streamedText}
-          result={result}
-          isStreaming={streamState === "streaming"}
+          fixResult={fixResult}
+          isFixing={fixState === "fixing"}
           onNew={handleNew}
           sessionCount={getSessionCount()}
         />
@@ -165,8 +180,10 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       {mode === "teach" && (
         <TeachResult
           original={text}
-          result={result}
-          isStreaming={streamState === "streaming"}
+          fixResult={fixResult}
+          issues={issues}
+          isFixing={fixState === "fixing"}
+          isExplaining={explainState === "explaining"}
           onNew={handleNew}
         />
       )}

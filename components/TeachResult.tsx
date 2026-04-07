@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type {
-  CheckResponse,
-  TeachCheckResponse,
-  Issue,
-} from "@/lib/types";
+import type { QuickCheckResponse, Issue } from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { saveToShelf } from "@/lib/supabase/shelf";
@@ -13,13 +9,11 @@ import { useKeyboardHeight } from "@/lib/use-keyboard-height";
 
 interface TeachResultProps {
   original: string;
-  result: CheckResponse | null;
-  isStreaming: boolean;
+  fixResult: QuickCheckResponse | null;
+  issues: Issue[] | null;
+  isFixing: boolean;
+  isExplaining: boolean;
   onNew: () => void;
-}
-
-function isTeachResult(r: CheckResponse | null): r is TeachCheckResponse {
-  return !!r && "issues" in r;
 }
 
 type CardType = "issue" | "lesson" | "example" | "summary";
@@ -88,23 +82,31 @@ function HighlightedText({
 
 export function TeachResult({
   original,
-  result,
-  isStreaming,
+  fixResult,
+  issues,
+  isFixing,
+  isExplaining,
   onNew,
 }: TeachResultProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const keyboardHeight = useKeyboardHeight();
 
-  if (isStreaming || !isTeachResult(result)) {
+  // Loading: still fixing OR fix done but explain hasn't completed
+  if (isFixing || !fixResult || issues === null || isExplaining) {
+    const messages = isFixing
+      ? [
+          "Reading carefully\u2026",
+          "Marking up your draft\u2026",
+          "Almost done\u2026",
+        ]
+      : [
+          "Preparing your lesson\u2026",
+          "Finding the patterns\u2026",
+          "Almost done\u2026",
+        ];
     return (
       <div className="space-y-4">
-        <RotatingStatus
-          messages={[
-            "Reading carefully\u2026",
-            "Finding the lessons\u2026",
-            "Almost done\u2026",
-          ]}
-        />
+        <RotatingStatus messages={messages} />
         <div className="animate-pulse-subtle">
           <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-3">
             <div className="h-3 bg-ink/10 rounded w-20" />
@@ -117,7 +119,7 @@ export function TeachResult({
     );
   }
 
-  if (result.issues.length === 0) {
+  if (issues.length === 0) {
     return (
       <div className="space-y-4">
         <div className="bg-teal-light border border-teal/20 rounded-[8px] px-4 py-3 text-teal font-sans text-sm font-medium">
@@ -133,9 +135,10 @@ export function TeachResult({
     );
   }
 
-  const cards = buildCards(result.issues);
+  const cards = buildCards(issues);
   const card = cards[currentIndex];
-  const totalIssues = result.issues.length;
+  const totalIssues = issues.length;
+  const improvedFull = fixResult.improved_full;
 
   const goNext = () => {
     if (currentIndex < cards.length - 1) setCurrentIndex(currentIndex + 1);
@@ -176,7 +179,7 @@ export function TeachResult({
           </div>
 
           <ul className="space-y-2">
-            {result.issues.map((issue, i) => (
+            {issues.map((issue, i) => (
               <li
                 key={i}
                 className="flex gap-2 text-sm font-sans text-ink"
@@ -197,9 +200,9 @@ export function TeachResult({
               New
             </button>
             <CopyButton
-              text={result.improved_full}
+              text={improvedFull}
               onSave={() => {
-                saveToShelf(original, result.improved_full, result.issues, "teach");
+                saveToShelf(original, improvedFull, issues, "teach");
               }}
             />
           </div>
@@ -250,7 +253,7 @@ export function TeachResult({
                 </span>
                 <div className="mt-0.5 bg-teal-light/50 rounded-[8px] px-3 py-2">
                   <HighlightedText
-                    text={result.improved_full}
+                    text={improvedFull}
                     phrase={issue.fixed_phrase || ""}
                     color="teal"
                   />
