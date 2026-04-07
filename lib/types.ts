@@ -1,6 +1,5 @@
 export type WriteMode = "quick" | "teach";
 
-// Unified API response for /api/check
 export interface Issue {
   phrase: string;
   fixed_phrase: string;
@@ -15,12 +14,20 @@ export interface CheckRequest {
   text: string;
   language: string;
   sessionCount: number;
+  mode: WriteMode;
 }
 
-export interface CheckResponse {
-  issues: Issue[];
+export interface QuickCheckResponse {
   improved_full: string;
+  phrases: Array<{ phrase: string; fixed_phrase: string }>;
 }
+
+export interface TeachCheckResponse {
+  improved_full: string;
+  issues: Issue[];
+}
+
+export type CheckResponse = QuickCheckResponse | TeachCheckResponse;
 
 // Practice check
 export interface PracticeCheckRequest {

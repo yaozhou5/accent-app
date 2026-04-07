@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { CheckResponse, Issue } from "@/lib/types";
+import type {
+  CheckResponse,
+  TeachCheckResponse,
+  Issue,
+} from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { saveToShelf } from "@/lib/supabase/shelf";
@@ -12,6 +16,10 @@ interface TeachResultProps {
   result: CheckResponse | null;
   isStreaming: boolean;
   onNew: () => void;
+}
+
+function isTeachResult(r: CheckResponse | null): r is TeachCheckResponse {
+  return !!r && "issues" in r;
 }
 
 type CardType = "issue" | "lesson" | "example" | "summary";
@@ -87,7 +95,7 @@ export function TeachResult({
   const [currentIndex, setCurrentIndex] = useState(0);
   const keyboardHeight = useKeyboardHeight();
 
-  if (isStreaming || !result) {
+  if (isStreaming || !isTeachResult(result)) {
     return (
       <div className="space-y-4">
         <RotatingStatus

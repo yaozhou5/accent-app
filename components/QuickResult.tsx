@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { CheckResponse } from "@/lib/types";
+import type { CheckResponse, QuickCheckResponse, Issue } from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { VoiceWaitlistCard } from "./VoiceWaitlistCard";
@@ -14,6 +14,32 @@ interface QuickResultProps {
   isStreaming: boolean;
   onNew: () => void;
   sessionCount: number;
+}
+
+function extractPhrases(
+  result: CheckResponse | null
+): Array<{ phrase: string; fixed_phrase: string }> {
+  if (!result) return [];
+  if ("phrases" in result) return result.phrases;
+  return result.issues.map((i: Issue) => ({
+    phrase: i.phrase,
+    fixed_phrase: i.fixed_phrase,
+  }));
+}
+
+function getIssuesForShelf(result: CheckResponse | null): Issue[] {
+  if (!result) return [];
+  if ("issues" in result) return result.issues;
+  // Synthesize minimal Issue objects from phrases for shelf storage
+  return (result as QuickCheckResponse).phrases.map((p) => ({
+    phrase: p.phrase,
+    fixed_phrase: p.fixed_phrase,
+    title: "",
+    revised_sentence: "",
+    lesson_title: "",
+    lesson_body: "",
+    examples: [],
+  }));
 }
 
 function HighlightedOriginal({
@@ -138,15 +164,16 @@ export function QuickResult({
   onNew,
   sessionCount,
 }: QuickResultProps) {
+  const phraseList = useMemo(() => extractPhrases(result), [result]);
   const phrases = useMemo(
-    () => result?.issues.map((i) => i.phrase) ?? [],
-    [result]
+    () => phraseList.map((p) => p.phrase),
+    [phraseList]
   );
   const fixedPhrases = useMemo(
-    () => result?.issues.map((i) => i.fixed_phrase).filter(Boolean) ?? [],
-    [result]
+    () => phraseList.map((p) => p.fixed_phrase).filter(Boolean),
+    [phraseList]
   );
-  const hasIssues = result ? result.issues.length > 0 : true;
+  const hasIssues = result ? phraseList.length > 0 : true;
   const isDone = !!result && !isStreaming;
   const displayText = result?.improved_full || "";
 
@@ -205,7 +232,7 @@ export function QuickResult({
                   saveToShelf(
                     original,
                     result.improved_full,
-                    result.issues,
+                    getIssuesForShelf(result),
                     "quick"
                   );
                 }

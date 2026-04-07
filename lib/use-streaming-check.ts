@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import posthog from "posthog-js";
-import type { CheckResponse } from "./types";
+import type { CheckResponse, WriteMode } from "./types";
 
 export type StreamState = "idle" | "streaming" | "done" | "error";
 
@@ -12,7 +12,12 @@ export function useStreamingCheck() {
   const abortRef = useRef<AbortController | null>(null);
 
   const submit = useCallback(
-    async (text: string, language: string, sessionCount: number) => {
+    async (
+      text: string,
+      language: string,
+      sessionCount: number,
+      mode: WriteMode
+    ) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -29,7 +34,7 @@ export function useStreamingCheck() {
             "Content-Type": "application/json",
             "X-POSTHOG-DISTINCT-ID": posthog.get_distinct_id(),
           },
-          body: JSON.stringify({ text, language, sessionCount }),
+          body: JSON.stringify({ text, language, sessionCount, mode }),
           signal: controller.signal,
         });
 

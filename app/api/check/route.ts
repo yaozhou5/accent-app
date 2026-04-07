@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { buildCheckPrompt } from "@/lib/prompts";
+import { buildQuickPrompt, buildTeachPrompt } from "@/lib/prompts";
 import type { CheckRequest, CheckResponse } from "@/lib/types";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getPostHogClient } from "@/lib/posthog-server";
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as CheckRequest;
-    const { text, language, sessionCount } = body;
+    const { text, language, sessionCount, mode } = body;
 
     if (!text || !text.trim()) {
       return NextResponse.json(
@@ -44,11 +44,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildCheckPrompt(text, language, sessionCount);
+    const isQuick = mode === "quick";
+    const prompt = isQuick
+      ? buildQuickPrompt(text)
+      : buildTeachPrompt(text, language, sessionCount);
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
+      model: isQuick
+        ? "claude-haiku-4-5-20251001"
+        : "claude-sonnet-4-20250514",
+      max_tokens: isQuick ? 600 : 1000,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -94,13 +99,16 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+    const itemCount =
+      "issues" in parsed ? parsed.issues.length : parsed.phrases.length;
     const posthog = getPostHogClient();
     posthog.capture({
       distinctId,
       event: "api_check_completed",
       properties: {
-        issues_count: parsed.issues.length,
-        had_changes: parsed.issues.length > 0,
+        mode,
+        issues_count: itemCount,
+        had_changes: itemCount > 0,
         language,
         session_count: sessionCount,
       },

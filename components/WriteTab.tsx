@@ -55,13 +55,17 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       session_count: getSessionCount(),
     });
 
-    const checkResult = await submit(text, locale, getSessionCount());
+    const checkResult = await submit(text, locale, getSessionCount(), mode);
 
     if (checkResult) {
+      const itemCount =
+        "issues" in checkResult
+          ? checkResult.issues.length
+          : checkResult.phrases.length;
       posthog.capture("writing_result_completed", {
         mode,
-        issues_count: checkResult.issues.length,
-        had_changes: checkResult.issues.length > 0,
+        issues_count: itemCount,
+        had_changes: itemCount > 0,
         word_count: wordCount,
       });
     }
@@ -78,6 +82,9 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
   const handleModeSwitch = (m: WriteMode) => {
     if (m !== mode) {
       posthog.capture("mode_switched", { mode: m });
+      // Different modes use different prompts/response shapes — reset result
+      // so the user re-submits to get the right data for the new mode
+      if (result) reset();
     }
     setMode(m);
   };

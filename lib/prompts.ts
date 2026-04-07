@@ -1,4 +1,27 @@
-export function buildCheckPrompt(
+export function buildQuickPrompt(text: string): string {
+  const today = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return `You are a writing coach for second-language English writers.
+Today's date is ${today}.
+Fix grammar, word choice, and clarity in this text. Keep the writer's voice.
+
+Return ONLY valid JSON, no preamble, no explanation outside JSON:
+{
+  "improved_full": "full corrected text",
+  "phrases": [
+    { "phrase": "exact original phrase", "fixed_phrase": "corrected phrase" }
+  ]
+}
+
+Draft:
+${text}`;
+}
+
+export function buildTeachPrompt(
   text: string,
   language: string,
   sessionCount: number
