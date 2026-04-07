@@ -127,9 +127,22 @@ function NumberedHighlights({
         seg.highlight ? (
           <span key={i}>
             <span className={highlightClass}>{seg.text}</span>
-            <sup className="text-[10px] text-[#1B3A2D] font-semibold ml-px">
+            <span
+              className="inline-flex items-center justify-center align-middle shrink-0"
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                background: "#1B3A2D",
+                color: "white",
+                fontSize: 9,
+                fontWeight: 700,
+                marginLeft: 3,
+                fontFamily: "var(--font-sans)",
+              }}
+            >
               {seg.number}
-            </sup>
+            </span>
           </span>
         ) : (
           <span key={i}>{seg.text}</span>
