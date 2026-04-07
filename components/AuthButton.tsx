@@ -8,10 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 export function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -26,6 +28,10 @@ export function AuthButton() {
       setUser(currentUser);
       if (event === "SIGNED_IN" && currentUser) {
         posthog.identify(currentUser.id, { email: currentUser.email });
+        setShowLogin(false);
+        setStep("email");
+        setEmail("");
+        setCode("");
       } else if (event === "SIGNED_OUT") {
         posthog.reset();
       }
@@ -36,11 +42,9 @@ export function AuthButton() {
 
   const validateEmail = (value: string): string | null => {
     const trimmed = value.trim().toLowerCase();
-    // Basic format
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       return "Please enter a valid email address.";
     }
-    // Common typo detection for popular providers
     const domain = trimmed.split("@")[1];
     const commonTypos: Record<string, string> = {
       "gmial.com": "gmail.com",
@@ -65,7 +69,7 @@ export function AuthButton() {
     return null;
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || loading) return;
 
@@ -80,20 +84,49 @@ export function AuthButton() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
-        emailRedirectTo: `${location.origin}/`,
+        shouldCreateUser: true,
       },
     });
 
     setLoading(false);
     if (!error) {
-      setSent(true);
+      setStep("code");
       posthog.capture("magic_link_requested");
+    } else {
+      setEmailError(error.message);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.length !== 6 || loading) return;
+    setCodeError(null);
+    setLoading(true);
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code,
+      type: "email",
+    });
+
+    setLoading(false);
+    if (error) {
+      setCodeError("Invalid or expired code. Please try again.");
     }
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+  };
+
+  const resetForm = () => {
+    setShowLogin(false);
+    setStep("email");
+    setEmail("");
+    setCode("");
+    setEmailError(null);
+    setCodeError(null);
   };
 
   if (user) {
@@ -112,18 +145,18 @@ export function AuthButton() {
       <div className="fixed inset-0 bg-ink/20 z-50 flex items-center justify-center px-4">
         <div className="bg-paper rounded-[12px] border border-ink/10 px-5 py-6 w-full max-w-[360px] space-y-4">
           <div>
-            <h2 className="font-serif font-bold text-xl text-ink">Sign in to Accent</h2>
+            <h2 className="font-serif font-bold text-xl text-ink">
+              Sign in to Accent
+            </h2>
             <p className="mt-1 font-sans text-sm text-ink/60">
-              Save your writing to the Shelf across devices.
+              {step === "email"
+                ? "We\u2019ll email you a 6-digit code."
+                : `We sent a code to ${email}.`}
             </p>
           </div>
 
-          {sent ? (
-            <div className="bg-teal-light rounded-[8px] px-4 py-3 text-teal font-sans text-sm">
-              Check your email for the magic link!
-            </div>
-          ) : (
-            <form onSubmit={handleSignIn} className="space-y-3">
+          {step === "email" ? (
+            <form onSubmit={handleSendCode} className="space-y-3">
               <div>
                 <input
                   type="email"
@@ -147,17 +180,56 @@ export function AuthButton() {
                 disabled={loading}
                 className="w-full py-2.5 rounded-[8px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
               >
-                {loading ? "Sending..." : "Send magic link"}
+                {loading ? "Sending\u2026" : "Send code"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyCode} className="space-y-3">
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    if (codeError) setCodeError(null);
+                  }}
+                  placeholder="000000"
+                  className="w-full px-3 py-3 rounded-[8px] border border-ink/10 bg-white font-mono text-lg text-ink placeholder:text-ink/20 text-center tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-teal/20"
+                  required
+                  autoFocus
+                />
+                {codeError && (
+                  <p className="mt-1.5 text-xs font-sans text-coral text-center">
+                    {codeError}
+                  </p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={loading || code.length !== 6}
+                className="w-full py-2.5 rounded-[8px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
+              >
+                {loading ? "Verifying\u2026" : "Verify code"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("email");
+                  setCode("");
+                  setCodeError(null);
+                }}
+                className="w-full text-xs font-sans text-ink/40 hover:text-ink/60 transition-colors py-1"
+              >
+                Use a different email
               </button>
             </form>
           )}
 
           <button
-            onClick={() => {
-              setShowLogin(false);
-              setSent(false);
-              setEmail("");
-            }}
+            onClick={resetForm}
             className="w-full text-xs font-sans text-ink/40 hover:text-ink/60 transition-colors py-1"
           >
             Cancel
@@ -170,7 +242,10 @@ export function AuthButton() {
   return (
     <button
       data-auth-trigger
-      onClick={() => { setShowLogin(true); posthog.capture("sign_in_initiated"); }}
+      onClick={() => {
+        setShowLogin(true);
+        posthog.capture("sign_in_initiated");
+      }}
       className="text-xs font-sans text-ink/40 hover:text-ink/60 transition-colors"
     >
       Sign in
