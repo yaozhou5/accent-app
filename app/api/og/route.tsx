@@ -3,11 +3,26 @@ import { ImageResponse } from "next/og";
 export const runtime = "edge";
 
 export async function GET() {
-  // Load Fraunces 700 from Google Fonts
-  const frauncesRes = await fetch(
-    "https://fonts.gstatic.com/s/fraunces/v32/6NUh8FyLNQOQZAnv9bYVvHU3Ag.woff"
+  // Load Fraunces 700 via the Google Fonts CSS API (resolves to current font URL)
+  const cssRes = await fetch(
+    "https://fonts.googleapis.com/css2?family=Fraunces:wght@700&display=swap",
+    {
+      headers: {
+        // Forces Google to return woff2 URLs
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      },
+    }
   );
-  const fraunces = await frauncesRes.arrayBuffer();
+  const css = await cssRes.text();
+  const fontUrlMatch = css.match(
+    /src: url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/
+  );
+  let fraunces: ArrayBuffer | null = null;
+  if (fontUrlMatch) {
+    const fontRes = await fetch(fontUrlMatch[1]);
+    if (fontRes.ok) fraunces = await fontRes.arrayBuffer();
+  }
 
   return new ImageResponse(
     (
@@ -103,14 +118,16 @@ export async function GET() {
     {
       width: 1200,
       height: 630,
-      fonts: [
-        {
-          name: "Fraunces",
-          data: fraunces,
-          style: "normal",
-          weight: 700,
-        },
-      ],
+      fonts: fraunces
+        ? [
+            {
+              name: "Fraunces",
+              data: fraunces,
+              style: "normal",
+              weight: 700,
+            },
+          ]
+        : undefined,
     }
   );
 }
