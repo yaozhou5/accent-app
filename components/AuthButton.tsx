@@ -11,6 +11,7 @@ export function AuthButton() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -33,13 +34,51 @@ export function AuthButton() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const validateEmail = (value: string): string | null => {
+    const trimmed = value.trim().toLowerCase();
+    // Basic format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return "Please enter a valid email address.";
+    }
+    // Common typo detection for popular providers
+    const domain = trimmed.split("@")[1];
+    const commonTypos: Record<string, string> = {
+      "gmial.com": "gmail.com",
+      "gmal.com": "gmail.com",
+      "gmai.com": "gmail.com",
+      "gmail.co": "gmail.com",
+      "gmail.cm": "gmail.com",
+      "gnail.com": "gmail.com",
+      "gmaill.com": "gmail.com",
+      "yhoo.com": "yahoo.com",
+      "yaho.com": "yahoo.com",
+      "yahho.com": "yahoo.com",
+      "hotmial.com": "hotmail.com",
+      "hotmal.com": "hotmail.com",
+      "hotnail.com": "hotmail.com",
+      "outlok.com": "outlook.com",
+      "outloo.com": "outlook.com",
+    };
+    if (commonTypos[domain]) {
+      return `Did you mean ${trimmed.split("@")[0]}@${commonTypos[domain]}?`;
+    }
+    return null;
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || loading) return;
+
+    const validationError = validateEmail(email);
+    if (validationError) {
+      setEmailError(validationError);
+      return;
+    }
+    setEmailError(null);
     setLoading(true);
 
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: email.trim().toLowerCase(),
       options: {
         emailRedirectTo: `${location.origin}/`,
       },
@@ -85,14 +124,24 @@ export function AuthButton() {
             </div>
           ) : (
             <form onSubmit={handleSignIn} className="space-y-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-3 py-2.5 rounded-[8px] border border-ink/10 bg-white font-sans text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-coral/20"
-                required
-              />
+              <div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
+                  placeholder="your@email.com"
+                  className="w-full px-3 py-2.5 rounded-[8px] border border-ink/10 bg-white font-sans text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-teal/20"
+                  required
+                />
+                {emailError && (
+                  <p className="mt-1.5 text-xs font-sans text-coral">
+                    {emailError}
+                  </p>
+                )}
+              </div>
               <button
                 type="submit"
                 disabled={loading}
