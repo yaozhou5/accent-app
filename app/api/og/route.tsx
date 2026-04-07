@@ -3,6 +3,12 @@ import { ImageResponse } from "next/og";
 export const runtime = "edge";
 
 export async function GET() {
+  // Load Fraunces 700 from Google Fonts
+  const frauncesRes = await fetch(
+    "https://fonts.gstatic.com/s/fraunces/v32/6NUh8FyLNQOQZAnv9bYVvHU3Ag.woff"
+  );
+  const fraunces = await frauncesRes.arrayBuffer();
+
   return new ImageResponse(
     (
       <div
@@ -12,10 +18,9 @@ export async function GET() {
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
-          justifyContent: "center",
+          justifyContent: "space-between",
           background: "#F7F4EF",
           padding: "80px",
-          fontFamily: "Georgia, serif",
         }}
       >
         {/* Logo */}
@@ -23,12 +28,12 @@ export async function GET() {
           style={{
             display: "flex",
             alignItems: "flex-start",
-            marginBottom: "48px",
           }}
         >
           <div
             style={{
-              fontSize: "52px",
+              fontSize: "56px",
+              fontFamily: "Fraunces",
               fontWeight: 700,
               color: "#1B3A2D",
               lineHeight: 1,
@@ -48,37 +53,64 @@ export async function GET() {
           />
         </div>
 
-        {/* Headline */}
+        {/* Headline + subtext */}
         <div
           style={{
-            fontSize: "76px",
-            fontWeight: 700,
-            color: "#1C1917",
-            lineHeight: 1.1,
-            letterSpacing: "-0.02em",
-            maxWidth: "1000px",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          Stop sounding like AI. Start sounding like you.
+          <div
+            style={{
+              fontSize: "78px",
+              fontFamily: "Fraunces",
+              fontWeight: 700,
+              color: "#1C1917",
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+              maxWidth: "1000px",
+            }}
+          >
+            Stop sounding like AI. Start sounding like you.
+          </div>
+          <div
+            style={{
+              fontSize: "30px",
+              color: "#78716C",
+              fontWeight: 400,
+              marginTop: "20px",
+            }}
+          >
+            The tool that makes you a better writer.
+          </div>
         </div>
 
-        {/* Subtext */}
+        {/* URL */}
         <div
           style={{
-            fontSize: "32px",
-            color: "#78716C",
-            fontFamily: "sans-serif",
-            fontWeight: 400,
-            marginTop: "16px",
+            display: "flex",
+            alignItems: "center",
+            fontSize: "24px",
+            color: "#1B3A2D",
+            fontFamily: "Fraunces",
+            fontWeight: 700,
           }}
         >
-          The tool that makes you a better writer.
+          myaccent.io
         </div>
       </div>
     ),
     {
       width: 1200,
       height: 630,
+      fonts: [
+        {
+          name: "Fraunces",
+          data: fraunces,
+          style: "normal",
+          weight: 700,
+        },
+      ],
     }
   );
 }
