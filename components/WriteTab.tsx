@@ -48,16 +48,12 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       return;
     }
 
-    // For Latin-script texts, use franc only at 30+ words (it's unreliable for short text)
-    if (wordCount >= 30) {
-      const detected = franc(text, { minLength: 20 });
-      const latinLangs = [
-        "eng", "und", "sco", "fra", "deu", "spa", "ita", "por",
-        "nld", "dan", "nor", "swe", "cat", "ron", "pol", "ces",
-        "slk", "hrv", "slv", "fin", "est", "hun", "tur", "ind",
-        "msa", "tgl", "vie", "lat",
-      ];
-      if (!latinLangs.includes(detected)) {
+    // For Latin-script texts, use franc at 10+ words
+    // Only allow English and common false-positives for English (Scots, Latin)
+    if (wordCount >= 10) {
+      const detected = franc(text, { minLength: 10 });
+      const englishLike = ["eng", "und", "sco", "lat"];
+      if (!englishLike.includes(detected)) {
         setLangError(
           "Accent currently supports English only. More languages coming soon."
         );
