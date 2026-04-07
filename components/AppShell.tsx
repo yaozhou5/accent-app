@@ -54,7 +54,7 @@ export function AppShell() {
           </Link>
           <span className="text-[11px] font-sans text-ink/30">·</span>
           <span className="text-[11px] font-sans text-ink/40">
-            © 2026 Shay Works
+            © 2026 Accent
           </span>
         </footer>
       </div>
