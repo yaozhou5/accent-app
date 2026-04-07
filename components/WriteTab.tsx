@@ -36,6 +36,19 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
     setLangError(null);
 
     const wordCount = text.trim().split(/\s+/).length;
+
+    // Detect non-Latin scripts directly (works for languages without spaces)
+    // CJK, Arabic, Hebrew, Cyrillic, Thai, Devanagari, etc.
+    const nonLatinPattern =
+      /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\uac00-\ud7af\u0600-\u06ff\u0590-\u05ff\u0400-\u04ff\u0e00-\u0e7f\u0900-\u097f]/;
+    if (nonLatinPattern.test(text)) {
+      setLangError(
+        "Accent currently supports English only. More languages coming soon."
+      );
+      return;
+    }
+
+    // For Latin-script texts, use franc only at 30+ words (it's unreliable for short text)
     if (wordCount >= 30) {
       const detected = franc(text, { minLength: 20 });
       const latinLangs = [
