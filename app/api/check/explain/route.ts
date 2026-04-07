@@ -68,11 +68,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let parsed: { issues: Issue[] };
+    type Lesson = {
+      title: string;
+      revised_sentence: string;
+      lesson_title: string;
+      lesson_body: string;
+      examples: Array<{ bad: string; good: string }>;
+    };
+    let parsed: { lessons: Lesson[] };
     try {
       parsed = JSON.parse(jsonMatch[0]);
     } catch {
-      // Try fixing unescaped quotes inside <mark> tags
       const fixed = jsonMatch[0].replace(
         /(?<=<mark>)(.*?)(?=<\/mark>)/g,
         (match) => match.replace(/"/g, '\\"')
@@ -88,17 +94,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Merge lessons with phrases — phrases drive the issues, lessons add explanation.
+    // This guarantees Quick fix and Teach me show identical highlights.
+    const lessons = parsed.lessons ?? [];
+    const issues: Issue[] = phrases.map((p, i) => {
+      const lesson = lessons[i];
+      return {
+        phrase: p.phrase,
+        fixed_phrase: p.fixed_phrase,
+        title: lesson?.title || "Improvement",
+        revised_sentence: lesson?.revised_sentence || "",
+        lesson_title: lesson?.lesson_title || "",
+        lesson_body: lesson?.lesson_body || "",
+        examples: lesson?.examples || [],
+      };
+    });
+
     const posthog = getPostHogClient();
     posthog.capture({
       distinctId,
       event: "api_explain_completed",
       properties: {
-        issues_count: parsed.issues?.length ?? 0,
+        issues_count: issues.length,
       },
     });
     await posthog.shutdown();
 
-    return NextResponse.json(parsed);
+    return NextResponse.json({ issues });
   } catch (error: unknown) {
     console.error("Explain API error:", error);
     const isOverloaded =

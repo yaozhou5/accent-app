@@ -27,32 +27,37 @@ export function buildExplainPrompt(
   improved_full: string,
   phrases: Array<{ phrase: string; fixed_phrase: string }>
 ): string {
+  const numbered = phrases
+    .map(
+      (p, i) =>
+        `${i + 1}. "${p.phrase}" → "${p.fixed_phrase}"`
+    )
+    .join("\n");
+
   return `A writing coach has already made these corrections to a second-language writer's text. Your job is to explain WHY each change was made — teach the underlying principle.
 
-Original:
+Original text:
 ${original}
 
-Improved:
+Improved text:
 ${improved_full}
 
-Changes made:
-${JSON.stringify(phrases, null, 2)}
+Changes made (numbered):
+${numbered}
 
-For each change, return an issue object with:
-- "phrase": the exact original problematic phrase (must match the change)
-- "fixed_phrase": the exact corrected phrase
+For each numbered change above, return a lesson object IN THE SAME ORDER. Do not skip, reorder, or merge changes.
+
+Each lesson object must have:
 - "title": short issue name (2-5 words)
-- "revised_sentence": full corrected sentence containing fixed_phrase
+- "revised_sentence": the full corrected sentence from "Improved text" that contains this change
 - "lesson_title": lesson heading
-- "lesson_body": explanation paragraph with <mark> tags around 3-4 key terms (rule names, contrast pairs, the consequence clause). Never mark filler or full sentences.
+- "lesson_body": explanation paragraph with <mark> tags around 3-4 key terms (rule names, contrast pairs, the consequence clause). Never mark filler or entire sentences.
 - "examples": two before/after pairs showing the same pattern in different contexts
 
 Return ONLY valid JSON, no preamble. Escape any double quotes inside strings:
 {
-  "issues": [
+  "lessons": [
     {
-      "phrase": "...",
-      "fixed_phrase": "...",
       "title": "...",
       "revised_sentence": "...",
       "lesson_title": "...",

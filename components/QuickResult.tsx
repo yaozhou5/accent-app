@@ -15,6 +15,12 @@ interface QuickResultProps {
   sessionCount: number;
 }
 
+interface NumberedPhrase {
+  phrase: string;
+  fixed_phrase: string;
+  number: number;
+}
+
 function getIssuesForShelf(result: QuickCheckResponse | null): Issue[] {
   if (!result) return [];
   return result.phrases.map((p) => ({
@@ -28,79 +34,63 @@ function getIssuesForShelf(result: QuickCheckResponse | null): Issue[] {
   }));
 }
 
-function HighlightedOriginal({
-  text,
-  phrases,
-}: {
-  text: string;
-  phrases: string[];
-}) {
-  if (phrases.length === 0)
-    return (
-      <p className="font-sans text-sm leading-relaxed text-ink">{text}</p>
-    );
-
-  const matches: Array<{ start: number; end: number }> = [];
-  for (const phrase of phrases) {
-    const idx = text.indexOf(phrase);
-    if (idx !== -1) matches.push({ start: idx, end: idx + phrase.length });
-  }
-  matches.sort((a, b) => a.start - b.start);
-
-  const filtered: typeof matches = [];
-  let lastEnd = 0;
-  for (const m of matches) {
-    if (m.start >= lastEnd) {
-      filtered.push(m);
-      lastEnd = m.end;
-    }
-  }
-
-  const segments: Array<{ text: string; highlight: boolean }> = [];
-  let cursor = 0;
-  for (const m of filtered) {
-    if (m.start > cursor)
-      segments.push({ text: text.slice(cursor, m.start), highlight: false });
-    segments.push({ text: text.slice(m.start, m.end), highlight: true });
-    cursor = m.end;
-  }
-  if (cursor < text.length)
-    segments.push({ text: text.slice(cursor), highlight: false });
-
-  return (
-    <p className="font-sans text-sm leading-relaxed text-ink">
-      {segments.map((seg, i) =>
-        seg.highlight ? (
-          <span key={i} className="bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px">
-            {seg.text}
-          </span>
-        ) : (
-          <span key={i}>{seg.text}</span>
-        )
-      )}
-    </p>
-  );
+function buildNumberedPhrases(
+  phrases: Array<{ phrase: string; fixed_phrase: string }>,
+  originalText: string
+): NumberedPhrase[] {
+  // Sort by position in original text so numbering follows reading order
+  const withPositions = phrases.map((p) => ({
+    ...p,
+    pos: originalText.indexOf(p.phrase),
+  }));
+  withPositions.sort((a, b) => {
+    if (a.pos === -1) return 1;
+    if (b.pos === -1) return -1;
+    return a.pos - b.pos;
+  });
+  return withPositions.map((p, i) => ({
+    phrase: p.phrase,
+    fixed_phrase: p.fixed_phrase,
+    number: i + 1,
+  }));
 }
 
-function HighlightedImproved({
+function NumberedHighlights({
   text,
-  phrases,
+  numbered,
+  field,
+  variant,
 }: {
   text: string;
-  phrases: string[];
+  numbered: NumberedPhrase[];
+  field: "phrase" | "fixed_phrase";
+  variant: "coral" | "teal";
 }) {
-  if (phrases.length === 0)
-    return (
-      <p className="font-sans text-sm leading-relaxed text-ink font-medium">{text}</p>
-    );
+  const baseClass =
+    variant === "coral"
+      ? "font-sans text-sm leading-relaxed text-ink"
+      : "font-sans text-sm leading-relaxed text-ink font-medium";
+  const highlightClass =
+    variant === "coral"
+      ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
+      : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
 
-  const matches: Array<{ start: number; end: number }> = [];
-  for (const phrase of phrases) {
-    const idx = text.indexOf(phrase);
-    if (idx !== -1) matches.push({ start: idx, end: idx + phrase.length });
+  // Find positions of each phrase
+  const matches: Array<{
+    start: number;
+    end: number;
+    number: number;
+  }> = [];
+  for (const np of numbered) {
+    const target = np[field];
+    if (!target) continue;
+    const idx = text.indexOf(target);
+    if (idx !== -1) {
+      matches.push({ start: idx, end: idx + target.length, number: np.number });
+    }
   }
+  // Sort by position and remove overlaps
   matches.sort((a, b) => a.start - b.start);
-
   const filtered: typeof matches = [];
   let lastEnd = 0;
   for (const m of matches) {
@@ -110,23 +100,36 @@ function HighlightedImproved({
     }
   }
 
-  const segments: Array<{ text: string; highlight: boolean }> = [];
+  if (filtered.length === 0) return <p className={baseClass}>{text}</p>;
+
+  const segments: Array<{
+    text: string;
+    highlight: boolean;
+    number?: number;
+  }> = [];
   let cursor = 0;
   for (const m of filtered) {
     if (m.start > cursor)
       segments.push({ text: text.slice(cursor, m.start), highlight: false });
-    segments.push({ text: text.slice(m.start, m.end), highlight: true });
+    segments.push({
+      text: text.slice(m.start, m.end),
+      highlight: true,
+      number: m.number,
+    });
     cursor = m.end;
   }
   if (cursor < text.length)
     segments.push({ text: text.slice(cursor), highlight: false });
 
   return (
-    <p className="font-sans text-sm leading-relaxed text-ink font-medium">
+    <p className={baseClass}>
       {segments.map((seg, i) =>
         seg.highlight ? (
-          <span key={i} className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px">
-            {seg.text}
+          <span key={i}>
+            <span className={highlightClass}>{seg.text}</span>
+            <sup className="text-[10px] text-[#1B3A2D] font-semibold ml-px">
+              {seg.number}
+            </sup>
           </span>
         ) : (
           <span key={i}>{seg.text}</span>
@@ -149,55 +152,70 @@ export function QuickResult({
   onNew,
   sessionCount,
 }: QuickResultProps) {
-  const phraseList = useMemo(
-    () => fixResult?.phrases ?? [],
-    [fixResult]
+  const numbered = useMemo(
+    () => buildNumberedPhrases(fixResult?.phrases ?? [], original),
+    [fixResult, original]
   );
-  const phrases = useMemo(
-    () => phraseList.map((p) => p.phrase),
-    [phraseList]
-  );
-  const fixedPhrases = useMemo(
-    () => phraseList.map((p) => p.fixed_phrase).filter(Boolean),
-    [phraseList]
-  );
-  const hasIssues = fixResult ? phraseList.length > 0 : true;
+  const issueCount = numbered.length;
+  const hasIssues = fixResult ? issueCount > 0 : true;
   const isDone = !!fixResult && !isFixing;
   const displayText = fixResult?.improved_full || "";
 
+  const issueLabel =
+    issueCount === 0
+      ? null
+      : issueCount === 1
+        ? "1 thing to improve"
+        : `${issueCount} things to improve`;
+
   return (
     <div className="space-y-4">
-      {/* Original — always visible immediately */}
-      <div className="border-l-[3px] border-coral pl-4">
-        <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
-          Your original
-        </span>
-        <div className="mt-1.5">
-          {fixResult ? (
-            <HighlightedOriginal text={original} phrases={phrases} />
-          ) : (
-            <p className="font-sans text-sm leading-relaxed text-ink">
-              {original}
-            </p>
-          )}
+      {/* Original */}
+      <div>
+        {issueLabel && (
+          <p className="text-[11px] font-sans text-ink/50 mb-1.5">
+            {issueLabel}
+          </p>
+        )}
+        <div className="border-l-[3px] border-coral pl-4">
+          <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
+            Your original
+          </span>
+          <div className="mt-1.5">
+            {fixResult ? (
+              <NumberedHighlights
+                text={original}
+                numbered={numbered}
+                field="phrase"
+                variant="coral"
+              />
+            ) : (
+              <p className="font-sans text-sm leading-relaxed text-ink">
+                {original}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
       {isDone ? (
         <>
-          {/* Arrow */}
           <div className="flex justify-center text-ink/20">
             <span className="text-lg">&darr;</span>
           </div>
 
-          {/* Improved — shown only when stream is fully complete */}
           {hasIssues ? (
             <div className="border-l-[3px] border-teal pl-4">
               <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
                 Improved
               </span>
               <div className="mt-1.5">
-                <HighlightedImproved text={displayText} phrases={fixedPhrases} />
+                <NumberedHighlights
+                  text={displayText}
+                  numbered={numbered}
+                  field="fixed_phrase"
+                  variant="teal"
+                />
               </div>
             </div>
           ) : (
@@ -208,10 +226,8 @@ export function QuickResult({
             </div>
           )}
 
-          {/* Voice waitlist prompt — shows once at session 3 */}
           <VoiceWaitlistCard sessionCount={sessionCount} />
 
-          {/* Actions */}
           <div className="flex gap-2">
             <CopyButton
               text={displayText}
@@ -235,7 +251,6 @@ export function QuickResult({
           </div>
         </>
       ) : (
-        /* Status messages — occupy the space where Improved will appear */
         <RotatingStatus messages={QUICK_MESSAGES} />
       )}
     </div>
