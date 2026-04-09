@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { QuickCheckResponse, Issue } from "@/lib/types";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
@@ -55,42 +55,32 @@ function buildNumberedPhrases(
   }));
 }
 
-function NumberedHighlights({
-  text,
+function InlineDiff({
+  original,
   numbered,
-  field,
-  variant,
 }: {
-  text: string;
+  original: string;
   numbered: NumberedPhrase[];
-  field: "phrase" | "fixed_phrase";
-  variant: "coral" | "teal";
 }) {
-  const baseClass =
-    variant === "coral"
-      ? "font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap"
-      : "font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap";
-  const highlightClass =
-    variant === "coral"
-      ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
-      : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
-
-  // Find positions of each phrase
+  // Find positions of each original phrase and replace inline.
   const matches: Array<{
     start: number;
     end: number;
-    number: number;
+    fixed: string;
   }> = [];
   for (const np of numbered) {
-    const target = np[field];
-    if (!target) continue;
-    const idx = text.indexOf(target);
+    if (!np.phrase) continue;
+    const idx = original.indexOf(np.phrase);
     if (idx !== -1) {
-      matches.push({ start: idx, end: idx + target.length, number: np.number });
+      matches.push({
+        start: idx,
+        end: idx + np.phrase.length,
+        fixed: np.fixed_phrase,
+      });
     }
   }
-  // Sort by position and remove overlaps
   matches.sort((a, b) => a.start - b.start);
+  // Remove overlaps
   const filtered: typeof matches = [];
   let lastEnd = 0;
   for (const m of matches) {
@@ -100,54 +90,38 @@ function NumberedHighlights({
     }
   }
 
-  if (filtered.length === 0) return <p className={baseClass}>{text}</p>;
-
-  const segments: Array<{
-    text: string;
-    highlight: boolean;
-    number?: number;
-  }> = [];
+  const segments: React.ReactNode[] = [];
   let cursor = 0;
-  for (const m of filtered) {
-    if (m.start > cursor)
-      segments.push({ text: text.slice(cursor, m.start), highlight: false });
-    segments.push({
-      text: text.slice(m.start, m.end),
-      highlight: true,
-      number: m.number,
-    });
+  filtered.forEach((m, i) => {
+    if (m.start > cursor) {
+      segments.push(
+        <span key={`t-${i}`}>{original.slice(cursor, m.start)}</span>
+      );
+    }
+    segments.push(
+      <span key={`d-${i}`}>
+        <span className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px">
+          {original.slice(m.start, m.end)}
+        </span>
+        {m.fixed && (
+          <>
+            {" "}
+            <span className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium">
+              {m.fixed}
+            </span>
+          </>
+        )}
+      </span>
+    );
     cursor = m.end;
+  });
+  if (cursor < original.length) {
+    segments.push(<span key="t-end">{original.slice(cursor)}</span>);
   }
-  if (cursor < text.length)
-    segments.push({ text: text.slice(cursor), highlight: false });
 
   return (
-    <p className={baseClass}>
-      {segments.map((seg, i) =>
-        seg.highlight ? (
-          <span key={i}>
-            <span className={highlightClass}>{seg.text}</span>
-            <span
-              className="inline-flex items-center justify-center align-middle shrink-0"
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                background: "#1B3A2D",
-                color: "white",
-                fontSize: 9,
-                fontWeight: 700,
-                marginLeft: 3,
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              {seg.number}
-            </span>
-          </span>
-        ) : (
-          <span key={i}>{seg.text}</span>
-        )
-      )}
+    <p className="font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap">
+      {segments}
     </p>
   );
 }
@@ -165,6 +139,7 @@ export function QuickResult({
   onNew,
   sessionCount,
 }: QuickResultProps) {
+  const [view, setView] = useState<"changes" | "clean">("changes");
   const numbered = useMemo(
     () => buildNumberedPhrases(fixResult?.phrases ?? [], original),
     [fixResult, original]
@@ -176,96 +151,96 @@ export function QuickResult({
 
   const issueLabel =
     issueCount === 0
-      ? null
+      ? "No changes"
       : issueCount === 1
-        ? "1 thing to improve"
-        : `${issueCount} things to improve`;
+        ? "1 change"
+        : `${issueCount} changes`;
+
+  if (!isDone) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-white border border-ink/10 rounded-[12px] p-5">
+          <p className="font-sans text-sm leading-relaxed text-ink/70 whitespace-pre-wrap">
+            {original}
+          </p>
+        </div>
+        <RotatingStatus messages={QUICK_MESSAGES} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Original */}
-      <div>
-        {issueLabel && (
-          <p className="text-[11px] font-sans text-ink/50 mb-1.5">
-            {issueLabel}
-          </p>
-        )}
-        <div className="border-l-[3px] border-coral pl-4">
+      <div className="bg-white border border-ink/10 rounded-[12px] overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-ink/10 bg-warm/40">
           <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
-            Your original
+            {issueLabel}
           </span>
-          <div className="mt-1.5">
-            {fixResult ? (
-              <NumberedHighlights
-                text={original}
-                numbered={numbered}
-                field="phrase"
-                variant="coral"
-              />
-            ) : (
-              <p className="font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap">
-                {original}
-              </p>
-            )}
-          </div>
+          {hasIssues && (
+            <div
+              role="tablist"
+              aria-label="View mode"
+              className="flex items-center gap-1 bg-white border border-ink/10 rounded-[8px] p-0.5"
+            >
+              {(["changes", "clean"] as const).map((v) => (
+                <button
+                  key={v}
+                  role="tab"
+                  aria-selected={view === v}
+                  onClick={() => setView(v)}
+                  className={`px-2.5 py-1 rounded-[6px] text-[11px] font-sans font-medium transition-colors ${
+                    view === v
+                      ? "bg-ink text-paper"
+                      : "text-ink/50 hover:text-ink/70"
+                  }`}
+                >
+                  {v === "changes" ? "Changes" : "Clean"}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-4">
+          {!hasIssues ? (
+            <p className="font-sans text-sm text-ink font-medium">
+              This is good writing! No changes needed.
+            </p>
+          ) : view === "changes" ? (
+            <InlineDiff original={original} numbered={numbered} />
+          ) : (
+            <p className="font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap">
+              {displayText}
+            </p>
+          )}
         </div>
       </div>
 
-      {isDone ? (
-        <>
-          <div className="flex justify-center text-ink/20">
-            <span className="text-lg">&darr;</span>
-          </div>
+      <VoiceWaitlistCard sessionCount={sessionCount} />
 
-          {hasIssues ? (
-            <div className="border-l-[3px] border-teal pl-4">
-              <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
-                Improved
-              </span>
-              <div className="mt-1.5">
-                <NumberedHighlights
-                  text={displayText}
-                  numbered={numbered}
-                  field="fixed_phrase"
-                  variant="teal"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="border-l-[3px] border-teal pl-4">
-              <p className="font-sans text-sm text-ink font-medium">
-                This is good writing! No changes needed.
-              </p>
-            </div>
-          )}
-
-          <VoiceWaitlistCard sessionCount={sessionCount} />
-
-          <div className="flex gap-2">
-            <CopyButton
-              text={displayText}
-              onSave={() => {
-                if (fixResult) {
-                  saveToShelf(
-                    original,
-                    fixResult.improved_full,
-                    getIssuesForShelf(fixResult),
-                    "quick"
-                  );
-                }
-              }}
-            />
-            <button
-              onClick={onNew}
-              className="flex-1 py-2.5 min-h-[44px] rounded-[8px] text-sm font-sans font-medium border border-ink/10 text-ink hover:bg-warm transition-colors"
-            >
-              New
-            </button>
-          </div>
-        </>
-      ) : (
-        <RotatingStatus messages={QUICK_MESSAGES} />
-      )}
+      <div className="flex gap-2">
+        <CopyButton
+          text={displayText}
+          onSave={() => {
+            if (fixResult) {
+              saveToShelf(
+                original,
+                fixResult.improved_full,
+                getIssuesForShelf(fixResult),
+                "quick"
+              );
+            }
+          }}
+        />
+        <button
+          onClick={onNew}
+          className="flex-1 py-2.5 min-h-[44px] rounded-[8px] text-sm font-sans font-medium border border-ink/10 text-ink hover:bg-warm transition-colors"
+        >
+          New
+        </button>
+      </div>
     </div>
   );
 }
