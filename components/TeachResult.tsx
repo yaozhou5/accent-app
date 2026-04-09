@@ -201,9 +201,14 @@ export function TeachResult({
     );
   }
 
-  const cards = buildCards(issues);
+  // Drop issues where the explain model didn't return a real lesson —
+  // we'd otherwise render an empty "Improvement" placeholder card.
+  const usableIssues = issues.filter(
+    (i) => i.lesson_body && i.lesson_body.trim().length > 0
+  );
+  const cards = buildCards(usableIssues);
   const card = cards[currentIndex];
-  const totalIssues = issues.length;
+  const totalIssues = usableIssues.length;
   const improvedFull = fixResult.improved_full;
 
   const goNext = () => {
