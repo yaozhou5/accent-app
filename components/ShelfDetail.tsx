@@ -161,7 +161,10 @@ export function ShelfDetail({
       </div>
 
       {/* Original */}
-      <div className="border-l-[3px] border-[#C4553A]/40 rounded-[8px] bg-[#FBE9E4]/50 px-4 py-3">
+      <div
+        className="border-l-[3px] border-[#C4553A] rounded-[8px] px-4 py-3"
+        style={{ backgroundColor: "rgba(196, 85, 58, 0.08)" }}
+      >
         <span className="text-xs font-sans font-semibold text-ink tracking-wide">
           Your original
         </span>
