@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { QuickCheckResponse, Issue } from "@/lib/types";
+import { wordDiff } from "@/lib/word-diff";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { saveToShelf } from "@/lib/supabase/shelf";
@@ -80,6 +81,40 @@ function extractSentence(text: string, phrase: string): string {
   return text.slice(start, end).trim();
 }
 
+function DiffedPhrase({
+  phrase,
+  fixedPhrase,
+}: {
+  phrase: string;
+  fixedPhrase: string;
+}) {
+  const ops = wordDiff(phrase, fixedPhrase);
+  return (
+    <>
+      {ops.map((op, k) => {
+        if (op.type === "equal") return <span key={k}>{op.text}</span>;
+        if (op.type === "del")
+          return (
+            <span
+              key={k}
+              className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
+            >
+              {op.text}
+            </span>
+          );
+        return (
+          <span
+            key={k}
+            className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium"
+          >
+            {op.text}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function ExcerptDiff({
   original,
   phrase,
@@ -95,20 +130,9 @@ function ExcerptDiff({
     "font-sans text-[15px] leading-relaxed text-ink whitespace-pre-wrap";
 
   if (idx === -1) {
-    // Fall back to just the inline before → after
     return (
       <p className={baseClass}>
-        <span className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px">
-          {phrase}
-        </span>
-        {fixedPhrase && (
-          <>
-            {" "}
-            <span className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium">
-              {fixedPhrase}
-            </span>
-          </>
-        )}
+        <DiffedPhrase phrase={phrase} fixedPhrase={fixedPhrase} />
       </p>
     );
   }
@@ -116,17 +140,7 @@ function ExcerptDiff({
   return (
     <p className={baseClass}>
       {sentence.slice(0, idx)}
-      <span className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px">
-        {phrase}
-      </span>
-      {fixedPhrase && (
-        <>
-          {" "}
-          <span className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium">
-            {fixedPhrase}
-          </span>
-        </>
-      )}
+      <DiffedPhrase phrase={phrase} fixedPhrase={fixedPhrase} />
       {sentence.slice(idx + phrase.length)}
     </p>
   );

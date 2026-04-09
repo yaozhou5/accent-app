@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { QuickCheckResponse, Issue } from "@/lib/types";
+import { wordDiff } from "@/lib/word-diff";
 import { RotatingStatus } from "./RotatingStatus";
 import { CopyButton } from "./CopyButton";
 import { VoiceWaitlistCard } from "./VoiceWaitlistCard";
@@ -98,19 +99,29 @@ function InlineDiff({
         <span key={`t-${i}`}>{original.slice(cursor, m.start)}</span>
       );
     }
+    const ops = wordDiff(original.slice(m.start, m.end), m.fixed || "");
     segments.push(
       <span key={`d-${i}`}>
-        <span className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px">
-          {original.slice(m.start, m.end)}
-        </span>
-        {m.fixed && (
-          <>
-            {" "}
-            <span className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium">
-              {m.fixed}
+        {ops.map((op, k) => {
+          if (op.type === "equal") return <span key={k}>{op.text}</span>;
+          if (op.type === "del")
+            return (
+              <span
+                key={k}
+                className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
+              >
+                {op.text}
+              </span>
+            );
+          return (
+            <span
+              key={k}
+              className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium"
+            >
+              {op.text}
             </span>
-          </>
-        )}
+          );
+        })}
       </span>
     );
     cursor = m.end;
