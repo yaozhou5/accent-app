@@ -8,7 +8,10 @@ export async function GET(request: NextRequest) {
     | "email"
     | "email_change"
     | null;
-  const next = searchParams.get("next") ?? "/";
+  const nextParam = searchParams.get("next") ?? "/";
+  // Prevent open redirect: only allow same-origin relative paths
+  const next =
+    nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
 
   if (token_hash && type) {
     const supabase = await createClient();
