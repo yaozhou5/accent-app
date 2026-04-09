@@ -10,9 +10,14 @@ Today's date is ${today}. Do not flag or correct dates or years that are accurat
 
 Fix grammar, word choice, and clarity in this text. Keep the writer's voice.
 
+IMPORTANT — preserve the original formatting exactly:
+- Keep every line break and blank line from the draft. If the draft has paragraphs, the improved version must have the same paragraphs in the same places.
+- Keep emojis, bullet markers, and list structure.
+- In JSON, encode newlines as \\n inside "improved_full".
+
 Return ONLY valid JSON, no preamble, no explanation outside JSON:
 {
-  "improved_full": "full corrected text",
+  "improved_full": "full corrected text with \\n for line breaks",
   "phrases": [
     { "phrase": "exact original phrase", "fixed_phrase": "corrected phrase" }
   ]

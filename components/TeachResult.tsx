@@ -63,7 +63,8 @@ function HighlightedText({
   color?: "coral" | "teal";
 }) {
   const idx = text.indexOf(phrase);
-  const baseClass = "font-sans text-sm leading-relaxed text-ink font-medium";
+  const baseClass =
+    "font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap";
   const highlightClass =
     color === "coral"
       ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"

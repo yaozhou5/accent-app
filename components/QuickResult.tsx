@@ -68,8 +68,8 @@ function NumberedHighlights({
 }) {
   const baseClass =
     variant === "coral"
-      ? "font-sans text-sm leading-relaxed text-ink"
-      : "font-sans text-sm leading-relaxed text-ink font-medium";
+      ? "font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap"
+      : "font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap";
   const highlightClass =
     variant === "coral"
       ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
@@ -203,7 +203,7 @@ export function QuickResult({
                 variant="coral"
               />
             ) : (
-              <p className="font-sans text-sm leading-relaxed text-ink">
+              <p className="font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap">
                 {original}
               </p>
             )}
