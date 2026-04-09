@@ -72,7 +72,7 @@ export function InputScreen({
       </div>
 
       {error && (
-        <div className="bg-coral-light border border-coral/20 rounded-[8px] px-4 py-3 text-ink font-sans text-sm">
+        <div className="bg-[#FBE9E4] border border-[#C4553A]/30 rounded-[8px] px-4 py-3 text-[#C4553A] font-sans text-sm">
           {error}
         </div>
       )}

@@ -62,7 +62,7 @@ function HighlightedText({
       : "font-sans text-sm leading-relaxed text-ink font-medium";
   const hlCls =
     color === "coral"
-      ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
+      ? "bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
       : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
 
   return (
@@ -89,15 +89,15 @@ function LessonPill({ lesson }: { lesson: Issue }) {
         onClick={() => setExpanded(!expanded)}
         className={`text-[12px] font-sans rounded-full px-3 py-1 transition-colors ${
           expanded
-            ? "bg-[#FDF3CC] text-[#7A6010]"
-            : "bg-warm text-ink/50 hover:bg-[#FDF3CC] hover:text-[#7A6010]"
+            ? "bg-teal-light text-[#1B3A2D]"
+            : "bg-warm text-ink/50 hover:bg-teal-light hover:text-[#1B3A2D]"
         }`}
       >
         {lesson.title}
       </button>
       {expanded && (
-        <div className="mt-2 bg-[#FDF3CC]/50 rounded-[8px] px-3.5 py-3 space-y-1.5">
-          <p className="font-sans text-sm font-medium text-[#7A6010]">
+        <div className="mt-2 bg-teal-light/40 rounded-[8px] px-3.5 py-3 space-y-1.5">
+          <p className="font-sans text-sm font-medium text-[#1B3A2D]">
             {lesson.lesson_title || lesson.title}
           </p>
           <p
@@ -161,7 +161,7 @@ export function ShelfDetail({
       </div>
 
       {/* Original */}
-      <div className="border-l-[3px] border-coral/40 rounded-[8px] bg-coral-light/50 px-4 py-3">
+      <div className="border-l-[3px] border-[#C4553A]/40 rounded-[8px] bg-[#FBE9E4]/50 px-4 py-3">
         <span className="text-xs font-sans font-semibold text-ink tracking-wide">
           Your original
         </span>

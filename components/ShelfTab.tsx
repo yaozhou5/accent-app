@@ -144,7 +144,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
             </button>
           </div>
 
-          <div className="border-l-[3px] border-coral/30 rounded-[8px] bg-coral-light/30 px-3 py-2">
+          <div className="border-l-[3px] border-[#C4553A]/30 rounded-[8px] bg-[#FBE9E4]/40 px-3 py-2">
             <p className="font-sans text-xs leading-relaxed text-ink/70 line-clamp-2">
               {entry.original}
             </p>

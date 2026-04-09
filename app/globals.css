@@ -3,12 +3,17 @@
 @theme inline {
   --color-paper: #F7F4EF;
   --color-sand: #D0CFC1;
+  /* Brand yellow — CTAs, progress dots, logo dot. NOT for text-change markup. */
   --color-coral: #F5C842;
+  --color-coral-light: #FDF3CC;
+  /* Green — corrected/improved text */
   --color-teal: #1B3A2D;
+  --color-teal-light: #C8DDD5;
+  /* Red — original/incorrect text (before) */
+  --color-red: #C4553A;
+  --color-red-light: #FBE9E4;
   --color-warm: #F0ECE4;
   --color-ink: #1C1917;
-  --color-coral-light: #FDF3CC;
-  --color-teal-light: #C8DDD5;
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
