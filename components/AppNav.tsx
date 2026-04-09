@@ -32,7 +32,11 @@ export function AppNav() {
   return (
     <nav className="border-b border-[#1B3A2D]/10 bg-[#FDFAF3]">
       <div className="max-w-[960px] mx-auto px-5 py-4 flex items-center justify-between">
-        <Link href="/" aria-label="Accent home">
+        <Link
+          href="/"
+          aria-label="Accent home"
+          className="inline-flex items-center hover:opacity-80 transition-opacity"
+        >
           <AccentLogo />
         </Link>
         <div className="flex items-center gap-6">
