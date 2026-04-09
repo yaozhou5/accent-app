@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
+      max_tokens: 4096,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -54,13 +54,30 @@ export async function POST(request: NextRequest) {
     }
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error("Fix API: no JSON found in model output:", jsonText.slice(0, 400));
       return NextResponse.json(
         { error: "Failed to parse response" },
         { status: 500 }
       );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as QuickCheckResponse;
+    let parsed: QuickCheckResponse;
+    try {
+      parsed = JSON.parse(jsonMatch[0]) as QuickCheckResponse;
+    } catch (parseErr) {
+      console.error(
+        "Fix API: JSON.parse failed:",
+        parseErr,
+        "stop_reason:",
+        message.stop_reason,
+        "first 400 chars:",
+        jsonMatch[0].slice(0, 400)
+      );
+      return NextResponse.json(
+        { error: "Failed to parse response. Please try again." },
+        { status: 500 }
+      );
+    }
 
     const posthog = getPostHogClient();
     posthog.capture({
