@@ -5,35 +5,56 @@ import posthog from "posthog-js";
 import Link from "next/link";
 
 const ORIGINAL =
-  "After months of exploring different directions, I've decided to take a leap of faith and pursue my passion for building products that help people communicate better. It wasn't an easy decision, but I truly believe that the best things in life happen outside your comfort zone.";
+  "The rise of AI tools has fundamentally transformed how we approach creative work. What was once a purely human endeavor has become a collaborative process between humans and machines. As we navigate this new landscape, it's crucial that we find the right balance between leveraging these powerful tools and maintaining our authentic creative voice.";
 
-const HIGHLIGHT_1 = "take a leap of faith and pursue my passion";
-const HIGHLIGHT_2 =
-  "It wasn't an easy decision, but I truly believe that the best things in life happen outside your comfort zone";
+const HIGHLIGHTS = [
+  "fundamentally transformed",
+  "navigate this new landscape",
+  "leveraging these powerful tools and maintaining our authentic creative voice.",
+];
 
 const REVISED =
-  "After months of exploring different directions, I quit my design job to build my own app. I'm on a visa with about 8 months of savings, so the stakes are real. But I'd rather spend that time making something I believe in than wondering what if.";
+  "People are shipping apps they can't explain. They paste code from ChatGPT, it runs, and they push it live without understanding what it does. That should worry us more than it does. The tool works. The person using it didn't learn anything.";
 
 function HighlightedOriginal() {
-  // Highlight two phrases in the original text with soft red underline
-  const text = ORIGINAL;
-  const i1 = text.indexOf(HIGHLIGHT_1);
-  const i2 = text.indexOf(HIGHLIGHT_2);
-  const part1 = text.slice(0, i1);
-  const part2 = text.slice(i1 + HIGHLIGHT_1.length, i2);
-  const part3 = text.slice(i2 + HIGHLIGHT_2.length);
+  // Highlight phrases in the original text with soft red underline
+  const parts: Array<{ text: string; highlight: boolean }> = [];
+  let cursor = 0;
+  while (cursor < ORIGINAL.length) {
+    let nextIdx = -1;
+    let nextPhrase = "";
+    for (const h of HIGHLIGHTS) {
+      const idx = ORIGINAL.indexOf(h, cursor);
+      if (idx !== -1 && (nextIdx === -1 || idx < nextIdx)) {
+        nextIdx = idx;
+        nextPhrase = h;
+      }
+    }
+    if (nextIdx === -1) {
+      parts.push({ text: ORIGINAL.slice(cursor), highlight: false });
+      break;
+    }
+    if (nextIdx > cursor) {
+      parts.push({ text: ORIGINAL.slice(cursor, nextIdx), highlight: false });
+    }
+    parts.push({ text: nextPhrase, highlight: true });
+    cursor = nextIdx + nextPhrase.length;
+  }
 
   return (
     <p className="text-[15px] leading-relaxed text-[#1C1917]">
-      {part1}
-      <span className="text-[#C4553A] underline decoration-[#C4553A]/50 decoration-2 underline-offset-[3px]">
-        {HIGHLIGHT_1}
-      </span>
-      {part2}
-      <span className="text-[#C4553A] underline decoration-[#C4553A]/50 decoration-2 underline-offset-[3px]">
-        {HIGHLIGHT_2}
-      </span>
-      {part3}
+      {parts.map((p, i) =>
+        p.highlight ? (
+          <span
+            key={i}
+            className="text-[#C4553A] underline decoration-[#C4553A]/50 decoration-2 underline-offset-[3px]"
+          >
+            {p.text}
+          </span>
+        ) : (
+          <span key={i}>{p.text}</span>
+        )
+      )}
     </p>
   );
 }
@@ -101,13 +122,14 @@ export function SocraticDemo() {
                 style={{ width: 5, height: 5, marginTop: 3 }}
               />
             </div>
-            <p className="text-[14px] font-medium text-[#1B3A2D] leading-snug">
-              &ldquo;Take a leap of faith and pursue my passion&rdquo;
-            </p>
             <p className="text-[14px] text-[#1C1917] leading-relaxed">
-              This is one of the most common AI-generated phrases. It sounds
-              confident but says nothing specific. What did you actually decide
-              to do? What made it feel risky?
+              You started with &ldquo;The rise of AI tools&rdquo; — that&apos;s
+              a topic, not a point of view. Every sentence here could be written
+              by anyone about anything.{" "}
+              <span className="font-semibold">
+                What do you actually think is happening? What have you seen that
+                made you want to write this?
+              </span>
             </p>
           </div>
 
@@ -132,8 +154,9 @@ export function SocraticDemo() {
               You
             </p>
             <p className="text-[15px] leading-relaxed text-[#1C1917]">
-              I quit my design job to build my own app. Scary because I&apos;m
-              on a visa and I have maybe 8 months of runway.
+              I keep seeing people ship apps they don&apos;t understand. They
+              paste code from ChatGPT, it works, but they can&apos;t explain
+              what it does. That scares me.
             </p>
           </div>
 
@@ -164,10 +187,12 @@ export function SocraticDemo() {
                 The pattern
               </p>
               <p className="text-[14px] text-[#1C1917] leading-relaxed">
-                AI fills in emotion with clichés (&ldquo;leap of faith,&rdquo;
-                &ldquo;pursue my passion,&rdquo; &ldquo;outside your comfort
-                zone&rdquo;). They feel good to write but give your reader
-                nothing to hold onto.
+                AI loves to &ldquo;set the scene&rdquo; with big abstract
+                claims (&ldquo;fundamentally transformed,&rdquo; &ldquo;purely
+                human endeavor,&rdquo; &ldquo;navigate this new
+                landscape&rdquo;). These phrases sound important but say
+                nothing your reader doesn&apos;t already know. They&apos;re
+                filler disguised as insight.
               </p>
             </div>
             <div>
@@ -175,18 +200,18 @@ export function SocraticDemo() {
                 The principle
               </p>
               <p className="text-[14px] text-[#1C1917] leading-relaxed">
-                Replace abstract feelings with concrete details.{" "}
-                <span className="font-medium">&ldquo;I quit my job&rdquo;</span>{" "}
-                is scarier than{" "}
-                <span className="font-medium">&ldquo;leap of faith.&rdquo;</span>{" "}
+                Start with what you&apos;ve actually noticed, not with what
+                everyone already agrees on.{" "}
                 <span className="font-medium">
-                  &ldquo;8 months of runway&rdquo;
+                  &ldquo;People are shipping apps they can&apos;t
+                  explain&rdquo;
                 </span>{" "}
-                is realer than{" "}
+                is an observation.{" "}
                 <span className="font-medium">
-                  &ldquo;outside my comfort zone.&rdquo;
+                  &ldquo;AI has fundamentally transformed creative work&rdquo;
                 </span>{" "}
-                Readers remember specifics, not sentiments.
+                is a headline from 2023. Your reader stays for your
+                observations, not your summaries.
               </p>
             </div>
           </div>

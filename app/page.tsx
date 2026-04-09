@@ -136,11 +136,12 @@ export default function LandingPage() {
           </div>
           <div>
             <h3 className="font-sans font-bold text-[18px] text-[#1B3A2D] mb-2">
-              Your shelf.
+              Voice check.
             </h3>
             <p className="text-[16px] leading-relaxed text-[#1C1917]/70">
-              Every revision is saved. Watch your writing improve over time.
-              See your patterns change.
+              Drop in your writing, your favorite articles, your references.
+              Accent learns how you sound and tells you when you&apos;ve
+              drifted.
             </p>
           </div>
         </div>
