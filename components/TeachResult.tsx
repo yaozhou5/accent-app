@@ -53,30 +53,81 @@ function LessonBody({ html }: { html: string }) {
   );
 }
 
-function HighlightedText({
-  text,
-  phrase,
-  color = "coral",
-}: {
-  text: string;
-  phrase: string;
-  color?: "coral" | "teal";
-}) {
+// Extract the sentence (or short window) of `text` containing `phrase`.
+function extractSentence(text: string, phrase: string): string {
   const idx = text.indexOf(phrase);
-  const baseClass =
-    "font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap";
-  const highlightClass =
-    color === "coral"
-      ? "bg-[#FDF3CC] text-[#7A6010] rounded-[3px] px-1 py-px"
-      : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
+  if (idx === -1) return phrase;
 
-  if (idx === -1) return <p className={baseClass}>{text}</p>;
+  // Expand backward to sentence start
+  let start = idx;
+  while (start > 0) {
+    const ch = text[start - 1];
+    if (ch === "\n") break;
+    if ((ch === "." || ch === "!" || ch === "?") && text[start] === " ") break;
+    start -= 1;
+  }
+  // Expand forward to sentence end
+  let end = idx + phrase.length;
+  while (end < text.length) {
+    const ch = text[end];
+    if (ch === "\n") break;
+    if (ch === "." || ch === "!" || ch === "?") {
+      end += 1;
+      break;
+    }
+    end += 1;
+  }
+  return text.slice(start, end).trim();
+}
+
+function ExcerptDiff({
+  original,
+  phrase,
+  fixedPhrase,
+}: {
+  original: string;
+  phrase: string;
+  fixedPhrase: string;
+}) {
+  const sentence = extractSentence(original, phrase);
+  const idx = sentence.indexOf(phrase);
+  const baseClass =
+    "font-sans text-[15px] leading-relaxed text-ink whitespace-pre-wrap";
+
+  if (idx === -1) {
+    // Fall back to just the inline before → after
+    return (
+      <p className={baseClass}>
+        <span className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px">
+          {phrase}
+        </span>
+        {fixedPhrase && (
+          <>
+            {" "}
+            <span className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium">
+              {fixedPhrase}
+            </span>
+          </>
+        )}
+      </p>
+    );
+  }
 
   return (
     <p className={baseClass}>
-      {text.slice(0, idx)}
-      <span className={highlightClass}>{phrase}</span>
-      {text.slice(idx + phrase.length)}
+      {sentence.slice(0, idx)}
+      <span className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px">
+        {phrase}
+      </span>
+      {fixedPhrase && (
+        <>
+          {" "}
+          <span className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium">
+            {fixedPhrase}
+          </span>
+        </>
+      )}
+      {sentence.slice(idx + phrase.length)}
     </p>
   );
 }
@@ -239,26 +290,12 @@ export function TeachResult({
               </span>
               <h3 className="font-serif font-bold text-lg text-ink">{issue.title}</h3>
 
-              <div>
-                <span className="text-[11px] font-sans text-ink/50 font-medium">
-                  Before
-                </span>
-                <div className="mt-0.5 bg-coral-light/50 rounded-[8px] px-3 py-2">
-                  <HighlightedText text={original} phrase={issue.phrase} />
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-sans text-ink/50 font-medium">
-                  After
-                </span>
-                <div className="mt-0.5 bg-teal-light/50 rounded-[8px] px-3 py-2">
-                  <HighlightedText
-                    text={improvedFull}
-                    phrase={issue.fixed_phrase || ""}
-                    color="teal"
-                  />
-                </div>
+              <div className="bg-warm/60 rounded-[8px] px-3.5 py-3 border border-ink/5">
+                <ExcerptDiff
+                  original={original}
+                  phrase={issue.phrase}
+                  fixedPhrase={issue.fixed_phrase || ""}
+                />
               </div>
             </>
           )}
