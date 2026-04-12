@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AuthButton } from "./AuthButton";
 
 function AccentLogo() {
   return (
@@ -46,6 +47,7 @@ export function AppNav() {
           <Link href="/shelf" className={linkClass("/shelf")}>
             Shelf
           </Link>
+          <AuthButton />
         </div>
       </div>
     </nav>
