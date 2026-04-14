@@ -93,20 +93,26 @@ export default function AccentLanding() {
   return (
     <div className="min-h-screen font-sans" style={{ background: "#FFFBF5" }}>
       {/* ─── NAV ─── */}
-      <nav className="flex items-center justify-between max-w-[960px] mx-auto" style={{ padding: "16px 32px" }}>
-        <div className="flex items-center gap-2">
-          <div
-            className="flex items-center justify-center font-bold"
-            style={{ width: 28, height: 28, borderRadius: 7, background: "#1B4332", fontSize: 15, color: "#E9C46A" }}
-          >a</div>
-          <span className="font-serif" style={{ fontSize: 20, color: "#1B4332", fontWeight: 400 }}>accent.</span>
-        </div>
+      <nav className="max-w-[960px] mx-auto px-5 py-5 flex items-center justify-between">
+        <span className="inline-flex items-start">
+          <span
+            className="font-serif font-bold tracking-tight text-[#1B3A2D]"
+            style={{ fontSize: 22, lineHeight: 1 }}
+          >
+            accent
+          </span>
+          <span
+            className="bg-[#F5C842] rounded-full shrink-0"
+            style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6 }}
+          />
+        </span>
         <Link
           href="/write"
           onClick={() => trackCTA("nav")}
-          className="no-underline"
-          style={{ fontSize: 14, fontWeight: 600, color: "#1B4332", padding: "8px 20px", border: "1.5px solid #1B4332", borderRadius: 100 }}
-        >Try free →</Link>
+          className="px-4 py-2 rounded-[10px] border border-[#1B3A2D]/20 text-[13px] font-sans font-medium text-[#1B3A2D] hover:bg-[#1B3A2D]/5 transition-colors"
+        >
+          Try free →
+        </Link>
       </nav>
 
       {/* ═══ SECTION 1 — HERO ═══ */}
