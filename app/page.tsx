@@ -13,9 +13,9 @@ const AGENT_TEXT = `6 months in Amsterdam and I still rehearse what I'm going to
 type Obs = { icon: string; text: string; type: "flag" | "good" | "nudge" };
 
 const CHATGPT_OBS: Obs[] = [
-  { icon: "⚠", text: "You never say \"incredible learning experience\" — you keep it blunt", type: "flag" },
-  { icon: "⚠", text: "You don't do gratitude lists. Your posts are one sharp observation.", type: "flag" },
-  { icon: "⚠", text: "\"Here are my top 3 takeaways\" — you've never written a listicle", type: "flag" },
+  { icon: "—", text: "You never say \"incredible learning experience\" — you keep it blunt", type: "flag" },
+  { icon: "—", text: "You don't do gratitude lists. Your posts are one sharp observation.", type: "flag" },
+  { icon: "—", text: "\"Here are my top 3 takeaways\" — you've never written a listicle", type: "flag" },
 ];
 const AGENT_OBS: Obs[] = [
   { icon: "✦", text: "\"Loudest person in the room\" — pulled from your own past writing", type: "good" },
@@ -31,24 +31,19 @@ const SAMPLES = [
 
 /* ───────── HELPERS ───────── */
 function ObsItem({ obs, index, visible }: { obs: Obs; index: number; visible: boolean }) {
-  const colors = {
-    flag: { bg: "rgba(233,196,106,0.12)", color: "#B8860B", ic: "#E9C46A" },
-    good: { bg: "rgba(45,106,79,0.06)", color: "#2D6A4F", ic: "#2D6A4F" },
-    nudge: { bg: "rgba(27,67,50,0.04)", color: "#888", ic: "#999" },
-  }[obs.type];
   return (
     <div
       className="flex items-start gap-[7px] rounded-[8px]"
       style={{
         padding: "7px 9px",
-        background: colors.bg,
+        background: obs.type === "flag" ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.02)",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(6px)",
         transition: `all 0.35s ease ${index * 150}ms`,
       }}
     >
-      <span className="text-[11px] shrink-0 mt-[1px]" style={{ color: colors.ic }}>{obs.icon}</span>
-      <span className="text-[11px] leading-[1.45]" style={{ color: colors.color }}>{obs.text}</span>
+      <span className="text-[11px] shrink-0 mt-[1px]" style={{ color: "#999" }}>{obs.icon}</span>
+      <span className="text-[11px] leading-[1.45]" style={{ color: obs.type === "flag" ? "#999" : "#111" }}>{obs.text}</span>
     </div>
   );
 }
@@ -91,25 +86,25 @@ export default function AccentLanding() {
   };
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: "#FFFBF5" }}>
+    <div className="min-h-screen font-sans" style={{ background: "#FFFFFF" }}>
       {/* ─── NAV ─── */}
       <nav className="max-w-[960px] mx-auto px-5 py-5 flex items-center justify-between">
         <span className="inline-flex items-start">
           <span
-            className="font-bold tracking-tight text-[#1B3A2D]"
-            style={{ fontSize: 22, lineHeight: 1, fontFamily: "var(--font-fraunces), Georgia, serif" }}
+            className="font-bold tracking-tight"
+            style={{ fontSize: 22, lineHeight: 1, color: "#111", fontFamily: "var(--font-fraunces), Georgia, serif" }}
           >
             accent
           </span>
           <span
-            className="bg-[#F5C842] rounded-full shrink-0"
-            style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6 }}
+            className="rounded-full shrink-0"
+            style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6, background: "#111" }}
           />
         </span>
         <Link
           href="/write"
           onClick={() => trackCTA("nav")}
-          className="px-4 py-2 rounded-[10px] border border-[#1B3A2D]/20 text-[13px] font-sans font-medium text-[#1B3A2D] hover:bg-[#1B3A2D]/5 transition-colors"
+          style={{ fontSize: 13, fontWeight: 500, color: "#111", padding: "8px 20px", border: "1px solid #E8E8E8", borderRadius: 100, textDecoration: "none" }}
         >
           Try free →
         </Link>
@@ -119,13 +114,13 @@ export default function AccentLanding() {
       <section style={{ padding: "80px 32px 40px", maxWidth: 900, margin: "0 auto" }}>
         <h1
           className="font-serif"
-          style={{ fontSize: "clamp(52px, 10vw, 96px)", color: "#1B4332", lineHeight: 1.0, margin: 0, fontWeight: 400, letterSpacing: "-0.02em" }}
+          style={{ fontSize: "clamp(52px, 10vw, 96px)", color: "#111", lineHeight: 1.0, margin: 0, fontWeight: 400, letterSpacing: "-0.02em" }}
         >
           The first AI<br />that writes<br />
-          <span style={{ fontStyle: "italic", color: "#2D6A4F" }}>like you,</span><br />
+          <span style={{ fontStyle: "italic" }}>like you,</span><br />
           not for you.
         </h1>
-        <p style={{ fontSize: 18, color: "#888", lineHeight: 1.6, margin: "28px 0 0", maxWidth: 480 }}>
+        <p style={{ fontSize: 18, color: "#999", lineHeight: 1.6, margin: "28px 0 0", maxWidth: 480 }}>
           An AI that learns your voice and writes as you.
         </p>
       </section>
@@ -135,35 +130,35 @@ export default function AccentLanding() {
         {/* Prompt bubble */}
         <div className="flex items-center gap-[10px]" style={{ maxWidth: 720, width: "100%", marginBottom: 16 }}>
           <div
-            className="flex items-center justify-center shrink-0 text-white font-semibold"
-            style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #2D6A4F, #1B4332)", fontSize: 12 }}
+            className="flex items-center justify-center shrink-0 font-semibold"
+            style={{ width: 32, height: 32, borderRadius: "50%", background: "#111", color: "#fff", fontSize: 12 }}
           >S</div>
-          <div style={{ background: "#F5F5F0", borderRadius: 12, padding: "10px 16px", fontSize: 14, color: "#555", fontStyle: "italic" }}>
+          <div style={{ background: "#F5F5F5", borderRadius: 12, padding: "10px 16px", fontSize: 14, color: "#999", fontStyle: "italic" }}>
             &ldquo;Write a LinkedIn post about my first 6 months in Amsterdam&rdquo;
           </div>
         </div>
 
         <div style={{ width: "100%", maxWidth: 720 }}>
           {/* Browser chrome */}
-          <div className="flex items-center gap-2" style={{ background: "#EBEBEB", borderRadius: "12px 12px 0 0", padding: "10px 16px" }}>
+          <div className="flex items-center gap-2" style={{ background: "#E8E8E8", borderRadius: "12px 12px 0 0", padding: "10px 16px" }}>
             <div className="flex gap-[6px]">
-              {["#FF5F57", "#FEBC2E", "#28C840"].map(c => (
-                <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
+              {["#ccc", "#ccc", "#ccc"].map((c, i) => (
+                <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
               ))}
             </div>
-            <div className="flex-1" style={{ background: "#fff", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#AAA", marginLeft: 8 }}>linkedin.com/feed</div>
+            <div className="flex-1" style={{ background: "#fff", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#999", marginLeft: 8 }}>linkedin.com/feed</div>
           </div>
 
-          <div className="flex flex-col md:flex-row" style={{ background: "#FFF", border: "1px solid #E0E0E0", borderTop: "none", borderRadius: "0 0 12px 12px" }}>
+          <div className="flex flex-col md:flex-row" style={{ background: "#FFF", border: "1px solid #E8E8E8", borderTop: "none", borderRadius: "0 0 12px 12px" }}>
             {/* Post */}
             <div className="flex-1" style={{ padding: "24px 24px 24px 28px" }}>
               <div className="flex items-center gap-[10px] mb-4">
                 <div
-                  className="flex items-center justify-center text-white font-semibold"
-                  style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #2D6A4F, #1B4332)", fontSize: 14 }}
+                  className="flex items-center justify-center font-semibold"
+                  style={{ width: 36, height: 36, borderRadius: "50%", background: "#111", color: "#fff", fontSize: 14 }}
                 >S</div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>Suki Adeyemi</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>Suki Adeyemi</div>
                   <div style={{ fontSize: 11, color: "#999" }}>Product lead · Lagos → Amsterdam</div>
                 </div>
               </div>
@@ -174,7 +169,7 @@ export default function AccentLanding() {
                     flex: 1, padding: "8px 0", border: "none", borderRadius: 6,
                     fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
                     background: tab === t ? "#fff" : "transparent",
-                    color: tab === t ? "#333" : "#999",
+                    color: tab === t ? "#111" : "#999",
                     boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
                   }}>
                     {t === "chatgpt" ? "ChatGPT wrote it" : "Accent agent wrote it"}
@@ -182,32 +177,32 @@ export default function AccentLanding() {
                 ))}
               </div>
 
-              <div style={{ fontSize: 14, lineHeight: 1.75, color: "#333" }}>
+              <div style={{ fontSize: 14, lineHeight: 1.75, color: "#111" }}>
                 {isChatGPT ? CHATGPT_TEXT : AGENT_TEXT}
               </div>
             </div>
 
-            {/* Agent panel */}
+            {/* Agent panel — desktop */}
             <div
               className="shrink-0 hidden md:block"
               style={{
-                width: 216, borderLeft: "1px solid #F0F0F0",
+                width: 216, borderLeft: "1px solid #E8E8E8",
                 padding: "16px 14px",
-                background: isChatGPT ? "#FFFCF5" : "#FBFFF8",
-                transition: "background 0.4s", borderRadius: "0 0 12px 0",
+                background: "#FAFAFA",
+                borderRadius: "0 0 12px 0",
               }}
             >
-              <div className="flex items-center gap-[6px] mb-[14px] pb-[10px]" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              <div className="flex items-center gap-[6px] mb-[14px] pb-[10px]" style={{ borderBottom: "1px solid #E8E8E8" }}>
                 <div
                   className="flex items-center justify-center font-bold"
-                  style={{ width: 18, height: 18, borderRadius: 4, background: "#1B4332", fontSize: 10, color: "#E9C46A" }}
+                  style={{ width: 18, height: 18, borderRadius: 4, background: "#111", fontSize: 10, color: "#fff" }}
                 >a</div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#1B4332" }}>accent.</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#111" }}>accent.</span>
               </div>
 
               <div className="flex items-center gap-[6px] mb-[14px]">
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isChatGPT ? "#E9C46A" : "#2D6A4F", transition: "background 0.3s" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: isChatGPT ? "#B8860B" : "#1B4332", transition: "color 0.3s" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isChatGPT ? "#999" : "#111", transition: "background 0.3s" }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: isChatGPT ? "#999" : "#111", transition: "color 0.3s" }}>
                   {isChatGPT ? "Doesn't sound like Suki" : "Sounds like Suki"}
                 </span>
               </div>
@@ -219,17 +214,17 @@ export default function AccentLanding() {
               </div>
 
               {isChatGPT && (
-                <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(0,0,0,0.05)", opacity: showObs ? 1 : 0, transition: "opacity 0.4s ease 0.5s" }}>
-                  <div style={{ fontSize: 11, color: "#2D6A4F", fontWeight: 600, cursor: "pointer" }}>↻ Rewrite as Suki</div>
+                <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid #E8E8E8", opacity: showObs ? 1 : 0, transition: "opacity 0.4s ease 0.5s" }}>
+                  <div style={{ fontSize: 11, color: "#111", fontWeight: 600, cursor: "pointer" }}>↻ Rewrite as Suki</div>
                 </div>
               )}
             </div>
 
-            {/* Mobile agent panel */}
-            <div className="block md:hidden border-t border-[#F0F0F0]" style={{ padding: "16px 20px", background: isChatGPT ? "#FFFCF5" : "#FBFFF8" }}>
+            {/* Agent panel — mobile */}
+            <div className="block md:hidden" style={{ padding: "16px 20px", background: "#FAFAFA", borderTop: "1px solid #E8E8E8" }}>
               <div className="flex items-center gap-[6px] mb-3">
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isChatGPT ? "#E9C46A" : "#2D6A4F" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: isChatGPT ? "#B8860B" : "#1B4332" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isChatGPT ? "#999" : "#111" }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: isChatGPT ? "#999" : "#111" }}>
                   {isChatGPT ? "Doesn't sound like Suki" : "Sounds like Suki"}
                 </span>
               </div>
@@ -248,9 +243,9 @@ export default function AccentLanding() {
       </section>
 
       {/* ═══ SECTION 3 — HOW IT WORKS ═══ */}
-      <section style={{ padding: "64px 20px", borderTop: "1px solid rgba(27,67,50,0.08)" }}>
+      <section style={{ padding: "64px 20px", borderTop: "1px solid #E8E8E8" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <h2 className="font-serif text-center" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: "#1B4332", fontWeight: 400, margin: "0 0 40px" }}>
+          <h2 className="font-serif text-center" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: "#111", fontWeight: 400, margin: "0 0 40px" }}>
             How it learns you.
           </h2>
           <div className="flex gap-[2px] flex-wrap justify-center">
@@ -260,9 +255,9 @@ export default function AccentLanding() {
               { s: "03", l: "It writes as you", d: "When it knows you well enough, it drafts posts, emails, and messages that sound like you on a good day." },
             ].map((item) => (
               <div key={item.s} className="text-center" style={{ flex: "1 1 200px", padding: "16px 24px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#E9C46A", letterSpacing: "0.05em", marginBottom: 8 }}>{item.s}</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#1B4332", marginBottom: 6 }}>{item.l}</div>
-                <div style={{ fontSize: 14, color: "#888", lineHeight: 1.55 }}>{item.d}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: "0.05em", marginBottom: 8 }}>{item.s}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 6 }}>{item.l}</div>
+                <div style={{ fontSize: 14, color: "#999", lineHeight: 1.55 }}>{item.d}</div>
               </div>
             ))}
           </div>
@@ -270,13 +265,13 @@ export default function AccentLanding() {
       </section>
 
       {/* ═══ SECTION 4 — TRY FREE NOW ═══ */}
-      <section style={{ padding: "72px 20px", background: "#1B4332" }}>
+      <section style={{ padding: "72px 20px", background: "#111" }}>
         <div className="text-center" style={{ maxWidth: 640, margin: "0 auto" }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#E9C46A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16 }}>Available now — free</p>
-          <h2 className="font-serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: "#FFFBF5", fontWeight: 400, margin: "0 0 12px", lineHeight: 1.15 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#999", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16 }}>Available now — free</p>
+          <h2 className="font-serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: "#FFF", fontWeight: 400, margin: "0 0 12px", lineHeight: 1.15 }}>
             Start teaching it your voice.
           </h2>
-          <p style={{ fontSize: 15, color: "rgba(255,251,245,0.6)", marginBottom: 36, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginBottom: 36, lineHeight: 1.5 }}>
             Every time you write with Accent, it learns how you sound. Start now — it&apos;s free.
           </p>
 
@@ -289,22 +284,22 @@ export default function AccentLanding() {
                 className="text-left no-underline"
                 style={{
                   flex: "1 1 180px", maxWidth: 200,
-                  background: hoveredSample === i ? "rgba(255,251,245,0.12)" : "rgba(255,251,245,0.06)",
-                  border: "1px solid rgba(255,251,245,0.12)",
+                  background: hoveredSample === i ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 12, padding: "18px 16px",
                   cursor: "pointer", transition: "all 0.2s",
                   transform: hoveredSample === i ? "translateY(-2px)" : "none",
                 }}
               >
                 <div style={{ fontSize: 20, marginBottom: 8 }}>{s.emoji}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#FFFBF5", marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,251,245,0.5)", lineHeight: 1.45, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{s.preview}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#FFF", marginBottom: 6 }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.45, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{s.preview}</div>
               </Link>
             ))}
           </div>
 
           <Link href="/write" onClick={() => trackCTA("try_free")} className="inline-block no-underline" style={{
-            marginTop: 28, padding: "14px 32px", background: "#E9C46A", color: "#1B4332",
+            marginTop: 28, padding: "14px 32px", background: "#FFF", color: "#111",
             borderRadius: 100, fontSize: 15, fontWeight: 700,
           }}>Start writing — it&apos;s free →</Link>
         </div>
@@ -312,14 +307,14 @@ export default function AccentLanding() {
 
       {/* ═══ SECTION 5 — AGENT WAITLIST ═══ */}
       <section className="flex flex-col items-center" style={{ padding: "72px 20px 80px" }}>
-        <div className="text-center w-full" style={{ maxWidth: 480, padding: "48px 32px", background: "rgba(27,67,50,0.03)", borderRadius: 20 }}>
-          <h2 className="font-serif" style={{ fontSize: 32, color: "#1B4332", fontWeight: 400, margin: "0 0 8px" }}>
+        <div className="text-center w-full" style={{ maxWidth: 480, padding: "48px 32px", background: "#FAFAFA", borderRadius: 20, border: "1px solid #E8E8E8" }}>
+          <h2 className="font-serif" style={{ fontSize: 32, color: "#111", fontWeight: 400, margin: "0 0 8px" }}>
             Your writing voice, captured.
           </h2>
-          <p style={{ fontSize: 15, color: "#888", marginBottom: 8, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 15, color: "#999", marginBottom: 8, lineHeight: 1.5 }}>
             An AI that learns how you sound — and remembers.
           </p>
-          <p style={{ fontSize: 13, color: "#BBB", marginBottom: 28 }}>
+          <p style={{ fontSize: 13, color: "#999", marginBottom: 28 }}>
             Join the waitlist for early access.
           </p>
 
@@ -327,28 +322,28 @@ export default function AccentLanding() {
             <div className="flex gap-2" style={{ maxWidth: 380, margin: "0 auto" }}>
               <input type="email" placeholder="your@email.com" value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="flex-1 outline-none focus:border-[#1B4332]"
-                style={{ padding: "12px 16px", border: "1.5px solid #DDD", borderRadius: 10, fontSize: 15, background: "#fff" }}
+                className="flex-1 outline-none"
+                style={{ padding: "12px 16px", border: "1px solid #E8E8E8", borderRadius: 10, fontSize: 15, background: "#fff", color: "#111" }}
               />
               <button onClick={handleWaitlist} disabled={submitting}
                 className="whitespace-nowrap disabled:opacity-50"
-                style={{ padding: "12px 24px", background: "#1B4332", color: "#FFFBF5", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "12px 24px", background: "#111", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
               >{submitting ? "..." : "Join waitlist"}</button>
             </div>
           ) : (
-            <div style={{ padding: "16px 24px", background: "rgba(45,106,79,0.06)", borderRadius: 12, maxWidth: 380, margin: "0 auto" }}>
+            <div style={{ padding: "16px 24px", background: "rgba(0,0,0,0.03)", borderRadius: 12, maxWidth: 380, margin: "0 auto" }}>
               <div style={{ fontSize: 20, marginBottom: 4 }}>✦</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#1B4332", marginBottom: 4 }}>You&apos;re on the list.</div>
-              <div style={{ fontSize: 13, color: "#888" }}>We&apos;ll email you when your agent is ready to train.</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#111", marginBottom: 4 }}>You&apos;re on the list.</div>
+              <div style={{ fontSize: 13, color: "#999" }}>We&apos;ll email you when your agent is ready to train.</div>
             </div>
           )}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="flex justify-between items-center" style={{ padding: "24px 32px", borderTop: "1px solid rgba(27,67,50,0.08)", maxWidth: 960, margin: "0 auto" }}>
-        <span style={{ fontSize: 12, color: "#BBB" }}>© 2026 accent. Built in Amsterdam.</span>
-        <Link href="/privacy-contact" style={{ fontSize: 12, color: "#BBB", textDecoration: "none" }}>Privacy</Link>
+      <footer className="flex justify-between items-center" style={{ padding: "24px 32px", borderTop: "1px solid #E8E8E8", maxWidth: 960, margin: "0 auto" }}>
+        <span style={{ fontSize: 12, color: "#999" }}>© 2026 accent. Built in Amsterdam.</span>
+        <Link href="/privacy-contact" style={{ fontSize: 12, color: "#999", textDecoration: "none" }}>Privacy</Link>
       </footer>
     </div>
   );
