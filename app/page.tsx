@@ -314,13 +314,13 @@ export default function AccentLanding() {
       <section className="flex flex-col items-center" style={{ padding: "72px 20px 80px" }}>
         <div className="text-center w-full" style={{ maxWidth: 480, padding: "48px 32px", background: "rgba(27,67,50,0.03)", borderRadius: 20 }}>
           <h2 className="font-serif" style={{ fontSize: 32, color: "#1B4332", fontWeight: 400, margin: "0 0 8px" }}>
-            Soon it&apos;ll write the first draft for you.
+            Your writing voice, captured.
           </h2>
           <p style={{ fontSize: 15, color: "#888", marginBottom: 8, lineHeight: 1.5 }}>
-            An AI that sounds like you — because it learned from you.
+            An AI that learns how you sound — and remembers.
           </p>
           <p style={{ fontSize: 13, color: "#BBB", marginBottom: 28 }}>
-            Get early access when your agent is ready.
+            Join the waitlist for early access.
           </p>
 
           {!submitted ? (
