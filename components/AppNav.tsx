@@ -3,35 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuthButton } from "./AuthButton";
-
-function AccentLogo() {
-  return (
-    <span className="inline-flex items-start">
-      <span
-        className="font-serif font-bold tracking-tight text-[#1B3A2D]"
-        style={{ fontSize: 22, lineHeight: 1 }}
-      >
-        accent
-      </span>
-      <span
-        className="bg-[#F5C842] rounded-full shrink-0"
-        style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6 }}
-      />
-    </span>
-  );
-}
+import { AccentLogo } from "./AccentLogo";
 
 export function AppNav() {
   const pathname = usePathname();
   const linkClass = (href: string) =>
     `text-[14px] font-sans font-medium transition-colors ${
       pathname === href
-        ? "text-[#1B3A2D]"
-        : "text-[#1B3A2D]/60 hover:text-[#1B3A2D]"
+        ? "text-[#111]"
+        : "text-[#999] hover:text-[#111]"
     }`;
 
   return (
-    <nav className="border-b border-[#1B3A2D]/10 bg-[#FDFAF3]">
+    <nav className="border-b border-[#E8E8E8] bg-white">
       <div className="max-w-[960px] mx-auto px-5 py-4 flex items-center justify-between">
         <Link
           href="/"

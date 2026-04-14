@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
+import { AccentLogo } from "@/components/AccentLogo";
 
 /* ───────── DATA ───────── */
 const CHATGPT_TEXT = `Thrilled to share that I've completed my first 6 months as a product lead in Amsterdam. The transition from Lagos to Europe has been an incredible learning experience. I'm grateful for the opportunity to work with such a diverse and talented team. Here are my top 3 takeaways from this journey:`;
@@ -89,18 +90,9 @@ export default function AccentLanding() {
     <div className="min-h-screen font-sans" style={{ background: "#FFFFFF" }}>
       {/* ─── NAV ─── */}
       <nav className="max-w-[960px] mx-auto px-5 py-5 flex items-center justify-between">
-        <span className="inline-flex items-start">
-          <span
-            className="font-bold tracking-tight"
-            style={{ fontSize: 22, lineHeight: 1, color: "#111", fontFamily: "var(--font-fraunces), Georgia, serif" }}
-          >
-            accent
-          </span>
-          <span
-            className="rounded-full shrink-0"
-            style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6, background: "#111" }}
-          />
-        </span>
+        <Link href="/" className="hover:opacity-80 transition-opacity">
+          <AccentLogo />
+        </Link>
         <Link
           href="/write"
           onClick={() => trackCTA("nav")}
