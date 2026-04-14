@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Canela';
+  src: url('/fonts/Canela-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Canela';
+  src: url('/fonts/Canela-RegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Canela';
+  src: url('/fonts/Canela-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-paper: #F7F4EF;
   --color-sand: #D0CFC1;
@@ -15,7 +37,7 @@
   --color-warm: #F0ECE4;
   --color-ink: #1C1917;
 
-  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-serif: 'Canela', var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
 

@@ -96,8 +96,8 @@ export default function AccentLanding() {
       <nav className="max-w-[960px] mx-auto px-5 py-5 flex items-center justify-between">
         <span className="inline-flex items-start">
           <span
-            className="font-serif font-bold tracking-tight text-[#1B3A2D]"
-            style={{ fontSize: 22, lineHeight: 1 }}
+            className="font-bold tracking-tight text-[#1B3A2D]"
+            style={{ fontSize: 22, lineHeight: 1, fontFamily: "var(--font-fraunces), Georgia, serif" }}
           >
             accent
           </span>
