@@ -183,7 +183,7 @@ export function AuthButton() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-[8px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-[8px] bg-ink text-white text-sm font-sans font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
               >
                 {loading ? "Sending\u2026" : "Send code"}
               </button>
@@ -215,7 +215,7 @@ export function AuthButton() {
               <button
                 type="submit"
                 disabled={loading || code.length !== 6}
-                className="w-full py-2.5 rounded-[8px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-[8px] bg-ink text-white text-sm font-sans font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
               >
                 {loading ? "Verifying\u2026" : "Verify code"}
               </button>

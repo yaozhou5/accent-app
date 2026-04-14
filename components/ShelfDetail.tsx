@@ -63,7 +63,7 @@ function HighlightedText({
   const hlCls =
     color === "coral"
       ? "bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
-      : "bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px";
+      : "bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px";
 
   return (
     <p className={baseCls}>
@@ -89,15 +89,15 @@ function LessonPill({ lesson }: { lesson: Issue }) {
         onClick={() => setExpanded(!expanded)}
         className={`text-[12px] font-sans rounded-full px-3 py-1 transition-colors ${
           expanded
-            ? "bg-teal-light text-[#1B3A2D]"
-            : "bg-warm text-ink/50 hover:bg-teal-light hover:text-[#1B3A2D]"
+            ? "bg-teal-light text-[#111]"
+            : "bg-warm text-ink/50 hover:bg-teal-light hover:text-[#111]"
         }`}
       >
         {lesson.title}
       </button>
       {expanded && (
         <div className="mt-2 bg-teal-light/40 rounded-[8px] px-3.5 py-3 space-y-1.5">
-          <p className="font-sans text-sm font-medium text-[#1B3A2D]">
+          <p className="font-sans text-sm font-medium text-[#111]">
             {lesson.lesson_title || lesson.title}
           </p>
           <p
@@ -218,8 +218,8 @@ export function ShelfDetail({
           copyState === "copied"
             ? "bg-teal text-white"
             : copyState === "copying"
-              ? "bg-coral/70 text-[#1B3A2D]"
-              : "bg-coral text-[#1B3A2D] hover:bg-coral/90"
+              ? "bg-ink/70 text-white"
+              : "bg-ink text-white hover:bg-ink/90"
         }`}
       >
         {copyState === "copied"

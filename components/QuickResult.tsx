@@ -116,7 +116,7 @@ function InlineDiff({
           return (
             <span
               key={k}
-              className="bg-[#C8DDD5] text-[#1B3A2D] rounded-[3px] px-1 py-px font-medium"
+              className="bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px font-medium"
             >
               {op.text}
             </span>

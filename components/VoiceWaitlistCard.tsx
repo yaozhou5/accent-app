@@ -106,7 +106,7 @@ export function VoiceWaitlistCard({ sessionCount }: VoiceWaitlistCardProps) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-[8px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50 whitespace-nowrap"
+              className="px-4 py-2 rounded-[8px] bg-ink text-white text-sm font-sans font-medium hover:bg-ink/90 transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               {loading ? "..." : "Notify me"}
             </button>

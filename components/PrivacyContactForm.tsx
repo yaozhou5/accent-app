@@ -144,7 +144,7 @@ export function PrivacyContactForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 min-h-[48px] rounded-[12px] bg-coral text-[#1B3A2D] text-sm font-sans font-medium hover:bg-coral/90 transition-colors disabled:opacity-50"
+        className="w-full py-3 min-h-[48px] rounded-[12px] bg-ink text-white text-sm font-sans font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
       >
         {loading ? "Sending\u2026" : "Send request"}
       </button>

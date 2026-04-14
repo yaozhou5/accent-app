@@ -110,7 +110,7 @@ export function InputScreen({
             disabled={!canSubmit}
             className={`flex-1 font-sans font-medium text-sm py-3 rounded-[12px] transition-colors flex items-center justify-center gap-2 min-h-[44px] ${
               canSubmit
-                ? "bg-coral text-[#1B3A2D] hover:bg-coral/90 cursor-pointer"
+                ? "bg-ink text-white hover:bg-ink/90 cursor-pointer"
                 : "bg-ink/10 text-ink/30 cursor-not-allowed"
             }`}
           >

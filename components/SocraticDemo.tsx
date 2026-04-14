@@ -77,7 +77,7 @@ export function SocraticDemo() {
           <span
             key={i}
             className={`w-2 h-2 rounded-full transition-colors ${
-              i <= step ? "bg-[#F5C842]" : "bg-[#D4D0C8]"
+              i <= step ? "bg-[#111]" : "bg-[#D4D0C8]"
             }`}
           />
         ))}
@@ -91,14 +91,14 @@ export function SocraticDemo() {
       {/* Step 0 — original text */}
       {step === 0 && (
         <div className="space-y-4">
-          <div className="bg-white border border-[#1B3A2D]/10 rounded-[12px] p-5">
+          <div className="bg-white border border-[#111]/10 rounded-[12px] p-5">
             <p className="text-[15px] leading-relaxed text-[#1C1917]">
               {ORIGINAL}
             </p>
           </div>
           <button
             onClick={() => advance(1)}
-            className="w-full py-3 rounded-[12px] bg-[#1B3A2D] text-white text-sm font-sans font-medium hover:bg-[#1B3A2D]/90 transition-colors"
+            className="w-full py-3 rounded-[12px] bg-[#111] text-white text-sm font-sans font-medium hover:bg-[#111]/90 transition-colors"
           >
             See what Accent finds &rarr;
           </button>
@@ -108,17 +108,17 @@ export function SocraticDemo() {
       {/* Step 1 — Accent asks */}
       {step === 1 && (
         <div className="space-y-4">
-          <div className="bg-white border border-[#1B3A2D]/10 rounded-[12px] p-5">
+          <div className="bg-white border border-[#111]/10 rounded-[12px] p-5">
             <HighlightedOriginal />
           </div>
 
-          <div className="bg-[#FDF3CC] border border-[#F5C842]/40 rounded-[12px] p-5 space-y-3">
+          <div className="bg-[#F5F5F5] border border-[#111]/40 rounded-[12px] p-5 space-y-3">
             <div className="inline-flex items-start gap-1.5">
-              <span className="font-serif font-bold text-[15px] text-[#1B3A2D] leading-none">
+              <span className="font-serif font-bold text-[15px] text-[#111] leading-none">
                 accent
               </span>
               <span
-                className="bg-[#F5C842] rounded-full shrink-0"
+                className="bg-[#111] rounded-full shrink-0"
                 style={{ width: 5, height: 5, marginTop: 3 }}
               />
             </div>
@@ -135,7 +135,7 @@ export function SocraticDemo() {
 
           <button
             onClick={() => advance(2)}
-            className="w-full py-3 rounded-[12px] bg-[#1B3A2D] text-white text-sm font-sans font-medium hover:bg-[#1B3A2D]/90 transition-colors"
+            className="w-full py-3 rounded-[12px] bg-[#111] text-white text-sm font-sans font-medium hover:bg-[#111]/90 transition-colors"
           >
             Answer the question &rarr;
           </button>
@@ -145,11 +145,11 @@ export function SocraticDemo() {
       {/* Step 2 — you answer */}
       {step === 2 && (
         <div className="space-y-4">
-          <div className="bg-white border border-[#1B3A2D]/10 rounded-[12px] p-5">
+          <div className="bg-white border border-[#111]/10 rounded-[12px] p-5">
             <HighlightedOriginal />
           </div>
 
-          <div className="bg-[#F5F2EB] border border-[#1B3A2D]/10 rounded-[12px] p-5">
+          <div className="bg-[#FAFAFA] border border-[#111]/10 rounded-[12px] p-5">
             <p className="text-[11px] font-sans font-medium text-[#8A8579] uppercase tracking-wide mb-2">
               You
             </p>
@@ -162,7 +162,7 @@ export function SocraticDemo() {
 
           <button
             onClick={() => advance(3)}
-            className="w-full py-3 rounded-[12px] bg-[#1B3A2D] text-white text-sm font-sans font-medium hover:bg-[#1B3A2D]/90 transition-colors"
+            className="w-full py-3 rounded-[12px] bg-[#111] text-white text-sm font-sans font-medium hover:bg-[#111]/90 transition-colors"
           >
             See your version &rarr;
           </button>
@@ -172,8 +172,8 @@ export function SocraticDemo() {
       {/* Step 3 — your version + lesson */}
       {step === 3 && (
         <div className="space-y-4">
-          <div className="bg-white border-2 border-[#1B3A2D] rounded-[12px] p-5">
-            <p className="text-[11px] font-sans font-medium text-[#1B3A2D] uppercase tracking-wide mb-2">
+          <div className="bg-white border-2 border-[#111] rounded-[12px] p-5">
+            <p className="text-[11px] font-sans font-medium text-[#111] uppercase tracking-wide mb-2">
               Your version
             </p>
             <p className="text-[15px] leading-relaxed text-[#1C1917] font-medium">
@@ -181,7 +181,7 @@ export function SocraticDemo() {
             </p>
           </div>
 
-          <div className="bg-[#F5F2EB] rounded-[12px] p-5 space-y-4">
+          <div className="bg-[#FAFAFA] rounded-[12px] p-5 space-y-4">
             <div>
               <p className="text-[11px] font-sans font-semibold text-[#8A8579] uppercase tracking-wide mb-1.5">
                 The pattern
@@ -219,7 +219,7 @@ export function SocraticDemo() {
           <div className="flex gap-2">
             <button
               onClick={() => advance(0)}
-              className="w-[35%] py-3 rounded-[12px] border border-[#1B3A2D]/20 text-[#1B3A2D] text-sm font-sans font-medium hover:bg-[#F5F2EB] transition-colors"
+              className="w-[35%] py-3 rounded-[12px] border border-[#111]/20 text-[#111] text-sm font-sans font-medium hover:bg-[#FAFAFA] transition-colors"
             >
               Replay
             </button>
@@ -230,7 +230,7 @@ export function SocraticDemo() {
                   location: "demo_final",
                 })
               }
-              className="flex-1 py-3 rounded-[12px] bg-[#F5C842] text-[#1B3A2D] text-sm font-sans font-medium text-center hover:bg-[#F5C842]/90 transition-colors"
+              className="flex-1 py-3 rounded-[12px] bg-[#111] text-white text-sm font-sans font-medium text-center hover:bg-[#111]/90 transition-colors"
             >
               Try with your writing &rarr;
             </Link>
