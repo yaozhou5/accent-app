@@ -200,33 +200,40 @@ export default function LandingPage() {
       </nav>
 
       {/* ═══ SECTION 1: HERO ═══ */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
-          <source src="/accent-hero.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 z-10" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.15) 60%, rgba(247,244,239,1) 92%)" }} />
-        <div className="relative z-20 text-center px-6 max-w-[720px]" style={{ marginTop: "-8vh" }}>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-[12px] font-mono uppercase tracking-wider" style={{ border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.7)", textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
-            a writing game by accent.
-          </div>
-          <h1 className="font-serif font-bold" style={{ fontSize: "clamp(42px, 8vw, 76px)", fontWeight: 700, color: "#fff", lineHeight: 1.05, letterSpacing: "-0.02em", textShadow: "0 2px 20px rgba(0,0,0,0.4)" }}>
-            You haven't written anything{" "}
-            <span className="italic" style={{ color: "#fff" }}>truly yours</span>{" "}
-            in months.
-          </h1>
-          <p className="mt-6 text-[17px] font-sans" style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.6, maxWidth: 480, margin: "24px auto 0", textShadow: "0 1px 12px rgba(0,0,0,0.3)" }}>
-            You paste into AI. It comes back polished. But it doesn't sound like you.
-          </p>
-          <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: ACCENT, color: INK }}>
-            Do you have taste?
-          </button>
-          <div className="mt-10 space-y-2">
-            <div className="flex justify-center gap-8 font-serif italic text-[14px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-              <span>&ldquo;We stopped talking and just watched.&rdquo;</span>
-              <span>&ldquo;I never saw him sit down.&rdquo;</span>
+      <section>
+        {/* Video half */}
+        <div className="relative w-full overflow-hidden" style={{ maxHeight: "55vh" }}>
+          <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="w-full h-full object-cover" style={{ maxHeight: "55vh" }}>
+            <source src="/accent-hero.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute bottom-0 left-0 right-0" style={{ height: 60, background: `linear-gradient(to bottom, transparent 0%, ${CREAM} 100%)` }} />
+        </div>
+
+        {/* Text half */}
+        <div className="text-center px-6 pt-10 pb-16" style={{ background: CREAM }}>
+          <div className="max-w-[720px] mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-[12px] font-mono uppercase tracking-wider" style={{ border: `1px solid ${RULE}`, color: FAINT }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
+              a writing game by accent.
             </div>
-            <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.2)" }}>5 rounds &middot; 2 minutes &middot; no typing</p>
+            <h1 className="font-serif font-bold" style={{ fontSize: "clamp(42px, 8vw, 76px)", fontWeight: 700, color: INK, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+              You haven't written anything{" "}
+              <span className="italic">truly yours</span>{" "}
+              in months.
+            </h1>
+            <p className="text-[17px] font-sans" style={{ color: DIM, lineHeight: 1.6, maxWidth: 480, margin: "24px auto 0" }}>
+              You paste into AI. It comes back polished. But it doesn't sound like you.
+            </p>
+            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: INK, color: CREAM }}>
+              Do you have taste?
+            </button>
+            <div className="mt-10 space-y-2">
+              <div className="flex justify-center gap-8 font-serif italic text-[14px]" style={{ color: RULE }}>
+                <span>&ldquo;We stopped talking and just watched.&rdquo;</span>
+                <span>&ldquo;I never saw him sit down.&rdquo;</span>
+              </div>
+              <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: FAINT }}>5 rounds &middot; 2 minutes &middot; no typing</p>
+            </div>
           </div>
         </div>
       </section>
