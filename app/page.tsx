@@ -1,341 +1,362 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
-import { AccentLogo } from "@/components/AccentLogo";
 
-/* ───────── DATA ───────── */
-const CHATGPT_TEXT = `Thrilled to share that I've completed my first 6 months as a product lead in Amsterdam. The transition from Lagos to Europe has been an incredible learning experience. I'm grateful for the opportunity to work with such a diverse and talented team. Here are my top 3 takeaways from this journey:`;
+/* ───── DESIGN TOKENS ───── */
+const INK = "#1A1A18";
+const DIM = "#6B6860";
+const FAINT = "#A8A49C";
+const RULE = "#D9D5CE";
+const ACCENT = "#B8964E";
+const CREAM = "#F7F4EF";
 
-const AGENT_TEXT = `6 months in Amsterdam and I still rehearse what I'm going to say in meetings. In Lagos I was the loudest person in the room. Here I edit myself before I even open my mouth. My English is fine. My confidence in it is not. Working on that part.`;
+/* ───── GAME DATA ───── */
+type Option = { text: string; score: number; type: string };
+type Round = { flat: string; options: Option[]; insights: string[] };
 
-type Obs = { icon: string; text: string; type: "flag" | "good" | "nudge" };
-
-const CHATGPT_OBS: Obs[] = [
-  { icon: "—", text: "You never say \"incredible learning experience\" — you keep it blunt", type: "flag" },
-  { icon: "—", text: "You don't do gratitude lists. Your posts are one sharp observation.", type: "flag" },
-  { icon: "—", text: "\"Here are my top 3 takeaways\" — you've never written a listicle", type: "flag" },
+const ROUNDS: Round[] = [
+  {
+    flat: "It was a really beautiful sunset.",
+    options: [
+      { text: "The sunset painted the sky in breathtaking shades of gold and crimson.", score: 1, type: "polisher" },
+      { text: "We stopped talking and just watched.", score: 4, type: "writer" },
+      { text: "Best sunset I've ever seen, honestly.", score: 2, type: "safe" },
+      { text: "The kind of sunset that makes you forgive a bad day.", score: 3, type: "editor" },
+    ],
+    insights: [
+      "More adjectives \u2260 more feeling. The reader drowns in decoration.",
+      "You removed the sunset and showed what it did to people. That's the move.",
+      "Honest, but generic. Anyone could say this about any sunset.",
+      "Nice turn. 'Forgive a bad day' earns the sunset without describing it.",
+    ],
+  },
+  {
+    flat: "I miss my grandmother a lot.",
+    options: [
+      { text: "My grandmother was an incredible woman and I think about her every single day.", score: 1, type: "polisher" },
+      { text: "I still dial her number sometimes. Just to hear the voicemail.", score: 4, type: "writer" },
+      { text: "Miss you, grandma. Life isn't the same without you.", score: 2, type: "safe" },
+      { text: "Nobody makes the house smell like that anymore.", score: 3, type: "editor" },
+    ],
+    insights: [
+      "'Incredible woman' means nothing. Which woman? What made her her?",
+      "One specific action. Devastating. This is what voice sounds like.",
+      "Warm but forgettable. You'd scroll past this.",
+      "You cut the word 'miss' entirely. The reader feels it more.",
+    ],
+  },
+  {
+    flat: "Moving to a new city is scary but exciting.",
+    options: [
+      { text: "New city. No friends. No favorite coffee spot. No idea where I'm going. Can't wait.", score: 3, type: "editor" },
+      { text: "Embarking on a new chapter in a vibrant city full of endless possibilities and new beginnings.", score: 1, type: "polisher" },
+      { text: "Scared honestly. But the good kind of scared.", score: 2, type: "safe" },
+      { text: "I don't know a single person there. That's exactly why I'm going.", score: 4, type: "writer" },
+    ],
+    insights: [
+      "The rhythm does the work. Short hits build tension, then the flip.",
+      "This is what AI sounds like. Every word is correct. None of them are yours.",
+      "Real feeling, but you played it safe at the end. The 'good kind' softens it.",
+      "One sentence. One turn. Nothing wasted. Maximum punch.",
+    ],
+  },
+  {
+    flat: "My dad worked really hard to give us a good life.",
+    options: [
+      { text: "My father sacrificed so much for our family. His tireless dedication and selfless love shaped who I am today.", score: 1, type: "polisher" },
+      { text: "I never saw him sit down.", score: 4, type: "writer" },
+      { text: "He worked nights so we wouldn't notice we were poor. We noticed.", score: 3, type: "editor" },
+      { text: "Dad gave us everything. I wish I'd told him that more often.", score: 2, type: "safe" },
+    ],
+    insights: [
+      "'Tireless dedication and selfless love.' That's a eulogy template, not a memory.",
+      "Six words. No adjectives. You see the whole man.",
+      "The turn at the end. 'We noticed.' That cracks the whole thing open.",
+      "Genuine. But it tells the reader what to feel instead of showing them.",
+    ],
+  },
+  {
+    flat: "I was really nervous before my big presentation.",
+    options: [
+      { text: "The anxiety was overwhelming as I stood before the audience, my heart pounding with anticipation.", score: 1, type: "polisher" },
+      { text: "I was so nervous I almost didn't go through with it. But I did and I'm proud of myself.", score: 2, type: "safe" },
+      { text: "Hands shaking. Mouth dry. First slide up. Then I forgot to be scared.", score: 3, type: "editor" },
+      { text: "I threw up in the bathroom at 8:55. Presented at 9.", score: 4, type: "writer" },
+    ],
+    insights: [
+      "'Heart pounding with anticipation.' You decorated the fear instead of showing it.",
+      "Honest, but the 'proud of myself' wraps it up too neatly. Life doesn't do that.",
+      "Good rhythm. The fragments make the reader feel the speed of the moment.",
+      "Brutal. Specific. Unforgettable. Two timestamps tell the whole story.",
+    ],
+  },
 ];
-const AGENT_OBS: Obs[] = [
-  { icon: "✦", text: "\"Loudest person in the room\" — pulled from your own past writing", type: "good" },
-  { icon: "✦", text: "Short punchy sentences. Matched your rhythm.", type: "good" },
-  { icon: "✦", text: "\"Working on that part\" — your style of ending. Not ChatGPT's.", type: "good" },
-];
 
-const SAMPLES = [
-  { label: "LinkedIn post", emoji: "💼", preview: "I said 'I don't know' in a meeting last week and my manager thanked me after...", text: "I said 'I don't know' in a meeting last week and my manager thanked me after. She said most people just fake an answer. I think being a non-native speaker taught me this — when you're not fluent enough to bullshit, honesty becomes your default. Turns out that's a skill." },
-  { label: "Work email", emoji: "✉️", preview: "Hi Sarah, I wanted to follow up on our conversation from yesterday...", text: "Hi Sarah, I wanted to follow up on our conversation from yesterday. I think the proposal is good but maybe we should consider to add more details about the timeline. Also I am not sure if the budget is enough for what we want to achieve. Please let me know your thoughts about this." },
-  { label: "Self-intro", emoji: "👋", preview: "I'm a designer who accidentally became a founder...", text: "I'm a designer who accidentally became a founder. I say accidentally because if you told me two years ago I would be building AI tools in Amsterdam I would probably laugh and ask you what's Amsterdam like in winter." },
-];
-
-/* ───────── HELPERS ───────── */
-function ObsItem({ obs, index, visible }: { obs: Obs; index: number; visible: boolean }) {
-  return (
-    <div
-      className="flex items-start gap-[7px] rounded-[8px]"
-      style={{
-        padding: "7px 9px",
-        background: obs.type === "flag" ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.02)",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(6px)",
-        transition: `all 0.35s ease ${index * 150}ms`,
-      }}
-    >
-      <span className="text-[11px] shrink-0 mt-[1px]" style={{ color: "#999" }}>{obs.icon}</span>
-      <span className="text-[11px] leading-[1.45]" style={{ color: obs.type === "flag" ? "#999" : "#111" }}>{obs.text}</span>
-    </div>
-  );
+function getResult(score: number) {
+  if (score >= 17) return { title: "The Writer", desc: "You go specific. You go visceral. You trust the reader to feel it without being told. Most people have lost this instinct. You haven't.", cta: "You already have voice. Imagine it sharper." };
+  if (score >= 13) return { title: "The Editor", desc: "You know what hits. You see the good option. But sometimes you pull back before committing. Choosing clever over honest. The instinct is there. It just needs permission.", cta: "You're one draft away from great." };
+  if (score >= 9) return { title: "The Safe Voice", desc: "You're warm and honest. People like what you write. But they don't remember it. You go for 'nice' when you could go for 'true.' The generic option feels comfortable because it's what everyone picks.", cta: "Comfortable isn't memorable. Train the muscle." };
+  return { title: "The Polisher", desc: "You reach for bigger words when smaller ones would hit harder. You decorate when you should delete. This isn't a talent problem. It's a habit. AI writes like this too. That should worry you.", cta: "Your voice is underneath all that polish. Let's find it." };
 }
 
-/* ───────── MAIN ───────── */
-export default function AccentLanding() {
-  const [tab, setTab] = useState<"chatgpt" | "agent">("chatgpt");
-  const [showObs, setShowObs] = useState(false);
+/* ───── BACKGROUND WRITING DECO ───── */
+const DECO_LINES = [
+  { text: "We stopped talking and just watched.", top: "18%", left: "3%", rotate: -3 },
+  { text: "I never saw him sit down.", top: "42%", right: "2%", rotate: 2 },
+  { text: "Nobody makes the house smell like that anymore.", top: "65%", left: "5%", rotate: -1.5 },
+  { text: "Two timestamps tell the whole story.", top: "82%", right: "4%", rotate: 1 },
+];
+
+/* ───── SCROLL ANIMATION HOOK ───── */
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setVisible(true); }, { threshold: 0.15 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, style: { opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.6s ease, transform 0.6s ease" } as React.CSSProperties };
+}
+
+/* ───── MAIN PAGE ───── */
+export default function LandingPage() {
+  const [gameState, setGameState] = useState<"idle" | "playing" | "result">("idle");
+  const [round, setRound] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [scores, setScores] = useState<number[]>([]);
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [hoveredSample, setHoveredSample] = useState<number | null>(null);
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [scrolledPastHero, setScrolledPastHero] = useState(false);
+  const gameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setShowObs(false);
-    const t = setTimeout(() => setShowObs(true), 400);
-    return () => clearTimeout(t);
-  }, [tab]);
+    const onScroll = () => setScrolledPastHero(window.scrollY > window.innerHeight * 0.7);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const isChatGPT = tab === "chatgpt";
-  const obs = isChatGPT ? CHATGPT_OBS : AGENT_OBS;
+  const scrollToGame = () => gameRef.current?.scrollIntoView({ behavior: "smooth" });
 
-  const trackCTA = (location: string) => {
-    posthog.capture("landing_cta_clicked", { location });
+  const handleSelect = (idx: number) => setSelected(selected === idx ? null : idx);
+
+  const handleNext = () => {
+    if (selected === null) return;
+    const newScores = [...scores, ROUNDS[round].options[selected].score];
+    setScores(newScores);
+    setSelected(null);
+    if (round < 4) setRound(round + 1);
+    else { setGameState("result"); posthog.capture("game_completed", { score: newScores.reduce((a, b) => a + b, 0) }); }
   };
 
-  const handleWaitlist = async () => {
-    if (!email.includes("@") || submitting) return;
-    setSubmitting(true);
+  const handlePlayAgain = () => { setGameState("idle"); setRound(0); setSelected(null); setScores([]); };
+
+  const handleEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.includes("@") || emailLoading) return;
+    setEmailLoading(true);
     try {
       const supabase = createClient();
-      await supabase.from("agent_waitlist").insert({
-        email: email.trim().toLowerCase(),
-        source: "agent_waitlist",
-      });
-      setSubmitted(true);
-      posthog.capture("agent_waitlist_signup");
+      await supabase.from("agent_waitlist").insert({ email: email.trim().toLowerCase(), source: "game_email" });
+      setEmailSubmitted(true);
+      posthog.capture("game_email_signup");
     } catch {}
-    setSubmitting(false);
+    setEmailLoading(false);
   };
 
+  const totalScore = scores.reduce((a, b) => a + b, 0);
+  const result = getResult(totalScore);
+  const currentRound = ROUNDS[round];
+
+  const s1 = useScrollReveal();
+  const s2 = useScrollReveal();
+  const s3 = useScrollReveal();
+
   return (
-    <div className="min-h-screen font-sans" style={{ background: "#FFFFFF" }}>
-      {/* ─── NAV ─── */}
-      <nav className="max-w-[960px] mx-auto px-5 py-5 flex items-center justify-between">
-        <Link href="/" className="hover:opacity-80 transition-opacity">
-          <AccentLogo />
-        </Link>
-        <Link
-          href="/write"
-          onClick={() => trackCTA("nav")}
-          style={{ fontSize: 13, fontWeight: 500, color: "#111", padding: "8px 20px", border: "1px solid #E8E8E8", borderRadius: 100, textDecoration: "none" }}
-        >
-          Try free →
-        </Link>
+    <div className="relative" style={{ background: CREAM, color: INK }}>
+      {/* ── Background writing decorations (desktop only) ── */}
+      <div className="hidden lg:block pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        {DECO_LINES.map((d, i) => (
+          <span key={i} className="absolute font-serif italic text-[15px]" style={{ color: RULE, top: d.top, left: d.left, right: d.right, transform: `rotate(${d.rotate}deg)`, opacity: 0.5 }}>{d.text}</span>
+        ))}
+      </div>
+
+      {/* ── Nav ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolledPastHero ? CREAM : "transparent", borderBottom: scrolledPastHero ? `1px solid ${RULE}` : "none" }}>
+        <div className="max-w-[960px] mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="font-serif text-[20px] no-underline" style={{ color: scrolledPastHero ? INK : CREAM, fontWeight: 400 }}>
+            accent<span style={{ color: ACCENT }}>.</span>
+          </Link>
+          <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? INK : ACCENT, color: scrolledPastHero ? CREAM : INK }}>
+            Try free
+          </Link>
+        </div>
       </nav>
 
-      {/* ═══ SECTION 1 — HERO ═══ */}
-      <section style={{ padding: "80px 32px 40px", maxWidth: 900, margin: "0 auto" }}>
-        <h1
-          className="font-serif"
-          style={{ fontSize: "clamp(52px, 10vw, 96px)", color: "#111", lineHeight: 1.0, margin: 0, fontWeight: 400, letterSpacing: "-0.02em" }}
-        >
-          The first AI<br />that writes<br />
-          <span style={{ fontStyle: "italic" }}>like you,</span><br />
-          not for you.
-        </h1>
-        <p style={{ fontSize: 18, color: "#999", lineHeight: 1.6, margin: "28px 0 0", maxWidth: 480 }}>
-          An AI that learns your voice and writes as you.
-        </p>
-      </section>
-
-      {/* ═══ SECTION 2 — DEMO ═══ */}
-      <section className="flex flex-col items-center" style={{ padding: "40px 20px 80px" }}>
-        {/* Prompt bubble */}
-        <div className="flex items-center gap-[10px]" style={{ maxWidth: 720, width: "100%", marginBottom: 16 }}>
-          <div
-            className="flex items-center justify-center shrink-0 font-semibold"
-            style={{ width: 32, height: 32, borderRadius: "50%", background: "#111", color: "#fff", fontSize: 12 }}
-          >S</div>
-          <div style={{ background: "#F5F5F5", borderRadius: 12, padding: "10px 16px", fontSize: 14, color: "#999", fontStyle: "italic" }}>
-            &ldquo;Write a LinkedIn post about my first 6 months in Amsterdam&rdquo;
+      {/* ═══ SECTION 1: HERO ═══ */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0" style={{ filter: "brightness(0.9)" }}>
+          <source src="/accent-hero.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 z-10" style={{ background: "linear-gradient(180deg, rgba(30,28,24,0.78) 0%, rgba(30,28,24,0.85) 50%, rgba(247,244,239,1) 100%)" }} />
+        <div className="relative z-20 text-center px-6 max-w-[720px]" style={{ marginTop: "-8vh" }}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-[12px] font-mono uppercase tracking-wider" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.5)" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
+            a writing game by accent.
+          </div>
+          <h1 className="font-serif" style={{ fontSize: "clamp(42px, 8vw, 76px)", fontWeight: 400, color: CREAM, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+            You haven't written anything{" "}
+            <span className="italic font-bold" style={{ color: ACCENT }}>truly yours</span>{" "}
+            in months.
+          </h1>
+          <p className="mt-6 text-[17px] font-sans" style={{ color: "rgba(255,255,255,0.5)", lineHeight: 1.6, maxWidth: 480, margin: "24px auto 0" }}>
+            You paste into AI. It comes back polished. But it doesn't sound like you.
+          </p>
+          <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: ACCENT, color: INK }}>
+            Do you have taste?
+          </button>
+          <div className="mt-10 space-y-2">
+            <div className="flex justify-center gap-8 font-serif italic text-[14px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+              <span>&ldquo;We stopped talking and just watched.&rdquo;</span>
+              <span>&ldquo;I never saw him sit down.&rdquo;</span>
+            </div>
+            <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.2)" }}>5 rounds &middot; 2 minutes &middot; no typing</p>
           </div>
         </div>
+      </section>
 
-        <div style={{ width: "100%", maxWidth: 720 }}>
-          {/* Browser chrome */}
-          <div className="flex items-center gap-2" style={{ background: "#E8E8E8", borderRadius: "12px 12px 0 0", padding: "10px 16px" }}>
-            <div className="flex gap-[6px]">
-              {["#ccc", "#ccc", "#ccc"].map((c, i) => (
-                <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
-              ))}
+      {/* ═══ SECTION 2: MAKE IT HIT GAME ═══ */}
+      <section ref={gameRef} className="relative z-10" style={{ borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}` }}>
+        <div ref={s1.ref} style={s1.style} className="max-w-[800px] mx-auto px-6 py-20">
+
+          {/* Game Start */}
+          {gameState === "idle" && (
+            <div className="text-center">
+              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>2-minute game</p>
+              <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 36px)", fontWeight: 400 }}>
+                Make It <span className="italic font-bold">Hit.</span>
+              </h2>
+              <p className="text-[16px] mb-8 max-w-[460px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
+                A flat sentence. Four rewrites. Pick the one that lands. See what your choices reveal.
+              </p>
+              <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-10 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
+                Play
+              </button>
             </div>
-            <div className="flex-1" style={{ background: "#fff", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#999", marginLeft: 8 }}>linkedin.com/feed</div>
-          </div>
+          )}
 
-          <div className="flex flex-col md:flex-row" style={{ background: "#FFF", border: "1px solid #E8E8E8", borderTop: "none", borderRadius: "0 0 12px 12px" }}>
-            {/* Post */}
-            <div className="flex-1" style={{ padding: "24px 24px 24px 28px" }}>
-              <div className="flex items-center gap-[10px] mb-4">
-                <div
-                  className="flex items-center justify-center font-semibold"
-                  style={{ width: 36, height: 36, borderRadius: "50%", background: "#111", color: "#fff", fontSize: 14 }}
-                >S</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>Suki Adeyemi</div>
-                  <div style={{ fontSize: 11, color: "#999" }}>Product lead · Lagos → Amsterdam</div>
-                </div>
+          {/* Game Playing */}
+          {gameState === "playing" && (
+            <div>
+              {/* Progress dots */}
+              <div className="flex justify-center gap-2 mb-6">
+                {ROUNDS.map((_, i) => (
+                  <div key={i} className="rounded-full" style={{ width: 8, height: 8, background: i <= round ? INK : RULE }} />
+                ))}
+              </div>
+              <p className="font-mono text-[11px] uppercase tracking-wider text-center mb-8" style={{ color: FAINT }}>Round {round + 1} of 5</p>
+              <p className="text-[13px] text-center mb-2" style={{ color: DIM }}>Make this hit harder:</p>
+              <p className="font-serif italic text-center mb-10" style={{ fontSize: "clamp(18px, 3vw, 22px)", color: INK, lineHeight: 1.4 }}>&ldquo;{currentRound.flat}&rdquo;</p>
+
+              <div className="space-y-3 max-w-[600px] mx-auto">
+                {currentRound.options.map((opt, i) => (
+                  <div key={i}>
+                    <button
+                      onClick={() => handleSelect(i)}
+                      className="w-full text-left px-5 py-4 rounded-[10px] transition-all flex items-start gap-3"
+                      style={{
+                        border: selected === i ? `1.5px solid ${INK}` : `1px solid ${RULE}`,
+                        background: selected === i ? "rgba(0,0,0,0.03)" : "transparent",
+                      }}
+                    >
+                      <div className="mt-0.5 shrink-0 rounded-full" style={{ width: 16, height: 16, border: selected === i ? `5px solid ${INK}` : `1.5px solid ${RULE}` }} />
+                      <span className="text-[15px] leading-relaxed" style={{ color: INK }}>&ldquo;{opt.text}&rdquo;</span>
+                    </button>
+                    {selected === i && (
+                      <div className="ml-8 mt-2 pl-4" style={{ borderLeft: `2px solid ${INK}` }}>
+                        <p className="italic text-[13px]" style={{ color: DIM }}>{currentRound.insights[i]}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              <div className="flex gap-[2px] mb-4" style={{ background: "#F5F5F5", borderRadius: 8, padding: 3 }}>
-                {(["chatgpt", "agent"] as const).map(t => (
-                  <button key={t} onClick={() => setTab(t)} style={{
-                    flex: 1, padding: "8px 0", border: "none", borderRadius: 6,
-                    fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-                    background: tab === t ? "#fff" : "transparent",
-                    color: tab === t ? "#111" : "#999",
-                    boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                  }}>
-                    {t === "chatgpt" ? "ChatGPT wrote it" : "Accent agent wrote it"}
+              {selected !== null && (
+                <div className="text-center mt-8">
+                  <button onClick={handleNext} className="px-8 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
+                    {round === 4 ? "See My Result" : "Next"}
                   </button>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 14, lineHeight: 1.75, color: "#111" }}>
-                {isChatGPT ? CHATGPT_TEXT : AGENT_TEXT}
-              </div>
-            </div>
-
-            {/* Agent panel — desktop */}
-            <div
-              className="shrink-0 hidden md:block"
-              style={{
-                width: 216, borderLeft: "1px solid #E8E8E8",
-                padding: "16px 14px",
-                background: "#FAFAFA",
-                borderRadius: "0 0 12px 0",
-              }}
-            >
-              <div className="flex items-center gap-[6px] mb-[14px] pb-[10px]" style={{ borderBottom: "1px solid #E8E8E8" }}>
-                <div
-                  className="flex items-center justify-center font-bold"
-                  style={{ width: 18, height: 18, borderRadius: 4, background: "#111", fontSize: 10, color: "#fff" }}
-                >a</div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#111" }}>accent.</span>
-              </div>
-
-              <div className="flex items-center gap-[6px] mb-[14px]">
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isChatGPT ? "#999" : "#111", transition: "background 0.3s" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: isChatGPT ? "#999" : "#111", transition: "color 0.3s" }}>
-                  {isChatGPT ? "Doesn't sound like Suki" : "Sounds like Suki"}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-[6px]">
-                {obs.map((o, i) => (
-                  <ObsItem key={`${tab}-${i}`} obs={o} index={i} visible={showObs} />
-                ))}
-              </div>
-
-              {isChatGPT && (
-                <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid #E8E8E8", opacity: showObs ? 1 : 0, transition: "opacity 0.4s ease 0.5s" }}>
-                  <div style={{ fontSize: 11, color: "#111", fontWeight: 600, cursor: "pointer" }}>↻ Rewrite as Suki</div>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Agent panel — mobile */}
-            <div className="block md:hidden" style={{ padding: "16px 20px", background: "#FAFAFA", borderTop: "1px solid #E8E8E8" }}>
-              <div className="flex items-center gap-[6px] mb-3">
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isChatGPT ? "#999" : "#111" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: isChatGPT ? "#999" : "#111" }}>
-                  {isChatGPT ? "Doesn't sound like Suki" : "Sounds like Suki"}
-                </span>
-              </div>
-              <div className="flex flex-col gap-[6px]">
-                {obs.map((o, i) => (
-                  <ObsItem key={`m-${tab}-${i}`} obs={o} index={i} visible={showObs} />
+          {/* Game Result */}
+          {gameState === "result" && (
+            <div className="text-center">
+              <div className="flex justify-center gap-2 mb-6">
+                {ROUNDS.map((_, i) => (
+                  <div key={i} className="rounded-full" style={{ width: 8, height: 8, background: INK }} />
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
+              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>Your result</p>
+              <h3 className="font-serif mb-2" style={{ fontSize: "clamp(32px, 5vw, 40px)", fontWeight: 300 }}>{result.title}</h3>
+              <p className="font-mono text-[13px] mb-6" style={{ color: FAINT }}>{totalScore} / 20</p>
+              <p className="text-[16px] max-w-[500px] mx-auto mb-6" style={{ color: DIM, lineHeight: 1.6 }}>{result.desc}</p>
+              <p className="font-serif italic text-[16px] mb-10" style={{ color: INK }}>{result.cta}</p>
 
-        <p className="text-center" style={{ maxWidth: 500, fontSize: 14, color: "#999", marginTop: 20, lineHeight: 1.5 }}>
-          Same prompt. One sounds like a template. One sounds like Suki — because Accent already knew her voice.
-        </p>
-      </section>
+              {!emailSubmitted ? (
+                <div className="max-w-[400px] mx-auto">
+                  <p className="text-[13px] mb-3" style={{ color: DIM }}>Your first writing challenge drops this week.</p>
+                  <form onSubmit={handleEmail} className="flex gap-2">
+                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[15px] outline-none" style={{ border: `1px solid ${RULE}`, background: "white", color: INK }} />
+                    <button type="submit" disabled={emailLoading} className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[15px] disabled:opacity-50" style={{ background: INK, color: CREAM }}>{emailLoading ? "..." : "I'm in"}</button>
+                  </form>
+                </div>
+              ) : (
+                <p className="font-mono text-[13px]" style={{ color: INK }}>&check; Watch your inbox.</p>
+              )}
 
-      {/* ═══ SECTION 3 — HOW IT WORKS ═══ */}
-      <section style={{ padding: "64px 20px", borderTop: "1px solid #E8E8E8" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <h2 className="font-serif text-center" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: "#111", fontWeight: 400, margin: "0 0 40px" }}>
-            How it learns you.
-          </h2>
-          <div className="flex gap-[2px] flex-wrap justify-center">
-            {[
-              { s: "01", l: "Write with Accent", d: "Use the free writing coach. Fix your English, learn patterns. Every session teaches Accent how you sound." },
-              { s: "02", l: "It builds your voice", d: "Your rhythm, your phrases, your way of ending a paragraph. It maps all of it, quietly, in the background." },
-              { s: "03", l: "It writes as you", d: "When it knows you well enough, it drafts posts, emails, and messages that sound like you on a good day." },
-            ].map((item) => (
-              <div key={item.s} className="text-center" style={{ flex: "1 1 200px", padding: "16px 24px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: "0.05em", marginBottom: 8 }}>{item.s}</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 6 }}>{item.l}</div>
-                <div style={{ fontSize: 14, color: "#999", lineHeight: 1.55 }}>{item.d}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ SECTION 4 — TRY FREE NOW ═══ */}
-      <section style={{ padding: "72px 20px", background: "#111" }}>
-        <div className="text-center" style={{ maxWidth: 640, margin: "0 auto" }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#999", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16 }}>Available now — free</p>
-          <h2 className="font-serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: "#FFF", fontWeight: 400, margin: "0 0 12px", lineHeight: 1.15 }}>
-            Start teaching it your voice.
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginBottom: 36, lineHeight: 1.5 }}>
-            Every time you write with Accent, it learns how you sound. Start now — it&apos;s free.
-          </p>
-
-          <div className="flex gap-3 justify-center flex-wrap">
-            {SAMPLES.map((s, i) => (
-              <Link key={i} href={`/write?text=${encodeURIComponent(s.text)}`}
-                onClick={() => trackCTA("sample_card")}
-                onMouseEnter={() => setHoveredSample(i)}
-                onMouseLeave={() => setHoveredSample(null)}
-                className="text-left no-underline"
-                style={{
-                  flex: "1 1 180px", maxWidth: 200,
-                  background: hoveredSample === i ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12, padding: "18px 16px",
-                  cursor: "pointer", transition: "all 0.2s",
-                  transform: hoveredSample === i ? "translateY(-2px)" : "none",
-                }}
-              >
-                <div style={{ fontSize: 20, marginBottom: 8 }}>{s.emoji}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#FFF", marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.45, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{s.preview}</div>
-              </Link>
-            ))}
-          </div>
-
-          <Link href="/write" onClick={() => trackCTA("try_free")} className="inline-block no-underline" style={{
-            marginTop: 28, padding: "14px 32px", background: "#FFF", color: "#111",
-            borderRadius: 100, fontSize: 15, fontWeight: 700,
-          }}>Start writing — it&apos;s free →</Link>
-        </div>
-      </section>
-
-      {/* ═══ SECTION 5 — AGENT WAITLIST ═══ */}
-      <section className="flex flex-col items-center" style={{ padding: "72px 20px 80px" }}>
-        <div className="text-center w-full" style={{ maxWidth: 480, padding: "48px 32px", background: "#FAFAFA", borderRadius: 20, border: "1px solid #E8E8E8" }}>
-          <h2 className="font-serif" style={{ fontSize: 32, color: "#111", fontWeight: 400, margin: "0 0 8px" }}>
-            Your writing voice, captured.
-          </h2>
-          <p style={{ fontSize: 15, color: "#999", marginBottom: 8, lineHeight: 1.5 }}>
-            An AI that learns how you sound — and remembers.
-          </p>
-          <p style={{ fontSize: 13, color: "#999", marginBottom: 28 }}>
-            Join the waitlist for early access.
-          </p>
-
-          {!submitted ? (
-            <div className="flex gap-2" style={{ maxWidth: 380, margin: "0 auto" }}>
-              <input type="email" placeholder="your@email.com" value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="flex-1 outline-none"
-                style={{ padding: "12px 16px", border: "1px solid #E8E8E8", borderRadius: 10, fontSize: 15, background: "#fff", color: "#111" }}
-              />
-              <button onClick={handleWaitlist} disabled={submitting}
-                className="whitespace-nowrap disabled:opacity-50"
-                style={{ padding: "12px 24px", background: "#111", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
-              >{submitting ? "..." : "Join waitlist"}</button>
-            </div>
-          ) : (
-            <div style={{ padding: "16px 24px", background: "rgba(0,0,0,0.03)", borderRadius: 12, maxWidth: 380, margin: "0 auto" }}>
-              <div style={{ fontSize: 20, marginBottom: 4 }}>✦</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#111", marginBottom: 4 }}>You&apos;re on the list.</div>
-              <div style={{ fontSize: 13, color: "#999" }}>We&apos;ll email you when your agent is ready to train.</div>
+              <button onClick={handlePlayAgain} className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium" style={{ border: `1px solid ${RULE}`, color: DIM, background: "transparent" }}>
+                Play Again
+              </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="flex justify-between items-center" style={{ padding: "24px 32px", borderTop: "1px solid #E8E8E8", maxWidth: 960, margin: "0 auto" }}>
-        <span style={{ fontSize: 12, color: "#999" }}>© 2026 accent. Built in Amsterdam.</span>
-        <Link href="/privacy-contact" style={{ fontSize: 12, color: "#999", textDecoration: "none" }}>Privacy</Link>
+      {/* ═══ SECTION 3: PRODUCT REVEAL ═══ */}
+      <section className="relative z-10">
+        <div ref={s2.ref} style={s2.style} className="max-w-[800px] mx-auto px-6 py-24 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>Introducing</p>
+          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 300 }}>
+            AI writes for you. <span className="font-bold">Accent</span> makes you a writer.
+          </h2>
+          <p className="text-[15px] max-w-[420px] mx-auto mb-8" style={{ color: DIM, lineHeight: 1.6 }}>
+            Daily challenges that make writing fun. AI coaching that teaches you why good writing works. A Phrasebook that captures your voice. Coming soon.
+          </p>
+          <button onClick={scrollToGame} className="px-8 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
+            Play the game first
+          </button>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer className="relative z-10" style={{ borderTop: `1px solid ${RULE}` }}>
+        <div ref={s3.ref} style={s3.style} className="max-w-[960px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <span className="font-serif text-[16px]" style={{ color: INK }}>accent<span style={{ color: ACCENT }}>.</span></span>
+          <div className="flex gap-6 text-[12px] font-sans" style={{ color: FAINT }}>
+            <Link href="/privacy-contact" className="no-underline hover:underline" style={{ color: FAINT }}>Privacy</Link>
+            <a href="mailto:hello@myaccent.io" className="no-underline hover:underline" style={{ color: FAINT }}>Contact</a>
+          </div>
+          <span className="text-[12px] font-sans" style={{ color: FAINT }}>Built in Amsterdam</span>
+        </div>
       </footer>
     </div>
   );
