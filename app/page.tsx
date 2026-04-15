@@ -202,8 +202,8 @@ export default function LandingPage() {
       {/* ═══ SECTION 1: HERO ═══ */}
       <section>
         {/* Video half */}
-        <div className="relative w-full overflow-hidden" style={{ maxHeight: "55vh" }}>
-          <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="w-full h-full object-cover" style={{ maxHeight: "55vh" }}>
+        <div className="relative w-full">
+          <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="w-full" style={{ display: "block" }}>
             <source src="/accent-hero.mp4" type="video/mp4" />
           </video>
           <div className="absolute bottom-0 left-0 right-0" style={{ height: 60, background: `linear-gradient(to bottom, transparent 0%, ${CREAM} 100%)` }} />
