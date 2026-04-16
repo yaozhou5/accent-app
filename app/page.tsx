@@ -184,7 +184,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ═══ SECTION 1: HERO ═══ */}
-      <section className="relative w-full overflow-hidden" style={{ height: "100vh", borderBottomLeftRadius: "clamp(32px, 5vw, 56px)", borderBottomRightRadius: "clamp(32px, 5vw, 56px)" }}>
+      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
         <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
           <source src="/accent-hero.mp4" type="video/mp4" />
         </video>
