@@ -255,13 +255,9 @@ export default function LandingPage() {
             <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
               Do you have taste?
             </button>
-            <div className="mt-10 space-y-2">
-              <div className="flex justify-center gap-8 font-serif italic text-[14px] flex-wrap" style={{ color: "rgba(255,255,255,0.6)", textShadow: "0 1px 8px rgba(0,0,0,0.4)" }}>
-                <span>&ldquo;We stopped talking and just watched.&rdquo;</span>
-                <span>&ldquo;I never saw him sit down.&rdquo;</span>
-              </div>
-              <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)", textShadow: "0 1px 8px rgba(0,0,0,0.4)" }}>5 rounds &middot; 2 minutes &middot; no typing</p>
-            </div>
+            <p className="font-mono mt-6 uppercase" style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", color: CREAM, textShadow: "0 1px 16px rgba(0,0,0,0.6)" }}>
+              5 rounds &middot; 2 minutes &middot; no typing
+            </p>
           </div>
         </div>
 
