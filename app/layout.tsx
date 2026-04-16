@@ -5,7 +5,8 @@ import { PostHogProvider } from "@/components/PostHogProvider";
 import "./globals.css";
 
 const fraunces = Fraunces({
-  weight: "700",
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",

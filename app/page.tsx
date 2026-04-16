@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 const INK = "#1A1A18";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
-const RULE = "rgba(26,26,24,0.15)";
+const RULE = "transparent";
 const ACCENT = "#B8964E";
 const CREAM = "#F7F4EF";
 
@@ -267,7 +267,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ SECTION 2: MAKE IT HIT GAME ═══ */}
-      <section ref={gameRef} className="relative z-10" style={{ borderTop: `1px solid rgba(26,26,24,0.15)`, borderBottom: `1px solid rgba(26,26,24,0.15)` }}>
+      <section ref={gameRef} className="relative z-10" style={{ borderTop: "none", borderBottom: "none" }}>
         <div ref={s1.ref} style={s1.style} className="max-w-[800px] mx-auto px-6 py-20">
 
           {/* Game Start */}
