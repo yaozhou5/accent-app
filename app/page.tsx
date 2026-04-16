@@ -200,42 +200,62 @@ export default function LandingPage() {
       </nav>
 
       {/* ═══ SECTION 1: HERO ═══ */}
-      <section>
-        {/* Video half */}
-        <div className="relative w-full">
-          <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="w-full" style={{ display: "block" }}>
-            <source src="/accent-hero.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute bottom-0 left-0 right-0" style={{ height: 60, background: `linear-gradient(to bottom, transparent 0%, ${CREAM} 100%)` }} />
-        </div>
+      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
+        <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
+          <source src="/accent-hero.mp4" type="video/mp4" />
+        </video>
 
-        {/* Text half */}
-        <div className="text-center px-6 pt-10 pb-16" style={{ background: CREAM }}>
-          <div className="max-w-[720px] mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-[12px] font-mono uppercase tracking-wider" style={{ border: `1px solid ${RULE}`, color: FAINT }}>
+        {/* Radial vignette behind text only */}
+        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at center, rgba(0,0,0,0.4) 0%, transparent 70%)" }} />
+
+        {/* Centered text overlay */}
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6">
+          <div className="max-w-[820px] w-full">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-[12px] font-mono uppercase tracking-wider" style={{
+              background: "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "#fff",
+            }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
               a writing game by accent.
             </div>
-            <h1 className="font-serif font-bold" style={{ fontSize: "clamp(42px, 8vw, 76px)", fontWeight: 700, color: INK, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+            <h1 className="font-serif" style={{
+              fontSize: "clamp(42px, 8vw, 80px)",
+              fontWeight: 700,
+              color: "#FFFFFF",
+              lineHeight: 1.0,
+              letterSpacing: "-0.04em",
+              textShadow: "0 2px 24px rgba(0,0,0,0.5)",
+            }}>
               You haven't written anything{" "}
-              <span className="italic">truly yours</span>{" "}
+              <span className="italic" style={{ color: "#E8C464", fontWeight: 700 }}>truly yours</span>{" "}
               in months.
             </h1>
-            <p className="text-[17px] font-sans" style={{ color: DIM, lineHeight: 1.6, maxWidth: 480, margin: "24px auto 0" }}>
+            <p className="mt-6 text-[17px] font-sans mx-auto" style={{
+              color: "rgba(255,255,255,0.85)",
+              lineHeight: 1.6,
+              maxWidth: 420,
+              textShadow: "0 1px 12px rgba(0,0,0,0.4)",
+            }}>
               You paste into AI. It comes back polished. But it doesn't sound like you.
             </p>
-            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: INK, color: CREAM }}>
+            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
               Do you have taste?
             </button>
             <div className="mt-10 space-y-2">
-              <div className="flex justify-center gap-8 font-serif italic text-[14px]" style={{ color: RULE }}>
+              <div className="flex justify-center gap-8 font-serif italic text-[14px] flex-wrap" style={{ color: "rgba(255,255,255,0.6)", textShadow: "0 1px 8px rgba(0,0,0,0.4)" }}>
                 <span>&ldquo;We stopped talking and just watched.&rdquo;</span>
                 <span>&ldquo;I never saw him sit down.&rdquo;</span>
               </div>
-              <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: FAINT }}>5 rounds &middot; 2 minutes &middot; no typing</p>
+              <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)", textShadow: "0 1px 8px rgba(0,0,0,0.4)" }}>5 rounds &middot; 2 minutes &middot; no typing</p>
             </div>
           </div>
         </div>
+
+        {/* Bottom fade to cream */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none" style={{ height: 80, background: `linear-gradient(to bottom, transparent 0%, ${CREAM} 100%)` }} />
       </section>
 
       {/* ═══ SECTION 2: MAKE IT HIT GAME ═══ */}
