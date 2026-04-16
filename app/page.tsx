@@ -125,9 +125,6 @@ export default function LandingPage() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [dailyEmail, setDailyEmail] = useState("");
-  const [dailySubmitted, setDailySubmitted] = useState(false);
-  const [dailyLoading, setDailyLoading] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
 
@@ -165,25 +162,11 @@ export default function LandingPage() {
     setEmailLoading(false);
   };
 
-  const handleDailyEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dailyEmail.includes("@") || dailyLoading) return;
-    setDailyLoading(true);
-    try {
-      const supabase = createClient();
-      await supabase.from("agent_waitlist").insert({ email: dailyEmail.trim().toLowerCase(), source: "daily_challenges" });
-      setDailySubmitted(true);
-      posthog.capture("daily_challenges_signup");
-    } catch {}
-    setDailyLoading(false);
-  };
-
   const totalScore = scores.reduce((a, b) => a + b, 0);
   const result = getResult(totalScore);
   const currentRound = ROUNDS[round];
 
   const s1 = useScrollReveal();
-  const s2 = useScrollReveal();
   const s3 = useScrollReveal();
 
   return (
@@ -194,17 +177,9 @@ export default function LandingPage() {
           <Link href="/" className="font-serif text-[20px] no-underline" style={{ color: scrolledPastHero ? INK : CREAM, fontWeight: 400 }}>
             accent<span style={{ color: ACCENT }}>.</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/write?mode=polish" className="hidden sm:inline-block no-underline text-[13px] font-sans transition-colors hover:opacity-100" style={{ color: scrolledPastHero ? DIM : "rgba(255,255,255,0.7)" }}>
-              Voice Polish
-            </Link>
-            <Link href="/write?mode=coach" className="hidden sm:inline-block no-underline text-[13px] font-sans transition-colors hover:opacity-100" style={{ color: scrolledPastHero ? DIM : "rgba(255,255,255,0.7)" }}>
-              The Coach
-            </Link>
-            <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? INK : ACCENT, color: scrolledPastHero ? CREAM : INK, border: "none", cursor: "pointer" }}>
-              Take the Test
-            </button>
-          </div>
+          <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? INK : ACCENT, color: scrolledPastHero ? CREAM : INK, border: "none", cursor: "pointer" }}>
+            Take the Test
+          </button>
         </div>
       </nav>
 
@@ -358,87 +333,26 @@ export default function LandingPage() {
                 <p className="font-mono text-[13px]" style={{ color: INK }}>&check; Watch your inbox.</p>
               )}
 
-              <button onClick={handlePlayAgain} className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium" style={{ border: `1px solid ${RULE}`, color: DIM, background: "transparent" }}>
+              <button onClick={handlePlayAgain} className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium" style={{ border: `1px solid rgba(26,26,24,0.15)`, color: DIM, background: "transparent" }}>
                 Play Again
               </button>
+
+              {/* Post-game tool entry points */}
+              <div className="mt-16 pt-10" style={{ borderTop: `1px solid rgba(26,26,24,0.15)` }}>
+                <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>next</p>
+                <p className="font-serif mb-5" style={{ fontSize: 22, fontWeight: 400, color: INK }}>
+                  Want to work on your own writing?
+                </p>
+                <div className="flex justify-center gap-8 flex-wrap">
+                  <Link href="/write?mode=polish" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
+                    Polish it <span>→</span>
+                  </Link>
+                  <Link href="/write?mode=coach" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
+                    Coach me <span>→</span>
+                  </Link>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* ═══ SECTION 3: TOOL REVEAL ═══ */}
-      <section className="relative z-10">
-        <div ref={s2.ref} style={s2.style} className="max-w-[880px] mx-auto px-6 py-24">
-          <div className="text-center mb-12">
-            <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>the tool</p>
-            <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
-              You felt the gap. Now close it.
-            </h2>
-            <p className="text-[15px] max-w-[480px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
-              Paste any writing. We'll show you where AI flattens your voice and how to bring it back. Free, no signup.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
-            {/* Card 1 — Voice Polish */}
-            <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: 24 }}>
-              <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>instant</p>
-              <h3 className="font-serif mb-3" style={{ fontSize: 20, fontWeight: 300, color: INK }}>Voice Polish</h3>
-              <p className="text-[14px] mb-5" style={{ color: DIM, lineHeight: 1.6 }}>
-                Polish without losing yourself. Improves clarity while keeping your rhythm, your phrasing, your edges.
-              </p>
-              <Link href="/write?mode=polish" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
-                Polish it <span>→</span>
-              </Link>
-            </div>
-
-            {/* Card 2 — The Coach */}
-            <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: 24 }}>
-              <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>learn</p>
-              <h3 className="font-serif mb-3" style={{ fontSize: 20, fontWeight: 300, color: INK }}>The Coach</h3>
-              <p className="text-[14px] mb-5" style={{ color: DIM, lineHeight: 1.6 }}>
-                Learn why, not just what. Get the rewrite plus a breakdown of why each change works.
-              </p>
-              <Link href="/write?mode=coach" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
-                Coach me <span>→</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ SECTION 4: WHAT'S NEXT ═══ */}
-      <section className="relative z-10" style={{ borderTop: `1px solid ${RULE}` }}>
-        <div className="max-w-[720px] mx-auto px-6 py-20 text-center">
-          <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>what's next</p>
-          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
-            Daily challenges. Coming soon.
-          </h2>
-          <p className="text-[14px] max-w-[420px] mx-auto mb-8" style={{ color: DIM, lineHeight: 1.6 }}>
-            A daily writing workout. Five minutes, no AI, just you and the blank page.
-          </p>
-          {!dailySubmitted ? (
-            <form onSubmit={handleDailyEmail} className="flex gap-0 max-w-[420px] mx-auto" style={{ borderBottom: `1px solid ${INK}` }}>
-              <input
-                type="email"
-                required
-                value={dailyEmail}
-                onChange={e => setDailyEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="flex-1 font-sans text-[15px] outline-none bg-transparent"
-                style={{ padding: "10px 0", color: INK, border: "none" }}
-              />
-              <button
-                type="submit"
-                disabled={dailyLoading}
-                className="font-sans font-semibold text-[14px] disabled:opacity-50"
-                style={{ background: ACCENT, color: INK, padding: "10px 20px", border: "none", cursor: "pointer" }}
-              >
-                {dailyLoading ? "..." : "Notify me"}
-              </button>
-            </form>
-          ) : (
-            <p className="font-mono text-[13px]" style={{ color: INK }}>&check; You&apos;re on the list.</p>
           )}
         </div>
       </section>
