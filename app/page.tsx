@@ -247,8 +247,8 @@ export default function LandingPage() {
           {gameState === "idle" && (
             <div className="text-center">
               <p className="font-mono uppercase mb-8" style={{ fontSize: 13, letterSpacing: "0.16em", color: FAINT }}>A 2-minute writing game</p>
-              <h2 className="font-serif mb-5" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
-                Make It <span className="italic">Hit.</span>
+              <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "rgb(255, 255, 255)", fontSize: "61px", lineHeight: "67px" }}>
+                Make It <span style={{ fontStyle: "italic" }}>Hit.</span>
               </h2>
               <p className="font-serif italic mb-6 max-w-[460px] mx-auto" style={{ fontSize: "clamp(17px, 2.2vw, 20px)", color: INK, lineHeight: 1.4 }}>
                 A 5-round test of writing instinct.
