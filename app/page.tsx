@@ -250,7 +250,7 @@ export default function LandingPage() {
               <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "#000000", fontSize: "61px", lineHeight: "67px" }}>
                 Make It <span style={{ fontStyle: "italic" }}>Hit.</span>
               </h2>
-              <p className="font-serif italic mb-6 max-w-[460px] mx-auto" style={{ fontSize: "clamp(17px, 2.2vw, 20px)", color: INK, lineHeight: 1.4 }}>
+              <p className="mb-6 max-w-[460px] mx-auto" style={{ fontFamily: "'Switzer', sans-serif", fontWeight: 500, fontSize: 16, color: "rgba(0, 0, 0, 0.5)", lineHeight: 1.4 }}>
                 A 5-round test of writing instinct.
               </p>
               <p className="text-[15px] mb-8 max-w-[380px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
