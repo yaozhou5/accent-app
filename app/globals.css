@@ -40,7 +40,7 @@
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
-  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-sans: 'Switzer', var(--font-dm-sans), system-ui, sans-serif;
 
   --animate-pulse-subtle: pulse-subtle 1.2s ease-in-out infinite;
   --animate-blink: blink 1s step-end infinite;

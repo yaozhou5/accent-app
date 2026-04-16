@@ -270,7 +270,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="font-mono text-[11px] uppercase tracking-wider text-center mb-8" style={{ color: FAINT }}>Round {round + 1} of 5</p>
-              <p className="font-sans text-center mb-3" style={{ fontSize: 18, fontWeight: 600, color: INK }}>Make this hit harder</p>
+              <p className="font-sans text-center mb-3" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Make this hit harder</p>
               <p className="font-serif italic text-center mb-10" style={{ fontSize: "clamp(18px, 3vw, 22px)", color: INK, lineHeight: 1.4 }}>&ldquo;{currentRound.flat}&rdquo;</p>
 
               <div className="max-w-[600px] mx-auto">
@@ -291,12 +291,12 @@ export default function LandingPage() {
                           borderRight: "none",
                         }}
                       >
-                        <span className="font-mono shrink-0 mt-0.5" style={{ fontSize: 13, color: isSelected ? ACCENT : FAINT, fontWeight: 600 }}>{i + 1}.</span>
-                        <span className="text-[15px] leading-relaxed flex-1" style={{ color: INK }}>&ldquo;{opt.text}&rdquo;</span>
+                        <span className="font-mono shrink-0" style={{ fontSize: 17, lineHeight: 1.5, color: isSelected ? ACCENT : "rgba(26,26,24,0.45)", fontWeight: 600 }}>{i + 1}.</span>
+                        <span className="font-sans flex-1" style={{ fontSize: 17, lineHeight: 1.5, color: INK }}>&ldquo;{opt.text}&rdquo;</span>
                       </button>
                       {isSelected && (
                         <div className="ml-12 mt-3 mb-3 pl-4" style={{ borderLeft: `2px solid ${ACCENT}` }}>
-                          <p className="italic text-[13px]" style={{ color: DIM }}>{currentRound.insights[i]}</p>
+                          <p className="font-sans" style={{ fontSize: 16, lineHeight: 1.55, color: DIM, fontStyle: "italic" }}>{currentRound.insights[i]}</p>
                         </div>
                       )}
                     </div>
@@ -330,14 +330,14 @@ export default function LandingPage() {
 
               {!emailSubmitted ? (
                 <div className="max-w-[400px] mx-auto">
-                  <p className="text-[13px] mb-3" style={{ color: DIM }}>Your first writing challenge drops this week.</p>
+                  <p className="font-sans mb-3" style={{ fontSize: 16, color: DIM }}>Your first writing challenge drops this week.</p>
                   <form onSubmit={handleEmail} className="flex gap-2">
-                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[15px] outline-none" style={{ border: `1px solid ${RULE}`, background: "white", color: INK }} />
-                    <button type="submit" disabled={emailLoading} className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[15px] disabled:opacity-50" style={{ background: INK, color: CREAM }}>{emailLoading ? "..." : "I'm in"}</button>
+                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[16px] outline-none" style={{ border: `1px solid rgba(26,26,24,0.15)`, background: "white", color: INK }} />
+                    <button type="submit" disabled={emailLoading} className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[16px] disabled:opacity-50" style={{ background: INK, color: CREAM }}>{emailLoading ? "..." : "I'm in"}</button>
                   </form>
                 </div>
               ) : (
-                <p className="font-mono text-[13px]" style={{ color: INK }}>&check; Watch your inbox.</p>
+                <p className="font-mono" style={{ fontSize: 14, letterSpacing: "0.04em", color: INK }}>&check; Watch your inbox.</p>
               )}
 
               <button onClick={handlePlayAgain} className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium" style={{ border: `1px solid rgba(26,26,24,0.15)`, color: DIM, background: "transparent" }}>
