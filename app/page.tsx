@@ -184,7 +184,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ═══ SECTION 1: HERO ═══ */}
-      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
+      <section className="relative w-full overflow-hidden" style={{ height: "100vh", borderBottomLeftRadius: "clamp(32px, 5vw, 56px)", borderBottomRightRadius: "clamp(32px, 5vw, 56px)" }}>
         <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
           <source src="/accent-hero.mp4" type="video/mp4" />
         </video>
@@ -237,8 +237,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Bottom fade to cream */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none" style={{ height: 80, background: `linear-gradient(to bottom, transparent 0%, ${CREAM} 100%)` }} />
       </section>
 
       {/* ═══ SECTION 2: MAKE IT HIT GAME ═══ */}
