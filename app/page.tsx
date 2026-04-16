@@ -221,16 +221,17 @@ export default function LandingPage() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
               a writing game by accent.
             </div>
-            <h1 className="font-serif" style={{
-              fontSize: "clamp(1.8rem, 3.5vw, 3rem)",
-              fontWeight: 700,
+            <h1 style={{
+              fontFamily: "'Switzer', sans-serif",
+              fontSize: "clamp(3rem, 6vw, 5.5rem)",
+              fontWeight: 800,
               color: "#FFFFFF",
-              lineHeight: 1.1,
+              lineHeight: 1.0,
               letterSpacing: "-0.03em",
               textShadow: "0 2px 24px rgba(0,0,0,0.5)",
             }}>
               You haven't written anything{" "}
-              <span className="italic" style={{ color: "#E8C464", fontWeight: 700 }}>truly yours</span>{" "}
+              <span className="italic font-serif" style={{ color: "#E8C464", fontWeight: 700, fontStyle: "italic" }}>truly yours</span>{" "}
               in months.
             </h1>
             <p className="mt-4 font-sans mx-auto" style={{

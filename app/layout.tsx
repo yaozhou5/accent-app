@@ -59,6 +59,9 @@ export default function RootLayout({
       className={`${fraunces.variable} ${jetbrains.variable} ${dmSans.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,700,800,900&display=swap" />
+      </head>
       <body className="min-h-screen" suppressHydrationWarning>
         <PostHogProvider>{children}</PostHogProvider>
         <Analytics />
