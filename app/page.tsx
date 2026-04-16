@@ -228,7 +228,7 @@ export default function LandingPage() {
             }}>
               You paste into AI. It comes back polished. But it doesn't sound like you.
             </p>
-            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
+            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
               Do you have taste?
             </button>
             <p className="font-mono mt-6 uppercase" style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", color: CREAM, textShadow: "0 1px 16px rgba(0,0,0,0.6)" }}>
@@ -247,7 +247,7 @@ export default function LandingPage() {
           {gameState === "idle" && (
             <div className="text-center">
               <p className="font-mono uppercase mb-8" style={{ fontSize: 13, letterSpacing: "0.16em", color: FAINT }}>A 2-minute writing game</p>
-              <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "rgb(255, 255, 255)", fontSize: "61px", lineHeight: "67px" }}>
+              <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "#000000", fontSize: "61px", lineHeight: "67px" }}>
                 Make It <span style={{ fontStyle: "italic" }}>Hit.</span>
               </h2>
               <p className="font-serif italic mb-6 max-w-[460px] mx-auto" style={{ fontSize: "clamp(17px, 2.2vw, 20px)", color: INK, lineHeight: 1.4 }}>
@@ -256,7 +256,7 @@ export default function LandingPage() {
               <p className="text-[15px] mb-8 max-w-[380px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
                 We'll show you 5 flat sentences and 4 rewrites of each. Pick the one that hits hardest. There's no right answer. Your choices reveal where your writing taste stands.
               </p>
-              <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
+              <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
                 Start
               </button>
             </div>
@@ -308,7 +308,7 @@ export default function LandingPage() {
 
               {selected !== null && (
                 <div className="text-center mt-8">
-                  <button onClick={handleNext} className="px-7 py-3 rounded-full font-sans font-bold text-[14px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
+                  <button onClick={handleNext} className="px-7 py-3 rounded-full font-sans font-bold text-[14px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
                     {round === 4 ? "See My Result →" : "Lock it in →"}
                   </button>
                 </div>
