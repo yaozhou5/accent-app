@@ -153,11 +153,18 @@ export default function LandingPage() {
     e.preventDefault();
     if (!email.includes("@") || emailLoading) return;
     setEmailLoading(true);
+    const score = scores.reduce((a, b) => a + b, 0);
+    const resultType = getResult(score).title;
     try {
       const supabase = createClient();
-      await supabase.from("agent_waitlist").insert({ email: email.trim().toLowerCase(), source: "game_email" });
+      await supabase.from("agent_waitlist").insert({
+        email: email.trim().toLowerCase(),
+        source: "game_email",
+        result_type: resultType,
+        score,
+      });
       setEmailSubmitted(true);
-      posthog.capture("game_email_signup");
+      posthog.capture("game_email_signup", { result_type: resultType, score });
     } catch {}
     setEmailLoading(false);
   };
