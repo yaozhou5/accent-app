@@ -177,7 +177,7 @@ export default function LandingPage() {
           <Link href="/" className="font-serif text-[20px] no-underline" style={{ color: scrolledPastHero ? INK : CREAM, fontWeight: 400 }}>
             accent<span style={{ color: ACCENT }}>.</span>
           </Link>
-          <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? INK : ACCENT, color: scrolledPastHero ? CREAM : INK, border: "none", cursor: "pointer" }}>
+          <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? "#000000" : "#FFFFFF", color: scrolledPastHero ? "#FFFFFF" : "#000000", border: "none", cursor: "pointer" }}>
             Take the Test
           </button>
         </div>
@@ -228,7 +228,7 @@ export default function LandingPage() {
             }}>
               You paste into AI. It comes back polished. But it doesn't sound like you.
             </p>
-            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
+            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#FFFFFF", color: "#000000" }}>
               Do you have taste?
             </button>
             <p className="font-mono mt-6 uppercase" style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", color: CREAM, textShadow: "0 1px 16px rgba(0,0,0,0.6)" }}>
