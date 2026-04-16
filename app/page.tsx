@@ -248,10 +248,13 @@ export default function LandingPage() {
           {/* Game Start */}
           {gameState === "idle" && (
             <div className="text-center">
-              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>2-minute writing test</p>
-              <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
+              <p className="font-mono uppercase mb-8" style={{ fontSize: 13, letterSpacing: "0.16em", color: FAINT }}>A 2-minute writing game</p>
+              <h2 className="font-serif mb-5" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
                 Make It <span className="italic">Hit.</span>
               </h2>
+              <p className="font-serif italic mb-6 max-w-[460px] mx-auto" style={{ fontSize: "clamp(17px, 2.2vw, 20px)", color: INK, lineHeight: 1.4 }}>
+                A 5-round test of writing instinct.
+              </p>
               <p className="text-[15px] mb-8 max-w-[380px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
                 We'll show you 5 flat sentences and 4 rewrites of each. Pick the one that hits hardest. There's no right answer. Your choices reveal where your writing taste stands.
               </p>
@@ -271,36 +274,44 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="font-mono text-[11px] uppercase tracking-wider text-center mb-8" style={{ color: FAINT }}>Round {round + 1} of 5</p>
-              <p className="text-[13px] text-center mb-2" style={{ color: DIM }}>Make this hit harder:</p>
+              <p className="font-sans text-center mb-3" style={{ fontSize: 18, fontWeight: 600, color: INK }}>Make this hit harder</p>
               <p className="font-serif italic text-center mb-10" style={{ fontSize: "clamp(18px, 3vw, 22px)", color: INK, lineHeight: 1.4 }}>&ldquo;{currentRound.flat}&rdquo;</p>
 
-              <div className="space-y-3 max-w-[600px] mx-auto">
-                {currentRound.options.map((opt, i) => (
-                  <div key={i}>
-                    <button
-                      onClick={() => handleSelect(i)}
-                      className="w-full text-left px-5 py-4 rounded-[10px] transition-all flex items-start gap-3"
-                      style={{
-                        border: selected === i ? `1.5px solid ${INK}` : `1px solid ${RULE}`,
-                        background: selected === i ? "rgba(0,0,0,0.03)" : "transparent",
-                      }}
-                    >
-                      <div className="mt-0.5 shrink-0 rounded-full" style={{ width: 16, height: 16, border: selected === i ? `5px solid ${INK}` : `1.5px solid ${RULE}` }} />
-                      <span className="text-[15px] leading-relaxed" style={{ color: INK }}>&ldquo;{opt.text}&rdquo;</span>
-                    </button>
-                    {selected === i && (
-                      <div className="ml-8 mt-2 pl-4" style={{ borderLeft: `2px solid ${INK}` }}>
-                        <p className="italic text-[13px]" style={{ color: DIM }}>{currentRound.insights[i]}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="max-w-[600px] mx-auto">
+                {currentRound.options.map((opt, i) => {
+                  const isSelected = selected === i;
+                  return (
+                    <div key={i}>
+                      <button
+                        onClick={() => handleSelect(i)}
+                        onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = "rgba(26,26,24,0.04)"; e.currentTarget.style.borderLeftColor = ACCENT; } }}
+                        onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; } }}
+                        className="w-full text-left py-4 px-5 flex items-start gap-4 transition-colors cursor-pointer"
+                        style={{
+                          background: isSelected ? "rgba(26,26,24,0.05)" : "transparent",
+                          borderLeft: `3px solid ${isSelected ? ACCENT : "transparent"}`,
+                          borderTop: i === 0 ? `1px solid rgba(26,26,24,0.12)` : "none",
+                          borderBottom: `1px solid rgba(26,26,24,0.12)`,
+                          borderRight: "none",
+                        }}
+                      >
+                        <span className="font-mono shrink-0 mt-0.5" style={{ fontSize: 13, color: isSelected ? ACCENT : FAINT, fontWeight: 600 }}>{i + 1}.</span>
+                        <span className="text-[15px] leading-relaxed flex-1" style={{ color: INK }}>&ldquo;{opt.text}&rdquo;</span>
+                      </button>
+                      {isSelected && (
+                        <div className="ml-12 mt-3 mb-3 pl-4" style={{ borderLeft: `2px solid ${ACCENT}` }}>
+                          <p className="italic text-[13px]" style={{ color: DIM }}>{currentRound.insights[i]}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {selected !== null && (
                 <div className="text-center mt-8">
-                  <button onClick={handleNext} className="px-8 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
-                    {round === 4 ? "See My Result" : "Next"}
+                  <button onClick={handleNext} className="px-7 py-3 rounded-full font-sans font-bold text-[14px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
+                    {round === 4 ? "See My Result →" : "Lock it in →"}
                   </button>
                 </div>
               )}
