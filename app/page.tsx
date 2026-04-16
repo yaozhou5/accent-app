@@ -205,13 +205,13 @@ export default function LandingPage() {
           <source src="/accent-hero.mp4" type="video/mp4" />
         </video>
 
-        {/* Radial vignette behind text only */}
-        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at center, rgba(0,0,0,0.4) 0%, transparent 70%)" }} />
+        {/* Radial vignette behind text only — centered on middle-lower zone */}
+        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 40% at 50% 62%, rgba(0,0,0,0.4) 0%, transparent 70%)" }} />
 
-        {/* Centered text overlay */}
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6">
-          <div className="max-w-[820px] w-full">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-[12px] font-mono uppercase tracking-wider" style={{
+        {/* Text overlay — positioned in middle-lower zone */}
+        <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6" style={{ paddingTop: "40vh" }}>
+          <div className="max-w-[480px] w-full mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-[12px] font-mono uppercase tracking-wider" style={{
               background: "rgba(255,255,255,0.1)",
               backdropFilter: "blur(10px)",
               WebkitBackdropFilter: "blur(10px)",
@@ -222,18 +222,19 @@ export default function LandingPage() {
               a writing game by accent.
             </div>
             <h1 className="font-serif" style={{
-              fontSize: "clamp(42px, 8vw, 80px)",
+              fontSize: "clamp(1.8rem, 3.5vw, 3rem)",
               fontWeight: 700,
               color: "#FFFFFF",
-              lineHeight: 1.0,
-              letterSpacing: "-0.04em",
+              lineHeight: 1.1,
+              letterSpacing: "-0.03em",
               textShadow: "0 2px 24px rgba(0,0,0,0.5)",
             }}>
               You haven't written anything{" "}
               <span className="italic" style={{ color: "#E8C464", fontWeight: 700 }}>truly yours</span>{" "}
               in months.
             </h1>
-            <p className="mt-6 text-[17px] font-sans mx-auto" style={{
+            <p className="mt-4 font-sans mx-auto" style={{
+              fontSize: "0.875rem",
               color: "rgba(255,255,255,0.85)",
               lineHeight: 1.6,
               maxWidth: 420,
