@@ -102,14 +102,6 @@ function getResult(score: number) {
   return { title: "The Polisher", desc: "You reach for bigger words when smaller ones would hit harder. You decorate when you should delete. This isn't a talent problem. It's a habit. AI writes like this too. That should worry you.", cta: "Your voice is underneath all that polish. Let's find it." };
 }
 
-/* ───── BACKGROUND WRITING DECO ───── */
-const DECO_LINES = [
-  { text: "We stopped talking and just watched.", top: "18%", left: "3%", rotate: -3 },
-  { text: "I never saw him sit down.", top: "42%", right: "2%", rotate: 2 },
-  { text: "Nobody makes the house smell like that anymore.", top: "65%", left: "5%", rotate: -1.5 },
-  { text: "Two timestamps tell the whole story.", top: "82%", right: "4%", rotate: 1 },
-];
-
 /* ───── SCROLL ANIMATION HOOK ───── */
 function useScrollReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -133,6 +125,9 @@ export default function LandingPage() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [dailyEmail, setDailyEmail] = useState("");
+  const [dailySubmitted, setDailySubmitted] = useState(false);
+  const [dailyLoading, setDailyLoading] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
 
@@ -170,6 +165,19 @@ export default function LandingPage() {
     setEmailLoading(false);
   };
 
+  const handleDailyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dailyEmail.includes("@") || dailyLoading) return;
+    setDailyLoading(true);
+    try {
+      const supabase = createClient();
+      await supabase.from("agent_waitlist").insert({ email: dailyEmail.trim().toLowerCase(), source: "daily_challenges" });
+      setDailySubmitted(true);
+      posthog.capture("daily_challenges_signup");
+    } catch {}
+    setDailyLoading(false);
+  };
+
   const totalScore = scores.reduce((a, b) => a + b, 0);
   const result = getResult(totalScore);
   const currentRound = ROUNDS[round];
@@ -180,13 +188,6 @@ export default function LandingPage() {
 
   return (
     <div className="relative" style={{ background: CREAM, color: INK }}>
-      {/* ── Background writing decorations (desktop only) ── */}
-      <div className="hidden lg:block pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        {DECO_LINES.map((d, i) => (
-          <span key={i} className="absolute font-serif italic text-[15px]" style={{ color: RULE, top: d.top, left: d.left, right: d.right, transform: `rotate(${d.rotate}deg)`, opacity: 0.5 }}>{d.text}</span>
-        ))}
-      </div>
-
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolledPastHero ? CREAM : "transparent", borderBottom: scrolledPastHero ? `1px solid ${RULE}` : "none" }}>
         <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
@@ -387,7 +388,7 @@ export default function LandingPage() {
                 Polish without losing yourself. Improves clarity while keeping your rhythm, your phrasing, your edges.
               </p>
               <Link href="/write?mode=polish" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
-                Try it <span>→</span>
+                Polish it <span>→</span>
               </Link>
             </div>
 
@@ -399,7 +400,7 @@ export default function LandingPage() {
                 Learn why, not just what. Get the rewrite plus a breakdown of why each change works.
               </p>
               <Link href="/write?mode=coach" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
-                Try it <span>→</span>
+                Coach me <span>→</span>
               </Link>
             </div>
           </div>
@@ -413,9 +414,32 @@ export default function LandingPage() {
           <h2 className="font-serif mb-4" style={{ fontSize: "clamp(28px, 4.5vw, 36px)", fontWeight: 300 }}>
             Daily challenges. Coming soon.
           </h2>
-          <p className="text-[14px] max-w-[420px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
-            A daily writing workout. Five minutes, no AI, just you and the blank page. Get on the list above to be first in.
+          <p className="text-[14px] max-w-[420px] mx-auto mb-8" style={{ color: DIM, lineHeight: 1.6 }}>
+            A daily writing workout. Five minutes, no AI, just you and the blank page.
           </p>
+          {!dailySubmitted ? (
+            <form onSubmit={handleDailyEmail} className="flex gap-0 max-w-[420px] mx-auto" style={{ borderBottom: `1px solid ${INK}` }}>
+              <input
+                type="email"
+                required
+                value={dailyEmail}
+                onChange={e => setDailyEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1 font-sans text-[15px] outline-none bg-transparent"
+                style={{ padding: "10px 0", color: INK, border: "none" }}
+              />
+              <button
+                type="submit"
+                disabled={dailyLoading}
+                className="font-sans font-semibold text-[14px] disabled:opacity-50"
+                style={{ background: ACCENT, color: INK, padding: "10px 20px", border: "none", cursor: "pointer" }}
+              >
+                {dailyLoading ? "..." : "Notify me"}
+              </button>
+            </form>
+          ) : (
+            <p className="font-mono text-[13px]" style={{ color: INK }}>&check; You&apos;re on the list.</p>
+          )}
         </div>
       </section>
 
