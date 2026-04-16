@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 const INK = "#1A1A18";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
-const RULE = "#D9D5CE";
+const RULE = "rgba(26,26,24,0.15)";
 const ACCENT = "#B8964E";
 const CREAM = "#F7F4EF";
 
@@ -267,20 +267,20 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ SECTION 2: MAKE IT HIT GAME ═══ */}
-      <section ref={gameRef} className="relative z-10" style={{ borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}` }}>
+      <section ref={gameRef} className="relative z-10" style={{ borderTop: `1px solid rgba(26,26,24,0.15)`, borderBottom: `1px solid rgba(26,26,24,0.15)` }}>
         <div ref={s1.ref} style={s1.style} className="max-w-[800px] mx-auto px-6 py-20">
 
           {/* Game Start */}
           {gameState === "idle" && (
             <div className="text-center">
               <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>2-minute writing test</p>
-              <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 36px)", fontWeight: 400 }}>
-                Make It <span className="italic font-bold">Hit.</span>
+              <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
+                Make It <span className="italic">Hit.</span>
               </h2>
               <p className="text-[15px] mb-8 max-w-[380px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
                 We'll show you 5 flat sentences and 4 rewrites of each. Pick the one that hits hardest. There's no right answer. Your choices reveal where your writing taste stands.
               </p>
-              <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-10 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
+              <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#E8C464", color: INK }}>
                 Start
               </button>
             </div>
@@ -371,7 +371,7 @@ export default function LandingPage() {
         <div ref={s2.ref} style={s2.style} className="max-w-[880px] mx-auto px-6 py-24">
           <div className="text-center mb-12">
             <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>the tool</p>
-            <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 300 }}>
+            <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
               You felt the gap. Now close it.
             </h2>
             <p className="text-[15px] max-w-[480px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
@@ -383,7 +383,7 @@ export default function LandingPage() {
             {/* Card 1 — Voice Polish */}
             <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: 24 }}>
               <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>instant</p>
-              <h3 className="font-serif mb-3" style={{ fontSize: 22, fontWeight: 400, color: INK }}>Voice Polish</h3>
+              <h3 className="font-serif mb-3" style={{ fontSize: 20, fontWeight: 300, color: INK }}>Voice Polish</h3>
               <p className="text-[14px] mb-5" style={{ color: DIM, lineHeight: 1.6 }}>
                 Polish without losing yourself. Improves clarity while keeping your rhythm, your phrasing, your edges.
               </p>
@@ -395,7 +395,7 @@ export default function LandingPage() {
             {/* Card 2 — The Coach */}
             <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: 24 }}>
               <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>learn</p>
-              <h3 className="font-serif mb-3" style={{ fontSize: 22, fontWeight: 400, color: INK }}>The Coach</h3>
+              <h3 className="font-serif mb-3" style={{ fontSize: 20, fontWeight: 300, color: INK }}>The Coach</h3>
               <p className="text-[14px] mb-5" style={{ color: DIM, lineHeight: 1.6 }}>
                 Learn why, not just what. Get the rewrite plus a breakdown of why each change works.
               </p>
@@ -411,7 +411,7 @@ export default function LandingPage() {
       <section className="relative z-10" style={{ borderTop: `1px solid ${RULE}` }}>
         <div className="max-w-[720px] mx-auto px-6 py-20 text-center">
           <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>what's next</p>
-          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(28px, 4.5vw, 36px)", fontWeight: 300 }}>
+          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 400 }}>
             Daily challenges. Coming soon.
           </h2>
           <p className="text-[14px] max-w-[420px] mx-auto mb-8" style={{ color: DIM, lineHeight: 1.6 }}>
