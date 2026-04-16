@@ -189,13 +189,21 @@ export default function LandingPage() {
 
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolledPastHero ? CREAM : "transparent", borderBottom: scrolledPastHero ? `1px solid ${RULE}` : "none" }}>
-        <div className="max-w-[960px] mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="font-serif text-[20px] no-underline" style={{ color: scrolledPastHero ? INK : CREAM, fontWeight: 400 }}>
             accent<span style={{ color: ACCENT }}>.</span>
           </Link>
-          <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? INK : ACCENT, color: scrolledPastHero ? CREAM : INK }}>
-            Try free
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link href="/write?mode=polish" className="hidden sm:inline-block no-underline text-[13px] font-sans transition-colors hover:opacity-100" style={{ color: scrolledPastHero ? DIM : "rgba(255,255,255,0.7)" }}>
+              Voice Polish
+            </Link>
+            <Link href="/write?mode=coach" className="hidden sm:inline-block no-underline text-[13px] font-sans transition-colors hover:opacity-100" style={{ color: scrolledPastHero ? DIM : "rgba(255,255,255,0.7)" }}>
+              The Coach
+            </Link>
+            <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? INK : ACCENT, color: scrolledPastHero ? CREAM : INK, border: "none", cursor: "pointer" }}>
+              Take the Test
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -268,15 +276,15 @@ export default function LandingPage() {
           {/* Game Start */}
           {gameState === "idle" && (
             <div className="text-center">
-              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>2-minute game</p>
+              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>2-minute writing test</p>
               <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 36px)", fontWeight: 400 }}>
                 Make It <span className="italic font-bold">Hit.</span>
               </h2>
-              <p className="text-[16px] mb-8 max-w-[460px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
-                A flat sentence. Four rewrites. Pick the one that lands. See what your choices reveal.
+              <p className="text-[15px] mb-8 max-w-[380px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
+                We'll show you 5 flat sentences and 4 rewrites of each. Pick the one that hits hardest. There's no right answer. Your choices reveal where your writing taste stands.
               </p>
               <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-10 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
-                Play
+                Start
               </button>
             </div>
           )}
@@ -361,19 +369,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ SECTION 3: PRODUCT REVEAL ═══ */}
+      {/* ═══ SECTION 3: TOOL REVEAL ═══ */}
       <section className="relative z-10">
-        <div ref={s2.ref} style={s2.style} className="max-w-[800px] mx-auto px-6 py-24 text-center">
-          <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>Introducing</p>
-          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 300 }}>
-            AI writes for you. <span className="font-bold">Accent</span> makes you a writer.
+        <div ref={s2.ref} style={s2.style} className="max-w-[880px] mx-auto px-6 py-24">
+          <div className="text-center mb-12">
+            <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>the tool</p>
+            <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 40px)", fontWeight: 300 }}>
+              You felt the gap. Now close it.
+            </h2>
+            <p className="text-[15px] max-w-[480px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
+              Paste any writing. We'll show you where AI flattens your voice and how to bring it back. Free, no signup.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
+            {/* Card 1 — Voice Polish */}
+            <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: 24 }}>
+              <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>instant</p>
+              <h3 className="font-serif mb-3" style={{ fontSize: 22, fontWeight: 400, color: INK }}>Voice Polish</h3>
+              <p className="text-[14px] mb-5" style={{ color: DIM, lineHeight: 1.6 }}>
+                Polish without losing yourself. Improves clarity while keeping your rhythm, your phrasing, your edges.
+              </p>
+              <Link href="/write?mode=polish" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
+                Try it <span>→</span>
+              </Link>
+            </div>
+
+            {/* Card 2 — The Coach */}
+            <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: 24 }}>
+              <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>learn</p>
+              <h3 className="font-serif mb-3" style={{ fontSize: 22, fontWeight: 400, color: INK }}>The Coach</h3>
+              <p className="text-[14px] mb-5" style={{ color: DIM, lineHeight: 1.6 }}>
+                Learn why, not just what. Get the rewrite plus a breakdown of why each change works.
+              </p>
+              <Link href="/write?mode=coach" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
+                Try it <span>→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ SECTION 4: WHAT'S NEXT ═══ */}
+      <section className="relative z-10" style={{ borderTop: `1px solid ${RULE}` }}>
+        <div className="max-w-[720px] mx-auto px-6 py-20 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>what's next</p>
+          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(28px, 4.5vw, 36px)", fontWeight: 300 }}>
+            Daily challenges. Coming soon.
           </h2>
-          <p className="text-[15px] max-w-[420px] mx-auto mb-8" style={{ color: DIM, lineHeight: 1.6 }}>
-            Daily challenges that make writing fun. AI coaching that teaches you why good writing works. A Phrasebook that captures your voice. Coming soon.
+          <p className="text-[14px] max-w-[420px] mx-auto" style={{ color: DIM, lineHeight: 1.6 }}>
+            A daily writing workout. Five minutes, no AI, just you and the blank page. Get on the list above to be first in.
           </p>
-          <button onClick={scrollToGame} className="px-8 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: INK, color: CREAM }}>
-            Play the game first
-          </button>
         </div>
       </section>
 
