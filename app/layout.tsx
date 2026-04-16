@@ -61,6 +61,7 @@ export default function RootLayout({
     >
       <head>
         <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,700,800,900&display=swap" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap" />
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
         <PostHogProvider>{children}</PostHogProvider>

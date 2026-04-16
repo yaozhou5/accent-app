@@ -205,9 +205,6 @@ export default function LandingPage() {
           <source src="/accent-hero.mp4" type="video/mp4" />
         </video>
 
-        {/* Radial vignette behind text only — centered on middle-lower zone */}
-        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 40% at 50% 62%, rgba(0,0,0,0.4) 0%, transparent 70%)" }} />
-
         {/* Text overlay — positioned in middle-lower zone */}
         <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6 overflow-visible" style={{ paddingTop: "32vh" }}>
           <div className="max-w-[520px] w-full mx-auto">
@@ -225,15 +222,14 @@ export default function LandingPage() {
             <h1 style={{
               fontFamily: "'Switzer', sans-serif",
               fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
-              fontWeight: 800,
+              fontWeight: 400,
               color: "#FFFFFF",
               lineHeight: 1.1,
               letterSpacing: "-0.03em",
-              textShadow: "0 2px 24px rgba(0,0,0,0.5)",
               marginTop: 8,
             }}>
               You haven't written anything{" "}
-              <span className="italic font-serif" style={{ color: "#E8C464", fontWeight: 700, fontStyle: "italic" }}>truly yours</span>{" "}
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontWeight: 400, color: "#FFFFFF" }}>truly yours</span>{" "}
               in months.
             </h1>
             <p className="mt-4 font-sans mx-auto" style={{
