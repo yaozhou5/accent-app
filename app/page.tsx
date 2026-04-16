@@ -205,6 +205,9 @@ export default function LandingPage() {
           <source src="/accent-hero.mp4" type="video/mp4" />
         </video>
 
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
+
         {/* Text overlay — positioned in middle-lower zone */}
         <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6 overflow-visible" style={{ paddingTop: "32vh" }}>
           <div className="max-w-[520px] w-full mx-auto">
