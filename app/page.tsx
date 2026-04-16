@@ -209,9 +209,10 @@ export default function LandingPage() {
         <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 40% at 50% 62%, rgba(0,0,0,0.4) 0%, transparent 70%)" }} />
 
         {/* Text overlay — positioned in middle-lower zone */}
-        <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6" style={{ paddingTop: "40vh" }}>
-          <div className="max-w-[480px] w-full mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-[12px] font-mono uppercase tracking-wider" style={{
+        <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6 overflow-visible" style={{ paddingTop: "32vh" }}>
+          <div className="max-w-[520px] w-full mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-mono uppercase tracking-wider" style={{
+              marginBottom: 8,
               background: "rgba(255,255,255,0.1)",
               backdropFilter: "blur(10px)",
               WebkitBackdropFilter: "blur(10px)",
@@ -223,12 +224,13 @@ export default function LandingPage() {
             </div>
             <h1 style={{
               fontFamily: "'Switzer', sans-serif",
-              fontSize: "clamp(3rem, 6vw, 5.5rem)",
+              fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
               fontWeight: 800,
               color: "#FFFFFF",
-              lineHeight: 1.0,
+              lineHeight: 1.1,
               letterSpacing: "-0.03em",
               textShadow: "0 2px 24px rgba(0,0,0,0.5)",
+              marginTop: 8,
             }}>
               You haven't written anything{" "}
               <span className="italic font-serif" style={{ color: "#E8C464", fontWeight: 700, fontStyle: "italic" }}>truly yours</span>{" "}
