@@ -244,10 +244,10 @@ export default function LandingPage() {
               <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "#000000", fontSize: "61px", lineHeight: "67px" }}>
                 Make It <span style={{ fontStyle: "italic" }}>Hit.</span>
               </h2>
-              <p className="mb-6 max-w-[460px] mx-auto" style={{ fontFamily: "'Switzer', sans-serif", fontWeight: 500, fontSize: 16, color: "rgba(0, 0, 0, 0.5)", lineHeight: 1.4 }}>
+              <p className="font-serif italic mb-6 max-w-[460px] mx-auto" style={{ fontSize: 20, color: INK, lineHeight: 1.4 }}>
                 A 5-round test of writing instinct.
               </p>
-              <p className="mb-8 max-w-[380px] mx-auto" style={{ fontFamily: "'Switzer', sans-serif", fontSize: 16, color: DIM, lineHeight: 1.6 }}>
+              <p className="mb-8 max-w-[380px] mx-auto" style={{ fontFamily: "'Switzer', sans-serif", fontWeight: 400, fontSize: 16, color: "rgba(26,26,24,0.6)", lineHeight: 1.6 }}>
                 We'll show you 5 flat sentences and 4 rewrites of each. Pick the one that hits hardest. There's no right answer. Your choices reveal where your writing taste stands.
               </p>
               <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
