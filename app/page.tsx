@@ -202,17 +202,6 @@ export default function LandingPage() {
         {/* Text overlay — positioned in middle-lower zone */}
         <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6 overflow-visible" style={{ paddingTop: "32vh" }}>
           <div className="max-w-[520px] w-full mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-mono uppercase tracking-wider" style={{
-              marginBottom: 8,
-              background: "rgba(255,255,255,0.1)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              color: "#fff",
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
-              a writing game by accent.
-            </div>
             <h1 style={{
               fontFamily: "'Switzer', sans-serif",
               fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
@@ -251,7 +240,7 @@ export default function LandingPage() {
           {/* Game Start */}
           {gameState === "idle" && (
             <div className="text-center">
-              <p className="font-mono uppercase mb-8" style={{ fontSize: 13, letterSpacing: "0.16em", color: FAINT }}>A 2-minute writing game</p>
+              <p className="font-mono uppercase mb-8" style={{ fontSize: 13, letterSpacing: "0.16em", color: "rgba(26,26,24,0.4)" }}>A 2-minute writing game</p>
               <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "#000000", fontSize: "61px", lineHeight: "67px" }}>
                 Make It <span style={{ fontStyle: "italic" }}>Hit.</span>
               </h2>
