@@ -150,7 +150,8 @@ export function QuickResult({
   onNew,
   sessionCount,
 }: QuickResultProps) {
-  const [view, setView] = useState<"changes" | "clean">("changes");
+  const [view, setView] = useState<"changes" | "edit">("changes");
+  const [editedText, setEditedText] = useState<string | null>(null);
   const numbered = useMemo(
     () => buildNumberedPhrases(fixResult?.phrases ?? [], original),
     [fixResult, original]
@@ -159,6 +160,12 @@ export function QuickResult({
   const hasIssues = fixResult ? issueCount > 0 : true;
   const isDone = !!fixResult && !isFixing;
   const displayText = fixResult?.improved_full || "";
+  const finalText = editedText !== null ? editedText : displayText;
+
+  // Initialize editable text when result arrives
+  if (isDone && editedText === null && displayText) {
+    setEditedText(displayText);
+  }
 
   const issueLabel =
     issueCount === 0
@@ -194,7 +201,7 @@ export function QuickResult({
               aria-label="View mode"
               className="flex items-center gap-1 bg-white border border-ink/10 rounded-[8px] p-0.5"
             >
-              {(["changes", "clean"] as const).map((v) => (
+              {(["changes", "edit"] as const).map((v) => (
                 <button
                   key={v}
                   role="tab"
@@ -206,7 +213,7 @@ export function QuickResult({
                       : "text-ink/50 hover:text-ink/70"
                   }`}
                 >
-                  {v === "changes" ? "Changes" : "Clean"}
+                  {v === "changes" ? "Changes" : "Edit"}
                 </button>
               ))}
             </div>
@@ -222,9 +229,12 @@ export function QuickResult({
           ) : view === "changes" ? (
             <InlineDiff original={original} numbered={numbered} />
           ) : (
-            <p className="font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap">
-              {displayText}
-            </p>
+            <textarea
+              value={finalText}
+              onChange={(e) => setEditedText(e.target.value)}
+              className="w-full font-sans text-sm leading-relaxed text-ink font-medium whitespace-pre-wrap bg-transparent border-none outline-none resize-y min-h-[120px]"
+              style={{ lineHeight: 1.6 }}
+            />
           )}
         </div>
       </div>
@@ -233,12 +243,12 @@ export function QuickResult({
 
       <div className="flex gap-2">
         <CopyButton
-          text={displayText}
+          text={finalText}
           onSave={() => {
             if (fixResult) {
               saveToShelf(
                 original,
-                fixResult.improved_full,
+                finalText,
                 getIssuesForShelf(fixResult),
                 "quick"
               );
