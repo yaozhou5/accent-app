@@ -229,7 +229,7 @@ export default function LandingPage() {
               <Link href="/write" className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] no-underline transition-opacity hover:opacity-90" style={{ background: "#FFFFFF", color: "#000000" }}>
                 Check your writing →
               </Link>
-              <button onClick={scrollToGame} className="px-6 py-3 rounded-full font-sans font-medium text-[14px] transition-opacity hover:opacity-80" style={{ background: "transparent", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.3)" }}>
+              <button onClick={scrollToGame} className="px-6 py-3 rounded-full font-sans font-semibold text-[14px] transition-all hover:bg-white/20" style={{ background: "rgba(255,255,255,0.1)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
                 Take the writing test
               </button>
             </div>
