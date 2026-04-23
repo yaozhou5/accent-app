@@ -225,9 +225,14 @@ export default function LandingPage() {
             }}>
               You paste into AI. It comes back polished. But it doesn't sound like you.
             </p>
-            <button onClick={scrollToGame} className="mt-8 px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#FFFFFF", color: "#000000" }}>
-              Do you have taste?
-            </button>
+            <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
+              <Link href="/write" className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] no-underline transition-opacity hover:opacity-90" style={{ background: "#FFFFFF", color: "#000000" }}>
+                Try it free →
+              </Link>
+              <button onClick={scrollToGame} className="px-6 py-3 rounded-full font-sans font-medium text-[14px] transition-opacity hover:opacity-80" style={{ background: "transparent", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                Take the writing test
+              </button>
+            </div>
           </div>
         </div>
 
