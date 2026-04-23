@@ -1,16 +1,7 @@
-export function AccentLogo() {
+export function AccentLogo({ color = "#1A1A18" }: { color?: string }) {
   return (
-    <span className="inline-flex items-start">
-      <span
-        className="font-serif tracking-tight"
-        style={{ fontSize: 22, lineHeight: 1, color: "#111", fontWeight: 400 }}
-      >
-        accent
-      </span>
-      <span
-        className="rounded-full shrink-0"
-        style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6, background: "#111" }}
-      />
+    <span className="font-serif" style={{ fontSize: 22, lineHeight: 1, color, fontWeight: 400, letterSpacing: "-0.01em" }}>
+      accent<span style={{ color: "#B8964E" }}>.</span>
     </span>
   );
 }

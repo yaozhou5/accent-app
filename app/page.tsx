@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
+import { AccentLogo } from "@/components/AccentLogo";
 
 /* ───── DESIGN TOKENS ───── */
 const INK = "#1A1A18";
@@ -181,8 +182,8 @@ export default function LandingPage() {
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolledPastHero ? CREAM : "transparent", borderBottom: scrolledPastHero ? `1px solid ${RULE}` : "none" }}>
         <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="font-serif text-[20px] no-underline" style={{ color: scrolledPastHero ? INK : CREAM, fontWeight: 400 }}>
-            accent<span style={{ color: ACCENT }}>.</span>
+          <Link href="/" className="no-underline">
+            <AccentLogo color={scrolledPastHero ? INK : CREAM} />
           </Link>
           <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? "#000000" : "#FFFFFF", color: scrolledPastHero ? "#FFFFFF" : "#000000", border: "none", cursor: "pointer" }}>
             Take the Test
@@ -368,7 +369,7 @@ export default function LandingPage() {
       {/* ═══ FOOTER ═══ */}
       <footer className="relative z-10" style={{ borderTop: `1px solid ${RULE}` }}>
         <div ref={s3.ref} style={s3.style} className="max-w-[960px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-serif text-[16px]" style={{ color: INK }}>accent<span style={{ color: ACCENT }}>.</span></span>
+          <AccentLogo />
           <div className="flex gap-6 text-[12px] font-sans" style={{ color: FAINT }}>
             <Link href="/privacy-contact" className="no-underline hover:underline" style={{ color: FAINT }}>Privacy</Link>
             <a href="mailto:hello@myaccent.io" className="no-underline hover:underline" style={{ color: FAINT }}>Contact</a>
