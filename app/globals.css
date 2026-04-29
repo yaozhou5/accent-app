@@ -23,20 +23,20 @@
 }
 
 @theme inline {
-  --color-paper: #F7F4EF;
-  --color-sand: #D9D5CE;
-  --color-coral: #1A1A18;
-  --color-coral-light: #F7F4EF;
+  --color-paper: #FFFFFF;
+  --color-sand: #E5E5E5;
+  --color-coral: #2563EB;
+  --color-coral-light: #EFF6FF;
   --color-teal: #1A1A18;
-  --color-teal-light: #F7F4EF;
+  --color-teal-light: #F5F5F5;
   --color-red: #1A1A18;
-  --color-red-light: #F7F4EF;
-  --color-warm: #F7F4EF;
+  --color-red-light: #F5F5F5;
+  --color-warm: #FAFAFA;
   --color-ink: #1A1A18;
-  --color-accent: #B8964E;
-  --color-dim: #6B6860;
-  --color-faint: #A8A49C;
-  --color-rule: #D9D5CE;
+  --color-accent: #2563EB;
+  --color-dim: #6B6B6B;
+  --color-faint: #AAAAAA;
+  --color-rule: #E5E5E5;
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
@@ -67,22 +67,22 @@ body {
 
 @media (min-width: 768px) {
   body {
-    background: var(--color-paper);
+    background: #FFFFFF;
   }
 }
 
 /* Lesson body mark styling */
 mark {
-  background: #FDF3CC;
-  color: #7A6010;
+  background: #EFF6FF;
+  color: #1D4ED8;
   border-radius: 3px;
   padding: 1px 4px;
   font-style: normal;
 }
 
 .lesson-body mark {
-  background: #FDF3CC;
-  color: #7A6010;
+  background: #EFF6FF;
+  color: #1D4ED8;
   border-radius: 3px;
   padding: 1px 4px;
   font-style: normal;

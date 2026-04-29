@@ -70,7 +70,7 @@ export function PracticeBox({
           className={`rounded-md px-3 py-2 text-sm font-sans ${
             feedback.isImproved
               ? "bg-sage-light text-sage"
-              : "bg-[#FBE9E4] text-[#C4553A]"
+              : "bg-[#FEE2E2] text-[#C4553A]"
           }`}
         >
           <p>{feedback.feedback}</p>

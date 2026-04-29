@@ -62,7 +62,7 @@ function HighlightedText({
       : "font-sans text-sm leading-relaxed text-ink font-medium";
   const hlCls =
     color === "coral"
-      ? "bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
+      ? "bg-[#FEE2E2] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
       : "bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px";
 
   return (
@@ -218,8 +218,8 @@ export function ShelfDetail({
           copyState === "copied"
             ? "bg-teal text-white"
             : copyState === "copying"
-              ? "bg-ink/70 text-white"
-              : "bg-ink text-white hover:bg-ink/90"
+              ? "bg-[#2563EB]/70 text-white"
+              : "bg-[#2563EB] text-white hover:opacity-90"
         }`}
       >
         {copyState === "copied"

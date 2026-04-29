@@ -53,8 +53,8 @@ export function CopyButton({ text, onSave, className }: CopyButtonProps) {
         state === "copied"
           ? "bg-teal text-white"
           : state === "copying"
-            ? "bg-ink/70 text-white"
-            : "bg-ink text-white hover:bg-ink/90"
+            ? "bg-[#2563EB]/70 text-white"
+            : "bg-[#2563EB] text-white hover:opacity-90"
       } ${className || "flex-1"}`}
     >
       {state === "copied"

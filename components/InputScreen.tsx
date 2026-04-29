@@ -66,13 +66,13 @@ export function InputScreen({
           onChange={(e) => onTextChange(e.target.value)}
           onFocus={handleFocus}
           placeholder="Paste your draft..."
-          className="w-full h-48 bg-warm border border-ink/10 rounded-[12px] px-4 py-3 font-mono text-sm leading-relaxed text-ink placeholder:text-ink/30 resize-y focus:outline-none focus:ring-2 focus:ring-ink/10 focus:border-ink/20"
+          className="w-full h-48 bg-white border border-[#E5E5E5] rounded-[10px] px-4 py-3 font-sans text-[16px] leading-relaxed text-ink placeholder:text-ink/30 resize-y focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]/30"
         />
         <WordCounter text={text} />
       </div>
 
       {error && (
-        <div className="bg-[#FBE9E4] border border-[#C4553A]/30 rounded-[8px] px-4 py-3 text-[#C4553A] font-sans text-sm">
+        <div className="bg-[#FEE2E2] border border-[#C4553A]/30 rounded-[8px] px-4 py-3 text-[#C4553A] font-sans text-sm">
           {error}
         </div>
       )}
@@ -108,11 +108,8 @@ export function InputScreen({
           <button
             onClick={onSubmit}
             disabled={!canSubmit}
-            className={`flex-1 font-sans font-medium text-sm py-3 rounded-[12px] transition-colors flex items-center justify-center gap-2 min-h-[44px] ${
-              canSubmit
-                ? "bg-ink text-white hover:bg-ink/90 cursor-pointer"
-                : "bg-ink/10 text-ink/30 cursor-not-allowed"
-            }`}
+            className="flex-1 font-sans font-semibold text-[15px] py-3 rounded-full transition-opacity flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90"
+            style={{ background: canSubmit ? "#2563EB" : "#E5E5E5", color: canSubmit ? "#fff" : "#AAAAAA", border: "none" }}
           >
             {loading ? "Analyzing..." : "Fix it"}
           </button>

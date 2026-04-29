@@ -108,7 +108,7 @@ function InlineDiff({
             return (
               <span
                 key={k}
-                className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
+                className="bg-[#FEE2E2] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
               >
                 {op.text}
               </span>

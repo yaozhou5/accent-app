@@ -97,7 +97,7 @@ function DiffedPhrase({
           return (
             <span
               key={k}
-              className="bg-[#FBE9E4] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
+              className="bg-[#FEE2E2] text-[#C4553A] line-through decoration-[#C4553A]/60 rounded-[3px] px-1 py-px"
             >
               {op.text}
             </span>
@@ -344,7 +344,7 @@ export function TeachResult({
                     {/* Wrong version */}
                     <div className="flex gap-2.5 items-start">
                       <span className="text-[#C4553A] font-semibold text-sm mt-1 shrink-0">&#10007;</span>
-                      <div className="flex-1 bg-[#FBE9E4] rounded-[8px] px-3.5 py-2.5">
+                      <div className="flex-1 bg-[#FEE2E2] rounded-[8px] px-3.5 py-2.5">
                         <p className="font-sans text-[15px] leading-[1.6] text-[#C4553A] line-through decoration-[#C4553A]/60">
                           {ex.bad}
                         </p>
@@ -383,7 +383,7 @@ export function TeachResult({
           )}
           <button
             onClick={goNext}
-            className={`py-3 min-h-[48px] rounded-[12px] bg-ink text-white text-sm font-sans font-medium hover:bg-ink/90 transition-colors ${
+            className={`py-3 min-h-[48px] rounded-[12px] bg-[#2563EB] text-white text-sm font-sans font-medium hover:opacity-90 transition-colors ${
               currentIndex > 0 ? "w-[65%]" : "w-full"
             }`}
           >

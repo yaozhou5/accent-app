@@ -69,7 +69,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
               document.querySelector<HTMLButtonElement>("[data-auth-trigger]");
             signInBtn?.click();
           }}
-          className="px-6 py-2.5 rounded-full bg-ink text-white text-sm font-sans font-medium hover:bg-ink/90 transition-colors"
+          className="px-6 py-2.5 rounded-full bg-[#2563EB] text-white text-sm font-sans font-medium hover:opacity-90 transition-colors"
         >
           Sign in
         </button>
