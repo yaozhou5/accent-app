@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
@@ -22,22 +22,173 @@ const INK = "#1A1A18";
 const DIM = "#6B6B6B";
 const BORDER = "#E5E5E5";
 
+type Alternative = { word: string; reason: string };
+type ChoicePoint = { original: string; alternatives: Alternative[] };
+type ChannelResult = { text: string; choices: ChoicePoint[] };
+
+/* ── Choice Point Popup ── */
+function ChoicePopup({ original, alternatives, position, onPick, onClose }: {
+  original: string;
+  alternatives: Alternative[];
+  position: { x: number; y: number };
+  onPick: (word: string) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onClick);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("mousedown", onClick); };
+  }, [onClose]);
+
+  // Clamp position to viewport
+  const left = Math.min(Math.max(position.x - 140, 8), typeof window !== "undefined" ? window.innerWidth - 296 : 200);
+  const top = position.y + 8;
+
+  return (
+    <div ref={ref} className="fixed z-50" style={{
+      left, top, width: 280,
+      background: "#fff", borderRadius: 12,
+      boxShadow: "0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+      border: `1px solid ${BORDER}`, overflow: "hidden",
+    }}>
+      <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${BORDER}` }}>
+        <span className="font-mono text-[10px] uppercase" style={{ color: DIM, letterSpacing: "0.06em" }}>Current</span>
+        <span className="block font-sans text-[13px] mt-0.5" style={{ color: DIM }}>{original}</span>
+      </div>
+      {alternatives.map((alt, i) => (
+        <button
+          key={i}
+          onClick={() => onPick(alt.word)}
+          className="w-full text-left px-4 py-3 transition-colors hover:bg-[#EFF6FF] flex flex-col gap-0.5"
+          style={{ border: "none", background: "transparent", cursor: "pointer", borderBottom: i < alternatives.length - 1 ? `1px solid ${BORDER}05` : "none" }}
+        >
+          <span className="font-sans text-[14px] font-medium" style={{ color: INK }}>{alt.word}</span>
+          <span className="font-sans text-[12px]" style={{ color: DIM }}>{alt.reason}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── Interactive Text with Choice Points ── */
+function InteractiveText({ text, choices, onTextChange }: {
+  text: string;
+  choices: ChoicePoint[];
+  onTextChange: (newText: string) => void;
+}) {
+  const [activeChoice, setActiveChoice] = useState<{ original: string; alternatives: Alternative[]; pos: { x: number; y: number } } | null>(null);
+  const [editCount, setEditCount] = useState(0);
+  const [editedWords, setEditedWords] = useState<Set<number>>(new Set());
+
+  const handleWordClick = useCallback((original: string, alternatives: Alternative[], e: React.MouseEvent) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setActiveChoice({ original, alternatives, pos: { x: rect.left + rect.width / 2, y: rect.bottom } });
+  }, []);
+
+  const handlePick = useCallback((newWord: string) => {
+    if (!activeChoice) return;
+    const idx = text.indexOf(activeChoice.original);
+    if (idx === -1) { setActiveChoice(null); return; }
+    const newText = text.slice(0, idx) + newWord + text.slice(idx + activeChoice.original.length);
+    onTextChange(newText);
+    setEditCount(c => c + 1);
+    setEditedWords(prev => new Set(prev).add(idx));
+    setActiveChoice(null);
+  }, [activeChoice, text, onTextChange]);
+
+  // Build segments: plain text and choice points interleaved
+  const segments: Array<{ type: "text" | "choice"; content: string; choice?: ChoicePoint; position?: number }> = [];
+  let cursor = 0;
+
+  // Find all choice point positions, sorted
+  const choicePositions = choices
+    .map(c => ({ ...c, idx: text.indexOf(c.original) }))
+    .filter(c => c.idx !== -1)
+    .sort((a, b) => a.idx - b.idx);
+
+  // Deduplicate overlapping positions
+  const usedRanges: Array<{ start: number; end: number }> = [];
+  const validChoices = choicePositions.filter(c => {
+    const start = c.idx;
+    const end = start + c.original.length;
+    if (usedRanges.some(r => start < r.end && end > r.start)) return false;
+    usedRanges.push({ start, end });
+    return true;
+  });
+
+  for (const c of validChoices) {
+    if (c.idx > cursor) {
+      segments.push({ type: "text", content: text.slice(cursor, c.idx) });
+    }
+    segments.push({ type: "choice", content: c.original, choice: c, position: c.idx });
+    cursor = c.idx + c.original.length;
+  }
+  if (cursor < text.length) {
+    segments.push({ type: "text", content: text.slice(cursor) });
+  }
+
+  return (
+    <div className="relative">
+      <div className="font-sans whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.7, color: INK }}>
+        {segments.map((seg, i) => {
+          if (seg.type === "text") return <span key={i}>{seg.content}</span>;
+          const isEdited = seg.position !== undefined && editedWords.has(seg.position);
+          return (
+            <span
+              key={i}
+              onClick={(e) => handleWordClick(seg.content, seg.choice!.alternatives, e)}
+              className="cursor-pointer transition-all"
+              style={{
+                borderBottom: `1.5px dotted ${isEdited ? BLUE : `${BLUE}66`}`,
+                background: isEdited ? `${BLUE}0A` : "transparent",
+                paddingBottom: 1,
+                borderRadius: 2,
+              }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.borderBottomStyle = "solid"; (e.target as HTMLElement).style.background = `${BLUE}0D`; }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.borderBottomStyle = "dotted"; (e.target as HTMLElement).style.background = isEdited ? `${BLUE}0A` : "transparent"; }}
+            >
+              {seg.content}
+            </span>
+          );
+        })}
+      </div>
+
+      {editCount > 0 && (
+        <p className="mt-3 font-mono text-[11px]" style={{ color: DIM }}>
+          {editCount} {editCount === 1 ? "word" : "words"} edited
+        </p>
+      )}
+
+      {activeChoice && (
+        <ChoicePopup
+          original={activeChoice.original}
+          alternatives={activeChoice.alternatives}
+          position={activeChoice.pos}
+          onPick={handlePick}
+          onClose={() => setActiveChoice(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Spread View ── */
 function SpreadView() {
   const [draft, setDraft] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>(CHANNELS.map(c => c.key));
-  const [results, setResults] = useState<Record<string, string> | null>(null);
+  const [results, setResults] = useState<Record<string, ChannelResult> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeResultTab, setActiveResultTab] = useState("");
-  const [editingTab, setEditingTab] = useState<string | null>(null);
-  const [editedResults, setEditedResults] = useState<Record<string, string>>({});
   const [copiedTab, setCopiedTab] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
 
   const toggleChannel = (key: string) => {
-    setSelectedChannels(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-    );
+    setSelectedChannels(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
   const handleSpread = async () => {
@@ -45,7 +196,6 @@ function SpreadView() {
     setLoading(true);
     setError(null);
     setResults(null);
-    setEditedResults({});
 
     try {
       const res = await fetch("/api/spread", {
@@ -57,7 +207,6 @@ function SpreadView() {
       if (data.error) { setError(data.error); }
       else if (data.results) {
         setResults(data.results);
-        setEditedResults({ ...data.results });
         setActiveResultTab(selectedChannels[0]);
       }
     } catch {
@@ -66,7 +215,14 @@ function SpreadView() {
     setLoading(false);
   };
 
-  const getText = (key: string) => editedResults[key] || results?.[key] || "";
+  const updateChannelText = (channel: string, newText: string) => {
+    setResults(prev => {
+      if (!prev) return prev;
+      return { ...prev, [channel]: { ...prev[channel], text: newText } };
+    });
+  };
+
+  const getText = (key: string) => results?.[key]?.text || "";
 
   const handleCopy = async (key: string) => {
     await navigator.clipboard.writeText(getText(key));
@@ -91,13 +247,10 @@ function SpreadView() {
   if (!results && !loading) {
     return (
       <div className="max-w-[640px] mx-auto px-5 py-12">
-        <h2 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: INK }}>
-          Spread your writing
-        </h2>
+        <h2 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: INK }}>Spread your writing</h2>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>
           Paste something you wrote. Accent will turn it into native content for every channel.
         </p>
-
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -106,36 +259,23 @@ function SpreadView() {
           className="w-full outline-none resize-y font-sans"
           style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "16px 20px", border: `1px solid ${BORDER}`, borderRadius: 10, background: "#fff", minHeight: 200 }}
         />
-
         <div className="mt-6 mb-8">
           <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Channels</span>
           <div className="flex flex-wrap gap-2">
             {CHANNELS.map(c => (
-              <button
-                key={c.key}
-                onClick={() => toggleChannel(c.key)}
-                className="px-4 py-2 rounded-full text-[13px] font-mono transition-all"
-                style={{
-                  background: selectedChannels.includes(c.key) ? BLUE : "transparent",
-                  color: selectedChannels.includes(c.key) ? "#fff" : DIM,
-                  border: selectedChannels.includes(c.key) ? "none" : `1px solid ${BORDER}`,
-                  cursor: "pointer",
-                }}
-              >{c.label}</button>
+              <button key={c.key} onClick={() => toggleChannel(c.key)} className="px-4 py-2 rounded-full text-[13px] font-mono transition-all" style={{
+                background: selectedChannels.includes(c.key) ? BLUE : "transparent",
+                color: selectedChannels.includes(c.key) ? "#fff" : DIM,
+                border: selectedChannels.includes(c.key) ? "none" : `1px solid ${BORDER}`,
+                cursor: "pointer",
+              }}>{c.label}</button>
             ))}
           </div>
         </div>
-
-        {error && (
-          <p className="font-sans text-[14px] mb-4" style={{ color: "#DC2626" }}>{error}</p>
-        )}
-
-        <button
-          onClick={handleSpread}
-          disabled={!draft.trim() || selectedChannels.length === 0}
+        {error && <p className="font-sans text-[14px] mb-4" style={{ color: "#DC2626" }}>{error}</p>}
+        <button onClick={handleSpread} disabled={!draft.trim() || selectedChannels.length === 0}
           className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-opacity hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-        >
+          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
           Spread it →
         </button>
       </div>
@@ -159,84 +299,54 @@ function SpreadView() {
     );
   }
 
-  // Step 3: Results
+  // Step 3: Results with interactive choice points
   const resultChannels = selectedChannels.filter(k => results?.[k]);
 
   return (
     <div className="max-w-[720px] mx-auto px-5 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif" style={{ fontSize: 22, fontWeight: 400, color: INK }}>
-          Your content
-        </h2>
+        <h2 className="font-serif" style={{ fontSize: 22, fontWeight: 400, color: INK }}>Your content</h2>
         <div className="flex gap-2">
-          <button
-            onClick={handleCopyAll}
-            className="px-4 py-2 rounded-full text-[12px] font-mono transition-opacity hover:opacity-80"
-            style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer", color: DIM }}
-          >
-            {copiedAll ? "Copied all ✓" : "Copy all"}
+          <button onClick={handleCopyAll} className="px-4 py-2 rounded-full text-[12px] font-mono" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer", color: DIM }}>
+            {copiedAll ? "Copied all \u2713" : "Copy all"}
           </button>
-          <button
-            onClick={() => { setResults(null); setEditedResults({}); }}
-            className="px-4 py-2 rounded-full text-[12px] font-mono transition-opacity hover:opacity-80"
-            style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer", color: DIM }}
-          >
+          <button onClick={() => { setResults(null); }} className="px-4 py-2 rounded-full text-[12px] font-mono" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer", color: DIM }}>
             New draft
           </button>
         </div>
       </div>
 
-      {/* Channel tabs */}
       <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
         {resultChannels.map(key => {
           const label = CHANNELS.find(c => c.key === key)?.label || key;
           return (
-            <button
-              key={key}
-              onClick={() => setActiveResultTab(key)}
-              className="px-4 py-2 rounded-full text-[13px] font-mono shrink-0 transition-all"
-              style={{
-                background: activeResultTab === key ? BLUE : "transparent",
-                color: activeResultTab === key ? "#fff" : DIM,
-                border: activeResultTab === key ? "none" : `1px solid ${BORDER}`,
-                cursor: "pointer",
-              }}
-            >{label}</button>
+            <button key={key} onClick={() => setActiveResultTab(key)} className="px-4 py-2 rounded-full text-[13px] font-mono shrink-0 transition-all" style={{
+              background: activeResultTab === key ? BLUE : "transparent",
+              color: activeResultTab === key ? "#fff" : DIM,
+              border: activeResultTab === key ? "none" : `1px solid ${BORDER}`,
+              cursor: "pointer",
+            }}>{label}</button>
           );
         })}
       </div>
 
-      {/* Active channel content */}
       {activeResultTab && results?.[activeResultTab] && (
         <div className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-          {editingTab === activeResultTab ? (
-            <textarea
-              value={editedResults[activeResultTab] || ""}
-              onChange={(e) => setEditedResults(prev => ({ ...prev, [activeResultTab]: e.target.value }))}
-              className="w-full outline-none resize-y font-sans"
-              rows={12}
-              style={{ fontSize: 15, color: INK, lineHeight: 1.7, border: "none", background: "transparent" }}
-            />
-          ) : (
-            <p className="font-sans whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.7, color: INK }}>
-              {getText(activeResultTab)}
-            </p>
-          )}
+          <div className="mb-1">
+            <span className="font-mono text-[10px] uppercase" style={{ color: DIM, letterSpacing: "0.06em" }}>
+              Click underlined words for alternatives
+            </span>
+          </div>
 
-          <div className="flex items-center justify-between mt-4 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
-            <button
-              onClick={() => setEditingTab(editingTab === activeResultTab ? null : activeResultTab)}
-              className="text-[12px] font-mono transition-opacity hover:opacity-70"
-              style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
-            >
-              {editingTab === activeResultTab ? "Done editing" : "Edit"}
-            </button>
-            <button
-              onClick={() => handleCopy(activeResultTab)}
-              className="px-5 py-2 rounded-full text-[13px] font-mono transition-opacity hover:opacity-90"
-              style={{ background: INK, color: "#fff", border: "none", cursor: "pointer" }}
-            >
-              {copiedTab === activeResultTab ? "Copied ✓" : "Copy"}
+          <InteractiveText
+            text={results[activeResultTab].text}
+            choices={results[activeResultTab].choices}
+            onTextChange={(newText) => updateChannelText(activeResultTab, newText)}
+          />
+
+          <div className="flex items-center justify-end mt-4 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+            <button onClick={() => handleCopy(activeResultTab)} className="px-5 py-2 rounded-full text-[13px] font-mono transition-opacity hover:opacity-90" style={{ background: INK, color: "#fff", border: "none", cursor: "pointer" }}>
+              {copiedTab === activeResultTab ? "Copied \u2713" : "Copy"}
             </button>
           </div>
         </div>
@@ -245,38 +355,24 @@ function SpreadView() {
   );
 }
 
+/* ── Main Page ── */
 export default function WritePage() {
   const [mode, setMode] = useState<"spread" | "polish">("spread");
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
-      {/* Nav */}
       <nav style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[960px] mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>
-            accent
-          </Link>
+          <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
           <div className="flex items-center gap-1 p-0.5 rounded-full" style={{ background: "#F5F5F5" }}>
-            <button
-              onClick={() => setMode("spread")}
-              className="px-4 py-1.5 rounded-full text-[13px] font-mono transition-all"
-              style={{
-                background: mode === "spread" ? "#fff" : "transparent",
-                color: mode === "spread" ? INK : DIM,
-                border: "none", cursor: "pointer",
-                boxShadow: mode === "spread" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              }}
-            >Spread</button>
-            <button
-              onClick={() => setMode("polish")}
-              className="px-4 py-1.5 rounded-full text-[13px] font-mono transition-all"
-              style={{
-                background: mode === "polish" ? "#fff" : "transparent",
-                color: mode === "polish" ? INK : DIM,
-                border: "none", cursor: "pointer",
-                boxShadow: mode === "polish" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              }}
-            >Polish</button>
+            <button onClick={() => setMode("spread")} className="px-4 py-1.5 rounded-full text-[13px] font-mono transition-all" style={{
+              background: mode === "spread" ? "#fff" : "transparent", color: mode === "spread" ? INK : DIM,
+              border: "none", cursor: "pointer", boxShadow: mode === "spread" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}>Spread</button>
+            <button onClick={() => setMode("polish")} className="px-4 py-1.5 rounded-full text-[13px] font-mono transition-all" style={{
+              background: mode === "polish" ? "#fff" : "transparent", color: mode === "polish" ? INK : DIM,
+              border: "none", cursor: "pointer", boxShadow: mode === "polish" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}>Polish</button>
           </div>
         </div>
       </nav>
