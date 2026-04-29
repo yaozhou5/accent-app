@@ -74,92 +74,166 @@ function ChoicePopup({ original, alternatives, position, onPick, onClose }: {
   );
 }
 
-/* ── Interactive Text with Choice Points ── */
+/* ── Interactive Editable Text with Choice Points ── */
 function InteractiveText({ text, choices, onTextChange }: {
   text: string;
   choices: ChoicePoint[];
   onTextChange: (newText: string) => void;
 }) {
-  const [activeChoice, setActiveChoice] = useState<{ original: string; alternatives: Alternative[]; pos: { x: number; y: number } } | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activeChoice, setActiveChoice] = useState<{ original: string; alternatives: Alternative[]; spanEl: HTMLElement; pos: { x: number; y: number } } | null>(null);
   const [editCount, setEditCount] = useState(0);
-  const [editedWords, setEditedWords] = useState<Set<number>>(new Set());
 
-  const handleWordClick = useCallback((original: string, alternatives: Alternative[], e: React.MouseEvent) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setActiveChoice({ original, alternatives, pos: { x: rect.left + rect.width / 2, y: rect.bottom } });
+  // Build HTML with choice point spans
+  const buildHTML = useCallback((t: string, ch: ChoicePoint[]) => {
+    const positions = ch
+      .map(c => ({ ...c, idx: t.indexOf(c.original) }))
+      .filter(c => c.idx !== -1)
+      .sort((a, b) => a.idx - b.idx);
+
+    const used: Array<{ s: number; e: number }> = [];
+    const valid = positions.filter(c => {
+      const s = c.idx, e = s + c.original.length;
+      if (used.some(r => s < r.e && e > r.s)) return false;
+      used.push({ s, e });
+      return true;
+    });
+
+    let html = "";
+    let cursor = 0;
+    for (const c of valid) {
+      if (c.idx > cursor) html += escapeHTML(t.slice(cursor, c.idx));
+      html += `<span data-choice="${encodeURIComponent(JSON.stringify(c.alternatives))}" data-original="${escapeAttr(c.original)}" style="border-bottom:1.5px dotted ${BLUE}66;padding-bottom:1px;border-radius:2px;cursor:pointer">${escapeHTML(c.original)}</span>`;
+      cursor = c.idx + c.original.length;
+    }
+    if (cursor < t.length) html += escapeHTML(t.slice(cursor));
+    return html;
+  }, []);
+
+  // Set initial HTML
+  useEffect(() => {
+    if (!editorRef.current) return;
+    editorRef.current.innerHTML = buildHTML(text, choices);
+  }, []); // Only on mount — after that, user edits directly
+
+  // Re-render only when text changes externally (alternative pick)
+  const lastTextRef = useRef(text);
+  useEffect(() => {
+    if (text !== lastTextRef.current) {
+      lastTextRef.current = text;
+      if (!editorRef.current) return;
+      // Save cursor position
+      const sel = window.getSelection();
+      const hadFocus = document.activeElement === editorRef.current;
+      editorRef.current.innerHTML = buildHTML(text, choices);
+      // Restore focus
+      if (hadFocus && sel) {
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  }, [text, choices, buildHTML]);
+
+  // Handle input — sync text back
+  const handleInput = useCallback(() => {
+    if (!editorRef.current) return;
+    const newText = editorRef.current.innerText || "";
+    lastTextRef.current = newText;
+    onTextChange(newText);
+  }, [onTextChange]);
+
+  // Handle click on choice spans
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.dataset.choice) return;
+    e.preventDefault();
+
+    try {
+      const alternatives: Alternative[] = JSON.parse(decodeURIComponent(target.dataset.choice));
+      const original = target.dataset.original || target.textContent || "";
+      const rect = target.getBoundingClientRect();
+      setActiveChoice({
+        original,
+        alternatives,
+        spanEl: target,
+        pos: { x: rect.left + rect.width / 2, y: rect.bottom },
+      });
+    } catch {}
+  }, []);
+
+  // Handle hover on choice spans
+  const handleMouseOver = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.dataset.choice) {
+      target.style.borderBottomStyle = "solid";
+      target.style.background = `${BLUE}0D`;
+    }
+  }, []);
+
+  const handleMouseOut = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.dataset.choice) {
+      target.style.borderBottomStyle = "dotted";
+      target.style.background = target.classList.contains("edited") ? `${BLUE}0A` : "transparent";
+    }
   }, []);
 
   const handlePick = useCallback((newWord: string) => {
     if (!activeChoice) return;
-    const idx = text.indexOf(activeChoice.original);
-    if (idx === -1) { setActiveChoice(null); return; }
-    const newText = text.slice(0, idx) + newWord + text.slice(idx + activeChoice.original.length);
-    onTextChange(newText);
+    // Replace the span's text
+    activeChoice.spanEl.textContent = newWord;
+    activeChoice.spanEl.style.background = `${BLUE}0A`;
+    activeChoice.spanEl.classList.add("edited");
+    // Remove the data-choice so it's no longer clickable after replacement
+    activeChoice.spanEl.removeAttribute("data-choice");
+    activeChoice.spanEl.style.borderBottom = `1.5px solid ${BLUE}`;
+    activeChoice.spanEl.style.cursor = "default";
+
     setEditCount(c => c + 1);
-    setEditedWords(prev => new Set(prev).add(idx));
     setActiveChoice(null);
-  }, [activeChoice, text, onTextChange]);
 
-  // Build segments: plain text and choice points interleaved
-  const segments: Array<{ type: "text" | "choice"; content: string; choice?: ChoicePoint; position?: number }> = [];
-  let cursor = 0;
-
-  // Find all choice point positions, sorted
-  const choicePositions = choices
-    .map(c => ({ ...c, idx: text.indexOf(c.original) }))
-    .filter(c => c.idx !== -1)
-    .sort((a, b) => a.idx - b.idx);
-
-  // Deduplicate overlapping positions
-  const usedRanges: Array<{ start: number; end: number }> = [];
-  const validChoices = choicePositions.filter(c => {
-    const start = c.idx;
-    const end = start + c.original.length;
-    if (usedRanges.some(r => start < r.end && end > r.start)) return false;
-    usedRanges.push({ start, end });
-    return true;
-  });
-
-  for (const c of validChoices) {
-    if (c.idx > cursor) {
-      segments.push({ type: "text", content: text.slice(cursor, c.idx) });
+    // Sync text
+    if (editorRef.current) {
+      const newText = editorRef.current.innerText || "";
+      lastTextRef.current = newText;
+      onTextChange(newText);
     }
-    segments.push({ type: "choice", content: c.original, choice: c, position: c.idx });
-    cursor = c.idx + c.original.length;
-  }
-  if (cursor < text.length) {
-    segments.push({ type: "text", content: text.slice(cursor) });
-  }
+  }, [activeChoice, onTextChange]);
+
+  // Handle paste — strip formatting
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const plain = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, plain);
+  }, []);
 
   return (
     <div className="relative">
-      <div className="font-sans whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.7, color: INK }}>
-        {segments.map((seg, i) => {
-          if (seg.type === "text") return <span key={i}>{seg.content}</span>;
-          const isEdited = seg.position !== undefined && editedWords.has(seg.position);
-          return (
-            <span
-              key={i}
-              onClick={(e) => handleWordClick(seg.content, seg.choice!.alternatives, e)}
-              className="cursor-pointer transition-all"
-              style={{
-                borderBottom: `1.5px dotted ${isEdited ? BLUE : `${BLUE}66`}`,
-                background: isEdited ? `${BLUE}0A` : "transparent",
-                paddingBottom: 1,
-                borderRadius: 2,
-              }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.borderBottomStyle = "solid"; (e.target as HTMLElement).style.background = `${BLUE}0D`; }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.borderBottomStyle = "dotted"; (e.target as HTMLElement).style.background = isEdited ? `${BLUE}0A` : "transparent"; }}
-            >
-              {seg.content}
-            </span>
-          );
-        })}
-      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onClick={handleClick}
+        onMouseOver={handleMouseOver}
+        onMouseOut={handleMouseOut}
+        onPaste={handlePaste}
+        className="font-sans whitespace-pre-wrap outline-none"
+        style={{
+          fontSize: 15,
+          lineHeight: 1.7,
+          color: INK,
+          minHeight: 120,
+          caretColor: INK,
+        }}
+      />
 
       {editCount > 0 && (
         <p className="mt-3 font-mono text-[11px]" style={{ color: DIM }}>
-          {editCount} {editCount === 1 ? "word" : "words"} edited
+          {editCount} {editCount === 1 ? "word" : "words"} refined
         </p>
       )}
 
@@ -174,6 +248,13 @@ function InteractiveText({ text, choices, onTextChange }: {
       )}
     </div>
   );
+}
+
+function escapeHTML(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function escapeAttr(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /* ── Spread View ── */
@@ -332,9 +413,9 @@ function SpreadView() {
 
       {activeResultTab && results?.[activeResultTab] && (
         <div className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-          <div className="mb-1">
+          <div className="mb-3">
             <span className="font-mono text-[10px] uppercase" style={{ color: DIM, letterSpacing: "0.06em" }}>
-              Click underlined words for alternatives
+              Edit freely. Click underlined words for alternatives.
             </span>
           </div>
 
