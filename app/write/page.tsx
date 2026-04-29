@@ -461,7 +461,7 @@ export default function WritePage() {
       {mode === "spread" ? (
         <SpreadView />
       ) : (
-        <div className="max-w-[480px] md:max-w-[600px] mx-auto min-h-screen flex flex-col bg-white md:shadow-[0_0_40px_rgba(0,0,0,0.06)]">
+        <div className="max-w-[640px] mx-auto px-5 py-8">
           <AppShell />
         </div>
       )}
