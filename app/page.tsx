@@ -2,381 +2,318 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import posthog from "posthog-js";
-import { createClient } from "@/lib/supabase/client";
-import { AccentLogo } from "@/components/AccentLogo";
 
-/* ───── DESIGN TOKENS ───── */
 const INK = "#1A1A18";
-const DIM = "#6B6860";
-const FAINT = "#A8A49C";
-const RULE = "transparent";
-const ACCENT = "#B8964E";
+const DIM = "rgba(26,26,24,0.6)";
+const FAINT = "rgba(26,26,24,0.4)";
+const GOLD = "#B8964E";
 const CREAM = "#F7F4EF";
+const BORDER = "rgba(26,26,24,0.12)";
 
-/* ───── GAME DATA ───── */
-type Option = { text: string; score: number; type: string };
-type Round = { flat: string; options: Option[]; insights: string[] };
-
-const ROUNDS: Round[] = [
-  {
-    flat: "He was eating alone.",
-    options: [
-      { text: "He cut his steak carefully, like someone was watching.", score: 3, type: "editor" },
-      { text: "He ate the way people eat when they've stopped expecting company.", score: 2, type: "safe" },
-      { text: "There was a second chair. He'd pushed it to the other side of the table.", score: 4, type: "writer" },
-      { text: "He was reading something on his phone and chewing slowly. No one was waiting for him and he knew it.", score: 1, type: "polisher" },
-    ],
-    insights: [
-      "The performance of care. 'Like someone was watching' plants doubt without explaining it.",
-      "Smart observation, but it tells the reader what to feel. The abstraction softens the image.",
-      "You never said 'lonely.' The chair says it. That's the whole move.",
-      "The last sentence explains what the first already showed. Trust the image. Cut the caption.",
-    ],
-  },
-  {
-    flat: "She was tired of her marriage.",
-    options: [
-      { text: "She started sleeping on her side of the bed again.", score: 4, type: "writer" },
-      { text: "He said something funny at dinner and she smiled, but only with her mouth.", score: 3, type: "editor" },
-      { text: "She noticed he'd stopped closing the bathroom door. She didn't know when that started.", score: 2, type: "safe" },
-      { text: "They still said 'love you' before hanging up. It sounded like 'bye.'", score: 1, type: "polisher" },
-    ],
-    insights: [
-      "'Again.' One word does all the work. It implies a before, a during, and a giving up.",
-      "The split between face and feeling. 'Only with her mouth' is precise and devastating.",
-      "Observant, but the second sentence softens the first. Let the detail land alone.",
-      "The comparison is clever but it reaches for the reader. The best lines don't explain the metaphor.",
-    ],
-  },
-  {
-    flat: "The house felt empty after the kids left.",
-    options: [
-      { text: "She made two lunches out of habit and threw one away.", score: 4, type: "writer" },
-      { text: "The hallway was quiet in a way that used to mean everyone was asleep.", score: 3, type: "editor" },
-      { text: "He found a sock behind the dryer and held it for a long time.", score: 2, type: "safe" },
-      { text: "Nobody makes the house smell like that anymore.", score: 1, type: "polisher" },
-    ],
-    insights: [
-      "One action. Two lunches. Threw one away. The reader fills in every year of motherhood.",
-      "Redefining silence. 'Used to mean' turns a sound into a memory. Sharp.",
-      "The sock is specific. But 'held it for a long time' tells the reader how to feel. Let the sock do the work.",
-      "Warm and sad, but vague. Which smell? Whose? The generic weakens what could be visceral.",
-    ],
-  },
-  {
-    flat: "He realized he was getting old.",
-    options: [
-      { text: "The barber didn't ask what style he wanted anymore.", score: 3, type: "editor" },
-      { text: "He started reading the obituaries. Not for anyone. Just to check.", score: 4, type: "writer" },
-      { text: "A younger guy offered him a seat on the tram. He took it.", score: 2, type: "safe" },
-      { text: "He used to skip stairs. Now he counts them.", score: 1, type: "polisher" },
-    ],
-    insights: [
-      "Small, brutal observation. The barber gave up on him and nobody said a word.",
-      "'Just to check.' Two words turn a habit into an existential confession. Minimal. Perfect.",
-      "Good scene. But it stays on the surface. The reader sees the event but not the interior.",
-      "Neat symmetry. But the structure is doing the feeling for the reader. Compression isn't always depth.",
-    ],
-  },
-  {
-    flat: "They hadn't spoken in years.",
-    options: [
-      { text: "Her number was still in his phone under a name he'd changed twice.", score: 4, type: "writer" },
-      { text: "He saw her at the market. She was buying the same oranges.", score: 3, type: "editor" },
-      { text: "Someone mentioned her at dinner and he laughed a half second too late.", score: 2, type: "safe" },
-      { text: "He almost called once, on a Tuesday, for no reason. Then didn't.", score: 1, type: "polisher" },
-    ],
-    insights: [
-      "Changed the name. Twice. Kept the number. Every contradiction tells the whole story.",
-      "'The same oranges.' Tiny detail, enormous weight. You see both of them at once.",
-      "The timing is good. But 'a half second too late' is a writer describing a feeling, not showing it.",
-      "'For no reason. Then didn't.' The rhythm is nice but it performs restraint instead of showing it. The almost-call is a cliche of longing.",
-    ],
-  },
-];
-
-function getResult(score: number) {
-  if (score >= 17) return { title: "The Writer", desc: "You go specific. You go visceral. You trust the reader to feel it without being told. Most people have lost this instinct. You haven't.", cta: "You already have voice. Imagine it sharper." };
-  if (score >= 13) return { title: "The Editor", desc: "You know what hits. You see the good option. But sometimes you pull back before committing. Choosing clever over honest. The instinct is there. It just needs permission.", cta: "You're one draft away from great." };
-  if (score >= 9) return { title: "The Safe Voice", desc: "You're warm and honest. People like what you write. But they don't remember it. You go for 'nice' when you could go for 'true.' The generic option feels comfortable because it's what everyone picks.", cta: "Comfortable isn't memorable. Train the muscle." };
-  return { title: "The Polisher", desc: "You reach for bigger words when smaller ones would hit harder. You decorate when you should delete. This isn't a talent problem. It's a habit. AI writes like this too. That should worry you.", cta: "Your voice is underneath all that polish. Let's find it." };
-}
-
-/* ───── SCROLL ANIMATION HOOK ───── */
-function useScrollReveal() {
+/* ── Scroll reveal hook ── */
+function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [v, setV] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setVisible(true); }, { threshold: 0.15 });
-    observer.observe(el);
-    return () => observer.disconnect();
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setV(true); }, { threshold: 0.15 });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
-  return { ref, style: { opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.6s ease, transform 0.6s ease" } as React.CSSProperties };
+  return { ref, style: { opacity: v ? 1 : 0, transform: v ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.6s ease, transform 0.6s ease" } as React.CSSProperties };
 }
 
-/* ───── MAIN PAGE ───── */
+/* ── Animated number ── */
+function AnimNum({ target, suffix = "" }: { target: string; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [val, setVal] = useState("0");
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        const num = parseInt(target) || 0;
+        if (num === 0) { setVal(target); return; }
+        let i = 0;
+        const step = () => { i += Math.ceil(num / 20); if (i >= num) { setVal(target); return; } setVal(String(i)); requestAnimationFrame(step); };
+        step();
+      }
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [target]);
+  return <span ref={ref}>{val}{suffix}</span>;
+}
+
+/* ── Demo data ── */
+const DRAFT = `I just launched a small community for designers in Amsterdam who want to learn about business. We meet every two weeks and share what we're working on. It's been really helpful for me and I think it could help others too. If you're interested you can join through the link in my bio.`;
+
+const OUTPUTS: Record<string, string> = {
+  LinkedIn: `Most designers in Amsterdam work alone.\n\nThey have the skills. They ship great work. But nobody told them how to find clients, price projects, or build something that lasts beyond the next gig.\n\nSo I started a small community. 20 designers. Every two weeks we sit together and talk business. Not networking. Not pitching. Just honest conversations about the hard parts.\n\nThree months in, one member landed her first retainer client. Another raised his rates by 40%. A third quit freelancing and started a studio.\n\nNone of that came from a course. It came from being in a room with people solving the same problems.\n\nWe're opening 10 spots. Link in comments.`,
+  "Cold DM": `Hey [name], I noticed you're doing design work in Amsterdam. I run a small group of designers here (about 20 of us) who meet every two weeks to talk about the business side. Not a networking event. More like a peer advisory group.\n\nOne member just landed her first retainer client through a pricing strategy we workshopped together. If that's the kind of thing you'd find useful, I'd love to tell you more.`,
+  Tweet: `designers are great at making things\n\nterrible at charging for them\n\nstarted a biweekly group in Amsterdam where 20 designers help each other figure out the business side\n\none member raised her rates 40% in 3 months\n\nopening 10 spots →`,
+  Newsletter: `Something I've been quietly building for the past three months.\n\nI kept meeting designers in Amsterdam who were talented but stuck. Great portfolios, no pipeline. Beautiful case studies, no recurring revenue. They knew how to design but nobody had taught them how to build a business around it.\n\nSo I started inviting a few of them to my apartment every two weeks. No agenda at first. Just coffee and honest conversation about the parts of freelancing that nobody talks about.\n\nIt turned into something real. One member landed a retainer client. Another restructured her pricing. A third started saying no to projects under €3,000.\n\nI'm opening 10 more spots. Here's how it works.`,
+};
+
+/* ── Main page ── */
 export default function LandingPage() {
-  const [gameState, setGameState] = useState<"idle" | "playing" | "result">("idle");
-  const [round, setRound] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [scores, setScores] = useState<number[]>([]);
-  const [email, setEmail] = useState("");
-  const [emailSubmitted, setEmailSubmitted] = useState(false);
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [scrolledPastHero, setScrolledPastHero] = useState(false);
-  const gameRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState("LinkedIn");
+  const [displayText, setDisplayText] = useState("");
+  const [typing, setTyping] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolledPastHero(window.scrollY > window.innerHeight * 0.7);
+    const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToGame = () => gameRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Typing animation when tab changes
+  useEffect(() => {
+    setTyping(true);
+    setDisplayText("");
+    const text = OUTPUTS[activeTab] || "";
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 3;
+      if (i >= text.length) { setDisplayText(text); setTyping(false); clearInterval(timer); return; }
+      setDisplayText(text.slice(0, i));
+    }, 8);
+    return () => clearInterval(timer);
+  }, [activeTab]);
 
-  const handleSelect = (idx: number) => setSelected(selected === idx ? null : idx);
-
-  const handleNext = () => {
-    if (selected === null) return;
-    const newScores = [...scores, ROUNDS[round].options[selected].score];
-    setScores(newScores);
-    setSelected(null);
-    if (round < 4) setRound(round + 1);
-    else { setGameState("result"); posthog.capture("game_completed", { score: newScores.reduce((a, b) => a + b, 0) }); }
-  };
-
-  const handlePlayAgain = () => { setGameState("idle"); setRound(0); setSelected(null); setScores([]); };
-
-  const handleEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.includes("@") || emailLoading) return;
-    setEmailLoading(true);
-    const score = scores.reduce((a, b) => a + b, 0);
-    const resultType = getResult(score).title;
-    try {
-      const supabase = createClient();
-      await supabase.from("agent_waitlist").insert({
-        email: email.trim().toLowerCase(),
-        source: "game_email",
-        result_type: resultType,
-        score,
-      });
-      setEmailSubmitted(true);
-      posthog.capture("game_email_signup", { result_type: resultType, score });
-    } catch {}
-    setEmailLoading(false);
-  };
-
-  const totalScore = scores.reduce((a, b) => a + b, 0);
-  const result = getResult(totalScore);
-  const currentRound = ROUNDS[round];
-
-  const s1 = useScrollReveal();
-  const s3 = useScrollReveal();
+  const s1 = useReveal();
+  const s2 = useReveal();
+  const s3 = useReveal();
+  const s4 = useReveal();
+  const s5 = useReveal();
+  const s6 = useReveal();
+  const s7 = useReveal();
 
   return (
-    <div className="relative" style={{ background: CREAM, color: INK }}>
+    <div style={{ background: CREAM, color: INK }}>
       {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolledPastHero ? CREAM : "transparent", borderBottom: scrolledPastHero ? `1px solid ${RULE}` : "none" }}>
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolled ? `${CREAM}ee` : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="no-underline">
-            <AccentLogo color={scrolledPastHero ? INK : CREAM} />
+          <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
+          <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: GOLD, color: INK }}>
+            Try it free →
           </Link>
-          <button onClick={scrollToGame} className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-colors" style={{ background: scrolledPastHero ? "#000000" : "#FFFFFF", color: scrolledPastHero ? "#FFFFFF" : "#000000", border: "none", cursor: "pointer" }}>
-            Take the Test
-          </button>
         </div>
       </nav>
 
-      {/* ═══ SECTION 1: HERO ═══ */}
-      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
-        <video autoPlay muted loop playsInline poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
-          <source src="/accent-hero.mp4" type="video/mp4" />
-        </video>
+      {/* ═══ 1. HERO ═══ */}
+      <section className="text-center" style={{ paddingTop: 140, paddingBottom: 80 }}>
+        <div className="max-w-[680px] mx-auto px-6">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <span style={{ width: 24, height: 1, background: GOLD, display: "inline-block" }} />
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>For solo founders who write</span>
+            <span style={{ width: 24, height: 1, background: GOLD, display: "inline-block" }} />
+          </div>
+          <h1 className="font-serif" style={{ fontSize: "clamp(36px, 7vw, 56px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+            <span style={{ fontWeight: 300 }}>You're already writing.</span>
+            <br />
+            <span style={{ fontWeight: 700, fontStyle: "italic" }}>Make it go further.</span>
+          </h1>
+          <p className="font-sans mx-auto mt-6" style={{ fontSize: 18, color: DIM, lineHeight: 1.6, maxWidth: 540 }}>
+            You spend 45 minutes on a community update and 30 people see it. Accent turns that one draft into LinkedIn posts, cold DMs, tweets, and newsletters that actually sound like you.
+          </p>
+          <div className="flex justify-center gap-3 mt-8 flex-wrap">
+            <Link href="/write" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: GOLD, color: INK }}>
+              Try it on your writing →
+            </Link>
+            <a href="#demo" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1.5px solid ${BORDER}`, color: INK }}>
+              See how it works
+            </a>
+          </div>
+        </div>
+      </section>
 
-        {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
-
-        {/* Text overlay — positioned in middle-lower zone */}
-        <div className="absolute inset-0 z-20 flex flex-col items-center text-center px-6 overflow-visible" style={{ paddingTop: "32vh" }}>
-          <div className="max-w-[520px] w-full mx-auto">
-            <h1 style={{
-              fontFamily: "'Switzer', sans-serif",
-              fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
-              fontWeight: 400,
-              color: "#FFFFFF",
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
-              marginTop: 8,
-            }}>
-              You haven't written anything{" "}
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontWeight: 400, color: "#FFFFFF" }}>truly yours</span>{" "}
-              in months.
-            </h1>
-            <p className="mt-4 mx-auto" style={{
-              fontFamily: "'Switzer', sans-serif",
-              fontSize: 16,
-              color: "rgba(255,255,255,0.85)",
-              lineHeight: 1.6,
-              maxWidth: 420,
-              textShadow: "0 1px 12px rgba(0,0,0,0.4)",
-            }}>
-              You paste into AI. It comes back polished. But it doesn't sound like you.
+      {/* ═══ 2. PAIN QUOTE ═══ */}
+      <section ref={s1.ref} style={s1.style}>
+        <div className="max-w-[680px] mx-auto px-6 py-16">
+          <div className="pl-7" style={{ borderLeft: `2px solid ${GOLD}` }}>
+            <p className="font-serif italic" style={{ fontSize: "clamp(20px, 3.5vw, 26px)", fontWeight: 300, lineHeight: 1.4, color: INK }}>
+              "I didn't sign up to be a content machine. But apparently that's half the job now."
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-3">
-              <Link href="/write" className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] no-underline transition-opacity hover:opacity-90" style={{ background: "#FFFFFF", color: "#000000" }}>
-                Check your writing
-              </Link>
-              <button onClick={scrollToGame} className="px-6 py-3 rounded-full font-sans font-semibold text-[14px] transition-all hover:bg-white/20" style={{ background: "rgba(255,255,255,0.1)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
-                Take the writing test
-              </button>
+            <p className="font-sans mt-4" style={{ fontSize: 14, color: DIM }}>Every solo founder, eventually</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 3. DEMO ═══ */}
+      <section id="demo" ref={s2.ref} style={s2.style}>
+        <div className="max-w-[1000px] mx-auto px-6 py-20">
+          <div className="text-center mb-12">
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>Write once. Reach everyone.</span>
+            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 400 }}>One draft becomes five channels</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left — draft */}
+            <div>
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: FAINT }}>Your draft</span>
+              <div className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+                <p className="font-serif" style={{ fontSize: 16, lineHeight: 1.7, color: INK }}>{DRAFT}</p>
+              </div>
+              <div className="mt-3 px-4 py-2 rounded-[6px] text-center" style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}30` }}>
+                <span className="font-mono" style={{ fontSize: 11, color: GOLD }}>↓ Accent turns this into channel-native content</span>
+              </div>
+            </div>
+
+            {/* Right — outputs */}
+            <div>
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: FAINT }}>Accent output</span>
+              <div className="flex gap-1 mb-3">
+                {Object.keys(OUTPUTS).map((tab) => (
+                  <button key={tab} onClick={() => setActiveTab(tab)} className="px-3 py-1.5 rounded-full text-[12px] font-mono transition-all" style={{
+                    background: activeTab === tab ? INK : "transparent",
+                    color: activeTab === tab ? CREAM : FAINT,
+                    border: activeTab === tab ? "none" : `1px solid ${BORDER}`,
+                    cursor: "pointer",
+                  }}>{tab}</button>
+                ))}
+              </div>
+              <div className="p-5 relative" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10, minHeight: 280 }}>
+                <p className="font-serif whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.75, color: INK }}>
+                  {displayText}
+                  {typing && <span className="inline-block w-[2px] h-[18px] ml-0.5" style={{ background: GOLD, animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />}
+                </p>
+              </div>
             </div>
           </div>
         </div>
-
       </section>
 
-      {/* ═══ SECTION 2: MAKE IT HIT GAME ═══ */}
-      <section ref={gameRef} className="relative z-10" style={{ borderTop: "none", borderBottom: "none" }}>
-        <div ref={s1.ref} style={s1.style} className="max-w-[800px] mx-auto px-6 py-20">
+      {/* ═══ 4. STATS ═══ */}
+      <section ref={s3.ref} style={s3.style}>
+        <div className="max-w-[800px] mx-auto px-6 py-4" style={{ borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
+          <div className="grid grid-cols-3 text-center py-6">
+            {[
+              { num: "1", label: "draft", sub: "you write" },
+              { num: "5", label: "channels", sub: "it reaches" },
+              { num: "10", label: "the reach", sub: "same effort" },
+            ].map((s) => (
+              <div key={s.label}>
+                <div className="font-serif" style={{ fontSize: 48, fontWeight: 300, color: INK }}><AnimNum target={s.num} suffix={s.num === "10" ? "x" : ""} /></div>
+                <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: FAINT }}>{s.label}</div>
+                <div className="font-sans" style={{ fontSize: 13, color: DIM, marginTop: 2 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          {/* Game Start */}
-          {gameState === "idle" && (
-            <div className="text-center">
-              <p className="font-mono uppercase mb-8" style={{ fontSize: 13, letterSpacing: "0.16em", color: "rgba(26,26,24,0.4)" }}>A 2-minute writing game</p>
-              <h2 className="mb-5" style={{ fontFamily: "'Switzer', sans-serif", fontStyle: "normal", fontWeight: 400, color: "#000000", fontSize: "61px", lineHeight: "67px" }}>
-                Make It <span style={{ fontStyle: "italic" }}>Hit.</span>
-              </h2>
-              <p className="font-serif italic mb-6 max-w-[460px] mx-auto" style={{ fontSize: 20, color: INK, lineHeight: 1.4 }}>
-                A 5-round test of writing instinct.
-              </p>
-              <p className="mb-8 max-w-[380px] mx-auto" style={{ fontFamily: "'Switzer', sans-serif", fontWeight: 400, fontSize: 16, color: "rgba(26,26,24,0.6)", lineHeight: 1.6 }}>
-                We'll show you 5 flat sentences and 4 rewrites of each. Pick the one that hits hardest. There's no right answer. Your choices reveal where your writing taste stands.
-              </p>
-              <button onClick={() => { setGameState("playing"); posthog.capture("game_started"); }} className="px-8 py-3.5 rounded-full font-sans font-bold text-[16px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
-                Start
-              </button>
-            </div>
-          )}
+      {/* ═══ 5. USE CASES ═══ */}
+      <section ref={s4.ref} style={s4.style}>
+        <div className="max-w-[1000px] mx-auto px-6 py-20">
+          <span className="font-mono uppercase block text-center mb-3" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>Built for your week</span>
+          <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400 }}>Every founder has these moments</h2>
 
-          {/* Game Playing */}
-          {gameState === "playing" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { title: "Launch day", pain: "You're launching next week and need a Product Hunt post, 3 tweets, a LinkedIn announcement, and a cold email to press.", solve: "Write your launch story once. Accent shapes it for every channel, in your voice." },
+              { title: "Cold outreach", pain: "You know your product solves a real problem but your DMs sound like every other founder's.", solve: "Paste your pitch. Accent rewrites it so it reads like a person, not a template." },
+              { title: "Weekly content", pain: "You posted a community update. 30 people saw it. That insight deserved more.", solve: "Turn one update into a LinkedIn post, a tweet thread, and a newsletter intro. Same ideas, native to each platform." },
+            ].map((c) => (
+              <div key={c.title} className="p-5 transition-all hover:border-[#B8964E]" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+                <h3 className="font-serif mb-3" style={{ fontSize: 20, fontWeight: 400 }}>{c.title}</h3>
+                <p className="font-sans text-[14px] mb-4" style={{ color: DIM, lineHeight: 1.5 }}>{c.pain}</p>
+                <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}>
+                  <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.5 }}>{c.solve}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 6. DIFFERENTIATOR ═══ */}
+      <section ref={s5.ref} style={s5.style}>
+        <div className="mx-6 my-8 rounded-[16px]" style={{ background: INK }}>
+          <div className="max-w-[960px] mx-auto px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
-              {/* Progress dots */}
-              <div className="flex justify-center gap-2 mb-6">
-                {ROUNDS.map((_, i) => (
-                  <div key={i} className="rounded-full" style={{ width: 8, height: 8, background: i <= round ? INK : RULE }} />
-                ))}
-              </div>
-              <p className="font-mono text-[11px] uppercase tracking-wider text-center mb-8" style={{ color: FAINT }}>Round {round + 1} of 5</p>
-              <p className="font-sans text-center mb-3" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Make this hit harder</p>
-              <p className="font-serif italic text-center mb-10" style={{ fontSize: "clamp(18px, 3vw, 22px)", color: INK, lineHeight: 1.4 }}>&ldquo;{currentRound.flat}&rdquo;</p>
-
-              <div className="max-w-[600px] mx-auto">
-                {currentRound.options.map((opt, i) => {
-                  const isSelected = selected === i;
-                  return (
-                    <div key={i}>
-                      <button
-                        onClick={() => handleSelect(i)}
-                        onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = "rgba(26,26,24,0.04)"; e.currentTarget.style.borderLeftColor = ACCENT; } }}
-                        onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; } }}
-                        className="w-full text-left py-4 px-5 flex items-start gap-4 transition-colors cursor-pointer"
-                        style={{
-                          background: isSelected ? "rgba(26,26,24,0.05)" : "transparent",
-                          borderLeft: `3px solid ${isSelected ? ACCENT : "transparent"}`,
-                          borderTop: i === 0 ? `1px solid rgba(26,26,24,0.12)` : "none",
-                          borderBottom: `1px solid rgba(26,26,24,0.12)`,
-                          borderRight: "none",
-                        }}
-                      >
-                        <span className="font-mono shrink-0" style={{ fontSize: 17, lineHeight: 1.5, color: isSelected ? ACCENT : "rgba(26,26,24,0.45)", fontWeight: 600 }}>{i + 1}.</span>
-                        <span className="font-sans flex-1" style={{ fontSize: 17, lineHeight: 1.5, color: INK }}>&ldquo;{opt.text}&rdquo;</span>
-                      </button>
-                      {isSelected && (
-                        <div className="ml-12 mt-3 mb-3 pl-4" style={{ borderLeft: `2px solid ${ACCENT}` }}>
-                          <p className="font-sans" style={{ fontSize: 16, lineHeight: 1.55, color: DIM, fontStyle: "italic" }}>{currentRound.insights[i]}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {selected !== null && (
-                <div className="text-center mt-8">
-                  <button onClick={handleNext} className="px-7 py-3 rounded-full font-sans font-bold text-[14px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
-                    {round === 4 ? "See My Result →" : "Lock it in →"}
-                  </button>
-                </div>
-              )}
+              <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>Not another AI writer</span>
+              <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400, color: CREAM }}>
+                ChatGPT writes <em>for</em> you.
+                <br />
+                Accent writes <em>like</em> you.
+              </h2>
+              <p className="font-sans" style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
+                AI writers produce content that sounds like everyone. Accent starts with YOUR draft, YOUR voice, YOUR ideas. It adapts the format and tone per channel without smoothing out the parts that make it yours.
+              </p>
             </div>
-          )}
-
-          {/* Game Result */}
-          {gameState === "result" && (
-            <div className="text-center">
-              <div className="flex justify-center gap-2 mb-6">
-                {ROUNDS.map((_, i) => (
-                  <div key={i} className="rounded-full" style={{ width: 8, height: 8, background: INK }} />
-                ))}
-              </div>
-              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>Your result</p>
-              <h3 className="font-serif mb-2" style={{ fontSize: "clamp(32px, 5vw, 40px)", fontWeight: 300 }}>{result.title}</h3>
-              <p className="font-mono text-[13px] mb-6" style={{ color: FAINT }}>{totalScore} / 20</p>
-              <p className="text-[16px] max-w-[500px] mx-auto mb-6" style={{ color: DIM, lineHeight: 1.6 }}>{result.desc}</p>
-              <p className="font-serif italic text-[16px] mb-10" style={{ color: INK }}>{result.cta}</p>
-
-              {!emailSubmitted ? (
-                <div className="max-w-[400px] mx-auto">
-                  <p className="font-sans mb-3" style={{ fontSize: 16, color: DIM }}>Your first writing challenge drops this week.</p>
-                  <form onSubmit={handleEmail} className="flex gap-2">
-                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[16px] outline-none" style={{ border: `1px solid rgba(26,26,24,0.15)`, background: "white", color: INK }} />
-                    <button type="submit" disabled={emailLoading} className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[16px] disabled:opacity-50" style={{ background: INK, color: CREAM }}>{emailLoading ? "..." : "I'm in"}</button>
-                  </form>
-                </div>
-              ) : (
-                <p className="font-mono" style={{ fontSize: 14, letterSpacing: "0.04em", color: INK }}>&check; Watch your inbox.</p>
-              )}
-
-              <button onClick={handlePlayAgain} className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium" style={{ border: `1px solid rgba(26,26,24,0.15)`, color: DIM, background: "transparent" }}>
-                Play Again
-              </button>
-
-              {/* Post-game tool entry points */}
-              <div className="mt-16 pt-10" style={{ borderTop: `1px solid rgba(26,26,24,0.15)` }}>
-                <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>next</p>
-                <p className="font-serif mb-5" style={{ fontSize: 22, fontWeight: 400, color: INK }}>
-                  Want to work on your own writing?
+            <div className="space-y-4">
+              <div className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,0.08)` }}>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: "rgba(255,255,255,0.3)" }}>Generic AI</span>
+                <p className="font-serif" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                  "We are excited to announce our new community for designers."
                 </p>
-                <div className="flex justify-center gap-8 flex-wrap">
-                  <Link href="/write?mode=polish" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
-                    Polish it <span>→</span>
-                  </Link>
-                  <Link href="/write?mode=coach" className="no-underline text-[14px] font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
-                    Coach me <span>→</span>
-                  </Link>
-                </div>
+              </div>
+              <div className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${GOLD}40` }}>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: GOLD }}>Accent</span>
+                <p className="font-serif" style={{ fontSize: 15, color: "rgba(255,255,255,0.9)", lineHeight: 1.6 }}>
+                  "Most designers in Amsterdam work alone. I got tired of it. So I started inviting people over."
+                </p>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 7. HOW IT WORKS ═══ */}
+      <section ref={s6.ref} style={s6.style}>
+        <div className="max-w-[640px] mx-auto px-6 py-20">
+          <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400 }}>Three steps. No content strategy required.</h2>
+          <div className="space-y-10">
+            {[
+              { n: "01", title: "Paste your draft", desc: "Whatever you were going to write anyway. A community update, an email, a rough idea." },
+              { n: "02", title: "Pick your channels", desc: "LinkedIn, cold DM, tweet, newsletter. Accent adapts the tone, length, and structure for each." },
+              { n: "03", title: "Sound like yourself", desc: "Every version keeps your voice. No corporate smoothing. No AI blandness. Just you, sharper." },
+            ].map((s) => (
+              <div key={s.n} className="flex gap-6">
+                <span className="font-mono shrink-0" style={{ fontSize: 14, color: GOLD, fontWeight: 500, marginTop: 3 }}>{s.n}</span>
+                <div>
+                  <h3 className="font-serif mb-1" style={{ fontSize: 20, fontWeight: 400 }}>{s.title}</h3>
+                  <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 8. FINAL CTA ═══ */}
+      <section ref={s7.ref} style={s7.style}>
+        <div className="max-w-[560px] mx-auto px-6 py-20 text-center">
+          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 44px)", lineHeight: 1.1 }}>
+            <span style={{ fontWeight: 300 }}>You wrote it.</span>
+            <br />
+            <span style={{ fontWeight: 700, fontStyle: "italic" }}>Let it work.</span>
+          </h2>
+          <p className="font-sans mx-auto mb-8" style={{ fontSize: 16, color: DIM, lineHeight: 1.6, maxWidth: 420 }}>
+            Free to start. No credit card. Paste something you've already written and see what Accent does with it.
+          </p>
+          <Link href="/write" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: GOLD, color: INK }}>
+            Try it on your writing →
+          </Link>
         </div>
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer className="relative z-10" style={{ borderTop: `1px solid ${RULE}` }}>
-        <div ref={s3.ref} style={s3.style} className="max-w-[960px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <AccentLogo />
+      <footer style={{ borderTop: `1px solid ${BORDER}` }}>
+        <div className="max-w-[1040px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <span className="font-serif" style={{ fontSize: 16, color: INK }}>accent</span>
           <div className="flex gap-6 text-[12px] font-sans" style={{ color: FAINT }}>
-            <Link href="/privacy-contact" className="no-underline hover:underline" style={{ color: FAINT }}>Privacy</Link>
-            <a href="mailto:hello@myaccent.io" className="no-underline hover:underline" style={{ color: FAINT }}>Contact</a>
+            <span>Built in Amsterdam</span>
+            <Link href="/privacy-contact" className="no-underline" style={{ color: FAINT }}>Privacy</Link>
+            <a href="mailto:hello@myaccent.io" className="no-underline" style={{ color: FAINT }}>Contact</a>
           </div>
-          <span className="text-[12px] font-sans" style={{ color: FAINT }}>Built in Amsterdam</span>
         </div>
       </footer>
+
+      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
     </div>
   );
 }
