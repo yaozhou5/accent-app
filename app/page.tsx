@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 const INK = "#1A1A18";
-const DIM = "rgba(26,26,24,0.6)";
+const DIM = "#6B6B6B";
 const FAINT = "rgba(26,26,24,0.4)";
-const GOLD = "#B8964E";
-const CREAM = "#F7F4EF";
-const BORDER = "rgba(26,26,24,0.12)";
+const BLUE = "#2563EB";
+const BG = "#FFFFFF";
+const ALT_BG = "#FAFAFA";
+const BORDER = "#E5E5E5";
 
-/* ── Scroll reveal hook ── */
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [v, setV] = useState(false);
@@ -24,7 +24,6 @@ function useReveal() {
   return { ref, style: { opacity: v ? 1 : 0, transform: v ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.6s ease, transform 0.6s ease" } as React.CSSProperties };
 }
 
-/* ── Animated number ── */
 function AnimNum({ target, suffix = "" }: { target: string; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [val, setVal] = useState("0");
@@ -46,7 +45,6 @@ function AnimNum({ target, suffix = "" }: { target: string; suffix?: string }) {
   return <span ref={ref}>{val}{suffix}</span>;
 }
 
-/* ── Demo data ── */
 const DRAFT = `I just launched a small community for designers in Amsterdam who want to learn about business. We meet every two weeks and share what we're working on. It's been really helpful for me and I think it could help others too. If you're interested you can join through the link in my bio.`;
 
 const OUTPUTS: Record<string, string> = {
@@ -56,7 +54,6 @@ const OUTPUTS: Record<string, string> = {
   Newsletter: `Something I've been quietly building for the past three months.\n\nI kept meeting designers in Amsterdam who were talented but stuck. Great portfolios, no pipeline. Beautiful case studies, no recurring revenue. They knew how to design but nobody had taught them how to build a business around it.\n\nSo I started inviting a few of them to my apartment every two weeks. No agenda at first. Just coffee and honest conversation about the parts of freelancing that nobody talks about.\n\nIt turned into something real. One member landed a retainer client. Another restructured her pricing. A third started saying no to projects under €3,000.\n\nI'm opening 10 more spots. Here's how it works.`,
 };
 
-/* ── Main page ── */
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState("LinkedIn");
@@ -69,7 +66,6 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Typing animation when tab changes
   useEffect(() => {
     setTyping(true);
     setDisplayText("");
@@ -83,33 +79,27 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, [activeTab]);
 
-  const s1 = useReveal();
-  const s2 = useReveal();
-  const s3 = useReveal();
-  const s4 = useReveal();
-  const s5 = useReveal();
-  const s6 = useReveal();
-  const s7 = useReveal();
+  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s5 = useReveal(), s6 = useReveal(), s7 = useReveal();
 
   return (
-    <div style={{ background: CREAM, color: INK }}>
-      {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolled ? `${CREAM}ee` : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
+    <div style={{ background: BG, color: INK }}>
+      {/* Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
           <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
-          <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: GOLD, color: INK }}>
+          <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff" }}>
             Try it free →
           </Link>
         </div>
       </nav>
 
-      {/* ═══ 1. HERO ═══ */}
+      {/* 1. Hero */}
       <section className="text-center" style={{ paddingTop: 140, paddingBottom: 80 }}>
         <div className="max-w-[680px] mx-auto px-6">
           <div className="flex items-center justify-center gap-3 mb-8">
-            <span style={{ width: 24, height: 1, background: GOLD, display: "inline-block" }} />
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>For solo founders who write</span>
-            <span style={{ width: 24, height: 1, background: GOLD, display: "inline-block" }} />
+            <span style={{ width: 24, height: 1, background: BLUE, display: "inline-block" }} />
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>For solo founders who write</span>
+            <span style={{ width: 24, height: 1, background: BLUE, display: "inline-block" }} />
           </div>
           <h1 className="font-serif" style={{ fontSize: "clamp(36px, 7vw, 56px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
             <span style={{ fontWeight: 300 }}>You're already writing.</span>
@@ -120,7 +110,7 @@ export default function LandingPage() {
             You spend 45 minutes on a community update and 30 people see it. Accent turns that one draft into LinkedIn posts, cold DMs, tweets, and newsletters that actually sound like you.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            <Link href="/write" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: GOLD, color: INK }}>
+            <Link href="/write" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>
               Try it on your writing →
             </Link>
             <a href="#demo" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1.5px solid ${BORDER}`, color: INK }}>
@@ -130,10 +120,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 2. PAIN QUOTE ═══ */}
+      {/* 2. Pain quote */}
       <section ref={s1.ref} style={s1.style}>
         <div className="max-w-[680px] mx-auto px-6 py-16">
-          <div className="pl-7" style={{ borderLeft: `2px solid ${GOLD}` }}>
+          <div className="pl-7" style={{ borderLeft: `2px solid ${BLUE}` }}>
             <p className="font-serif italic" style={{ fontSize: "clamp(20px, 3.5vw, 26px)", fontWeight: 300, lineHeight: 1.4, color: INK }}>
               "I didn't sign up to be a content machine. But apparently that's half the job now."
             </p>
@@ -142,34 +132,30 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 3. DEMO ═══ */}
-      <section id="demo" ref={s2.ref} style={s2.style}>
+      {/* 3. Demo */}
+      <section id="demo" ref={s2.ref} style={{ ...s2.style, background: ALT_BG }}>
         <div className="max-w-[1000px] mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>Write once. Reach everyone.</span>
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Write once. Reach everyone.</span>
             <h2 className="font-serif mt-3" style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 400 }}>One draft becomes five channels</h2>
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left — draft */}
             <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: FAINT }}>Your draft</span>
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Your draft</span>
               <div className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
                 <p className="font-serif" style={{ fontSize: 16, lineHeight: 1.7, color: INK }}>{DRAFT}</p>
               </div>
-              <div className="mt-3 px-4 py-2 rounded-[6px] text-center" style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}30` }}>
-                <span className="font-mono" style={{ fontSize: 11, color: GOLD }}>↓ Accent turns this into channel-native content</span>
+              <div className="mt-3 px-4 py-2 rounded-[6px] text-center" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}20` }}>
+                <span className="font-mono" style={{ fontSize: 11, color: BLUE }}>↓ Accent turns this into channel-native content</span>
               </div>
             </div>
-
-            {/* Right — outputs */}
             <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: FAINT }}>Accent output</span>
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Accent output</span>
               <div className="flex gap-1 mb-3">
                 {Object.keys(OUTPUTS).map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)} className="px-3 py-1.5 rounded-full text-[12px] font-mono transition-all" style={{
-                    background: activeTab === tab ? INK : "transparent",
-                    color: activeTab === tab ? CREAM : FAINT,
+                    background: activeTab === tab ? BLUE : "transparent",
+                    color: activeTab === tab ? "#fff" : DIM,
                     border: activeTab === tab ? "none" : `1px solid ${BORDER}`,
                     cursor: "pointer",
                   }}>{tab}</button>
@@ -178,7 +164,7 @@ export default function LandingPage() {
               <div className="p-5 relative" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10, minHeight: 280 }}>
                 <p className="font-serif whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.75, color: INK }}>
                   {displayText}
-                  {typing && <span className="inline-block w-[2px] h-[18px] ml-0.5" style={{ background: GOLD, animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />}
+                  {typing && <span className="inline-block w-[2px] h-[18px] ml-0.5" style={{ background: BLUE, animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />}
                 </p>
               </div>
             </div>
@@ -186,7 +172,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 4. STATS ═══ */}
+      {/* 4. Stats */}
       <section ref={s3.ref} style={s3.style}>
         <div className="max-w-[800px] mx-auto px-6 py-4" style={{ borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
           <div className="grid grid-cols-3 text-center py-6">
@@ -197,7 +183,7 @@ export default function LandingPage() {
             ].map((s) => (
               <div key={s.label}>
                 <div className="font-serif" style={{ fontSize: 48, fontWeight: 300, color: INK }}><AnimNum target={s.num} suffix={s.num === "10" ? "x" : ""} /></div>
-                <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: FAINT }}>{s.label}</div>
+                <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>{s.label}</div>
                 <div className="font-sans" style={{ fontSize: 13, color: DIM, marginTop: 2 }}>{s.sub}</div>
               </div>
             ))}
@@ -205,19 +191,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 5. USE CASES ═══ */}
+      {/* 5. Use cases */}
       <section ref={s4.ref} style={s4.style}>
         <div className="max-w-[1000px] mx-auto px-6 py-20">
-          <span className="font-mono uppercase block text-center mb-3" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>Built for your week</span>
+          <span className="font-mono uppercase block text-center mb-3" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Built for your week</span>
           <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400 }}>Every founder has these moments</h2>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
               { title: "Launch day", pain: "You're launching next week and need a Product Hunt post, 3 tweets, a LinkedIn announcement, and a cold email to press.", solve: "Write your launch story once. Accent shapes it for every channel, in your voice." },
               { title: "Cold outreach", pain: "You know your product solves a real problem but your DMs sound like every other founder's.", solve: "Paste your pitch. Accent rewrites it so it reads like a person, not a template." },
               { title: "Weekly content", pain: "You posted a community update. 30 people saw it. That insight deserved more.", solve: "Turn one update into a LinkedIn post, a tweet thread, and a newsletter intro. Same ideas, native to each platform." },
             ].map((c) => (
-              <div key={c.title} className="p-5 transition-all hover:border-[#B8964E]" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+              <div key={c.title} className="p-5 transition-all" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = BLUE}
+                onMouseLeave={e => e.currentTarget.style.borderColor = BORDER}
+              >
                 <h3 className="font-serif mb-3" style={{ fontSize: 20, fontWeight: 400 }}>{c.title}</h3>
                 <p className="font-sans text-[14px] mb-4" style={{ color: DIM, lineHeight: 1.5 }}>{c.pain}</p>
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}>
@@ -229,30 +217,30 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 6. DIFFERENTIATOR ═══ */}
+      {/* 6. Differentiator */}
       <section ref={s5.ref} style={s5.style}>
         <div className="mx-6 my-8 rounded-[16px]" style={{ background: INK }}>
           <div className="max-w-[960px] mx-auto px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
-              <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: GOLD }}>Not another AI writer</span>
-              <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400, color: CREAM }}>
+              <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Not another AI writer</span>
+              <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400, color: "#fff" }}>
                 ChatGPT writes <em>for</em> you.
                 <br />
                 Accent writes <em>like</em> you.
               </h2>
-              <p className="font-sans" style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
+              <p className="font-sans" style={{ fontSize: 15, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
                 AI writers produce content that sounds like everyone. Accent starts with YOUR draft, YOUR voice, YOUR ideas. It adapts the format and tone per channel without smoothing out the parts that make it yours.
               </p>
             </div>
             <div className="space-y-4">
-              <div className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,0.08)` }}>
+              <div className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: "rgba(255,255,255,0.3)" }}>Generic AI</span>
-                <p className="font-serif" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                <p className="font-serif" style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
                   "We are excited to announce our new community for designers."
                 </p>
               </div>
-              <div className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${GOLD}40` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: GOLD }}>Accent</span>
+              <div className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${BLUE}60` }}>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: BLUE }}>Accent</span>
                 <p className="font-serif" style={{ fontSize: 15, color: "rgba(255,255,255,0.9)", lineHeight: 1.6 }}>
                   "Most designers in Amsterdam work alone. I got tired of it. So I started inviting people over."
                 </p>
@@ -262,7 +250,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 7. HOW IT WORKS ═══ */}
+      {/* 7. How it works */}
       <section ref={s6.ref} style={s6.style}>
         <div className="max-w-[640px] mx-auto px-6 py-20">
           <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400 }}>Three steps. No content strategy required.</h2>
@@ -273,7 +261,7 @@ export default function LandingPage() {
               { n: "03", title: "Sound like yourself", desc: "Every version keeps your voice. No corporate smoothing. No AI blandness. Just you, sharper." },
             ].map((s) => (
               <div key={s.n} className="flex gap-6">
-                <span className="font-mono shrink-0" style={{ fontSize: 14, color: GOLD, fontWeight: 500, marginTop: 3 }}>{s.n}</span>
+                <span className="font-mono shrink-0" style={{ fontSize: 14, color: BLUE, fontWeight: 500, marginTop: 3 }}>{s.n}</span>
                 <div>
                   <h3 className="font-serif mb-1" style={{ fontSize: 20, fontWeight: 400 }}>{s.title}</h3>
                   <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>{s.desc}</p>
@@ -284,7 +272,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 8. FINAL CTA ═══ */}
+      {/* 8. Final CTA */}
       <section ref={s7.ref} style={s7.style}>
         <div className="max-w-[560px] mx-auto px-6 py-20 text-center">
           <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 44px)", lineHeight: 1.1 }}>
@@ -295,20 +283,20 @@ export default function LandingPage() {
           <p className="font-sans mx-auto mb-8" style={{ fontSize: 16, color: DIM, lineHeight: 1.6, maxWidth: 420 }}>
             Free to start. No credit card. Paste something you've already written and see what Accent does with it.
           </p>
-          <Link href="/write" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: GOLD, color: INK }}>
+          <Link href="/write" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff" }}>
             Try it on your writing →
           </Link>
         </div>
       </section>
 
-      {/* ═══ FOOTER ═══ */}
+      {/* Footer */}
       <footer style={{ borderTop: `1px solid ${BORDER}` }}>
         <div className="max-w-[1040px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="font-serif" style={{ fontSize: 16, color: INK }}>accent</span>
-          <div className="flex gap-6 text-[12px] font-sans" style={{ color: FAINT }}>
+          <div className="flex gap-6 text-[12px] font-sans" style={{ color: DIM }}>
             <span>Built in Amsterdam</span>
-            <Link href="/privacy-contact" className="no-underline" style={{ color: FAINT }}>Privacy</Link>
-            <a href="mailto:hello@myaccent.io" className="no-underline" style={{ color: FAINT }}>Contact</a>
+            <Link href="/privacy-contact" className="no-underline" style={{ color: DIM }}>Privacy</Link>
+            <a href="mailto:hello@myaccent.io" className="no-underline" style={{ color: DIM }}>Contact</a>
           </div>
         </div>
       </footer>
