@@ -257,10 +257,55 @@ function escapeAttr(s: string) {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/* ── Channel Insights ── */
+const CHANNEL_INSIGHTS: Record<string, { format: string; tip: string; sweet: string }> = {
+  linkedin: { format: "Story-driven, line breaks between paragraphs, hook in first line.", tip: "First hour engagement matters most. Comments > reactions. Posts without external links get 3x reach.", sweet: "150-300 words" },
+  cold_dm: { format: "Short, personal, specific. Feels like a message to one person, not a broadcast.", tip: "First sentence decides if they read or archive. Lead with relevance, not introduction.", sweet: "Under 100 words" },
+  tweet: { format: "Punchy, fragmented lines. One idea per tweet. Thread if longer.", tip: "Replies and quote tweets signal value. Posts with images get 1.5x impressions.", sweet: "Under 280 chars, or 3-5 tweet thread" },
+  newsletter: { format: "Personal, letter-like, storytelling arc. Feels like writing to a friend.", tip: "Subject line is everything. 40% of readers decide from subject alone.", sweet: "200-500 words" },
+  community_post: { format: "Casual, vulnerable, asks questions. Feels like talking to peers.", tip: "Give before you ask. Share a real insight, then invite responses.", sweet: "100-200 words" },
+};
+
+function ChannelInsightTooltip({ channelKey, position }: { channelKey: string; position: { x: number; y: number } }) {
+  const insight = CHANNEL_INSIGHTS[channelKey];
+  const isCustom = !insight;
+
+  const left = Math.min(Math.max(position.x - 120, 8), typeof window !== "undefined" ? window.innerWidth - 256 : 200);
+
+  return (
+    <div className="fixed z-50" style={{ left, top: position.y + 6, width: 240, background: "#FAFAFA", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "12px 14px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+      {isCustom ? (
+        <p className="font-sans text-[12px]" style={{ color: DIM, lineHeight: 1.5 }}>
+          Accent will adapt your draft to match this channel's typical tone and format.
+        </p>
+      ) : (
+        <div className="space-y-2.5">
+          <div>
+            <span className="font-mono uppercase block mb-0.5" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>Native format</span>
+            <p className="font-sans text-[12px]" style={{ color: INK, lineHeight: 1.4 }}>{insight.format}</p>
+          </div>
+          <div>
+            <span className="font-mono uppercase block mb-0.5" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>Algorithm</span>
+            <p className="font-sans text-[12px]" style={{ color: INK, lineHeight: 1.4 }}>{insight.tip}</p>
+          </div>
+          <div>
+            <span className="font-mono uppercase block mb-0.5" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>Sweet spot</span>
+            <p className="font-sans text-[12px]" style={{ color: INK, lineHeight: 1.4 }}>{insight.sweet}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Spread View ── */
 function SpreadView() {
   const [draft, setDraft] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>(CHANNELS.map(c => c.key));
+  const [customChannels, setCustomChannels] = useState<Array<{ key: string; label: string }>>([]);
+  const [addingChannel, setAddingChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [hoveredInsight, setHoveredInsight] = useState<{ key: string; pos: { x: number; y: number } } | null>(null);
   const [results, setResults] = useState<Record<string, ChannelResult> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -268,8 +313,43 @@ function SpreadView() {
   const [copiedTab, setCopiedTab] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
 
+  // Load custom channels from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("accent-custom-channels");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setCustomChannels(parsed);
+        setSelectedChannels(prev => [...prev, ...parsed.map((c: { key: string }) => c.key)]);
+      } catch {}
+    }
+  }, []);
+
+  const allChannels = [...CHANNELS, ...customChannels];
+
   const toggleChannel = (key: string) => {
     setSelectedChannels(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
+  const addCustomChannel = () => {
+    const name = newChannelName.trim();
+    if (!name) return;
+    const key = name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    if (allChannels.some(c => c.key === key)) return;
+    const newChannel = { key, label: name };
+    const updated = [...customChannels, newChannel];
+    setCustomChannels(updated);
+    setSelectedChannels(prev => [...prev, key]);
+    localStorage.setItem("accent-custom-channels", JSON.stringify(updated));
+    setNewChannelName("");
+    setAddingChannel(false);
+  };
+
+  const removeCustomChannel = (key: string) => {
+    const updated = customChannels.filter(c => c.key !== key);
+    setCustomChannels(updated);
+    setSelectedChannels(prev => prev.filter(k => k !== key));
+    localStorage.setItem("accent-custom-channels", JSON.stringify(updated));
   };
 
   const handleSpread = async () => {
@@ -315,7 +395,7 @@ function SpreadView() {
     const allText = selectedChannels
       .filter(k => results?.[k])
       .map(k => {
-        const label = CHANNELS.find(c => c.key === k)?.label || k;
+        const label = [...CHANNELS, ...customChannels].find(c => c.key === k)?.label || k;
         return `--- ${label} ---\n${getText(k)}`;
       })
       .join("\n\n");
@@ -342,16 +422,54 @@ function SpreadView() {
         />
         <div className="mt-6 mb-8">
           <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Channels</span>
-          <div className="flex flex-wrap gap-2">
-            {CHANNELS.map(c => (
-              <button key={c.key} onClick={() => toggleChannel(c.key)} className="px-4 py-2 rounded-full text-[13px] font-mono transition-all" style={{
-                background: selectedChannels.includes(c.key) ? BLUE : "transparent",
-                color: selectedChannels.includes(c.key) ? "#fff" : DIM,
-                border: selectedChannels.includes(c.key) ? "none" : `1px solid ${BORDER}`,
-                cursor: "pointer",
-              }}>{c.label}</button>
-            ))}
+          <div className="flex flex-wrap gap-2 items-center">
+            {allChannels.map(c => {
+              const isCustom = customChannels.some(cc => cc.key === c.key);
+              const isSelected = selectedChannels.includes(c.key);
+              return (
+                <span key={c.key} className="inline-flex items-center gap-0 relative">
+                  <button onClick={() => toggleChannel(c.key)} className="px-4 py-2 rounded-full text-[13px] font-mono transition-all" style={{
+                    background: isSelected ? BLUE : "transparent",
+                    color: isSelected ? "#fff" : DIM,
+                    border: isSelected ? "none" : `1px solid ${BORDER}`,
+                    cursor: "pointer",
+                    paddingRight: isCustom ? 28 : undefined,
+                  }}>{c.label}</button>
+                  {isCustom && (
+                    <button onClick={(e) => { e.stopPropagation(); removeCustomChannel(c.key); }} className="absolute right-2 text-[11px] leading-none" style={{ color: isSelected ? "rgba(255,255,255,0.6)" : "#AAAAAA", background: "none", border: "none", cursor: "pointer" }}>×</button>
+                  )}
+                  {!isCustom && (
+                    <button
+                      className="ml-[-4px] text-[11px]"
+                      style={{ color: "#AAAAAA", background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}
+                      onMouseEnter={(e) => { const rect = (e.target as HTMLElement).getBoundingClientRect(); setHoveredInsight({ key: c.key, pos: { x: rect.left, y: rect.bottom } }); }}
+                      onMouseLeave={() => setHoveredInsight(null)}
+                    >ⓘ</button>
+                  )}
+                </span>
+              );
+            })}
+            {addingChannel ? (
+              <span className="inline-flex items-center gap-1">
+                <input
+                  autoFocus
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") addCustomChannel(); if (e.key === "Escape") { setAddingChannel(false); setNewChannelName(""); } }}
+                  placeholder="Channel name"
+                  className="px-3 py-1.5 rounded-full text-[13px] font-mono outline-none"
+                  style={{ border: `1px solid ${BLUE}`, width: 140, color: INK }}
+                />
+                <button onClick={addCustomChannel} className="text-[14px]" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>✓</button>
+                <button onClick={() => { setAddingChannel(false); setNewChannelName(""); }} className="text-[14px]" style={{ color: "#AAAAAA", background: "none", border: "none", cursor: "pointer" }}>×</button>
+              </span>
+            ) : (
+              <button onClick={() => setAddingChannel(true)} className="px-4 py-2 rounded-full text-[13px] font-mono" style={{ border: `1px dashed ${BORDER}`, background: "transparent", color: "#AAAAAA", cursor: "pointer" }}>
+                + Add channel
+              </button>
+            )}
           </div>
+          {hoveredInsight && <ChannelInsightTooltip channelKey={hoveredInsight.key} position={hoveredInsight.pos} />}
         </div>
         {error && <p className="font-sans text-[14px] mb-4" style={{ color: "#DC2626" }}>{error}</p>}
         <button onClick={handleSpread} disabled={!draft.trim() || selectedChannels.length === 0}
@@ -399,7 +517,7 @@ function SpreadView() {
 
       <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
         {resultChannels.map(key => {
-          const label = CHANNELS.find(c => c.key === key)?.label || key;
+          const label = allChannels.find(c => c.key === key)?.label || key;
           return (
             <button key={key} onClick={() => setActiveResultTab(key)} className="px-4 py-2 rounded-full text-[13px] font-mono shrink-0 transition-all" style={{
               background: activeResultTab === key ? BLUE : "transparent",
