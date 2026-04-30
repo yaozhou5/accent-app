@@ -27,13 +27,13 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://myaccent.io"),
   title: "accent.",
-  description: "The tool that makes you a better writer.",
+  description: "Content planning for solo founders. Drop in your week, get your content plan.",
   icons: {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Stop sounding like AI. Start sounding like you.",
-    description: "The tool that makes you a better writer.",
+    title: "Stop wondering what to post. Start knowing.",
+    description: "Content planning for solo founders. Drop in your week, get your content plan.",
     url: "https://myaccent.io",
     siteName: "accent.",
     images: [
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stop sounding like AI. Start sounding like you.",
-    description: "The tool that makes you a better writer.",
+    title: "Stop wondering what to post. Start knowing.",
+    description: "Content planning for solo founders. Drop in your week, get your content plan.",
     images: ["https://myaccent.io/api/og"],
   },
 };

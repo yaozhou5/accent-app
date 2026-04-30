@@ -86,7 +86,7 @@ export async function GET() {
               maxWidth: "1000px",
             }}
           >
-            Stop sounding like AI. Start sounding like you.
+            Stop wondering what to post. Start knowing.
           </div>
           <div
             style={{
@@ -96,7 +96,7 @@ export async function GET() {
               marginTop: "20px",
             }}
           >
-            The tool that makes you a better writer.
+            Content planning for solo founders.
           </div>
         </div>
 
