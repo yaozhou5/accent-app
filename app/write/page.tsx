@@ -223,34 +223,18 @@ function SpreadView() {
 
 /* ── Main Page ── */
 export default function WritePage() {
-  const [mode, setMode] = useState<"diary" | "tools">("diary");
-
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <nav style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[960px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
-          <div className="flex items-center gap-1 p-0.5 rounded-full" style={{ background: "#F5F5F5" }}>
-            <button onClick={() => setMode("diary")} className="px-4 py-1.5 rounded-full text-[13px] font-mono transition-all" style={{
-              background: mode === "diary" ? "#fff" : "transparent", color: mode === "diary" ? INK : DIM,
-              border: "none", cursor: "pointer", boxShadow: mode === "diary" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-            }}>Diary</button>
-            <button onClick={() => setMode("tools")} className="px-4 py-1.5 rounded-full text-[13px] font-mono transition-all" style={{
-              background: mode === "tools" ? "#fff" : "transparent", color: mode === "tools" ? INK : DIM,
-              border: "none", cursor: "pointer", boxShadow: mode === "tools" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-            }}>Tools</button>
-          </div>
           <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
         </div>
       </nav>
 
-      {mode === "diary" ? (
-        <DiaryView />
-      ) : (
-        <div className="max-w-[640px] mx-auto px-5 py-8">
-          <AppShell />
-        </div>
-      )}
+      <div className="max-w-[640px] mx-auto px-5 py-8">
+        <AppShell />
+      </div>
     </div>
   );
 }
