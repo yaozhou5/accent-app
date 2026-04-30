@@ -101,7 +101,7 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </section>
