@@ -217,17 +217,17 @@ export default function LandingPage() {
             <div>
               <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: BLUE }}>Why Accent is different</span>
               <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, color: "#fff", lineHeight: 1.3 }}>
-                Other tools write <em style={{ opacity: 0.45 }}>for</em> you.<br />Accent makes <em style={{ color: BLUE }}>you</em> better.
+                Other tools start with <em style={{ opacity: 0.45 }}>content</em>.<br />Accent starts with <em style={{ color: BLUE }}>you</em>.
               </h2>
               <p className="font-sans" style={{ fontSize: 14, color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}>
-                Content planners give you a calendar. AI writers give you generic text. Accent does what neither can: it helps you see what's worth saying, then coaches you to say it in your own voice. You get better at content over time. Not more dependent.
+                Content planners give you a calendar. AI writers give you generic text. Neither knows who you are. Accent starts by understanding your story, your audience, and what you're building. The content follows from there.
               </p>
             </div>
             <div className="space-y-3">
               {[
-                { icon: "📅", label: "Content calendars", line1: "Tell you when to post", line2: "→ Not what to say", highlight: false },
-                { icon: "🤖", label: "AI writers", line1: "Write posts for you", line2: "→ You sound like everyone", highlight: false },
-                { icon: "✦", label: "Accent", line1: "Plans from your life, coaches your voice", line2: "→ You actually get better", highlight: true },
+                { icon: "📅", label: "Content calendars", line1: "Tell you when to post", line2: "→ Don't know who you are", highlight: false },
+                { icon: "🤖", label: "AI writers", line1: "Write posts for you", line2: "→ Sound like everyone else", highlight: false },
+                { icon: "✦", label: "Accent", line1: "Learns your story first, then plans your content", line2: "→ Sounds like you because it started with you", highlight: true },
               ].map(c => (
                 <div key={c.label} className="p-4.5 rounded-[10px]" style={{ padding: 18, background: c.highlight ? BLUE_SOFT : "rgba(255,255,255,0.03)", border: `1px solid ${c.highlight ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.05)"}` }}>
                   <div className="flex items-center gap-2 mb-1.5">
