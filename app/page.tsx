@@ -4,34 +4,45 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 const INK = "#1A1A18";
-const DIM = "#6B6B6B";
+const DIM = "rgba(26,26,24,0.50)";
 const BLUE = "#2563EB";
-const BORDER = "#E5E5E5";
+const BLUE_SOFT = "rgba(37,99,235,0.07)";
+const BORDER = "rgba(26,26,24,0.06)";
+const BORDER_VIS = "rgba(26,26,24,0.12)";
 
-function useReveal() {
+function useReveal(delay = 0) {
   const ref = useRef<HTMLDivElement>(null);
   const [v, setV] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setV(true); }, { threshold: 0.15 });
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) setTimeout(() => setV(true), delay);
+    }, { threshold: 0.12 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
-  return { ref, style: { opacity: v ? 1 : 0, transform: v ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.6s ease, transform 0.6s ease" } as React.CSSProperties };
+  }, [delay]);
+  return { ref, style: { opacity: v ? 1 : 0, transform: v ? "translateY(0)" : "translateY(18px)", transition: "opacity 0.75s ease, transform 0.75s ease" } as React.CSSProperties, visible: v };
 }
 
-const DEMO_ENTRY = `Had a weird day. A vendor I was really excited about completely ghosted me after two calls. Spent the morning feeling defeated. Then around lunch, someone I've never talked to DM'd me saying they found us through a friend and wanted to sign up. First real organic sale. Didn't even know what to say. Also realized our onboarding flow is a mess — took her 20 minutes to figure out how to pay. Need to fix that. Community call tonight went well though, 8 people showed up which is a record.`;
+const FRAGMENTS = [
+  { day: "Mon", text: "Vendor ghosted after 2 calls. Feeling defeated." },
+  { day: "Tue", text: "First organic sale!! Someone DM'd saying they found us through a friend" },
+  { day: "Tue", text: "Onboarding is a mess. New customer took 20 min to figure out how to pay" },
+  { day: "Wed", text: "Community call — 8 people showed up. Record." },
+  { day: "Thu", text: "Conversation with a founder in Berlin. She's doing the exact same thing" },
+];
 
-const DEMO_STORIES = [
-  { angle: "The contrast between rejection and surprise", channel: "LinkedIn", insight: "A vendor ghosted you on the same day you got your first organic customer. That tension — doors closing and opening simultaneously — is the most relatable founder moment.", nudge: "Start with the vendor ghosting. Let the reader assume the day was a loss. Then reveal the DM. The reversal is the hook." },
-  { angle: "Your onboarding is broken and you're saying it out loud", channel: "Community Post", insight: "Most founders hide their product flaws. You just admitted a paying customer struggled for 20 minutes. That honesty is rare and builds trust.", nudge: "Ask your community for help. 'Our first paying customer almost didn't make it through onboarding. What's your setup look like?'" },
-  { angle: "8 people showed up", channel: "Newsletter", insight: "You almost buried this. A community call with 8 attendees when you're just starting is a milestone.", nudge: "The story isn't '8 people came to my call.' It's 'I expected 2 and 8 showed up and here's what that taught me.'" },
+const PLAN_CARDS = [
+  { title: "The vendor ghosting + first organic sale", channel: "LinkedIn", when: "Tuesday morning", why: "The contrast between rejection and surprise is the most relatable founder moment. Your audience of early-stage builders lives this daily.", nudge: "Start with the ghosting. Let the reader think the day was a loss. Then reveal the DM." },
+  { title: "Your onboarding is broken — and you're admitting it", channel: "Community Post", when: "Wednesday", why: "Most founders hide product flaws. Admitting a customer struggled for 20 minutes builds trust and invites help.", nudge: "Ask your community: 'Our first paying customer almost didn't make it through onboarding. What does yours look like?'" },
+  { title: "8 people showed up", channel: "Newsletter", when: "Friday", why: "You almost buried this. 8 attendees when you're starting is a milestone. Your subscribers who are thinking about communities need to hear that 8 is enough.", nudge: "The story isn't '8 people came.' It's 'I expected 2 and 8 showed up and here's what that taught me.'" },
 ];
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
-  const [expandedStory, setExpandedStory] = useState<number | null>(null);
+  const [activeCard, setActiveCard] = useState(0);
+  const [cardsReady, setCardsReady] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -39,136 +50,156 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s5 = useReveal(), s6 = useReveal();
+  const s1 = useReveal();
+  const s2 = useReveal();
+  const demoRef = useRef<HTMLDivElement>(null);
+  const s3 = useReveal();
+  const s4 = useReveal();
+  const s5 = useReveal();
+  const s6 = useReveal();
+
+  // Trigger plan cards after demo section enters view
+  useEffect(() => {
+    const el = demoRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) setTimeout(() => setCardsReady(true), 800);
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <div style={{ background: "#fff", color: INK }}>
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
-        <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 58, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
+        <div className="max-w-[960px] mx-auto px-6 h-full flex items-center justify-between">
           <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="no-underline font-sans text-[13px]" style={{ color: DIM }}>Log in</Link>
-            <Link href="/signup" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff" }}>Start your diary →</Link>
-          </div>
+          <a href="mailto:hello@myaccent.io" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get started free</a>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="text-center" style={{ paddingTop: 140, paddingBottom: 60 }}>
-        <div className="max-w-[680px] mx-auto px-6">
+      <section className="text-center" style={{ paddingTop: 140, paddingBottom: 72 }}>
+        <div className="max-w-[760px] mx-auto px-6">
           <div className="flex items-center justify-center gap-3 mb-8">
-            <span style={{ width: 24, height: 1, background: BLUE, display: "inline-block" }} />
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>For founders who build in public</span>
-            <span style={{ width: 24, height: 1, background: BLUE, display: "inline-block" }} />
+            <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Content planning for solo founders</span>
+            <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
           </div>
-          <h1 className="font-serif" style={{ fontSize: "clamp(36px, 7vw, 52px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-            <span style={{ fontWeight: 300 }}>Your week is full of stories.</span><br />
-            <span style={{ fontWeight: 700, fontStyle: "italic" }}>You just don't see them yet.</span>
+          <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+            <span style={{ fontWeight: 300 }}>Stop wondering what to post.</span><br />
+            <span style={{ fontWeight: 700, fontStyle: "italic" }}>Start knowing.</span>
           </h1>
-          <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: "rgba(26,26,24,0.5)", lineHeight: 1.6, maxWidth: 520 }}>
-            Accent is a founder's diary that turns your daily experiences into build-in-public content. You journal what happened. Accent shows you what's worth sharing and where. You write it yourself.
+          <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: DIM, lineHeight: 1.7, maxWidth: 500 }}>
+            Drop in what happened this week. Accent tells you what's worth posting, where, and why. Then helps you write it in your own voice.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>See how it works</a>
-            <Link href="/signup" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1.5px solid ${BORDER}`, color: INK }}>Start your diary</Link>
+            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
+            <a href="mailto:hello@myaccent.io" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Get started free</a>
           </div>
         </div>
       </section>
 
-      {/* Problem section */}
+      {/* Pain quote */}
       <section ref={s1.ref} style={s1.style}>
-        <div className="max-w-[800px] mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div>
-            <h3 className="font-mono uppercase mb-4" style={{ fontSize: 11, letterSpacing: "0.1em", color: DIM }}>What founders do now</h3>
-            <ul className="space-y-3 list-none p-0">
-              {["Stare at blank page", "Wonder 'what should I post?'", "Paste into ChatGPT", "Get generic content back", "Post it, feel nothing"].map((t, i) => (
-                <li key={i} className="font-sans text-[15px] flex items-start gap-2" style={{ color: "rgba(26,26,24,0.5)" }}>
-                  <span style={{ color: "#DC2626", fontSize: 12, marginTop: 4 }}>✕</span>{t}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-mono uppercase mb-4" style={{ fontSize: 11, letterSpacing: "0.1em", color: BLUE }}>What Accent does</h3>
-            <ul className="space-y-3 list-none p-0">
-              {["Journal what happened today", "Accent finds the stories", "Shows you the angle + channel", "You write it, with coaching", "Post it, mean every word"].map((t, i) => (
-                <li key={i} className="font-sans text-[15px] flex items-start gap-2" style={{ color: INK }}>
-                  <span style={{ color: BLUE, fontSize: 12, marginTop: 4 }}>✓</span>{t}
-                </li>
-              ))}
-            </ul>
+        <div className="max-w-[640px] mx-auto px-6 py-14">
+          <div className="pl-6" style={{ borderLeft: `2px solid ${BLUE}` }}>
+            <p className="font-serif italic" style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}>
+              "The hardest part isn't writing the post. It's knowing which post is worth writing."
+            </p>
+            <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>Every founder, every Sunday night</p>
           </div>
         </div>
       </section>
 
       {/* Demo */}
-      <section id="demo" ref={s2.ref} style={{ ...s2.style, background: "#FAFAFA" }}>
-        <div className="max-w-[1000px] mx-auto px-6 py-20">
+      <section id="demo" ref={demoRef} style={{ background: "#FAFAFA" }}>
+        <div ref={s2.ref} style={s2.style} className="max-w-[900px] mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>See it in action</span>
-            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 400 }}>One diary entry. Three stories found.</h2>
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Your week → Your content plan</span>
+            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>5 fragments in. 3-post plan out.</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 28 }}>
+            {/* Left — fragments */}
             <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Diary entry</span>
-              <div className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-                <p className="font-sans" style={{ fontSize: 15, lineHeight: 1.7, color: INK }}>{DEMO_ENTRY}</p>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="rounded-full" style={{ width: 6, height: 6, background: cardsReady ? "#22c55e" : "#22c55e", animation: cardsReady ? "none" : "pulse 1.5s ease infinite" }} />
+                <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>
+                  {cardsReady ? "Your week" : "Reading your week..."}
+                </span>
               </div>
-              <p className="mt-2 font-mono text-[11px]" style={{ color: "#AAAAAA" }}>87 words, 2 minutes to write</p>
-            </div>
-            <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Stories found</span>
-              <div className="space-y-3">
-                {DEMO_STORIES.map((story, i) => (
-                  <div key={i} className="transition-all" style={{ background: "#fff", border: `1px solid ${expandedStory === i ? BLUE : BORDER}`, borderRadius: 10, overflow: "hidden" }}>
-                    <button onClick={() => setExpandedStory(expandedStory === i ? null : i)} className="w-full text-left p-4 flex items-start justify-between gap-3" style={{ border: "none", background: "transparent", cursor: "pointer" }}>
-                      <div>
-                        <span className="font-sans text-[15px] font-medium block" style={{ color: INK }}>{story.angle}</span>
-                        <span className="font-mono text-[11px] mt-1 inline-block px-2 py-0.5 rounded-full" style={{ background: `${BLUE}0A`, color: BLUE, border: `1px solid ${BLUE}20` }}>{story.channel}</span>
-                      </div>
-                      <span className="text-[12px] shrink-0 mt-1" style={{ color: "#AAAAAA", transition: "transform 0.2s", transform: expandedStory === i ? "rotate(180deg)" : "none" }}>▼</span>
-                    </button>
-                    {expandedStory === i && (
-                      <div className="px-4 pb-4 space-y-3">
-                        <div className="pl-3" style={{ borderLeft: `2px solid ${BLUE}` }}>
-                          <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: "#AAAAAA" }}>Insight</span>
-                          <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.5 }}>{story.insight}</p>
-                        </div>
-                        <div>
-                          <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: "#AAAAAA" }}>Writing nudge</span>
-                          <p className="font-sans text-[14px] italic" style={{ color: DIM, lineHeight: 1.5 }}>{story.nudge}</p>
-                        </div>
-                      </div>
-                    )}
+              <div className="space-y-2">
+                {FRAGMENTS.map((f, i) => (
+                  <div key={i} className="transition-all" style={{ padding: "14px 18px", background: "#fff", borderRadius: 10, border: `1px solid ${BORDER}`, opacity: s2.visible ? 1 : 0, transform: s2.visible ? "none" : "translateY(10px)", transition: `all 0.5s ease ${i * 0.1}s` }}>
+                    <span className="font-mono block mb-1" style={{ fontSize: 10, color: DIM }}>{f.day}</span>
+                    <p className="font-sans" style={{ fontSize: 13, lineHeight: 1.55, color: DIM }}>{f.text}</p>
                   </div>
                 ))}
               </div>
+              <p className="mt-3 font-sans flex items-center gap-1" style={{ fontSize: 12, color: DIM }}>
+                <span>🕐</span> 3 minutes of input total
+              </p>
             </div>
-          </div>
-          <div className="text-center mt-12 p-6 rounded-[10px]" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-            <p className="font-sans text-[16px]" style={{ color: INK }}>That was someone else's week.</p>
-            <p className="font-sans text-[15px] mb-4" style={{ color: DIM }}>What happened in yours?</p>
-            <Link href="/signup" className="no-underline inline-block px-7 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>Start your diary →</Link>
+
+            {/* Right — plan cards */}
+            <div>
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: BLUE }}>Your content plan this week</span>
+              <div className="space-y-2.5">
+                {PLAN_CARDS.map((card, i) => {
+                  const isActive = activeCard === i;
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => setActiveCard(i)}
+                      className="cursor-pointer transition-all"
+                      style={{
+                        padding: 24, borderRadius: 12, background: isActive ? BLUE_SOFT : "#fff",
+                        border: `1px solid ${isActive ? BLUE : BORDER}`,
+                        opacity: cardsReady ? 1 : 0,
+                        transform: cardsReady ? "translateX(0)" : "translateX(20px)",
+                        transition: `all 0.4s ease ${i * 0.12}s, background 0.2s, border-color 0.2s`,
+                        boxShadow: isActive ? `0 0 0 1px ${BLUE}20` : "none",
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="font-sans text-[14px] font-medium" style={{ color: INK }}>{card.title}</span>
+                        <span className="font-mono shrink-0 text-[10px] px-2.5 py-0.5 rounded-full" style={{ color: BLUE, background: BLUE_SOFT }}>{card.channel}</span>
+                      </div>
+                      {isActive && (
+                        <div className="mt-4 space-y-3" style={{ animation: "fadeIn 0.3s ease" }}>
+                          <span className="font-mono uppercase" style={{ fontSize: 9, letterSpacing: "0.1em", color: DIM }}>Post on {card.when}</span>
+                          <p className="font-sans" style={{ fontSize: 13, lineHeight: 1.6, color: DIM }}>{card.why}</p>
+                          <div className="pl-3.5" style={{ borderLeft: `2px solid ${BLUE}` }}>
+                            <span className="font-mono uppercase block mb-1" style={{ fontSize: 9, letterSpacing: "0.1em", color: BLUE }}>Writing nudge</span>
+                            <p className="font-sans italic" style={{ fontSize: 13, lineHeight: 1.55, color: INK }}>{card.nudge}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* How it works */}
       <section ref={s3.ref} style={s3.style}>
-        <div className="max-w-[640px] mx-auto px-6 py-20">
-          <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400 }}>Three steps. Two minutes a day.</h2>
-          <div className="space-y-10">
+        <div className="max-w-[660px] mx-auto px-6 py-20">
+          <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Drop. Plan. Write.</h2>
+          <div>
             {[
-              { n: "01", title: "Journal", desc: "Spend 2 minutes writing what happened today. Not a post. Not a draft. Just what's on your mind." },
-              { n: "02", title: "See", desc: "Accent reads your entries and surfaces stories you missed. It maps each one to a channel and tells you why your angle is different." },
-              { n: "03", title: "Write", desc: "Pick a story and write it yourself. Accent coaches you as you go, flagging where you're burying the lead, suggesting stronger words." },
-            ].map(s => (
-              <div key={s.n} className="flex gap-6">
-                <span className="font-mono shrink-0" style={{ fontSize: 14, color: BLUE, fontWeight: 500, marginTop: 3 }}>{s.n}</span>
+              { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Not drafts. Just fragments. 2-3 minutes throughout your week." },
+              { n: "02", title: "Get your plan", desc: "Accent connects the dots. It tells you which moments are worth posting, which channel each one fits, and when to publish. Your content calendar, built from your real life." },
+              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent coaches you as you go — word suggestions, structural feedback, and what makes your angle different from everyone else's." },
+            ].map((s, i, arr) => (
+              <div key={s.n} className="grid gap-4" style={{ gridTemplateColumns: "44px 1fr", paddingTop: 20, paddingBottom: 20, borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : "none" }}>
+                <span className="font-mono" style={{ fontSize: 12, color: BLUE, fontWeight: 500, paddingTop: 2 }}>{s.n}</span>
                 <div>
-                  <h3 className="font-serif mb-1" style={{ fontSize: 20, fontWeight: 400 }}>{s.title}</h3>
-                  <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>{s.desc}</p>
+                  <h3 className="font-serif mb-1.5" style={{ fontSize: 22, fontWeight: 400 }}>{s.title}</h3>
+                  <p className="font-sans" style={{ fontSize: 14, color: DIM, lineHeight: 1.65 }}>{s.desc}</p>
                 </div>
               </div>
             ))}
@@ -178,22 +209,30 @@ export default function LandingPage() {
 
       {/* Differentiator */}
       <section ref={s4.ref} style={s4.style}>
-        <div className="mx-6 my-8 rounded-[16px]" style={{ background: INK }}>
-          <div className="max-w-[960px] mx-auto px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="mx-6 my-8" style={{ background: INK, borderRadius: 18, padding: "52px 44px", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 36 }}>
             <div>
-              <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 400, color: "#fff" }}>
-                AI writing tools make you dependent.<br />Accent makes you independent.
+              <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: BLUE }}>Why Accent is different</span>
+              <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, color: "#fff", lineHeight: 1.3 }}>
+                Other tools write <em style={{ opacity: 0.45 }}>for</em> you.<br />Accent makes <em style={{ color: BLUE }}>you</em> better.
               </h2>
+              <p className="font-sans" style={{ fontSize: 14, color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}>
+                Content planners give you a calendar. AI writers give you generic text. Accent does what neither can: it helps you see what's worth saying, then coaches you to say it in your own voice. You get better at content over time. Not more dependent.
+              </p>
             </div>
             <div className="space-y-3">
               {[
-                { label: "ChatGPT", desc: "Writes content for you. You sound like everyone.", border: "rgba(255,255,255,0.08)" },
-                { label: "Repurposing tools", desc: "Reformats your post. Same ideas, different shape.", border: "rgba(255,255,255,0.08)" },
-                { label: "Accent", desc: "Finds your stories, coaches your writing. Your voice, your experiences, undeniable.", border: `${BLUE}60` },
+                { icon: "📅", label: "Content calendars", line1: "Tell you when to post", line2: "→ Not what to say", highlight: false },
+                { icon: "🤖", label: "AI writers", line1: "Write posts for you", line2: "→ You sound like everyone", highlight: false },
+                { icon: "✦", label: "Accent", line1: "Plans from your life, coaches your voice", line2: "→ You actually get better", highlight: true },
               ].map(c => (
-                <div key={c.label} className="p-4 rounded-[8px]" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${c.border}` }}>
-                  <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.08em", color: c.label === "Accent" ? BLUE : "rgba(255,255,255,0.3)" }}>{c.label}</span>
-                  <p className="font-sans text-[14px]" style={{ color: c.label === "Accent" ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.45)", lineHeight: 1.5 }}>{c.desc}</p>
+                <div key={c.label} className="p-4.5 rounded-[10px]" style={{ padding: 18, background: c.highlight ? BLUE_SOFT : "rgba(255,255,255,0.03)", border: `1px solid ${c.highlight ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.05)"}` }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span style={{ fontSize: 14 }}>{c.icon}</span>
+                    <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: c.highlight ? BLUE : "rgba(255,255,255,0.28)" }}>{c.label}</span>
+                  </div>
+                  <p className="font-sans" style={{ fontSize: 13, color: c.highlight ? "#fff" : "rgba(255,255,255,0.38)" }}>{c.line1}</p>
+                  <p className="font-sans italic mt-0.5" style={{ fontSize: 12, color: c.highlight ? BLUE : "rgba(255,255,255,0.22)" }}>{c.line2}</p>
                 </div>
               ))}
             </div>
@@ -203,17 +242,22 @@ export default function LandingPage() {
 
       {/* Who it's for */}
       <section ref={s5.ref} style={s5.style}>
-        <div className="max-w-[1000px] mx-auto px-6 py-20">
-          <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 400 }}>Built for founders like you</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="max-w-[840px] mx-auto px-6 py-20">
+          <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400, lineHeight: 1.3 }}>
+            Built for founders who'd rather build<br /><em>than plan content</em>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
             {[
-              { title: "The first-time founder", desc: "Building a community, shipping a product, no idea what to post. Your days are full of content. You just need help seeing it." },
-              { title: "The non-native speaker", desc: "Your ideas are strong. Your English is good enough. You just second-guess every sentence. Accent coaches, not corrects." },
-              { title: "The build-in-public founder", desc: "You want to share the journey but stare at blank pages. Your diary already has the stories. Accent pulls them out." },
+              { title: "Community builders", pain: "Running events, having conversations, but never turning those moments into content", how: "Drop notes after each event. Accent shows which moments resonate." },
+              { title: "Build-in-public founders", pain: "Want to share the journey but stare at blank pages every week", how: "Your week is the content. Accent finds the stories you're too close to see." },
+              { title: "Non-native speakers", pain: "Strong ideas but second-guessing every English sentence", how: "Write in your voice. Accent coaches word by word — teaching, not replacing." },
             ].map(c => (
-              <div key={c.title} className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-                <h3 className="font-serif mb-2" style={{ fontSize: 18, fontWeight: 400 }}>{c.title}</h3>
-                <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.5 }}>{c.desc}</p>
+              <div key={c.title} style={{ padding: "24px 22px", border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                <h3 className="font-serif mb-3" style={{ fontSize: 17, fontWeight: 400 }}>{c.title}</h3>
+                <p className="font-sans text-[13px] mb-3" style={{ color: DIM, lineHeight: 1.55 }}>{c.pain}</p>
+                <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}>
+                  <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.55 }}>{c.how}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -222,19 +266,24 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <section ref={s6.ref} style={s6.style}>
-        <div className="max-w-[560px] mx-auto px-6 py-20 text-center">
-          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(30px, 5vw, 44px)", lineHeight: 1.1 }}>
+        <div className="max-w-[520px] mx-auto px-6 py-20 text-center">
+          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
             <span style={{ fontWeight: 300 }}>Your week already happened.</span><br />
-            <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content is in there.</span>
+            <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content plan is in there.</span>
           </h2>
-          <Link href="/signup" className="no-underline inline-block mt-6 px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff" }}>Start your diary →</Link>
+          <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
+            Drop in what happened. Get your plan. Write it yourself. Free to start. No credit card.
+          </p>
+          <a href="mailto:hello@myaccent.io" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+            Get started free →
+          </a>
         </div>
       </section>
 
       {/* Footer */}
       <footer style={{ borderTop: `1px solid ${BORDER}` }}>
-        <div className="max-w-[1040px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-serif" style={{ fontSize: 16, color: INK }}>accent</span>
+        <div className="max-w-[840px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <span className="font-serif" style={{ fontSize: 16, fontWeight: 600, color: INK }}>accent</span>
           <div className="flex gap-6 text-[12px] font-sans" style={{ color: DIM }}>
             <span>Built in Amsterdam</span>
             <Link href="/privacy-contact" className="no-underline" style={{ color: DIM }}>Privacy</Link>
@@ -242,6 +291,11 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
     </div>
   );
 }
