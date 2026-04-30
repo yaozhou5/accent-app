@@ -93,9 +93,8 @@ export default function LandingPage() {
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#fff" }}>Content planning for solo founders</span>
             <span style={{ width: 18, height: 1, background: "#fff", display: "inline-block" }} />
           </div>
-          <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", lineHeight: 1.15, letterSpacing: "-0.03em", color: "#fff" }}>
-            <span style={{ fontWeight: 300 }}>Stop wondering what to post.</span><br />
-            <span style={{ fontWeight: 700, fontStyle: "italic" }}>Start knowing.</span>
+          <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", fontWeight: 300, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#fff" }}>
+            Never worry about content again.
           </h1>
           <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, maxWidth: 500 }}>
             Drop in what happened this week. Accent shows you what's worth posting, where to post it, and how to make it land.
