@@ -244,7 +244,7 @@ export default function LandingPage() {
       <section ref={s5.ref} style={s5.style}>
         <div className="max-w-[840px] mx-auto px-6 py-20">
           <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400, lineHeight: 1.3 }}>
-            Built for founders who'd rather build<br /><em>than plan content</em>
+            Built for founders who'd rather talk to customers<br /><em>than plan content</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
             {[
