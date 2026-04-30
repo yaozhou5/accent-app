@@ -41,13 +41,6 @@ const PLAN_CARDS = [
   { title: "8 people showed up", channel: "Newsletter", when: "Friday", why: "You almost buried this. 8 attendees when you're starting is a milestone. Your subscribers who are thinking about communities need to hear that 8 is enough.", nudge: "Skip the number. Lead with 'I expected 2 people and 8 showed up' — that surprise is the hook." },
 ];
 
-const FLOAT_NOTES = [
-  { text: "first sale today", x: "8%", y: "22%", rot: -4, delay: 0 },
-  { text: "vendor ghosted me", x: "78%", y: "18%", rot: 3, delay: 0.5 },
-  { text: "8 people showed up", x: "85%", y: "45%", rot: -2, delay: 1 },
-  { text: "onboarding is broken", x: "5%", y: "52%", rot: 5, delay: 1.5 },
-];
-
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [activeCard, setActiveCard] = useState(0);
@@ -94,18 +87,11 @@ export default function LandingPage() {
         {/* Mobile fallback — solid dark bg if video doesn't load */}
         <div className="absolute inset-0 z-0" style={{ background: "#111" }} />
 
-        {/* Floating notes — desktop only */}
-        <div className="hidden lg:block">
-          {FLOAT_NOTES.map((n, i) => (
-            <span key={i} className="absolute font-sans pointer-events-none select-none z-[3]" style={{ left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`, fontSize: 12, color: "#fff", opacity: 0.15, animation: `float 3.5s ease-in-out ${n.delay}s infinite alternate`, whiteSpace: "nowrap" }}>{n.text}</span>
-          ))}
-        </div>
-
         <div className="max-w-[760px] mx-auto px-6 relative z-[3] py-20">
           <div className="flex items-center justify-center gap-3 mb-8">
-            <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Content planning for solo founders</span>
-            <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
+            <span style={{ width: 18, height: 1, background: "#fff", display: "inline-block" }} />
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#fff" }}>Content planning for solo founders</span>
+            <span style={{ width: 18, height: 1, background: "#fff", display: "inline-block" }} />
           </div>
           <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", lineHeight: 1.15, letterSpacing: "-0.03em", color: "#fff" }}>
             <span style={{ fontWeight: 300 }}>Stop wondering what to post.</span><br />
