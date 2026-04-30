@@ -88,22 +88,20 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="text-center relative overflow-hidden" style={{ minHeight: "85vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {/* Video background */}
-        <video autoPlay muted loop playsInline preload="metadata" poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
-          <source src="/hero.mp4" type="video/mp4" />
-        </video>
+        <video autoPlay muted loop playsInline preload="auto" className="absolute inset-0 w-full h-full object-cover z-[1]" src="/hero.mp4" />
         {/* Dark overlay */}
-        <div className="absolute inset-0 z-10" style={{ background: "rgba(0,0,0,0.55)" }} />
+        <div className="absolute inset-0 z-[2]" style={{ background: "rgba(0,0,0,0.55)" }} />
         {/* Mobile fallback — solid dark bg if video doesn't load */}
         <div className="absolute inset-0 z-0" style={{ background: "#111" }} />
 
         {/* Floating notes — desktop only */}
         <div className="hidden lg:block">
           {FLOAT_NOTES.map((n, i) => (
-            <span key={i} className="absolute font-sans pointer-events-none select-none z-20" style={{ left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`, fontSize: 12, color: "#fff", opacity: 0.15, animation: `float 3.5s ease-in-out ${n.delay}s infinite alternate`, whiteSpace: "nowrap" }}>{n.text}</span>
+            <span key={i} className="absolute font-sans pointer-events-none select-none z-[3]" style={{ left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`, fontSize: 12, color: "#fff", opacity: 0.15, animation: `float 3.5s ease-in-out ${n.delay}s infinite alternate`, whiteSpace: "nowrap" }}>{n.text}</span>
           ))}
         </div>
 
-        <div className="max-w-[760px] mx-auto px-6 relative z-20 py-20">
+        <div className="max-w-[760px] mx-auto px-6 relative z-[3] py-20">
           <div className="flex items-center justify-center gap-3 mb-8">
             <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Content planning for solo founders</span>
