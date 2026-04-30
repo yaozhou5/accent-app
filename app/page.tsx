@@ -37,8 +37,8 @@ const FRAGMENTS = [
 
 const PLAN_CARDS = [
   { title: "The vendor ghosting + first organic sale", channel: "LinkedIn", when: "Tuesday morning", why: "The contrast between rejection and surprise is the most relatable founder moment. Your audience of early-stage builders lives this daily.", nudge: "Start with the ghosting. Let the reader think the day was a loss. Then reveal the DM." },
-  { title: "Your onboarding is broken — and you're admitting it", channel: "Community Post", when: "Wednesday", why: "Most founders hide product flaws. Admitting a customer struggled for 20 minutes builds trust and invites help.", nudge: "Ask your community: 'Our first paying customer almost didn't make it through onboarding. What does yours look like?'" },
-  { title: "8 people showed up", channel: "Newsletter", when: "Friday", why: "You almost buried this. 8 attendees when you're starting is a milestone. Your subscribers who are thinking about communities need to hear that 8 is enough.", nudge: "The story isn't '8 people came.' It's 'I expected 2 and 8 showed up and here's what that taught me.'" },
+  { title: "Your onboarding is broken — and you're admitting it", channel: "Community Post", when: "Wednesday", why: "You just admitted a paying customer struggled for 20 minutes. That kind of honesty builds real trust with your community.", nudge: "Ask your community: 'Our first paying customer almost didn't make it through onboarding. What does yours look like?'" },
+  { title: "8 people showed up", channel: "Newsletter", when: "Friday", why: "You almost buried this. 8 attendees when you're starting is a milestone. Your subscribers who are thinking about communities need to hear that 8 is enough.", nudge: "Skip the number. Lead with 'I expected 2 people and 8 showed up' — that surprise is the hook." },
 ];
 
 const FLOAT_NOTES = [
@@ -104,7 +104,7 @@ export default function LandingPage() {
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>Start knowing.</span>
           </h1>
           <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: DIM, lineHeight: 1.7, maxWidth: 500 }}>
-            Drop in what happened this week. Accent tells you what's worth posting, where, and why. Then helps you write it in your own voice.
+            Drop in what happened this week. Accent shows you what's worth posting, where to post it, and how to make it land.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
@@ -118,7 +118,7 @@ export default function LandingPage() {
         <div className="max-w-[640px] mx-auto px-6 py-14">
           <div className="pl-6" style={{ borderLeft: `2px solid ${BLUE}` }}>
             <p className="font-serif italic" style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}>
-              "The hardest part isn't writing the post. It's knowing which post is worth writing."
+              "I can write a decent post. I just never know which post to write."
             </p>
             <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>Every founder, every Sunday night</p>
           </div>
@@ -211,9 +211,9 @@ export default function LandingPage() {
           <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Drop. Plan. Write.</h2>
           <div>
             {[
-              { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Not drafts. Just fragments. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
+              { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Whatever comes to mind. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
               { n: "02", title: "Get your plan", desc: "Accent connects the dots. It tells you which moments are worth posting, which channel each one fits, and when to publish. Your content calendar, built from your real life.", icon: "M6 6h0.01 M12 6h0.01 M18 6h0.01 M6 12h0.01 M18 12h0.01 M12 18h0.01 M6 6L12 12 M18 6L12 12 M12 12L12 18" },
-              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent coaches you as you go — word suggestions, structural feedback, and what makes your angle different from everyone else's.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
+              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent coaches you as you go — better words, tighter structure, the angle that makes people stop scrolling.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
             ].map((s, i, arr) => (
               <div key={s.n} className="grid gap-4" style={{ gridTemplateColumns: "44px 1fr", paddingTop: 20, paddingBottom: 20, borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : "none" }}>
                 <div>
@@ -244,14 +244,14 @@ export default function LandingPage() {
                 Other tools start with <em style={{ opacity: 0.45 }}>content</em>.<br />Accent starts with <em style={{ color: BLUE }}>you</em>.
               </h2>
               <p className="font-sans" style={{ fontSize: 14, color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}>
-                Content planners give you a calendar. AI writers give you generic text. Neither knows who you are. Accent starts by understanding your story, your audience, and what you're building. The content follows from there.
+                We spend time getting to know what you're building, who you're building it for, and where you are in the journey. That context shapes everything — which stories to tell, where to tell them, and how to make them land.
               </p>
             </div>
             <div className="space-y-3">
               {[
-                { icon: "📅", label: "Content calendars", line1: "Tell you when to post", line2: "→ Don't know who you are", highlight: false },
-                { icon: "🤖", label: "AI writers", line1: "Write posts for you", line2: "→ Sound like everyone else", highlight: false },
-                { icon: "✦", label: "Accent", line1: "Learns your story first, then plans your content", line2: "→ Sounds like you because it started with you", highlight: true },
+                { icon: "📅", label: "Content calendars", line1: "Here's when to post", line2: "But not what", highlight: false },
+                { icon: "🤖", label: "AI writers", line1: "Here's a post we wrote for you", line2: "Could be anyone's", highlight: false },
+                { icon: "✦", label: "Accent", line1: "We know what you're building. Here's what to share this week.", line2: "And you write every word", highlight: true },
               ].map(c => (
                 <div key={c.label} className="rounded-[10px] transition-all" style={{ padding: 18, background: c.highlight ? BLUE_SOFT : "rgba(255,255,255,0.03)", border: `1px solid ${c.highlight ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.05)"}`, boxShadow: c.highlight ? "0 0 20px rgba(37,99,235,0.08)" : "none", animation: c.highlight ? "glowPulse 3s ease infinite" : "none" }}>
                   <div className="flex items-center gap-2 mb-1.5">
@@ -277,7 +277,7 @@ export default function LandingPage() {
             {[
               { emoji: "🏠", bg: "#f59e0b", title: "Community builders", pain: "Running events, having conversations, but never turning those moments into content", how: "Drop notes after each event. Accent shows which moments resonate." },
               { emoji: "🚀", bg: "#3b82f6", title: "Build-in-public founders", pain: "Want to share the journey but stare at blank pages every week", how: "Your week is the content. Accent finds the stories you're too close to see." },
-              { emoji: "🌍", bg: "#22c55e", title: "Non-native speakers", pain: "Strong ideas but second-guessing every English sentence", how: "Write in your voice. Accent coaches word by word — teaching, not replacing." },
+              { emoji: "🌍", bg: "#22c55e", title: "Non-native speakers", pain: "Strong ideas but second-guessing every English sentence", how: "Write in your voice. Accent helps you find the right words — and actually learn them." },
             ].map(c => (
               <div key={c.title} style={{ padding: "24px 22px", border: `1px solid ${BORDER}`, borderRadius: 12, background: "#fff" }}>
                 <div className="mb-3 flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: `${c.bg}14` }}>
