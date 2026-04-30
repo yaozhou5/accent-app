@@ -89,7 +89,7 @@ export default function LandingPage() {
       <section className="text-center relative overflow-hidden" style={{ minHeight: "85vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {/* Video background */}
         <video autoPlay muted loop playsInline preload="metadata" poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
-          <source src="/accent-hero.mp4" type="video/mp4" />
+          <source src="/hero.mp4" type="video/mp4" />
         </video>
         {/* Dark overlay */}
         <div className="absolute inset-0 z-10" style={{ background: "rgba(0,0,0,0.55)" }} />
