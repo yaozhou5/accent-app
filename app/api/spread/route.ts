@@ -50,10 +50,17 @@ Focus on:
 
 Keep explanations under 15 words. Be specific about WHY, not just WHAT.
 
+After writing each channel version and identifying choices, also provide a "stand_out" analysis with:
+- "common_take": What most people posting about this topic on this channel sound like. One sentence. Be specific to the topic, not generic.
+- "unique_angle": What's genuinely different about this user's perspective that they should lean into. Be specific to their content, not generic advice. Two sentences max.
+- "bold_move": One concrete, specific suggestion to make this post impossible to ignore. Not a generic tip like "add a hook." A real suggestion tied to their specific content. One sentence.
+
+Be honest and direct. Don't flatter. The goal is to help them see what makes their version different from the 50 other posts on this topic.
+
 User's draft:
 ${draft}
 
-Return ONLY valid JSON. Each channel key maps to an object with "text" and "choices":
+Return ONLY valid JSON. Each channel key maps to an object with "text", "choices", and "stand_out":
 {
   ${selectedChannels.map((c: string) => `"${c}": {
     "text": "the full rewritten text for ${c}",
@@ -64,7 +71,12 @@ Return ONLY valid JSON. Each channel key maps to an object with "text" and "choi
           { "word": "alternative", "reason": "under 15 words explaining why" }
         ]
       }
-    ]
+    ],
+    "stand_out": {
+      "common_take": "what most posts about this topic look like on ${c}",
+      "unique_angle": "what's genuinely different about this user's take",
+      "bold_move": "one specific concrete change to make it unforgettable"
+    }
   }`).join(",\n  ")}
 }`;
 
@@ -90,14 +102,14 @@ Return ONLY valid JSON. Each channel key maps to an object with "text" and "choi
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    // Normalize: handle both old format (string) and new format (object with text+choices)
-    const results: Record<string, { text: string; choices: Array<{ original: string; alternatives: Array<{ word: string; reason: string }> }> }> = {};
+    // Normalize: handle both old format (string) and new format (object with text+choices+stand_out)
+    const results: Record<string, { text: string; choices: Array<{ original: string; alternatives: Array<{ word: string; reason: string }> }>; stand_out?: { common_take: string; unique_angle: string; bold_move: string } }> = {};
     for (const key of selectedChannels) {
       const val = parsed[key];
       if (typeof val === "string") {
         results[key] = { text: val, choices: [] };
       } else if (val?.text) {
-        results[key] = { text: val.text, choices: val.choices || [] };
+        results[key] = { text: val.text, choices: val.choices || [], stand_out: val.stand_out || undefined };
       }
     }
 

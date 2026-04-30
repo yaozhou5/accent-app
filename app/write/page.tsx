@@ -24,7 +24,8 @@ const BORDER = "#E5E5E5";
 
 type Alternative = { word: string; reason: string };
 type ChoicePoint = { original: string; alternatives: Alternative[] };
-type ChannelResult = { text: string; choices: ChoicePoint[] };
+type StandOut = { common_take: string; unique_angle: string; bold_move: string };
+type ChannelResult = { text: string; choices: ChoicePoint[]; stand_out?: StandOut };
 
 /* ── Choice Point Popup ── */
 function ChoicePopup({ original, alternatives, position, onPick, onClose }: {
@@ -255,6 +256,40 @@ function escapeHTML(s: string) {
 }
 function escapeAttr(s: string) {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* ── Stand Out Section ── */
+function StandOutSection({ standOut }: { standOut: StandOut }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-4">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full text-left py-3 flex items-center justify-between font-mono text-[12px] transition-colors hover:opacity-80"
+        style={{ color: DIM, background: "none", border: "none", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}
+      >
+        <span>How to stand out</span>
+        <span style={{ fontSize: 10, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "none" }}>▼</span>
+      </button>
+      {expanded && (
+        <div className="pb-2 space-y-4">
+          <div>
+            <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>What everyone says</span>
+            <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.5 }}>{standOut.common_take}</p>
+          </div>
+          <div className="pl-3" style={{ borderLeft: `2px solid ${BLUE}` }}>
+            <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>Your angle</span>
+            <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.5 }}>{standOut.unique_angle}</p>
+          </div>
+          <div>
+            <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>One bold move</span>
+            <p className="font-sans text-[14px] font-medium" style={{ color: INK, lineHeight: 1.5 }}>{standOut.bold_move}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Channel Insights ── */
@@ -549,6 +584,11 @@ function SpreadView() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Stand Out analysis */}
+      {activeResultTab && results?.[activeResultTab]?.stand_out && (
+        <StandOutSection standOut={results[activeResultTab].stand_out!} />
       )}
     </div>
   );
