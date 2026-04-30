@@ -53,15 +53,15 @@ export default function OnboardingPage() {
 
         {step === 1 && (
           <>
-            <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: INK }}>Who reads your content?</h1>
+            <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: INK }}>Tell us about you</h1>
             <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>
-              This helps Accent adapt your writing for your actual audience.
+              This helps Accent find the right stories in your diary.
             </p>
 
             <div className="mb-6">
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Describe your audience</label>
-              <textarea value={audience} onChange={e => setAudience(e.target.value)} placeholder="e.g., solo founders and indie hackers building their first product"
-                rows={3} className="w-full outline-none resize-y font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
+              <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>What are you building?</label>
+              <textarea value={audience} onChange={e => setAudience(e.target.value)} placeholder="e.g., a design community in Amsterdam, a SaaS for freelancers"
+                rows={2} className="w-full outline-none resize-y font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
             </div>
 
             <div className="mb-8">
