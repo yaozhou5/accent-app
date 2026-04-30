@@ -76,7 +76,7 @@ export default function LandingPage() {
         <div className="max-w-[960px] mx-auto px-6 h-full flex items-center justify-between">
           <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
           <div className="flex flex-col items-end gap-1">
-            <a href="mailto:hello@myaccent.io" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
+            <a href="https://calendly.com/yaozhou/quick-intro" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
             <span className="font-sans" style={{ fontSize: 11, color: "rgba(26,26,24,0.35)" }}>First 2 weeks free</span>
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href="mailto:hello@myaccent.io" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Book your onboarding</a>
+            <a href="https://calendly.com/yaozhou/quick-intro" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </section>
@@ -277,7 +277,7 @@ export default function LandingPage() {
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
             15 minutes. We learn what you're building, who you're talking to, and what happened this week. You walk away with your first content plan. First 2 weeks free.
           </p>
-          <a href="mailto:hello@myaccent.io" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+          <a href="https://calendly.com/yaozhou/quick-intro" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
             Book your onboarding →
           </a>
         </div>
