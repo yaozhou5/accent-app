@@ -45,20 +45,25 @@ function AnimNum({ target, suffix = "" }: { target: string; suffix?: string }) {
   return <span ref={ref}>{val}{suffix}</span>;
 }
 
-const DRAFT = `I just launched a small community for designers in Amsterdam who want to learn about business. We meet every two weeks and share what we're working on. It's been really helpful for me and I think it could help others too. If you're interested you can join through the link in my bio.`;
+const EXAMPLES = [
+  { label: "Community update", text: "I just launched a small community for designers in Amsterdam who want to learn about business. We meet every two weeks and share what we're working on. It's been really helpful for me and I think it could help others too. If you're interested you can join through the link in my bio." },
+  { label: "Product launch", text: "We've been working on this for 6 months and it's finally ready. It's a tool that helps freelancers track their time and send invoices in one place. We built it because we were tired of using 3 different apps for something that should be simple. It's free to try and we'd love your feedback." },
+  { label: "Cold outreach", text: "Hi, I saw your profile and I think our product could help your team. We make a project management tool that's designed for small agencies. Would you be open to a quick call this week to discuss?" },
+];
 
-const OUTPUTS: Record<string, string> = {
-  LinkedIn: `Most designers in Amsterdam work alone.\n\nThey have the skills. They ship great work. But nobody told them how to find clients, price projects, or build something that lasts beyond the next gig.\n\nSo I started a small community. 20 designers. Every two weeks we sit together and talk business. Not networking. Not pitching. Just honest conversations about the hard parts.\n\nThree months in, one member landed her first retainer client. Another raised his rates by 40%. A third quit freelancing and started a studio.\n\nNone of that came from a course. It came from being in a room with people solving the same problems.\n\nWe're opening 10 spots. Link in comments.`,
-  "Cold DM": `Hey [name], I noticed you're doing design work in Amsterdam. I run a small group of designers here (about 20 of us) who meet every two weeks to talk about the business side. Not a networking event. More like a peer advisory group.\n\nOne member just landed her first retainer client through a pricing strategy we workshopped together. If that's the kind of thing you'd find useful, I'd love to tell you more.`,
-  Tweet: `designers are great at making things\n\nterrible at charging for them\n\nstarted a biweekly group in Amsterdam where 20 designers help each other figure out the business side\n\none member raised her rates 40% in 3 months\n\nopening 10 spots →`,
-  Newsletter: `Something I've been quietly building for the past three months.\n\nI kept meeting designers in Amsterdam who were talented but stuck. Great portfolios, no pipeline. Beautiful case studies, no recurring revenue. They knew how to design but nobody had taught them how to build a business around it.\n\nSo I started inviting a few of them to my apartment every two weeks. No agenda at first. Just coffee and honest conversation about the parts of freelancing that nobody talks about.\n\nIt turned into something real. One member landed a retainer client. Another restructured her pricing. A third started saying no to projects under €3,000.\n\nI'm opening 10 more spots. Here's how it works.`,
-};
+const DEMO_CHANNELS = ["linkedin", "tweet", "cold_dm", "newsletter", "community_post"];
+const DEMO_CHANNEL_LABELS: Record<string, string> = { linkedin: "LinkedIn", tweet: "Tweet", cold_dm: "Cold DM", newsletter: "Newsletter", community_post: "Community Post" };
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState("LinkedIn");
-  const [displayText, setDisplayText] = useState("");
-  const [typing, setTyping] = useState(false);
+
+  // Demo state
+  const [demoDraft, setDemoDraft] = useState("");
+  const [demoChannel, setDemoChannel] = useState("linkedin");
+  const [demoState, setDemoState] = useState<"input" | "loading" | "result">("input");
+  const [demoResult, setDemoResult] = useState("");
+  const [demoStandOut, setDemoStandOut] = useState<{ common_take: string; unique_angle: string; bold_move: string } | null>(null);
+  const [demoUsed, setDemoUsed] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -67,17 +72,31 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    setTyping(true);
-    setDisplayText("");
-    const text = OUTPUTS[activeTab] || "";
-    let i = 0;
-    const timer = setInterval(() => {
-      i += 3;
-      if (i >= text.length) { setDisplayText(text); setTyping(false); clearInterval(timer); return; }
-      setDisplayText(text.slice(0, i));
-    }, 8);
-    return () => clearInterval(timer);
-  }, [activeTab]);
+    if (typeof window !== "undefined") {
+      setDemoUsed(!!sessionStorage.getItem("accent-demo-used"));
+    }
+  }, []);
+
+  const handleDemo = async () => {
+    if (!demoDraft.trim() || demoState === "loading") return;
+    setDemoState("loading");
+    try {
+      const res = await fetch("/api/spread", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft: demoDraft, channels: [demoChannel] }),
+      });
+      const data = await res.json();
+      if (data.results?.[demoChannel]) {
+        const r = data.results[demoChannel];
+        setDemoResult(typeof r === "string" ? r : r.text || "");
+        setDemoStandOut(r.stand_out || null);
+        setDemoState("result");
+        sessionStorage.setItem("accent-demo-used", "1");
+        setDemoUsed(true);
+      } else { setDemoState("input"); }
+    } catch { setDemoState("input"); }
+  };
 
   const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s5 = useReveal(), s6 = useReveal(), s7 = useReveal();
 
@@ -87,9 +106,12 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[1040px] mx-auto px-6 py-4 flex items-center justify-between">
           <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
-          <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff" }}>
-            Try it free →
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="no-underline font-sans text-[13px]" style={{ color: DIM }}>Log in</Link>
+            <Link href="/signup" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff" }}>
+              Try it free →
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -110,12 +132,12 @@ export default function LandingPage() {
             You spend 45 minutes on a community update and 30 people see it. Accent turns that one draft into LinkedIn posts, cold DMs, tweets, and newsletters that actually sound like you.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            <Link href="/write" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>
+            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>
               Try it on your writing →
-            </Link>
-            <a href="#demo" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1.5px solid ${BORDER}`, color: INK }}>
-              See how it works
             </a>
+            <Link href="/signup" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1.5px solid ${BORDER}`, color: INK }}>
+              Create free account
+            </Link>
           </div>
         </div>
       </section>
@@ -132,43 +154,106 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 3. Demo */}
+      {/* 3. Live Demo */}
       <section id="demo" ref={s2.ref} style={{ ...s2.style, background: ALT_BG }}>
-        <div className="max-w-[1000px] mx-auto px-6 py-20">
-          <div className="text-center mb-12">
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Write once. Reach everyone.</span>
-            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 400 }}>One draft becomes five channels</h2>
+        <div className="max-w-[720px] mx-auto px-6 py-20">
+          <div className="text-center mb-10">
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Try it now</span>
+            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 400 }}>See what Accent does with your writing</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {demoState === "input" && (
             <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Your draft</span>
-              <div className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-                <p className="font-serif" style={{ fontSize: 16, lineHeight: 1.7, color: INK }}>{DRAFT}</p>
-              </div>
-              <div className="mt-3 px-4 py-2 rounded-[6px] text-center" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}20` }}>
-                <span className="font-mono" style={{ fontSize: 11, color: BLUE }}>↓ Accent turns this into channel-native content</span>
+              {demoUsed ? (
+                <div className="text-center p-8" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+                  <p className="font-sans text-[16px] mb-4" style={{ color: INK }}>You've used your free demo.</p>
+                  <Link href="/signup" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>
+                    Sign up to keep going →
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <textarea value={demoDraft} onChange={e => setDemoDraft(e.target.value)} placeholder="Paste something you've already written..."
+                    rows={6} className="w-full outline-none resize-y font-sans mb-3"
+                    style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "16px 20px", border: `1px solid ${BORDER}`, borderRadius: 10, background: "#fff" }} />
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {EXAMPLES.map(ex => (
+                      <button key={ex.label} onClick={() => setDemoDraft(ex.text)} className="px-3 py-1.5 rounded-full text-[12px] font-mono" style={{ border: `1px solid ${BORDER}`, background: "transparent", color: DIM, cursor: "pointer" }}>
+                        Use example: {ex.label.toLowerCase()}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mb-6">
+                    <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Channel</span>
+                    <div className="flex flex-wrap gap-1">
+                      {DEMO_CHANNELS.map(ch => (
+                        <button key={ch} onClick={() => setDemoChannel(ch)} className="px-3 py-1.5 rounded-full text-[12px] font-mono transition-all" style={{
+                          background: demoChannel === ch ? BLUE : "transparent", color: demoChannel === ch ? "#fff" : DIM,
+                          border: demoChannel === ch ? "none" : `1px solid ${BORDER}`, cursor: "pointer",
+                        }}>{DEMO_CHANNEL_LABELS[ch]}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button onClick={handleDemo} disabled={!demoDraft.trim()} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-opacity hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed" style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                    See what Accent does →
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {demoState === "loading" && (
+            <div className="text-center py-16">
+              <p className="font-mono text-[13px]" style={{ color: DIM }}>Reading your draft...</p>
+              <div className="mt-4 flex justify-center gap-2">
+                {[0, 1, 2].map(i => <div key={i} className="rounded-full" style={{ width: 6, height: 6, background: BLUE, opacity: 0.4, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
               </div>
             </div>
+          )}
+
+          {demoState === "result" && (
             <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Accent output</span>
-              <div className="flex gap-1 mb-3">
-                {Object.keys(OUTPUTS).map((tab) => (
-                  <button key={tab} onClick={() => setActiveTab(tab)} className="px-3 py-1.5 rounded-full text-[12px] font-mono transition-all" style={{
-                    background: activeTab === tab ? BLUE : "transparent",
-                    color: activeTab === tab ? "#fff" : DIM,
-                    border: activeTab === tab ? "none" : `1px solid ${BORDER}`,
-                    cursor: "pointer",
-                  }}>{tab}</button>
-                ))}
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>{DEMO_CHANNEL_LABELS[demoChannel]} version</span>
+                <button onClick={() => { navigator.clipboard.writeText(demoResult); }} className="px-4 py-1.5 rounded-full text-[12px] font-mono" style={{ border: `1px solid ${BORDER}`, background: "transparent", color: DIM, cursor: "pointer" }}>
+                  Copy
+                </button>
               </div>
-              <div className="p-5 relative" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10, minHeight: 280 }}>
-                <p className="font-serif whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.75, color: INK }}>
-                  {displayText}
-                  {typing && <span className="inline-block w-[2px] h-[18px] ml-0.5" style={{ background: BLUE, animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />}
-                </p>
+              <div className="p-5 mb-4" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+                <p className="font-sans whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.7, color: INK }}>{demoResult}</p>
+              </div>
+
+              {demoStandOut && (
+                <div className="p-5 mb-6 space-y-3" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+                  <span className="font-mono uppercase block" style={{ fontSize: 10, letterSpacing: "0.06em", color: "#AAAAAA" }}>How to stand out</span>
+                  <div>
+                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: "#AAAAAA" }}>What everyone says</span>
+                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.5 }}>{demoStandOut.common_take}</p>
+                  </div>
+                  <div className="pl-3" style={{ borderLeft: `2px solid ${BLUE}` }}>
+                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: "#AAAAAA" }}>Your angle</span>
+                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.5 }}>{demoStandOut.unique_angle}</p>
+                  </div>
+                  <div>
+                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: "#AAAAAA" }}>One bold move</span>
+                    <p className="font-sans text-[14px] font-medium" style={{ color: INK, lineHeight: 1.5 }}>{demoStandOut.bold_move}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center p-6" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15`, borderRadius: 10 }}>
+                <p className="font-sans text-[16px] mb-1" style={{ color: INK }}>This is one channel.</p>
+                <p className="font-sans text-[15px] mb-4" style={{ color: DIM }}>Sign up to spread your writing across all of them.</p>
+                <Link href="/signup" className="no-underline inline-block px-7 py-3 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff" }}>
+                  Create free account →
+                </Link>
+                <p className="font-sans text-[12px] mt-2" style={{ color: "#AAAAAA" }}>No credit card. Free to start.</p>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -283,8 +368,8 @@ export default function LandingPage() {
           <p className="font-sans mx-auto mb-8" style={{ fontSize: 16, color: DIM, lineHeight: 1.6, maxWidth: 420 }}>
             Free to start. No credit card. Paste something you've already written and see what Accent does with it.
           </p>
-          <Link href="/write" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff" }}>
-            Try it on your writing →
+          <Link href="/signup" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff" }}>
+            Start writing like you →
           </Link>
         </div>
       </section>
@@ -301,7 +386,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
+      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} } @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }`}</style>
     </div>
   );
 }
