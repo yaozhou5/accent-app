@@ -75,7 +75,10 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 58, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[960px] mx-auto px-6 h-full flex items-center justify-between">
           <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
-          <a href="mailto:hello@myaccent.io" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get started free</a>
+          <div className="flex flex-col items-end gap-1">
+            <a href="mailto:hello@myaccent.io" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
+            <span className="font-sans" style={{ fontSize: 11, color: "rgba(26,26,24,0.35)" }}>First 2 weeks free</span>
+          </div>
         </div>
       </nav>
 
@@ -96,7 +99,7 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href="mailto:hello@myaccent.io" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Get started free</a>
+            <a href="mailto:hello@myaccent.io" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </section>
@@ -272,10 +275,10 @@ export default function LandingPage() {
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content plan is in there.</span>
           </h2>
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            Drop in what happened. Get your plan. Write it yourself. Free to start. No credit card.
+            15 minutes. We learn what you're building, who you're talking to, and what happened this week. You walk away with your first content plan. First 2 weeks free.
           </p>
           <a href="mailto:hello@myaccent.io" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
-            Get started free →
+            Book your onboarding →
           </a>
         </div>
       </section>
