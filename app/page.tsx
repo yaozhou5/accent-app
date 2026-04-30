@@ -9,6 +9,10 @@ const BLUE = "#2563EB";
 const BLUE_SOFT = "rgba(37,99,235,0.07)";
 const BORDER = "rgba(26,26,24,0.06)";
 const BORDER_VIS = "rgba(26,26,24,0.12)";
+const CALENDLY = "https://calendly.com/yaozhou/quick-intro";
+
+const CHAN_COLORS: Record<string, string> = { LinkedIn: "#0A66C2", "Community Post": "#22c55e", Newsletter: "#FF6719" };
+const DAY_COLORS = ["#ef4444", "#3b82f6", "#3b82f6", "#22c55e", "#a855f7"];
 
 function useReveal(delay = 0) {
   const ref = useRef<HTMLDivElement>(null);
@@ -16,9 +20,7 @@ function useReveal(delay = 0) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) setTimeout(() => setV(true), delay);
-    }, { threshold: 0.12 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setTimeout(() => setV(true), delay); }, { threshold: 0.12 });
     obs.observe(el);
     return () => obs.disconnect();
   }, [delay]);
@@ -39,6 +41,13 @@ const PLAN_CARDS = [
   { title: "8 people showed up", channel: "Newsletter", when: "Friday", why: "You almost buried this. 8 attendees when you're starting is a milestone. Your subscribers who are thinking about communities need to hear that 8 is enough.", nudge: "The story isn't '8 people came.' It's 'I expected 2 and 8 showed up and here's what that taught me.'" },
 ];
 
+const FLOAT_NOTES = [
+  { text: "first sale today", x: "8%", y: "22%", rot: -4, delay: 0 },
+  { text: "vendor ghosted me", x: "78%", y: "18%", rot: 3, delay: 0.5 },
+  { text: "8 people showed up", x: "85%", y: "45%", rot: -2, delay: 1 },
+  { text: "onboarding is broken", x: "5%", y: "52%", rot: 5, delay: 1.5 },
+];
+
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [activeCard, setActiveCard] = useState(0);
@@ -50,24 +59,18 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const s1 = useReveal();
-  const s2 = useReveal();
+  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s5 = useReveal(), s6 = useReveal();
   const demoRef = useRef<HTMLDivElement>(null);
-  const s3 = useReveal();
-  const s4 = useReveal();
-  const s5 = useReveal();
-  const s6 = useReveal();
 
-  // Trigger plan cards after demo section enters view
   useEffect(() => {
     const el = demoRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) setTimeout(() => setCardsReady(true), 800);
-    }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setTimeout(() => setCardsReady(true), 800); }, { threshold: 0.2 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  const dotGridBg = "radial-gradient(circle, rgba(26,26,24,0.03) 1px, transparent 1px)";
 
   return (
     <div style={{ background: "#fff", color: INK }}>
@@ -75,16 +78,22 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 58, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[960px] mx-auto px-6 h-full flex items-center justify-between">
           <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
-          <div className="flex flex-col items-end gap-1">
-            <a href="https://calendly.com/yaozhou/quick-intro" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
+          <div className="flex flex-col items-end gap-0.5">
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
             <span className="font-sans" style={{ fontSize: 11, color: "rgba(26,26,24,0.35)" }}>First 2 weeks free</span>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="text-center" style={{ paddingTop: 140, paddingBottom: 72 }}>
-        <div className="max-w-[760px] mx-auto px-6">
+      <section className="text-center relative overflow-hidden" style={{ paddingTop: 140, paddingBottom: 72 }}>
+        {/* Floating notes — desktop only */}
+        <div className="hidden lg:block">
+          {FLOAT_NOTES.map((n, i) => (
+            <span key={i} className="absolute font-sans pointer-events-none select-none" style={{ left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`, fontSize: 12, color: INK, opacity: 0.12, animation: `float 3.5s ease-in-out ${n.delay}s infinite alternate`, whiteSpace: "nowrap" }}>{n.text}</span>
+          ))}
+        </div>
+        <div className="max-w-[760px] mx-auto px-6 relative z-10">
           <div className="flex items-center justify-center gap-3 mb-8">
             <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Content planning for solo founders</span>
@@ -98,8 +107,8 @@ export default function LandingPage() {
             Drop in what happened this week. Accent tells you what's worth posting, where, and why. Then helps you write it in your own voice.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href="https://calendly.com/yaozhou/quick-intro" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Book your onboarding</a>
+            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px] transition-all hover:border-[#1A1A18]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </section>
@@ -117,26 +126,34 @@ export default function LandingPage() {
       </section>
 
       {/* Demo */}
-      <section id="demo" ref={demoRef} style={{ background: "#FAFAFA" }}>
+      <section id="demo" ref={demoRef} style={{ background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
         <div ref={s2.ref} style={s2.style} className="max-w-[900px] mx-auto px-6 py-20">
           <div className="text-center mb-12">
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Your week → Your content plan</span>
             <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>5 fragments in. 3-post plan out.</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 28 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 relative" style={{ gap: 28 }}>
+            {/* Connection SVG — desktop */}
+            <svg className="hidden lg:block absolute" style={{ left: "calc(50% - 20px)", top: 40, width: 40, height: 200, zIndex: 1 }} viewBox="0 0 40 200">
+              <path d="M20 0 C20 60, 20 80, 20 200" fill="none" stroke={BLUE} strokeWidth="1" strokeDasharray="4 4" style={{ opacity: cardsReady ? 0.3 : 0, strokeDashoffset: cardsReady ? 0 : 200, transition: "stroke-dashoffset 1.2s ease, opacity 0.5s ease" }} />
+            </svg>
+
             {/* Left — fragments */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="rounded-full" style={{ width: 6, height: 6, background: cardsReady ? "#22c55e" : "#22c55e", animation: cardsReady ? "none" : "pulse 1.5s ease infinite" }} />
+                <span className="rounded-full" style={{ width: 6, height: 6, background: "#22c55e", animation: cardsReady ? "none" : "pulse 1.5s ease infinite" }} />
                 <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>
                   {cardsReady ? "Your week" : "Reading your week..."}
                 </span>
               </div>
               <div className="space-y-2">
                 {FRAGMENTS.map((f, i) => (
-                  <div key={i} className="transition-all" style={{ padding: "14px 18px", background: "#fff", borderRadius: 10, border: `1px solid ${BORDER}`, opacity: s2.visible ? 1 : 0, transform: s2.visible ? "none" : "translateY(10px)", transition: `all 0.5s ease ${i * 0.1}s` }}>
-                    <span className="font-mono block mb-1" style={{ fontSize: 10, color: DIM }}>{f.day}</span>
-                    <p className="font-sans" style={{ fontSize: 13, lineHeight: 1.55, color: DIM }}>{f.text}</p>
+                  <div key={i} className="flex transition-all hover:-translate-y-0.5 hover:shadow-sm" style={{ background: "#fff", borderRadius: 10, border: `1px solid ${BORDER}`, overflow: "hidden", opacity: s2.visible ? 1 : 0, transform: s2.visible ? "none" : "translateY(10px)", transition: `all 0.5s ease ${i * 0.1}s` }}>
+                    <div style={{ width: 2, background: DAY_COLORS[i], opacity: 0.5, flexShrink: 0 }} />
+                    <div style={{ padding: "14px 18px" }}>
+                      <span className="font-mono block mb-1" style={{ fontSize: 10, color: DIM }}>{f.day}</span>
+                      <p className="font-sans" style={{ fontSize: 13, lineHeight: 1.55, color: DIM }}>{f.text}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -151,23 +168,23 @@ export default function LandingPage() {
               <div className="space-y-2.5">
                 {PLAN_CARDS.map((card, i) => {
                   const isActive = activeCard === i;
+                  const chanColor = CHAN_COLORS[card.channel] || BLUE;
                   return (
-                    <div
-                      key={i}
-                      onClick={() => setActiveCard(i)}
-                      className="cursor-pointer transition-all"
-                      style={{
-                        padding: 24, borderRadius: 12, background: isActive ? BLUE_SOFT : "#fff",
-                        border: `1px solid ${isActive ? BLUE : BORDER}`,
-                        opacity: cardsReady ? 1 : 0,
-                        transform: cardsReady ? "translateX(0)" : "translateX(20px)",
-                        transition: `all 0.4s ease ${i * 0.12}s, background 0.2s, border-color 0.2s`,
-                        boxShadow: isActive ? `0 0 0 1px ${BLUE}20` : "none",
-                      }}
-                    >
+                    <div key={i} onClick={() => setActiveCard(i)} className="cursor-pointer transition-all" style={{
+                      padding: 24, borderRadius: 12, background: isActive ? BLUE_SOFT : "#fff",
+                      border: `1px solid ${isActive ? BLUE : BORDER}`,
+                      borderLeft: isActive ? `3px solid ${chanColor}` : `1px solid ${BORDER}`,
+                      opacity: cardsReady ? 1 : 0,
+                      transform: cardsReady ? "translateX(0)" : "translateX(20px)",
+                      transition: `all 0.4s ease ${i * 0.12}s, background 0.2s, border-color 0.2s`,
+                      boxShadow: isActive ? `0 2px 12px ${chanColor}15` : "none",
+                    }}>
                       <div className="flex items-start justify-between gap-3">
-                        <span className="font-sans text-[14px] font-medium" style={{ color: INK }}>{card.title}</span>
-                        <span className="font-mono shrink-0 text-[10px] px-2.5 py-0.5 rounded-full" style={{ color: BLUE, background: BLUE_SOFT }}>{card.channel}</span>
+                        <div className="flex items-start gap-2">
+                          <span className="rounded-full mt-1.5 shrink-0" style={{ width: 6, height: 6, background: chanColor }} />
+                          <span className="font-sans text-[14px] font-medium" style={{ color: INK }}>{card.title}</span>
+                        </div>
+                        <span className="font-mono shrink-0 text-[10px] px-2.5 py-0.5 rounded-full" style={{ color: chanColor, background: `${chanColor}12` }}>{card.channel}</span>
                       </div>
                       {isActive && (
                         <div className="mt-4 space-y-3" style={{ animation: "fadeIn 0.3s ease" }}>
@@ -194,12 +211,17 @@ export default function LandingPage() {
           <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Drop. Plan. Write.</h2>
           <div>
             {[
-              { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Not drafts. Just fragments. 2-3 minutes throughout your week." },
-              { n: "02", title: "Get your plan", desc: "Accent connects the dots. It tells you which moments are worth posting, which channel each one fits, and when to publish. Your content calendar, built from your real life." },
-              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent coaches you as you go — word suggestions, structural feedback, and what makes your angle different from everyone else's." },
+              { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Not drafts. Just fragments. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
+              { n: "02", title: "Get your plan", desc: "Accent connects the dots. It tells you which moments are worth posting, which channel each one fits, and when to publish. Your content calendar, built from your real life.", icon: "M6 6h0.01 M12 6h0.01 M18 6h0.01 M6 12h0.01 M18 12h0.01 M12 18h0.01 M6 6L12 12 M18 6L12 12 M12 12L12 18" },
+              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent coaches you as you go — word suggestions, structural feedback, and what makes your angle different from everyone else's.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
             ].map((s, i, arr) => (
               <div key={s.n} className="grid gap-4" style={{ gridTemplateColumns: "44px 1fr", paddingTop: 20, paddingBottom: 20, borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : "none" }}>
-                <span className="font-mono" style={{ fontSize: 12, color: BLUE, fontWeight: 500, paddingTop: 2 }}>{s.n}</span>
+                <div>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 8 }}>
+                    <path d={s.icon} />
+                  </svg>
+                  <span className="font-mono block" style={{ fontSize: 12, color: BLUE, fontWeight: 500 }}>{s.n}</span>
+                </div>
                 <div>
                   <h3 className="font-serif mb-1.5" style={{ fontSize: 22, fontWeight: 400 }}>{s.title}</h3>
                   <p className="font-sans" style={{ fontSize: 14, color: DIM, lineHeight: 1.65 }}>{s.desc}</p>
@@ -212,8 +234,10 @@ export default function LandingPage() {
 
       {/* Differentiator */}
       <section ref={s4.ref} style={s4.style}>
-        <div className="mx-6 my-8" style={{ background: INK, borderRadius: 18, padding: "52px 44px", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 36 }}>
+        <div className="mx-6 my-8 relative overflow-hidden" style={{ background: INK, borderRadius: 18, padding: "52px 44px", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
+          {/* Subtle background decoration */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.04) 0%, transparent 50%)" }} />
+          <div className="relative grid grid-cols-1 lg:grid-cols-2" style={{ gap: 36 }}>
             <div>
               <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: BLUE }}>Why Accent is different</span>
               <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, color: "#fff", lineHeight: 1.3 }}>
@@ -229,7 +253,7 @@ export default function LandingPage() {
                 { icon: "🤖", label: "AI writers", line1: "Write posts for you", line2: "→ Sound like everyone else", highlight: false },
                 { icon: "✦", label: "Accent", line1: "Learns your story first, then plans your content", line2: "→ Sounds like you because it started with you", highlight: true },
               ].map(c => (
-                <div key={c.label} className="p-4.5 rounded-[10px]" style={{ padding: 18, background: c.highlight ? BLUE_SOFT : "rgba(255,255,255,0.03)", border: `1px solid ${c.highlight ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.05)"}` }}>
+                <div key={c.label} className="rounded-[10px] transition-all" style={{ padding: 18, background: c.highlight ? BLUE_SOFT : "rgba(255,255,255,0.03)", border: `1px solid ${c.highlight ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.05)"}`, boxShadow: c.highlight ? "0 0 20px rgba(37,99,235,0.08)" : "none", animation: c.highlight ? "glowPulse 3s ease infinite" : "none" }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span style={{ fontSize: 14 }}>{c.icon}</span>
                     <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: c.highlight ? BLUE : "rgba(255,255,255,0.28)" }}>{c.label}</span>
@@ -244,18 +268,21 @@ export default function LandingPage() {
       </section>
 
       {/* Who it's for */}
-      <section ref={s5.ref} style={s5.style}>
+      <section ref={s5.ref} style={{ ...s5.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
         <div className="max-w-[840px] mx-auto px-6 py-20">
           <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400, lineHeight: 1.3 }}>
             Built for founders who'd rather talk to customers<br /><em>than plan content</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
             {[
-              { title: "Community builders", pain: "Running events, having conversations, but never turning those moments into content", how: "Drop notes after each event. Accent shows which moments resonate." },
-              { title: "Build-in-public founders", pain: "Want to share the journey but stare at blank pages every week", how: "Your week is the content. Accent finds the stories you're too close to see." },
-              { title: "Non-native speakers", pain: "Strong ideas but second-guessing every English sentence", how: "Write in your voice. Accent coaches word by word — teaching, not replacing." },
+              { emoji: "🏠", bg: "#f59e0b", title: "Community builders", pain: "Running events, having conversations, but never turning those moments into content", how: "Drop notes after each event. Accent shows which moments resonate." },
+              { emoji: "🚀", bg: "#3b82f6", title: "Build-in-public founders", pain: "Want to share the journey but stare at blank pages every week", how: "Your week is the content. Accent finds the stories you're too close to see." },
+              { emoji: "🌍", bg: "#22c55e", title: "Non-native speakers", pain: "Strong ideas but second-guessing every English sentence", how: "Write in your voice. Accent coaches word by word — teaching, not replacing." },
             ].map(c => (
-              <div key={c.title} style={{ padding: "24px 22px", border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+              <div key={c.title} style={{ padding: "24px 22px", border: `1px solid ${BORDER}`, borderRadius: 12, background: "#fff" }}>
+                <div className="mb-3 flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: `${c.bg}14` }}>
+                  <span style={{ fontSize: 28 }}>{c.emoji}</span>
+                </div>
                 <h3 className="font-serif mb-3" style={{ fontSize: 17, fontWeight: 400 }}>{c.title}</h3>
                 <p className="font-sans text-[13px] mb-3" style={{ color: DIM, lineHeight: 1.55 }}>{c.pain}</p>
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}>
@@ -277,7 +304,7 @@ export default function LandingPage() {
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
             15 minutes. We learn what you're building, who you're talking to, and what happened this week. You walk away with your first content plan. First 2 weeks free.
           </p>
-          <a href="https://calendly.com/yaozhou/quick-intro" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+          <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
             Book your onboarding →
           </a>
         </div>
@@ -298,6 +325,8 @@ export default function LandingPage() {
       <style>{`
         @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes float { from{transform:translateY(0) rotate(var(--rot,0deg))} to{transform:translateY(-4px) rotate(var(--rot,0deg))} }
+        @keyframes glowPulse { 0%,100%{box-shadow:0 0 20px rgba(37,99,235,0.08)} 50%{box-shadow:0 0 28px rgba(37,99,235,0.15)} }
       `}</style>
     </div>
   );
