@@ -77,38 +77,48 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 58, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[960px] mx-auto px-6 h-full flex items-center justify-between">
-          <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
+          <span className="font-serif transition-colors" style={{ fontSize: 20, fontWeight: 600, color: scrolled ? INK : "#fff" }}>accent</span>
           <div className="flex items-center gap-3">
-            <span className="font-sans hidden sm:inline" style={{ fontSize: 11, color: "rgba(26,26,24,0.35)" }}>First 2 weeks free</span>
+            <span className="font-sans hidden sm:inline transition-colors" style={{ fontSize: 11, color: scrolled ? "rgba(26,26,24,0.35)" : "rgba(255,255,255,0.5)" }}>First 2 weeks free</span>
             <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="text-center relative overflow-hidden" style={{ paddingTop: 140, paddingBottom: 72 }}>
+      <section className="text-center relative overflow-hidden" style={{ minHeight: "85vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Video background */}
+        <video autoPlay muted loop playsInline preload="metadata" poster="/accent-hero-poster.jpg" className="absolute inset-0 w-full h-full object-cover z-0">
+          <source src="/accent-hero.mp4" type="video/mp4" />
+        </video>
+        {/* Dark overlay */}
+        <div className="absolute inset-0 z-10" style={{ background: "rgba(0,0,0,0.55)" }} />
+        {/* Mobile fallback — solid dark bg if video doesn't load */}
+        <div className="absolute inset-0 z-0" style={{ background: "#111" }} />
+
         {/* Floating notes — desktop only */}
         <div className="hidden lg:block">
           {FLOAT_NOTES.map((n, i) => (
-            <span key={i} className="absolute font-sans pointer-events-none select-none" style={{ left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`, fontSize: 12, color: INK, opacity: 0.12, animation: `float 3.5s ease-in-out ${n.delay}s infinite alternate`, whiteSpace: "nowrap" }}>{n.text}</span>
+            <span key={i} className="absolute font-sans pointer-events-none select-none z-20" style={{ left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`, fontSize: 12, color: "#fff", opacity: 0.15, animation: `float 3.5s ease-in-out ${n.delay}s infinite alternate`, whiteSpace: "nowrap" }}>{n.text}</span>
           ))}
         </div>
-        <div className="max-w-[760px] mx-auto px-6 relative z-10">
+
+        <div className="max-w-[760px] mx-auto px-6 relative z-20 py-20">
           <div className="flex items-center justify-center gap-3 mb-8">
             <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Content planning for solo founders</span>
             <span style={{ width: 18, height: 1, background: BLUE, display: "inline-block" }} />
           </div>
-          <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+          <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", lineHeight: 1.15, letterSpacing: "-0.03em", color: "#fff" }}>
             <span style={{ fontWeight: 300 }}>Stop wondering what to post.</span><br />
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>Start knowing.</span>
           </h1>
-          <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: DIM, lineHeight: 1.7, maxWidth: 500 }}>
+          <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, maxWidth: 500 }}>
             Drop in what happened this week. Accent shows you what's worth posting, where to post it, and how to make it land.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px] transition-all hover:border-[#1A1A18]" style={{ border: `1px solid ${BORDER_VIS}`, color: INK, borderRadius: 40 }}>Book your onboarding</a>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-6 py-3 rounded-full font-sans font-medium text-[14px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </section>
