@@ -86,7 +86,7 @@ export async function GET() {
               maxWidth: "1000px",
             }}
           >
-            Stop wondering what to post. Start knowing.
+            Never worry about content again.
           </div>
           <div
             style={{

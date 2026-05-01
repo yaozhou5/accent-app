@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Stop wondering what to post. Start knowing.",
+    title: "Never worry about content again.",
     description: "Content planning for solo founders. Drop in your week, get your content plan.",
     url: "https://myaccent.io",
     siteName: "accent.",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stop wondering what to post. Start knowing.",
+    title: "Never worry about content again.",
     description: "Content planning for solo founders. Drop in your week, get your content plan.",
     images: ["https://myaccent.io/api/og"],
   },

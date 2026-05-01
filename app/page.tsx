@@ -161,7 +161,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="font-sans text-center mx-auto mt-8" style={{ fontSize: 14, color: "#333", maxWidth: 520, lineHeight: 1.6 }}>
-            An AI agent costs $0 and gives you generic suggestions. A content strategist costs €4,000/month. Accent gives you a strategist who knows your story — starting at <span style={{ color: BLUE, fontWeight: 600 }}>€29/month</span>.
+            An AI agent costs $0 and gives you generic suggestions. A content strategist costs $4,000/month. Accent gives you a strategist who knows your story — starting at <span style={{ color: BLUE, fontWeight: 600 }}>$29/month</span>.
           </p>
         </div>
       </section>
