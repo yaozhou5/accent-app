@@ -43,48 +43,48 @@ export default function LandingPage() {
   return (
     <div style={{ background: "#fff", color: INK }}>
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 58, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
-        <div className="max-w-[960px] mx-auto px-12 h-full flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 52, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
+        <div className="max-w-[960px] mx-auto px-5 md:px-12 h-full flex items-center justify-between">
           <span className="font-serif transition-colors" style={{ fontSize: 20, fontWeight: 600, color: scrolled ? INK : "#fff" }}>accent</span>
           <div className="flex items-center gap-4">
-            <Link href="/write" className="no-underline font-sans text-[13px]" style={{ color: scrolled ? INK : "#fff" }}>Try it free</Link>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
+            <Link href="/write" className="no-underline font-sans text-[13px] hidden sm:inline" style={{ color: scrolled ? INK : "#fff" }}>Try it free</Link>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-4 py-2 rounded-full text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="text-center relative overflow-hidden" style={{ minHeight: "85vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <section className="text-center relative overflow-hidden flex items-center justify-center" style={{ minHeight: "min(100svh, 700px)" }}>
         {/* Video background */}
         <video autoPlay muted loop playsInline preload="auto" className="absolute inset-0 w-full h-full object-cover z-[1]" src="/hero.mp4" />
-        {/* Dark overlay */}
-        <div className="absolute inset-0 z-[2]" style={{ background: "rgba(0,0,0,0.55)" }} />
+        {/* Dark overlay — gradient for better text contrast */}
+        <div className="absolute inset-0 z-[2]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.7) 100%)" }} />
         {/* Mobile fallback — solid dark bg if video doesn't load */}
         <div className="absolute inset-0 z-0" style={{ background: "#111" }} />
 
-        <div className="max-w-[760px] mx-auto px-6 relative z-[3] py-20">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <span style={{ width: 18, height: 1, background: "#fff", display: "inline-block" }} />
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#fff" }}>Content planning for solo founders</span>
-            <span style={{ width: 18, height: 1, background: "#fff", display: "inline-block" }} />
+        <div className="max-w-[760px] mx-auto px-6 sm:px-8 relative z-[3] py-14 md:py-20">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-5 md:mb-8">
+            <span className="hidden sm:inline-block" style={{ width: 18, height: 1, background: "#fff" }} />
+            <span className="font-mono uppercase" style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.14em", color: "rgba(255,255,255,0.85)" }}>Content planning for solo founders</span>
+            <span className="hidden sm:inline-block" style={{ width: 18, height: 1, background: "#fff" }} />
           </div>
-          <h1 className="font-serif" style={{ fontSize: "clamp(32px, 5vw, 50px)", fontWeight: 300, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#fff" }}>
-            Never worry about content again.
+          <h1 className="font-serif" style={{ fontSize: "clamp(28px, 7vw, 50px)", fontWeight: 300, lineHeight: 1.12, letterSpacing: "-0.03em", color: "#fff" }}>
+            Never worry about<br className="sm:hidden" /> content again.
           </h1>
-          <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, maxWidth: 500 }}>
+          <p className="font-sans mx-auto mt-4 md:mt-6" style={{ fontSize: "clamp(15px, 3.8vw, 17px)", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, maxWidth: 500 }}>
             You're the CEO, writer, designer, and strategist. AI can handle the busy work. But not the decisions — what's worth saying, which story matters, what makes it yours. That's what we do.
           </p>
-          <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
-            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>See how it works</a>
+          <div className="mt-6 md:mt-8">
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
+            <p className="mt-2 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>First 2 weeks free</p>
           </div>
-          <p className="mt-3 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>First 2 weeks free</p>
+          <a href="#demo" className="no-underline inline-block mt-4 font-sans text-[13px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.5)" }}>See how it works ↓</a>
         </div>
       </section>
 
       {/* Pain quote */}
       <section ref={s1.ref} style={s1.style}>
-        <div className="max-w-[640px] mx-auto px-6 py-14">
+        <div className="max-w-[640px] mx-auto px-6 py-10 md:py-14">
           <div className="pl-6" style={{ borderLeft: `2px solid ${BLUE}` }}>
             <p className="font-serif italic" style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}>
               "I can write a decent post. I just never know which post to write."
@@ -96,7 +96,7 @@ export default function LandingPage() {
 
       {/* Demo */}
       <section id="demo" style={{ background: "#FAFAFA" }}>
-        <div ref={s2.ref} style={s2.style} className="max-w-[900px] mx-auto px-6 py-20">
+        <div ref={s2.ref} style={s2.style} className="max-w-[900px] mx-auto px-6 py-12 md:py-20">
           <div className="text-center mb-10">
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>How it works</span>
             <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>Drop what happened. Get your plan.</h2>
@@ -114,8 +114,8 @@ export default function LandingPage() {
 
       {/* How it works */}
       <section ref={s3.ref} style={s3.style}>
-        <div className="max-w-[660px] mx-auto px-6 py-20">
-          <h2 className="font-serif text-center mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Drop. Plan. Write.</h2>
+        <div className="max-w-[660px] mx-auto px-6 py-12 md:py-20">
+          <h2 className="font-serif text-center mb-8 md:mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Drop. Plan. Write.</h2>
           <div>
             {[
               { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Whatever comes to mind. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
@@ -141,9 +141,9 @@ export default function LandingPage() {
 
       {/* What AI agents can't do */}
       <section ref={s4.ref} style={{ ...s4.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
-        <div className="max-w-[840px] mx-auto px-6 py-20">
-          <h2 className="font-serif text-center mb-3" style={{ fontSize: 28, fontWeight: 400 }}>What AI agents can't do</h2>
-          <p className="font-sans text-center mx-auto mb-12" style={{ fontSize: 15, color: "#6B6B6B", maxWidth: 480 }}>AI can rewrite your text. It can't know your story.</p>
+        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
+          <h2 className="font-serif text-center mb-3" style={{ fontSize: "clamp(24px, 3.6vw, 28px)", fontWeight: 400 }}>What AI agents can't do</h2>
+          <p className="font-sans text-center mx-auto mb-8 md:mb-12" style={{ fontSize: 15, color: "#6B6B6B", maxWidth: 480 }}>AI can rewrite your text. It can't know your story.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { icon: "🧠", bg: "#a855f7", title: "Remembers your journey", desc: "We know you almost quit 3 weeks ago. We know your most engaged follower is a VC. We know your community call almost didn't happen. Every week builds on the last." },
@@ -168,7 +168,7 @@ export default function LandingPage() {
 
       {/* Differentiator */}
       <section ref={s4b.ref} style={s4b.style}>
-        <div className="mx-6 my-8 relative overflow-hidden" style={{ background: INK, borderRadius: 18, padding: "52px 44px", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
+        <div className="mx-4 sm:mx-6 my-6 md:my-8 relative overflow-hidden" style={{ background: INK, borderRadius: 18, padding: "clamp(28px, 6vw, 52px) clamp(20px, 5vw, 44px)", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
           {/* Subtle background decoration */}
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.04) 0%, transparent 50%)" }} />
           <div className="relative grid grid-cols-1 lg:grid-cols-2" style={{ gap: 36 }}>
@@ -203,9 +203,9 @@ export default function LandingPage() {
 
       {/* Who it's for */}
       <section ref={s5.ref} style={{ ...s5.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
-        <div className="max-w-[840px] mx-auto px-6 py-20">
-          <h2 className="font-serif text-center mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400, lineHeight: 1.3 }}>
-            Built for founders who'd rather talk to customers<br /><em>than plan content</em>
+        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
+          <h2 className="font-serif text-center mb-8 md:mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400, lineHeight: 1.3 }}>
+            Built for founders who'd rather talk to customers<br className="hidden md:inline" /> <em>than plan content</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
             {[
@@ -230,7 +230,7 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <section ref={s6.ref} style={s6.style}>
-        <div className="max-w-[520px] mx-auto px-6 py-20 text-center">
+        <div className="max-w-[520px] mx-auto px-6 py-14 md:py-20 text-center">
           <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
             <span style={{ fontWeight: 300 }}>Your week already happened.</span><br />
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content plan is in there.</span>
