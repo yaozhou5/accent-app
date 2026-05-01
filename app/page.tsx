@@ -52,7 +52,7 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s5 = useReveal(), s6 = useReveal();
+  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s4b = useReveal(), s5 = useReveal(), s6 = useReveal();
   const demoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -226,8 +226,35 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* What AI agents can't do */}
+      <section ref={s4.ref} style={{ ...s4.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
+        <div className="max-w-[840px] mx-auto px-6 py-20">
+          <h2 className="font-serif text-center mb-3" style={{ fontSize: 28, fontWeight: 400 }}>What AI agents can't do</h2>
+          <p className="font-sans text-center mx-auto mb-12" style={{ fontSize: 15, color: "#6B6B6B", maxWidth: 480 }}>AI can rewrite your text. It can't know your story.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { icon: "🧠", bg: "#a855f7", title: "Remembers your journey", desc: "We know you almost quit 3 weeks ago. We know your most engaged follower is a VC. We know your community call almost didn't happen. Every week builds on the last." },
+              { icon: "👁", bg: "#f59e0b", title: "Sees what you're hiding", desc: "You mentioned the first sale but not that you cried after. The real stories are the ones you don't type. We ask the questions AI won't." },
+              { icon: "🎯", bg: "#ef4444", title: "Knows good from great", desc: "AI suggests 3 stories equally. We know the vendor ghosting + first sale is the one that breaks through. The other two are fine. This one is special." },
+              { icon: "🤝", bg: "#3b82f6", title: "Builds your brand over time", desc: "Your imposter syndrome post got 10x engagement 3 weeks ago. Your audience is waiting for more of that. We track what lands and guide you back to it." },
+            ].map(c => (
+              <div key={c.title} style={{ background: "#fff", borderRadius: 14, padding: 24, border: "1px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <div className="mb-3 flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: "50%", background: `${c.bg}10` }}>
+                  <span style={{ fontSize: 28 }}>{c.icon}</span>
+                </div>
+                <h3 className="font-sans mb-2" style={{ fontSize: 15, fontWeight: 600, color: INK }}>{c.title}</h3>
+                <p className="font-sans" style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.6 }}>{c.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="font-sans text-center mx-auto mt-8" style={{ fontSize: 14, color: "#333", maxWidth: 520, lineHeight: 1.6 }}>
+            An AI agent costs $0 and gives you generic suggestions. A content strategist costs €4,000/month. Accent gives you a strategist who knows your story — starting at <span style={{ color: BLUE, fontWeight: 600 }}>€29/month</span>.
+          </p>
+        </div>
+      </section>
+
       {/* Differentiator */}
-      <section ref={s4.ref} style={s4.style}>
+      <section ref={s4b.ref} style={s4b.style}>
         <div className="mx-6 my-8 relative overflow-hidden" style={{ background: INK, borderRadius: 18, padding: "52px 44px", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
           {/* Subtle background decoration */}
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.04) 0%, transparent 50%)" }} />
