@@ -100,8 +100,8 @@ export default function LandingPage() {
             Drop in what happened this week. Accent shows you what's worth posting, where to post it, and how to make it land.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Get your content plan</a>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
+            <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>See how it works</a>
           </div>
           <p className="mt-3 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>First 2 weeks free</p>
         </div>
