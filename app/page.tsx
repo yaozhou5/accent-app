@@ -71,12 +71,9 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 58, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[960px] mx-auto px-12 h-full flex items-center justify-between">
           <span className="font-serif transition-colors" style={{ fontSize: 20, fontWeight: 600, color: scrolled ? INK : "#fff" }}>accent</span>
-          <div className="flex items-center gap-6">
-            <Link href="/write" className="no-underline font-sans text-[13px] transition-colors" style={{ color: scrolled ? INK : "#fff" }}>Writing tools</Link>
-            <div className="flex items-center gap-3">
-              <span className="font-sans hidden sm:inline transition-colors" style={{ fontSize: 12, color: scrolled ? "rgba(26,26,24,0.4)" : "rgba(255,255,255,0.6)" }}>First 2 weeks free</span>
-              <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
-            </div>
+          <div className="flex items-center gap-4">
+            <Link href="/write" className="no-underline font-sans text-[13px] transition-all hover:border-white" style={{ color: scrolled ? INK : "#fff", border: `1px solid ${scrolled ? "rgba(26,26,24,0.2)" : "rgba(255,255,255,0.5)"}`, padding: "8px 16px", borderRadius: 20 }}>Writing tools</Link>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
           </div>
         </div>
       </nav>
@@ -106,6 +103,7 @@ export default function LandingPage() {
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
             <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
           </div>
+          <p className="mt-3 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>First 2 weeks free</p>
         </div>
       </section>
 
