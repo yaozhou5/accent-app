@@ -73,7 +73,7 @@ export default function LandingPage() {
           <span className="font-serif transition-colors" style={{ fontSize: 20, fontWeight: 600, color: scrolled ? INK : "#fff" }}>accent</span>
           <div className="flex items-center gap-4">
             <Link href="/write" className="no-underline font-sans text-[13px] font-semibold transition-all hover:border-white" style={{ color: scrolled ? INK : "#fff", border: `1px solid ${scrolled ? "rgba(26,26,24,0.2)" : "rgba(255,255,255,0.5)"}`, padding: "8px 16px", borderRadius: 20 }}>Writing tools</Link>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
           </div>
         </div>
       </nav>
@@ -101,7 +101,7 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href="#demo" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>See how it works</a>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Book your onboarding</a>
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-all hover:border-white" style={{ border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: 40 }}>Get your content plan</a>
           </div>
           <p className="mt-3 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>First 2 weeks free</p>
         </div>
@@ -299,7 +299,7 @@ export default function LandingPage() {
             15 minutes. We learn what you're building, who you're talking to, and what happened this week. You walk away with your first content plan. First 2 weeks free.
           </p>
           <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
-            Book your onboarding →
+            Get your content plan →
           </a>
         </div>
       </section>
