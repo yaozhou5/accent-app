@@ -97,7 +97,7 @@ export default function LandingPage() {
             Never worry about content again.
           </h1>
           <p className="font-sans mx-auto mt-6" style={{ fontSize: 17, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, maxWidth: 500 }}>
-            Drop in what happened this week. Accent shows you what's worth posting, where to post it, and how to make it land.
+            You're the CEO, writer, designer, and strategist. AI can handle the busy work. But not the decisions — what's worth saying, which story matters, what makes it yours. That's what we do.
           </p>
           <div className="flex justify-center gap-3 mt-8 flex-wrap">
             <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
