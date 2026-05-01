@@ -17,7 +17,7 @@ interface TeachResultProps {
   onNew: () => void;
 }
 
-type CardType = "issue" | "lesson" | "example" | "summary";
+type CardType = "issue" | "lesson" | "example" | "rewrite" | "summary";
 interface Card {
   type: CardType;
   issueIndex: number;
@@ -31,6 +31,7 @@ function buildCards(issues: Issue[]): Card[] {
     cards.push({ type: "lesson", issueIndex: i, issue: issues[i] });
     cards.push({ type: "example", issueIndex: i, issue: issues[i] });
   }
+  cards.push({ type: "rewrite", issueIndex: issues.length });
   cards.push({ type: "summary", issueIndex: issues.length });
   return cards;
 }
@@ -40,8 +41,9 @@ function getButtonLabel(card: Card, totalIssues: number): string {
   if (card.type === "lesson") return "See examples \u2192";
   if (card.type === "example") {
     if (card.issueIndex < totalIssues - 1) return "Next issue \u2192";
-    return "See summary \u2192";
+    return "Now rewrite it \u2192";
   }
+  if (card.type === "rewrite") return "See summary \u2192";
   return "";
 }
 
@@ -155,6 +157,7 @@ export function TeachResult({
   onNew,
 }: TeachResultProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [rewrite, setRewrite] = useState("");
   const keyboardHeight = useKeyboardHeight();
 
   // Loading: still fixing OR fix done but explain hasn't completed
@@ -234,6 +237,57 @@ export function TeachResult({
     </div>
   );
 
+  // Rewrite card — textarea with original as ghost text
+  if (card.type === "rewrite") {
+    const rewriteText = rewrite || improvedFull;
+    return (
+      <div className="space-y-4">
+        {pips}
+        <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-3">
+          <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">
+            Your turn
+          </span>
+          <h3 className="font-serif font-bold text-lg text-ink">
+            Rewrite it in your words
+          </h3>
+          <p className="font-sans text-sm text-ink/50">
+            Apply what you learned. Edit the text below to make it yours.
+          </p>
+          <div className="relative">
+            {!rewrite && (
+              <div
+                className="absolute inset-0 pointer-events-none font-sans text-sm leading-relaxed whitespace-pre-wrap"
+                style={{ color: "#ccc", fontStyle: "italic", padding: "12px 14px" }}
+              >
+                {original}
+              </div>
+            )}
+            <textarea
+              value={rewrite}
+              onChange={(e) => setRewrite(e.target.value)}
+              className="w-full font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap bg-transparent border border-ink/10 rounded-[8px] outline-none resize-y"
+              style={{ minHeight: 150, padding: "12px 14px", lineHeight: 1.6 }}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={goBack}
+            className="w-[35%] py-3 min-h-[48px] rounded-[12px] border border-ink/10 text-sm font-sans font-medium text-ink/60 hover:bg-warm transition-colors"
+          >
+            &larr; Back
+          </button>
+          <button
+            onClick={goNext}
+            className="w-[65%] py-3 min-h-[48px] rounded-[12px] bg-[#2563EB] text-white text-sm font-sans font-medium hover:opacity-90 transition-colors"
+          >
+            See summary &rarr;
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Summary card — inline layout, no fixed bottom, no Back
   if (card.type === "summary") {
     return (
@@ -271,9 +325,9 @@ export function TeachResult({
               New
             </button>
             <CopyButton
-              text={improvedFull}
+              text={rewrite || improvedFull}
               onSave={() => {
-                saveToShelf(original, improvedFull, issues, "teach");
+                saveToShelf(original, rewrite || improvedFull, issues, "teach");
               }}
             />
           </div>
