@@ -47,7 +47,7 @@ export default function LandingPage() {
         <div className="max-w-[960px] mx-auto px-12 h-full flex items-center justify-between">
           <span className="font-serif transition-colors" style={{ fontSize: 20, fontWeight: 600, color: scrolled ? INK : "#fff" }}>accent</span>
           <div className="flex items-center gap-4">
-            <Link href="/write" className="no-underline font-sans text-[13px]" style={{ color: scrolled ? INK : "#fff" }}>Log in</Link>
+            <Link href="/write" className="no-underline font-sans text-[13px]" style={{ color: scrolled ? INK : "#fff" }}>Try it free</Link>
             <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
           </div>
         </div>
