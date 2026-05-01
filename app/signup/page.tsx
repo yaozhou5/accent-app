@@ -33,7 +33,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: "email" });
     setLoading(false);
     if (error) setError("Invalid or expired code.");
-    else router.push("/onboarding");
+    else router.push("/write");
   };
 
   return (
