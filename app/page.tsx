@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import AccentAnimated from "@/components/AccentAnimated";
 
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
@@ -11,8 +12,6 @@ const BORDER = "rgba(26,26,24,0.06)";
 const BORDER_VIS = "rgba(26,26,24,0.12)";
 const CALENDLY = "https://calendly.com/yaozhou/quick-intro";
 
-const CHAN_COLORS: Record<string, string> = { LinkedIn: "#0A66C2", "Community Post": "#22c55e", Newsletter: "#FF6719" };
-const DAY_COLORS = ["#ef4444", "#3b82f6", "#3b82f6", "#22c55e", "#a855f7"];
 
 function useReveal(delay = 0) {
   const ref = useRef<HTMLDivElement>(null);
@@ -27,24 +26,9 @@ function useReveal(delay = 0) {
   return { ref, style: { opacity: v ? 1 : 0, transform: v ? "translateY(0)" : "translateY(18px)", transition: "opacity 0.75s ease, transform 0.75s ease" } as React.CSSProperties, visible: v };
 }
 
-const FRAGMENTS = [
-  { day: "Mon", text: "Vendor ghosted after 2 calls. Feeling defeated." },
-  { day: "Tue", text: "First organic sale!! Someone DM'd saying they found us through a friend" },
-  { day: "Tue", text: "Onboarding is a mess. New customer took 20 min to figure out how to pay" },
-  { day: "Wed", text: "Community call — 8 people showed up. Record." },
-  { day: "Thu", text: "Conversation with a founder in Berlin. She's doing the exact same thing" },
-];
-
-const PLAN_CARDS = [
-  { title: "The vendor ghosting + first organic sale", channel: "LinkedIn", when: "Tuesday morning", why: "The contrast between rejection and surprise is the most relatable founder moment. Your audience of early-stage builders lives this daily.", nudge: "Start with the ghosting. Let the reader think the day was a loss. Then reveal the DM." },
-  { title: "Your onboarding is broken — and you're admitting it", channel: "Community Post", when: "Wednesday", why: "You just admitted a paying customer struggled for 20 minutes. That kind of honesty builds real trust with your community.", nudge: "Ask your community: 'Our first paying customer almost didn't make it through onboarding. What does yours look like?'" },
-  { title: "8 people showed up", channel: "Newsletter", when: "Friday", why: "You almost buried this. 8 attendees when you're starting is a milestone. Your subscribers who are thinking about communities need to hear that 8 is enough.", nudge: "Skip the number. Lead with 'I expected 2 people and 8 showed up' — that surprise is the hook." },
-];
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
-  const [activeCard, setActiveCard] = useState(0);
-  const [cardsReady, setCardsReady] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -53,15 +37,6 @@ export default function LandingPage() {
   }, []);
 
   const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s4b = useReveal(), s5 = useReveal(), s6 = useReveal();
-  const demoRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = demoRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setTimeout(() => setCardsReady(true), 800); }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   const dotGridBg = "radial-gradient(circle, rgba(26,26,24,0.03) 1px, transparent 1px)";
 
@@ -120,81 +95,19 @@ export default function LandingPage() {
       </section>
 
       {/* Demo */}
-      <section id="demo" ref={demoRef} style={{ background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
+      <section id="demo" style={{ background: "#FAFAFA" }}>
         <div ref={s2.ref} style={s2.style} className="max-w-[900px] mx-auto px-6 py-20">
-          <div className="text-center mb-12">
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>Your week → Your content plan</span>
-            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>5 fragments in. 3-post plan out.</h2>
+          <div className="text-center mb-10">
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>How it works</span>
+            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>Drop what happened. Get your plan.</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 relative" style={{ gap: 28 }}>
-            {/* Connection SVG — desktop */}
-            <svg className="hidden lg:block absolute" style={{ left: "calc(50% - 20px)", top: 40, width: 40, height: 200, zIndex: 1 }} viewBox="0 0 40 200">
-              <path d="M20 0 C20 60, 20 80, 20 200" fill="none" stroke={BLUE} strokeWidth="1" strokeDasharray="4 4" style={{ opacity: cardsReady ? 0.3 : 0, strokeDashoffset: cardsReady ? 0 : 200, transition: "stroke-dashoffset 1.2s ease, opacity 0.5s ease" }} />
-            </svg>
-
-            {/* Left — fragments */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="rounded-full" style={{ width: 6, height: 6, background: "#22c55e", animation: cardsReady ? "none" : "pulse 1.5s ease infinite" }} />
-                <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>
-                  {cardsReady ? "Your week" : "Reading your week..."}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {FRAGMENTS.map((f, i) => (
-                  <div key={i} className="flex transition-all hover:-translate-y-0.5 hover:shadow-sm" style={{ background: "#fff", borderRadius: 10, border: `1px solid ${BORDER}`, overflow: "hidden", opacity: s2.visible ? 1 : 0, transform: s2.visible ? "none" : "translateY(10px)", transition: `all 0.5s ease ${i * 0.1}s` }}>
-                    <div style={{ width: 2, background: DAY_COLORS[i], opacity: 0.5, flexShrink: 0 }} />
-                    <div style={{ padding: "14px 18px" }}>
-                      <span className="font-mono block mb-1" style={{ fontSize: 10, color: DIM }}>{f.day}</span>
-                      <p className="font-sans" style={{ fontSize: 13, lineHeight: 1.55, color: DIM }}>{f.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 font-sans flex items-center gap-1" style={{ fontSize: 12, color: DIM }}>
-                <span>🕐</span> 3 minutes of input total
-              </p>
-            </div>
-
-            {/* Right — plan cards */}
-            <div>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 10, letterSpacing: "0.1em", color: BLUE }}>Your content plan this week</span>
-              <div className="space-y-2.5">
-                {PLAN_CARDS.map((card, i) => {
-                  const isActive = activeCard === i;
-                  const chanColor = CHAN_COLORS[card.channel] || BLUE;
-                  return (
-                    <div key={i} onClick={() => setActiveCard(i)} className="cursor-pointer transition-all" style={{
-                      padding: 24, borderRadius: 12, background: isActive ? BLUE_SOFT : "#fff",
-                      border: `1px solid ${isActive ? BLUE : BORDER}`,
-                      borderLeft: isActive ? `3px solid ${chanColor}` : `1px solid ${BORDER}`,
-                      opacity: cardsReady ? 1 : 0,
-                      transform: cardsReady ? "translateX(0)" : "translateX(20px)",
-                      transition: `all 0.4s ease ${i * 0.12}s, background 0.2s, border-color 0.2s`,
-                      boxShadow: isActive ? `0 2px 12px ${chanColor}15` : "none",
-                    }}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-2">
-                          <span className="rounded-full mt-1.5 shrink-0" style={{ width: 6, height: 6, background: chanColor }} />
-                          <span className="font-sans text-[14px] font-medium" style={{ color: INK }}>{card.title}</span>
-                        </div>
-                        <span className="font-mono shrink-0 text-[10px] px-2.5 py-0.5 rounded-full" style={{ color: chanColor, background: `${chanColor}12` }}>{card.channel}</span>
-                      </div>
-                      {isActive && (
-                        <div className="mt-4 space-y-3" style={{ animation: "fadeIn 0.3s ease" }}>
-                          <span className="font-mono uppercase" style={{ fontSize: 9, letterSpacing: "0.1em", color: DIM }}>Post on {card.when}</span>
-                          <p className="font-sans" style={{ fontSize: 13, lineHeight: 1.6, color: DIM }}>{card.why}</p>
-                          <div className="pl-3.5" style={{ borderLeft: `2px solid ${BLUE}` }}>
-                            <span className="font-mono uppercase block mb-1" style={{ fontSize: 9, letterSpacing: "0.1em", color: BLUE }}>Writing nudge</span>
-                            <p className="font-sans italic" style={{ fontSize: 13, lineHeight: 1.55, color: INK }}>{card.nudge}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="flex justify-center">
+            <AccentAnimated />
+          </div>
+          <div className="text-center mt-10">
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+              Get your content plan →
+            </a>
           </div>
         </div>
       </section>
