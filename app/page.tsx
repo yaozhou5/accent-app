@@ -67,7 +67,7 @@ export default function LandingPage() {
             Never worry about<br className="sm:hidden" /> content again.
           </h1>
           <p className="font-sans mx-auto mt-4 md:mt-6" style={{ fontSize: "clamp(15px, 3.8vw, 17px)", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, maxWidth: 520 }}>
-            Log your week. Get ideas from your real stories. Write in your voice. Ship every week. Accent is the workspace that makes it effortless.
+            One system. Consistent content. Your voice.
           </p>
           <div className="mt-6 md:mt-8">
             <Link href="/write" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Start your workspace →</Link>
