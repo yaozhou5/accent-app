@@ -22,7 +22,7 @@ type ChatStep =
   | { type: "reset"; wait: number; from?: undefined; text?: undefined; kind?: undefined; items?: undefined; src?: undefined; caption?: undefined; step?: undefined };
 
 const CHAT_STEPS: ChatStep[] = [
-  { type: "msg", from: "user", text: "vendor ghosted me after 2 great calls. then randomly got my first organic sale from a DM. also 8 people showed up to community call which is a record", wait: 1500 },
+  { type: "msg", from: "user", text: "enterprise pilot churned after 3 months. then rewrote onboarding this weekend and cut time-to-value from 40 min to 8. also closed our first annual deal", wait: 1500 },
   { type: "msg", from: "user", kind: "image", src: "📱", caption: "dm-screenshot.png", wait: 900 },
   { type: "msg", from: "user", kind: "image", src: "📸", caption: "community-call.png", wait: 700 },
   { type: "typing", wait: 1400 },
