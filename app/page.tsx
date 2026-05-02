@@ -130,30 +130,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* What AI agents can't do */}
-      <section ref={s4.ref} style={{ ...s4.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
-        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
-          <h2 className="font-serif text-center mb-3" style={{ fontSize: "clamp(24px, 3.6vw, 28px)", fontWeight: 400 }}>What AI agents can't do</h2>
-          <p className="font-sans text-center mx-auto mb-8 md:mb-12" style={{ fontSize: 15, color: "#6B6B6B", maxWidth: 480 }}>AI can rewrite your text. It can't know your story.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Why this works */}
+      <section ref={s4.ref} style={s4.style}>
+        <div className="max-w-[640px] mx-auto px-6 py-12 md:py-20">
+          <h2 className="font-serif mb-10 md:mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 32px)", fontWeight: 400, color: INK }}>Why this works when everything else didn't.</h2>
+          <div className="space-y-10 md:space-y-12">
             {[
-              { icon: "🧠", bg: "#a855f7", title: "Remembers your journey", desc: "We know you almost quit 3 weeks ago. We know your most engaged follower is a VC. We know your community call almost didn't happen. Every week builds on the last." },
-              { icon: "👁", bg: "#f59e0b", title: "Sees what you're hiding", desc: "You mentioned the first sale but not that you cried after. The real stories are the ones you don't type. We ask the questions AI won't." },
-              { icon: "🎯", bg: "#ef4444", title: "Knows good from great", desc: "AI suggests 3 stories equally. We know the vendor ghosting + first sale is the one that breaks through. The other two are fine. This one is special." },
-              { icon: "🤝", bg: "#3b82f6", title: "Builds your brand over time", desc: "Your imposter syndrome post got 10x engagement 3 weeks ago. Your audience is waiting for more of that. We track what lands and guide you back to it." },
-            ].map(c => (
-              <div key={c.title} style={{ background: "#fff", borderRadius: 14, padding: 24, border: "1px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                <div className="mb-3 flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: "50%", background: `${c.bg}10` }}>
-                  <span style={{ fontSize: 28 }}>{c.icon}</span>
-                </div>
-                <h3 className="font-sans mb-2" style={{ fontSize: 15, fontWeight: 600, color: INK }}>{c.title}</h3>
-                <p className="font-sans" style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.6 }}>{c.desc}</p>
+              { title: "It's not a coach.", desc: "You don't need someone telling you what to post. You need a place where content happens naturally — from your actual life." },
+              { title: "It's not ChatGPT.", desc: "ChatGPT forgets you exist. Accent remembers your last 20 weeks, your voice, your brand. Context compounds." },
+              { title: "It starts with you, not AI.", desc: "Log what happened first. Then ideas come from your stories — not from a prompt. Real input, real output." },
+              { title: "The rhythm is the feature.", desc: "Great content isn't one viral post. It's showing up every week. Accent makes the habit invisible." },
+            ].map(b => (
+              <div key={b.title}>
+                <h3 className="font-sans mb-2" style={{ fontSize: 17, fontWeight: 600, color: INK }}>{b.title}</h3>
+                <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.7 }}>{b.desc}</p>
               </div>
             ))}
           </div>
-          <p className="font-sans text-center mx-auto mt-8" style={{ fontSize: 14, color: "#333", maxWidth: 520, lineHeight: 1.6 }}>
-            An AI agent costs $0 and gives you generic suggestions. A content strategist costs $4,000/month. Accent gives you a strategist who knows your story — starting at <span style={{ color: BLUE, fontWeight: 600 }}>$29/month</span>.
-          </p>
         </div>
       </section>
 
