@@ -80,7 +80,7 @@ export default function LandingPage() {
             <p className="font-serif italic" style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}>
               "I can write a decent post. I just never know which post to write."
             </p>
-            <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>Every founder, every Sunday night</p>
+            <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>Every founder, Sunday night</p>
           </div>
         </div>
       </section>
