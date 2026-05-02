@@ -66,6 +66,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-6 md:mt-8">
             <Link href="/signup" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Start your workspace →</Link>
+            <p className="mt-2 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Try Pro free for 14 days. No credit card.</p>
           </div>
           <a href="#demo" className="no-underline inline-block mt-4 font-sans text-[13px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.5)" }}>See how it works ↓</a>
         </div>
@@ -97,6 +98,7 @@ export default function LandingPage() {
             <Link href="/signup" className="no-underline inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
               Start your workspace →
             </Link>
+            <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>Try Pro free for 14 days. No credit card.</p>
           </div>
         </div>
       </section>
@@ -149,6 +151,38 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section style={{ background: "#FAFAFA" }}>
+        <div className="max-w-[640px] mx-auto px-6 py-12 md:py-20">
+          <h2 className="font-serif text-center mb-8 md:mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 32px)", fontWeight: 400, color: INK }}>Log free, forever. Pro is $15/month.</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div style={{ background: "#fff", borderRadius: 12, padding: 28, border: `1px solid ${BORDER}` }}>
+              <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.08em", color: DIM }}>Free (forever)</span>
+              <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {["Log your week", "Unlimited entries", "Weekly streak"].map(f => (
+                  <li key={f} className="font-sans flex items-start gap-2" style={{ fontSize: 14, color: INK }}>
+                    <span style={{ color: "#22c55e", flexShrink: 0 }}>&#10003;</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div style={{ background: "#fff", borderRadius: 12, padding: 28, border: `1.5px solid ${BLUE}`, boxShadow: `0 0 0 1px ${BLUE}15` }}>
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.08em", color: BLUE }}>Pro — $15/mo</span>
+              </div>
+              <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {["AI-generated ideas from your logs", "Writing tools", "Content shelf", "Brand voice memory"].map(f => (
+                  <li key={f} className="font-sans flex items-start gap-2" style={{ fontSize: 14, color: INK }}>
+                    <span style={{ color: BLUE, flexShrink: 0 }}>&#10003;</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <p className="font-sans mt-4" style={{ fontSize: 13, color: BLUE, fontWeight: 500 }}>Try free for 14 days</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Who it's for */}
       <section ref={s5.ref} style={{ ...s5.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
         <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
@@ -183,12 +217,13 @@ export default function LandingPage() {
             <span style={{ fontWeight: 300 }}>Your week already happened.</span><br />
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content is in there.</span>
           </h2>
-          <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            Sign up, tell us about your brand, and start logging. Your first ideas in minutes. First 2 weeks free.
+          <p className="font-sans mx-auto mb-2" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
+            Log free, forever. Pro is $15/month.
           </p>
-          <Link href="/signup" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+          <Link href="/signup" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px mb-2" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
             Start your workspace →
           </Link>
+          <p className="font-sans" style={{ fontSize: 13, color: DIM }}>Try Pro free for 14 days. No credit card.</p>
         </div>
       </section>
 
