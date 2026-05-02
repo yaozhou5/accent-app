@@ -106,12 +106,12 @@ export default function LandingPage() {
       {/* How it works */}
       <section ref={s3.ref} style={s3.style}>
         <div className="max-w-[660px] mx-auto px-6 py-12 md:py-20">
-          <h2 className="font-serif text-center mb-8 md:mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Drop. Plan. Write.</h2>
+          <h2 className="font-serif text-center mb-8 md:mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Log. Plan. Write.</h2>
           <div>
             {[
-              { n: "01", title: "Drop in your week", desc: "Quick notes, voice memos, random thoughts. Whatever comes to mind. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
-              { n: "02", title: "Get your plan", desc: "Accent connects the dots. It tells you which moments are worth posting, which channel each one fits, and when to publish. Your content calendar, built from your real life.", icon: "M6 6h0.01 M12 6h0.01 M18 6h0.01 M6 12h0.01 M18 12h0.01 M12 18h0.01 M6 6L12 12 M18 6L12 12 M12 12L12 18" },
-              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent coaches you as you go — better words, tighter structure, the angle that makes people stop scrolling.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
+              { n: "01", title: "Log your week", desc: "Quick notes, voice memos, random thoughts. Whatever comes to mind. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
+              { n: "02", title: "See what to post", desc: "Accent connects the dots. It turns your real moments into post ideas — matched to your voice, your brand, your channels.", icon: "M6 6h0.01 M12 6h0.01 M18 6h0.01 M6 12h0.01 M18 12h0.01 M12 18h0.01 M6 6L12 12 M18 6L12 12 M12 12L12 18" },
+              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent helps you as you go — better words, tighter structure, the angle that makes people stop scrolling.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
             ].map((s, i, arr) => (
               <div key={s.n} className="grid gap-4" style={{ gridTemplateColumns: "44px 1fr", paddingTop: 20, paddingBottom: 20, borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : "none" }}>
                 <div>
