@@ -9,7 +9,6 @@ const DIM = "rgba(26,26,24,0.50)";
 const BLUE = "#2563EB";
 const BORDER = "rgba(26,26,24,0.06)";
 const BORDER_VIS = "rgba(26,26,24,0.12)";
-const CALENDLY = "https://calendly.com/yaozhou/quick-intro";
 
 
 function useReveal(delay = 0) {
@@ -95,9 +94,9 @@ export default function LandingPage() {
             <AccentAnimated />
           </div>
           <div className="text-center mt-10">
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
-              Get your content plan →
-            </a>
+            <Link href="/signup" className="no-underline inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+              Start your workspace →
+            </Link>
           </div>
         </div>
       </section>
