@@ -65,18 +65,20 @@ export default function LandingPage() {
         <div className="max-w-[760px] mx-auto px-6 sm:px-8 relative z-[3] py-14 md:py-20">
           <div className="flex items-center justify-center gap-2 sm:gap-3 mb-5 md:mb-8">
             <span className="hidden sm:inline-block" style={{ width: 18, height: 1, background: "#fff" }} />
-            <span className="font-mono uppercase" style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.14em", color: "rgba(255,255,255,0.85)" }}>Content planning for solo founders</span>
+            <span className="font-mono uppercase" style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.14em", color: "rgba(255,255,255,0.85)" }}>For founders who produce content</span>
             <span className="hidden sm:inline-block" style={{ width: 18, height: 1, background: "#fff" }} />
           </div>
           <h1 className="font-serif" style={{ fontSize: "clamp(28px, 7vw, 50px)", fontWeight: 300, lineHeight: 1.12, letterSpacing: "-0.03em", color: "#fff" }}>
             Never worry about<br className="sm:hidden" /> content again.
           </h1>
-          <p className="font-sans mx-auto mt-4 md:mt-6" style={{ fontSize: "clamp(15px, 3.8vw, 17px)", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, maxWidth: 500 }}>
-            You're the CEO, writer, designer, and strategist. AI can handle the busy work. But not the decisions — what's worth saying, which story matters, what makes it yours. That's what we do.
+          <p className="font-serif mt-2" style={{ fontSize: "clamp(22px, 5vw, 36px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.2, color: BLUE }}>
+            Build your content system.
+          </p>
+          <p className="font-sans mx-auto mt-4 md:mt-6" style={{ fontSize: "clamp(15px, 3.8vw, 17px)", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, maxWidth: 520 }}>
+            Log your week. Get ideas from your real stories. Write in your voice. Ship every week. Accent is the workspace that makes it effortless.
           </p>
           <div className="mt-6 md:mt-8">
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
-            <p className="mt-2 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>First 2 weeks free</p>
+            <Link href="/write" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Start your workspace →</Link>
           </div>
           <a href="#demo" className="no-underline inline-block mt-4 font-sans text-[13px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.5)" }}>See how it works ↓</a>
         </div>
