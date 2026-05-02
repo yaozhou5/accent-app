@@ -7,7 +7,6 @@ import AccentAnimated from "@/components/AccentAnimated";
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
 const BLUE = "#2563EB";
-const BLUE_SOFT = "rgba(37,99,235,0.07)";
 const BORDER = "rgba(26,26,24,0.06)";
 const BORDER_VIS = "rgba(26,26,24,0.12)";
 const CALENDLY = "https://calendly.com/yaozhou/quick-intro";
@@ -36,7 +35,7 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s4b = useReveal(), s5 = useReveal(), s6 = useReveal();
+  const s1 = useReveal(), s2 = useReveal(), s3 = useReveal(), s4 = useReveal(), s5 = useReveal(), s6 = useReveal();
 
   const dotGridBg = "radial-gradient(circle, rgba(26,26,24,0.03) 1px, transparent 1px)";
 
@@ -151,52 +150,17 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Differentiator */}
-      <section ref={s4b.ref} style={s4b.style}>
-        <div className="mx-4 sm:mx-6 my-6 md:my-8 relative overflow-hidden" style={{ background: INK, borderRadius: 18, padding: "clamp(28px, 6vw, 52px) clamp(20px, 5vw, 44px)", maxWidth: 840, marginLeft: "auto", marginRight: "auto" }}>
-          {/* Subtle background decoration */}
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.04) 0%, transparent 50%)" }} />
-          <div className="relative grid grid-cols-1 lg:grid-cols-2" style={{ gap: 36 }}>
-            <div>
-              <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.1em", color: BLUE }}>Why Accent is different</span>
-              <h2 className="font-serif mt-3 mb-4" style={{ fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, color: "#fff", lineHeight: 1.3 }}>
-                Other tools start with <em style={{ opacity: 0.45 }}>content</em>.<br />Accent starts with <em style={{ color: BLUE }}>you</em>.
-              </h2>
-              <p className="font-sans" style={{ fontSize: 14, color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}>
-                We spend time getting to know what you're building, who you're building it for, and where you are in the journey. That context shapes everything — which stories to tell, where to tell them, and how to make them land.
-              </p>
-            </div>
-            <div className="space-y-3">
-              {[
-                { icon: "📅", label: "Content calendars", line1: "Here's when to post", line2: "But not what", highlight: false },
-                { icon: "🤖", label: "AI writers", line1: "Here's a post we wrote for you", line2: "Could be anyone's", highlight: false },
-                { icon: "✦", label: "Accent", line1: "We know what you're building. Here's what to share this week.", line2: "And you write every word", highlight: true },
-              ].map(c => (
-                <div key={c.label} className="rounded-[10px] transition-all" style={{ padding: 18, background: c.highlight ? BLUE_SOFT : "rgba(255,255,255,0.03)", border: `1px solid ${c.highlight ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.05)"}`, boxShadow: c.highlight ? "0 0 20px rgba(37,99,235,0.08)" : "none", animation: c.highlight ? "glowPulse 3s ease infinite" : "none" }}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span style={{ fontSize: 14 }}>{c.icon}</span>
-                    <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: c.highlight ? BLUE : "rgba(255,255,255,0.28)" }}>{c.label}</span>
-                  </div>
-                  <p className="font-sans" style={{ fontSize: 13, color: c.highlight ? "#fff" : "rgba(255,255,255,0.38)" }}>{c.line1}</p>
-                  <p className="font-sans italic mt-0.5" style={{ fontSize: 12, color: c.highlight ? BLUE : "rgba(255,255,255,0.22)" }}>{c.line2}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Who it's for */}
       <section ref={s5.ref} style={{ ...s5.style, background: "#FAFAFA", backgroundImage: dotGridBg, backgroundSize: "24px 24px" }}>
         <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
           <h2 className="font-serif text-center mb-8 md:mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400, lineHeight: 1.3 }}>
-            Built for founders who'd rather talk to customers<br className="hidden md:inline" /> <em>than plan content</em>
+            Built for founders who'd rather build<br className="hidden md:inline" /> <em>than plan content</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
             {[
               { emoji: "🏠", bg: "#f59e0b", title: "Community builders", pain: "Running events, having conversations, but never turning those moments into content", how: "Drop notes after each event. Accent shows which moments resonate." },
               { emoji: "🚀", bg: "#3b82f6", title: "Build-in-public founders", pain: "Want to share the journey but stare at blank pages every week", how: "Your week is the content. Accent finds the stories you're too close to see." },
-              { emoji: "🌍", bg: "#22c55e", title: "Non-native speakers", pain: "Strong ideas but second-guessing every English sentence", how: "Write in your voice. Accent helps you find the right words — and actually learn them." },
+              { emoji: "🧑‍💻", bg: "#8b5cf6", title: "Solo founders", pain: "No marketing team, no content strategist, no time. Just you and a system that actually works.", how: "Log your week, Accent does the rest." },
             ].map(c => (
               <div key={c.title} style={{ padding: "24px 22px", border: `1px solid ${BORDER}`, borderRadius: 12, background: "#fff" }}>
                 <div className="mb-3 flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: `${c.bg}14` }}>
@@ -218,14 +182,14 @@ export default function LandingPage() {
         <div className="max-w-[520px] mx-auto px-6 py-14 md:py-20 text-center">
           <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
             <span style={{ fontWeight: 300 }}>Your week already happened.</span><br />
-            <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content plan is in there.</span>
+            <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content is in there.</span>
           </h2>
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            15 minutes. We learn what you're building, who you're talking to, and what happened this week. You walk away with your first content plan. First 2 weeks free.
+            Sign up, tell us about your brand, and start logging. Your first ideas in minutes. First 2 weeks free.
           </p>
-          <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
-            Get your content plan →
-          </a>
+          <Link href="/write" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+            Start your workspace →
+          </Link>
         </div>
       </section>
 
