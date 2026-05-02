@@ -133,16 +133,16 @@ export default function LandingPage() {
 
       {/* Why this works */}
       <section ref={s4.ref} style={s4.style}>
-        <div className="max-w-[640px] mx-auto px-6 py-12 md:py-20">
-          <h2 className="font-serif mb-10 md:mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 32px)", fontWeight: 400, color: INK }}>Why this works when everything else didn't.</h2>
-          <div className="space-y-10 md:space-y-12">
+        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
+          <h2 className="font-serif text-center mb-8 md:mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 32px)", fontWeight: 400, color: INK }}>Why this works when everything else didn't.</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {[
               { title: "It's not a coach.", desc: "You don't need someone telling you what to post. You need a place where content happens naturally — from your actual life." },
               { title: "It's not ChatGPT.", desc: "ChatGPT forgets you exist. Accent remembers your last 20 weeks, your voice, your brand. Context compounds." },
               { title: "It starts with you, not AI.", desc: "Log what happened first. Then ideas come from your stories — not from a prompt. Real input, real output." },
               { title: "The rhythm is the feature.", desc: "Great content isn't one viral post. It's showing up every week. Accent makes the habit invisible." },
             ].map(b => (
-              <div key={b.title}>
+              <div key={b.title} style={{ background: "#f9f8f6", borderRadius: 12, padding: 32 }}>
                 <h3 className="font-sans mb-2" style={{ fontSize: 17, fontWeight: 600, color: INK }}>{b.title}</h3>
                 <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.7 }}>{b.desc}</p>
               </div>
