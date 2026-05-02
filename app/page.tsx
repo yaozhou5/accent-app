@@ -109,10 +109,10 @@ export default function LandingPage() {
           <h2 className="font-serif text-center mb-8 md:mb-14" style={{ fontSize: "clamp(24px, 3.6vw, 34px)", fontWeight: 400 }}>Four stations. One flow.</h2>
           <div>
             {[
-              { n: "01", title: "Log your week", desc: "Quick notes, voice memos, random thoughts. Whatever comes to mind. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
-              { n: "02", title: "See what to post", desc: "Accent connects the dots. It turns your real moments into post ideas — matched to your voice, your brand, your channels.", icon: "M6 6h0.01 M12 6h0.01 M18 6h0.01 M6 12h0.01 M18 12h0.01 M12 18h0.01 M6 6L12 12 M18 6L12 12 M12 12L12 18" },
-              { n: "03", title: "Write it yourself", desc: "Pick a story and write it. Accent helps you as you go — better words, tighter structure, the angle that makes people stop scrolling.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
-              { n: "04", title: "Ship to shelf", desc: "Done? It goes to your shelf. Your content library, your rhythm tracker, proof the system is working. Never lose a post again.", icon: "M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z M9 7h6 M9 11h6 M9 15h4" },
+              { n: "01", title: "Log", desc: "Quick notes, voice memos, random thoughts. Whatever comes to mind. 2-3 minutes throughout your week.", icon: "M4 4h16v16H4z M8 8h8 M8 12h5" },
+              { n: "02", title: "Ideas", desc: "Accent connects the dots. It turns your real moments into post ideas — matched to your voice, your brand, your channels.", icon: "M6 6h0.01 M12 6h0.01 M18 6h0.01 M6 12h0.01 M18 12h0.01 M12 18h0.01 M6 6L12 12 M18 6L12 12 M12 12L12 18" },
+              { n: "03", title: "Write", desc: "Pick a story and write it. Accent helps you as you go — better words, tighter structure, the angle that makes people stop scrolling.", icon: "M4 20L8 16L18 6L20 8L10 18L6 20z M14 10L16 8" },
+              { n: "04", title: "Shelf", desc: "Done? It goes to your shelf. Your content library, your rhythm tracker, proof the system is working. Never lose a post again.", icon: "M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z M9 7h6 M9 11h6 M9 15h4" },
             ].map((s, i, arr) => (
               <div key={s.n} className="grid gap-4" style={{ gridTemplateColumns: "44px 1fr", paddingTop: 20, paddingBottom: 20, borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : "none" }}>
                 <div>
