@@ -63,17 +63,9 @@ export default function LandingPage() {
         <div className="absolute inset-0 z-0" style={{ background: "#111" }} />
 
         <div className="max-w-[760px] mx-auto px-6 sm:px-8 relative z-[3] py-14 md:py-20">
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-5 md:mb-8">
-            <span className="hidden sm:inline-block" style={{ width: 18, height: 1, background: "#fff" }} />
-            <span className="font-mono uppercase" style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.14em", color: "rgba(255,255,255,0.85)" }}>For founders who produce content</span>
-            <span className="hidden sm:inline-block" style={{ width: 18, height: 1, background: "#fff" }} />
-          </div>
           <h1 className="font-serif" style={{ fontSize: "clamp(28px, 7vw, 50px)", fontWeight: 300, lineHeight: 1.12, letterSpacing: "-0.03em", color: "#fff" }}>
             Never worry about<br className="sm:hidden" /> content again.
           </h1>
-          <p className="font-serif mt-2" style={{ fontSize: "clamp(22px, 5vw, 36px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.2, color: BLUE }}>
-            Build your content system.
-          </p>
           <p className="font-sans mx-auto mt-4 md:mt-6" style={{ fontSize: "clamp(15px, 3.8vw, 17px)", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, maxWidth: 520 }}>
             Log your week. Get ideas from your real stories. Write in your voice. Ship every week. Accent is the workspace that makes it effortless.
           </p>
