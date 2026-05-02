@@ -9,7 +9,7 @@ const BORDER = "#E5E5E5";
 const STATIONS = [
   { title: "Log", desc: "What happened this week? Drop your notes here.", href: "/dashboard/log", color: "#0d9488" },
   { title: "Ideas", desc: "See what to post based on your real stories.", href: "/dashboard", color: "#3b82f6", soon: true },
-  { title: "Write", desc: "Polish your writing and spread it across channels.", href: "/write", color: "#2563EB" },
+  { title: "Write", desc: "Polish your writing and spread it across channels.", href: "/dashboard/write", color: "#2563EB" },
   { title: "Shelf", desc: "Your content library and rhythm tracker.", href: "/shelf", color: "#8b5cf6" },
 ];
 
