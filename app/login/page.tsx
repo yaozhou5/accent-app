@@ -13,7 +13,7 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/write";
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
   const supabase = createClient();
 
   const handleSendCode = async (e: React.FormEvent) => {

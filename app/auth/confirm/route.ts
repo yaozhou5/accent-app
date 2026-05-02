@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     | "email"
     | "email_change"
     | null;
-  const nextParam = searchParams.get("next") ?? "/write";
+  const nextParam = searchParams.get("next") ?? "/dashboard";
   // Prevent open redirect: only allow same-origin relative paths
   const next =
     nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
