@@ -47,6 +47,7 @@ export default function LogPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [newId, setNewId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -60,12 +61,20 @@ export default function LogPage() {
   const handleSubmit = async () => {
     if (!text.trim() || submitting) return;
     setSubmitting(true);
-    const entry = await createLog(text.trim());
-    if (entry) {
-      setLogs(prev => [entry, ...prev]);
-      setNewId(entry.id);
-      setTimeout(() => setNewId(null), 600);
-      setText("");
+    setError(null);
+    try {
+      const entry = await createLog(text.trim());
+      if (entry) {
+        setLogs(prev => [entry, ...prev]);
+        setNewId(entry.id);
+        setTimeout(() => setNewId(null), 600);
+        setText("");
+      } else {
+        setError("Failed to save. Make sure the logs table exists in Supabase.");
+      }
+    } catch (e) {
+      console.error("Log submit error:", e);
+      setError("Something went wrong. Check the console for details.");
     }
     setSubmitting(false);
     textareaRef.current?.focus();
@@ -152,6 +161,9 @@ export default function LogPage() {
           >
             {submitting ? "Logging..." : "Log"}
           </button>
+          {error && (
+            <p className="mt-2 text-center font-sans text-[13px]" style={{ color: "#DC2626" }}>{error}</p>
+          )}
           <p className="mt-2 text-center font-mono" style={{ fontSize: 11, color: FAINT }}>
             Cmd+Enter to submit
           </p>
