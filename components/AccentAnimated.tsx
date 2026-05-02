@@ -118,14 +118,14 @@ export default function AccentAnimated() {
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: N, letterSpacing: "-0.02em" }}>accent</div>
               <div style={{ fontSize: 11, color: G, display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: G, display: "inline-block" }} />Content coach
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: G, display: "inline-block" }} />Content system
               </div>
             </div>
           </div>
 
           {/* Tabs */}
           <div style={{ display: "flex", padding: "10px 18px 0", background: W, borderBottom: "1px solid rgba(0,0,0,0.05)", flexShrink: 0 }}>
-            {[{ id: "chat", label: "Chat", icon: "💬" }, { id: "workspace", label: "Workspace", icon: "📂" }].map(ti => (
+            {[{ id: "chat", label: "Log", icon: "💬" }, { id: "workspace", label: "Workspace", icon: "📂" }].map(ti => (
               <div key={ti.id} style={{ flex: 1, padding: "10px 0 12px", cursor: "default", fontSize: 12, fontWeight: tab === ti.id ? 600 : 400, color: tab === ti.id ? N : N3, borderBottom: tab === ti.id ? `2px solid ${B}` : "2px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                 <span style={{ fontSize: 12 }}>{ti.icon}</span>{ti.label}
                 {ti.id === "workspace" && hasPlan && tab === "chat" && (

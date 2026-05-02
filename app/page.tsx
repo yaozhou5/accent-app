@@ -90,7 +90,7 @@ export default function LandingPage() {
         <div ref={s2.ref} style={s2.style} className="max-w-[900px] mx-auto px-6 py-12 md:py-20">
           <div className="text-center mb-10">
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.14em", color: BLUE }}>How it works</span>
-            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>Drop what happened. Get your plan.</h2>
+            <h2 className="font-serif mt-3" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", fontWeight: 400 }}>Drop what happened. Get your content.</h2>
           </div>
           <div className="flex justify-center">
             <AccentAnimated />
