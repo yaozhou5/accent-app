@@ -46,10 +46,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ height: 52, background: scrolled ? "rgba(255,255,255,0.92)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", WebkitBackdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${BORDER}` : "none" }}>
         <div className="max-w-[960px] mx-auto px-5 md:px-12 h-full flex items-center justify-between">
           <span className="font-serif transition-colors" style={{ fontSize: 20, fontWeight: 600, color: scrolled ? INK : "#fff" }}>accent</span>
-          <div className="flex items-center gap-4">
-            <Link href="/write" className="no-underline font-sans text-[13px] hidden sm:inline" style={{ color: scrolled ? INK : "#fff" }}>Try it free</Link>
-            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="no-underline px-4 py-2 rounded-full text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Get your content plan</a>
-          </div>
+          <Link href="/write" className="no-underline px-4 py-2 rounded-full text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Start your workspace</Link>
         </div>
       </nav>
 
