@@ -141,8 +141,8 @@ export default function LandingPage() {
               { title: "It's not ChatGPT.", desc: "ChatGPT forgets you exist. Accent remembers your last 20 weeks, your voice, your brand. Context compounds." },
               { title: "It starts with you, not AI.", desc: "Log what happened first. Then ideas come from your stories — not from a prompt. Real input, real output." },
               { title: "The rhythm is the feature.", desc: "Great content isn't one viral post. It's showing up every week. Accent makes the habit invisible." },
-            ].map(b => (
-              <div key={b.title} style={{ background: "#f9f8f6", borderRadius: 12, padding: 32 }}>
+            ].map((b, i) => (
+              <div key={b.title} className="why-card hover:-translate-y-1" style={{ background: "#f9f8f6", borderRadius: 12, padding: 32, opacity: s4.visible ? 1 : 0, transform: s4.visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease-out ${i * 0.1}s, transform 0.6s ease-out ${i * 0.1}s, box-shadow 0.25s ease`, boxShadow: "0 0 0 rgba(0,0,0,0)" }}>
                 <h3 className="font-sans mb-2" style={{ fontSize: 17, fontWeight: 600, color: INK }}>{b.title}</h3>
                 <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.7 }}>{b.desc}</p>
               </div>
@@ -246,6 +246,7 @@ export default function LandingPage() {
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         @keyframes float { from{transform:translateY(0) rotate(var(--rot,0deg))} to{transform:translateY(-4px) rotate(var(--rot,0deg))} }
         @keyframes glowPulse { 0%,100%{box-shadow:0 0 20px rgba(37,99,235,0.08)} 50%{box-shadow:0 0 28px rgba(37,99,235,0.15)} }
+        .why-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.06) !important; }
       `}</style>
     </div>
   );
