@@ -155,7 +155,7 @@ export default function LandingPage() {
       <section style={{ background: "#FAFAFA" }}>
         <div className="max-w-[640px] mx-auto px-6 py-12 md:py-20">
           <h2 className="font-serif text-center mb-3" style={{ fontSize: "clamp(24px, 3.6vw, 32px)", fontWeight: 400, color: INK }}>Simple pricing</h2>
-          <p className="font-sans text-center mb-8 md:mb-12" style={{ fontSize: 15, color: DIM }}>3 posts free every month. Unlimited for $9/month.</p>
+          <p className="font-sans text-center mb-8 md:mb-12" style={{ fontSize: 15, color: DIM }}>3 posts free every month. Unlimited for $19/month.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div style={{ background: "#fff", borderRadius: 12, padding: 28, border: `1px solid ${BORDER}` }}>
               <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.08em", color: DIM }}>Free</span>
@@ -168,7 +168,7 @@ export default function LandingPage() {
               </ul>
             </div>
             <div style={{ background: "#fff", borderRadius: 12, padding: 28, border: `1.5px solid ${BLUE}` }}>
-              <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.08em", color: BLUE }}>Pro — $9/mo</span>
+              <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.08em", color: BLUE }}>Pro — $19/mo</span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {["Unlimited posts", "Brand voice memory", "Full content shelf", "Weekly rhythm tracking"].map(f => (
                   <li key={f} className="font-sans flex items-start gap-2" style={{ fontSize: 14, color: INK }}>
@@ -216,7 +216,7 @@ export default function LandingPage() {
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content is in there.</span>
           </h2>
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            3 posts free every month. Unlimited for $9/month.
+            3 posts free every month. Unlimited for $19/month.
           </p>
           <Link href="/signup" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
             Start your workspace →
