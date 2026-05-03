@@ -230,7 +230,6 @@ export default function LandingPage() {
         <div className="max-w-[840px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="font-serif" style={{ fontSize: 16, fontWeight: 600, color: INK }}>accent</span>
           <div className="flex gap-6 text-[12px] font-sans" style={{ color: DIM }}>
-            <span>Built in Amsterdam</span>
             <Link href="/privacy-contact" className="no-underline" style={{ color: DIM }}>Privacy</Link>
             <a href="mailto:hello@myaccent.io" className="no-underline" style={{ color: DIM }}>Contact</a>
           </div>
