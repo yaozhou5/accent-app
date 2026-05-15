@@ -15,6 +15,10 @@ export interface UserProfile {
   posting_challenges: string | null;
   profile_url: string | null;
   past_posts: string | null;
+  posting_experience: string | null;
+  posts_that_work: string[];
+  posts_that_flop: string[];
+  voice_tone: string | null;
   created_at: string;
 }
 

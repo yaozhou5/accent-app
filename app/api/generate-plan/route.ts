@@ -57,6 +57,12 @@ Goals: ${(profile.goals || []).join(", ") || "Not specified"}
 Platforms: ${(profile.platforms || []).join(", ") || "Not specified"}
 Posting frequency: ${profile.posting_frequency || "Not specified"} posts per week
 Posting challenges: ${profile.posting_challenges || "Not specified"}
+Posting experience: ${profile.posting_experience || "Not specified"}
+${(profile.posts_that_work || []).length > 0 ? `Posts that work for them: ${profile.posts_that_work.join(", ")}` : ""}
+${(profile.posts_that_flop || []).length > 0 ? `Posts that don't work: ${profile.posts_that_flop.join(", ")}` : ""}
+${profile.voice_tone ? `Their natural tone: ${profile.voice_tone}` : ""}
+
+If the user says certain post types work and others flop, never suggest the types that flop. Lean into what already works. If they say they haven't found what works yet or selected "Not sure yet", mix different post types so they can discover what resonates. Match their stated tone in hooks and reasoning.
 
 ${profile.past_posts ? `PAST POSTS BY THIS FOUNDER:
 ${profile.past_posts}
