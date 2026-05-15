@@ -16,6 +16,8 @@ export default function Onboard3() {
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [frequency, setFrequency] = useState("3-4");
   const [challenges, setChallenges] = useState("");
+  const [profileUrl, setProfileUrl] = useState("");
+  const [pastPosts, setPastPosts] = useState("");
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
@@ -30,6 +32,8 @@ export default function Onboard3() {
       platforms,
       posting_frequency: frequency,
       posting_challenges: challenges.trim() || null,
+      profile_url: profileUrl.trim() || null,
+      past_posts: pastPosts.trim() || null,
       onboarding_completed: true,
     });
     if (!ok) {
@@ -97,13 +101,37 @@ export default function Onboard3() {
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>What's been hard about posting?</label>
           <textarea
             value={challenges}
             onChange={e => setChallenges(e.target.value)}
             placeholder="Been in builder mode. Not confident enough yet. Time to focus on content."
             rows={3}
+            className="w-full outline-none resize-y font-sans"
+            style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Your LinkedIn or Instagram profile URL (optional)</label>
+          <input
+            type="url"
+            value={profileUrl}
+            onChange={e => setProfileUrl(e.target.value)}
+            placeholder="https://linkedin.com/in/yourname"
+            className="w-full outline-none font-sans"
+            style={{ fontSize: 16, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
+          />
+        </div>
+
+        <div className="mb-8">
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Paste 2-3 posts you've written before (optional)</label>
+          <textarea
+            value={pastPosts}
+            onChange={e => setPastPosts(e.target.value)}
+            placeholder="Copy paste any posts you've made. Good ones, bad ones, doesn't matter. This helps us understand your voice and what's worked for you."
+            rows={5}
             className="w-full outline-none resize-y font-sans"
             style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
           />

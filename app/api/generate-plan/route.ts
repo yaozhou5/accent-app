@@ -58,7 +58,11 @@ Platforms: ${(profile.platforms || []).join(", ") || "Not specified"}
 Posting frequency: ${profile.posting_frequency || "Not specified"} posts per week
 Posting challenges: ${profile.posting_challenges || "Not specified"}
 
-THIS WEEK'S DUMP:
+${profile.past_posts ? `PAST POSTS BY THIS FOUNDER:
+${profile.past_posts}
+
+If past posts are provided, analyze them for: what topics got engagement, what voice/tone the founder naturally uses, what patterns work vs don't. Reference this in your plan. For example, if their personal story posts outperform their announcement posts, lean toward personal stories.
+` : ""}THIS WEEK'S DUMP:
 ${dump}
 
 Respond ONLY with valid JSON matching this structure, no other text:

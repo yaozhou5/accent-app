@@ -13,6 +13,8 @@ export interface UserProfile {
   platforms: string[];
   posting_frequency: string | null;
   posting_challenges: string | null;
+  profile_url: string | null;
+  past_posts: string | null;
   created_at: string;
 }
 
