@@ -26,14 +26,20 @@ export default function Onboard3() {
   const handleDone = async () => {
     if (platforms.length === 0) return;
     setSaving(true);
-    await upsertProfile({
+    const ok = await upsertProfile({
       platforms,
       posting_frequency: frequency,
       posting_challenges: challenges.trim() || null,
       onboarding_completed: true,
     });
-    setSaving(false);
-    router.push("/dashboard");
+    if (!ok) {
+      console.error("Failed to save onboarding profile");
+      setSaving(false);
+      return;
+    }
+    // Brief pause to let the server-side session see the updated profile
+    await new Promise(r => setTimeout(r, 500));
+    window.location.href = "/dashboard";
   };
 
   return (
