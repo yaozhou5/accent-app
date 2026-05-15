@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getProfile, type UserProfile } from "@/lib/supabase/profiles";
-import { createWeeklyDump, getCurrentWeekDump, type WeeklyDump } from "@/lib/supabase/planner";
-import { savePlan, getCurrentPlan, type ContentPlan, type ContentPlanData } from "@/lib/supabase/planner";
+import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
+import { savePlan, getCurrentPlan, getAllPlans, getPlanByWeek, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 
 const INK = "#1A1A18";
 const DIM = "#6B6B6B";
@@ -15,92 +15,87 @@ const BORDER = "#E5E5E5";
 const PLATFORM_ICONS: Record<string, string> = {
   instagram: "IG", linkedin: "in", x: "X", threads: "TH", tiktok: "TT",
 };
-
 const POST_TYPE_COLORS: Record<string, string> = {
   "origin story": "#8b5cf6", "launch moment": "#ef4444", "founder decision": "#f59e0b",
   "behind the scenes": "#0d9488", "user proof": "#22c55e", "industry take": "#3b82f6",
   "vulnerability": "#ec4899", "lesson learned": "#6366f1",
 };
 
-function getWeekLabel(): string {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? 6 : day - 1;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - diff);
-  if (day >= 4 || day === 0) monday.setDate(monday.getDate() + 7);
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
+function weekLabel(weekStart: string): string {
+  const mon = new Date(weekStart + "T12:00:00");
+  const fri = new Date(mon);
+  fri.setDate(mon.getDate() + 4);
   const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${fmt(monday)}-${fmt(friday)}`;
+  return `${fmt(mon)}-${fmt(fri)}`;
 }
 
 const NUDGE_CHIPS = ["launches?", "meetings?", "decisions?", "wins?", "frustrations?"];
+type Tab = "log" | "ideas" | "shelf";
 
-/* ── Weekly Dump View ── */
-function DumpView({ profile, onPlanGenerated }: { profile: UserProfile; onPlanGenerated: (plan: ContentPlan) => void }) {
+/* ══════════════ LOG TAB ══════════════ */
+function LogTab({ profile, allDumps, onPlanGenerated, onSwitchToIdeas }: {
+  profile: UserProfile;
+  allDumps: WeeklyDump[];
+  onPlanGenerated: (plan: ContentPlan) => void;
+  onSwitchToIdeas: (weekStart?: string) => void;
+}) {
   const [dump, setDump] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedDump, setExpandedDump] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!dump.trim() || generating) return;
     setGenerating(true);
     setError(null);
-
     try {
       const savedDump = await createWeeklyDump(dump.trim());
       if (!savedDump) { setError("Failed to save your dump."); setGenerating(false); return; }
-
       const res = await fetch("/api/generate-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dump: dump.trim(), profile }),
       });
-
       if (!res.ok) { setError("Failed to generate plan. Try again."); setGenerating(false); return; }
-
       const planData: ContentPlanData = await res.json();
       const saved = await savePlan(savedDump.id, planData);
       if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-
       onPlanGenerated(saved);
     } catch {
-      setError("Something went wrong. Check console.");
+      setError("Something went wrong.");
     }
     setGenerating(false);
   };
 
+  // Check which dumps have plans (by week_start matching)
+  const dumpWeeksWithPlans = new Set<string>();
+  // We'll populate this lazily; for now just show the link on all past dumps
+
   return (
     <div>
-      <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: INK }}>What's happening this week?</h1>
-      <p className="font-sans mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>
+      <h2 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 400, color: INK }}>What's happening this week?</h2>
+      <p className="font-sans mb-5" style={{ fontSize: 14, color: DIM, lineHeight: 1.6 }}>
         Dump everything. Launches, meetings, decisions, frustrations, wins. Messy is fine.
       </p>
 
       <textarea
         value={dump}
         onChange={e => setDump(e.target.value)}
-        placeholder="This week we're launching the beta, had a call with a potential investor, onboarding is still broken, and I hired my first intern..."
-        rows={8}
+        placeholder="This week we're launching the beta, had a call with a potential investor, onboarding is still broken..."
+        rows={6}
         className="w-full outline-none resize-y font-sans mb-3"
-        style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "16px 20px", border: `1px solid ${BORDER}`, borderRadius: 12, background: "#fff", minHeight: 180 }}
+        style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "16px 20px", border: `1px solid ${BORDER}`, borderRadius: 12, minHeight: 150 }}
       />
-
-      <div className="flex flex-wrap gap-2 mb-6">
-        {NUDGE_CHIPS.map(chip => (
-          <span key={chip} className="font-mono text-[11px] px-3 py-1 rounded-full" style={{ background: "#f5f5f5", color: FAINT }}>
-            {chip}
-          </span>
+      <div className="flex flex-wrap gap-2 mb-5">
+        {NUDGE_CHIPS.map(c => (
+          <span key={c} className="font-mono text-[11px] px-3 py-1 rounded-full" style={{ background: "#f5f5f5", color: FAINT }}>{c}</span>
         ))}
       </div>
-
       {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-
       <button
         onClick={handleGenerate}
         disabled={!dump.trim() || generating}
-        className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+        className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
       >
         {generating ? "Generating your plan..." : "Generate my plan"}
@@ -117,146 +112,274 @@ function DumpView({ profile, onPlanGenerated }: { profile: UserProfile; onPlanGe
           ))}
         </div>
       )}
+
+      {/* Past dumps */}
+      {allDumps.length > 0 && (
+        <div className="mt-10">
+          <span className="font-mono uppercase block mb-4" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>Past dumps</span>
+          <div className="space-y-3">
+            {allDumps.map(d => {
+              const isOpen = expandedDump === d.id;
+              return (
+                <div key={d.id} className="rounded-[10px] cursor-pointer" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
+                  onClick={() => setExpandedDump(isOpen ? null : d.id)}>
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono text-[11px]" style={{ color: BLUE }}>{weekLabel(d.week_start)}</span>
+                      <span style={{ color: FAINT, fontSize: 12, transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }}>▼</span>
+                    </div>
+                    {!isOpen && (
+                      <p className="font-sans text-[13px]" style={{ color: DIM, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {d.content}
+                      </p>
+                    )}
+                    {isOpen && (
+                      <div>
+                        <p className="font-sans text-[14px] mb-3" style={{ color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{d.content}</p>
+                        <button
+                          onClick={e => { e.stopPropagation(); onSwitchToIdeas(d.week_start); }}
+                          className="font-mono text-[11px]"
+                          style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+                        >
+                          View plan →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Plan View ── */
-function PlanView({ plan, profile, onNewDump }: { plan: ContentPlan; profile: UserProfile; onNewDump: () => void }) {
+/* ══════════════ IDEAS TAB ══════════════ */
+function IdeasTab({ profile, allPlans, initialWeek }: { profile: UserProfile; allPlans: ContentPlan[]; initialWeek?: string }) {
+  const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).sort().reverse();
+  const [weekIdx, setWeekIdx] = useState(() => {
+    if (initialWeek) { const idx = weeks.indexOf(initialWeek); return idx >= 0 ? idx : 0; }
+    return 0;
+  });
   const [expanded, setExpanded] = useState<number | null>(null);
-  const raw = plan.plan;
-  const planData: ContentPlanData = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+  useEffect(() => {
+    if (initialWeek) {
+      const idx = weeks.indexOf(initialWeek);
+      if (idx >= 0) setWeekIdx(idx);
+    }
+  }, [initialWeek]);
+
+  if (weeks.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No plans yet. Go to the Log tab and generate your first plan.</p>
+      </div>
+    );
+  }
+
+  const currentWeek = weeks[weekIdx];
+  const plan = allPlans.find(p => p.week_start === currentWeek);
+  const raw = plan?.plan;
+  const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
   const primaryGoal = (profile.goals || [])[0]?.replace("_", " ") || "content";
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-1">
-        <h1 className="font-serif" style={{ fontSize: 28, fontWeight: 400, color: INK }}>Your week</h1>
-        <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full" style={{ background: `${BLUE}10`, color: BLUE, border: `1px solid ${BLUE}20` }}>
-          {primaryGoal}
-        </span>
-      </div>
-      <p className="font-sans mb-6" style={{ fontSize: 14, color: DIM }}>
-        {getWeekLabel()} · {planData.posts.length} post{planData.posts.length !== 1 ? "s" : ""} planned
-      </p>
-
-      {planData.strategy_note && (
-        <div className="mb-6 p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
+      {/* Week selector */}
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={() => setWeekIdx(Math.min(weekIdx + 1, weeks.length - 1))} disabled={weekIdx >= weeks.length - 1}
+          className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}>
+          <span style={{ fontSize: 14, color: DIM }}>←</span>
+        </button>
+        <div className="text-center">
+          <span className="font-mono text-[12px] block" style={{ color: BLUE }}>{weekLabel(currentWeek)}</span>
+          <span className="font-mono text-[10px]" style={{ color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
         </div>
-      )}
+        <button onClick={() => setWeekIdx(Math.max(weekIdx - 1, 0))} disabled={weekIdx <= 0}
+          className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}>
+          <span style={{ fontSize: 14, color: DIM }}>→</span>
+        </button>
+      </div>
 
-      <div className="space-y-3">
-        {planData.posts.map((post, i) => {
-          const isExpanded = expanded === i;
-          const typeColor = POST_TYPE_COLORS[post.post_type] || BLUE;
-          const dateObj = new Date(post.date + "T12:00:00");
-          const dayNum = dateObj.getDate();
-          const dayName = post.day.slice(0, 3);
+      {!planData ? (
+        <div className="text-center py-12">
+          <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No plan for this week.</p>
+        </div>
+      ) : (
+        <div>
+          {planData.strategy_note && (
+            <div className="mb-5 p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+              <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
+            </div>
+          )}
+          <div className="space-y-3">
+            {planData.posts.map((post, i) => {
+              const isExpanded = expanded === i;
+              const typeColor = POST_TYPE_COLORS[post.post_type] || BLUE;
+              const dateObj = new Date(post.date + "T12:00:00");
+              const dayNum = dateObj.getDate();
+              const dayName = post.day.slice(0, 3);
 
-          return (
-            <div
-              key={i}
-              onClick={() => setExpanded(isExpanded ? null : i)}
-              className="rounded-[12px] transition-all cursor-pointer"
-              style={{
-                border: `1px solid ${isExpanded ? BLUE : BORDER}`,
-                background: isExpanded ? `${BLUE}04` : "#fff",
-              }}
-            >
-              <div className="flex gap-4 p-5">
-                {/* Date column */}
-                <div className="shrink-0 text-center" style={{ width: 44 }}>
-                  <span className="font-mono uppercase block" style={{ fontSize: 10, color: DIM }}>{dayName}</span>
-                  <span className="font-serif block" style={{ fontSize: 22, fontWeight: 600, color: INK }}>{dayNum}</span>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: "#f0f0f0", color: DIM }}>
-                      {PLATFORM_ICONS[post.platform] || post.platform}
-                    </span>
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: `${typeColor}12`, color: typeColor }}>
-                      {post.post_type}
-                    </span>
+              return (
+                <div key={i} onClick={() => setExpanded(isExpanded ? null : i)}
+                  className="rounded-[12px] transition-all cursor-pointer"
+                  style={{ border: `1px solid ${isExpanded ? BLUE : BORDER}`, background: isExpanded ? `${BLUE}04` : "#fff" }}>
+                  <div className="flex gap-4 p-5">
+                    <div className="shrink-0 text-center" style={{ width: 44 }}>
+                      <span className="font-mono uppercase block" style={{ fontSize: 10, color: DIM }}>{dayName}</span>
+                      <span className="font-serif block" style={{ fontSize: 22, fontWeight: 600, color: INK }}>{dayNum}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: "#f0f0f0", color: DIM }}>
+                          {PLATFORM_ICONS[post.platform] || post.platform}
+                        </span>
+                        <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: `${typeColor}12`, color: typeColor }}>
+                          {post.post_type}
+                        </span>
+                      </div>
+                      <p className="font-sans font-medium" style={{ fontSize: 15, color: INK, lineHeight: 1.45 }}>{post.hook}</p>
+                      {!isExpanded && (
+                        <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                          {post.reasoning}
+                        </p>
+                      )}
+                    </div>
+                    <span className="shrink-0 mt-1" style={{ color: FAINT, fontSize: 12, transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "none" }}>▼</span>
                   </div>
-                  <p className="font-sans font-medium" style={{ fontSize: 15, color: INK, lineHeight: 1.45 }}>
-                    {post.hook}
-                  </p>
-                  {!isExpanded && (
-                    <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {post.reasoning}
-                    </p>
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-0 ml-16 space-y-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+                      <div className="pt-4">
+                        <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Why this post</span>
+                        <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{post.reasoning}</p>
+                      </div>
+                      <div>
+                        <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Goal alignment</span>
+                        <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{post.goal_alignment}</p>
+                      </div>
+                      <button disabled className="px-5 py-2 rounded-full font-sans text-[13px] opacity-40 cursor-default" style={{ border: `1px solid ${BORDER}`, background: "transparent", color: DIM }}>
+                        Help me write this · coming soon
+                      </button>
+                    </div>
                   )}
                 </div>
-
-                <span className="shrink-0 mt-1" style={{ color: FAINT, fontSize: 12, transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "none" }}>▼</span>
-              </div>
-
-              {isExpanded && (
-                <div className="px-5 pb-5 pt-0 ml-16 space-y-4" style={{ borderTop: `1px solid ${BORDER}` }}>
-                  <div className="pt-4">
-                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Why this post</span>
-                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{post.reasoning}</p>
-                  </div>
-                  <div>
-                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Goal alignment</span>
-                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{post.goal_alignment}</p>
-                  </div>
-                  <button disabled className="px-5 py-2 rounded-full font-sans text-[13px] opacity-40 cursor-default" style={{ border: `1px solid ${BORDER}`, background: "transparent", color: DIM }}>
-                    Help me write this · coming soon
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <button
-        onClick={onNewDump}
-        className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
-        style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}
-      >
-        New dump for this week
-      </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Dashboard Page ── */
+/* ══════════════ SHELF TAB ══════════════ */
+function ShelfTab({ allPlans }: { allPlans: ContentPlan[] }) {
+  // Flatten all posts across all plans, grouped by week
+  const weeks = allPlans
+    .map(p => ({ weekStart: p.week_start, planData: (typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan) as ContentPlanData }))
+    .sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+
+  if (weeks.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No content yet. Generate your first plan to build your library.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {weeks.map(({ weekStart, planData }) => (
+        <div key={weekStart}>
+          <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.08em", color: BLUE }}>
+            {weekLabel(weekStart)}
+          </span>
+          <div className="space-y-2">
+            {planData.posts.map((post: ContentPlanPost, i: number) => {
+              const typeColor = POST_TYPE_COLORS[post.post_type] || BLUE;
+              return (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-[8px]" style={{ border: `1px solid ${BORDER}` }}>
+                  <span className="font-mono text-[10px] px-2 py-0.5 rounded shrink-0 mt-0.5" style={{ background: "#f0f0f0", color: DIM }}>
+                    {PLATFORM_ICONS[post.platform] || post.platform}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-sans text-[14px] font-medium" style={{ color: INK, lineHeight: 1.4 }}>{post.hook}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-mono text-[10px]" style={{ color: FAINT }}>{post.day} {post.date}</span>
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${typeColor}12`, color: typeColor }}>{post.post_type}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════ DASHBOARD PAGE ══════════════ */
 export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [plan, setPlan] = useState<ContentPlan | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<ContentPlan | null>(null);
+  const [allDumps, setAllDumps] = useState<WeeklyDump[]>([]);
+  const [allPlans, setAllPlans] = useState<ContentPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Tab>("log");
+  const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
 
   useEffect(() => {
     async function load() {
-      const [p, currentPlan] = await Promise.all([getProfile(), getCurrentPlan()]);
+      const [p, plan, dumps, plans] = await Promise.all([
+        getProfile(), getCurrentPlan(), getAllDumps(), getAllPlans(),
+      ]);
       setProfile(p);
-      setPlan(currentPlan);
+      setCurrentPlan(plan);
+      setAllDumps(dumps);
+      setAllPlans(plans);
+      // If a current plan exists, default to Ideas tab
+      if (plan) setTab("ideas");
       setLoading(false);
     }
     load();
   }, []);
 
+  const handlePlanGenerated = (plan: ContentPlan) => {
+    setCurrentPlan(plan);
+    setAllPlans(prev => [plan, ...prev]);
+    setTab("ideas");
+  };
+
+  const switchToIdeas = (weekStart?: string) => {
+    setIdeasWeek(weekStart);
+    setTab("ideas");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen" style={{ background: "#fff" }}>
         <header style={{ borderBottom: `1px solid ${BORDER}` }}>
-          <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
+          <div className="max-w-[640px] mx-auto px-5 py-4">
             <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span>
           </div>
         </header>
         <div className="max-w-[640px] mx-auto px-5 py-8 animate-pulse">
           <div className="h-7 rounded w-48 mb-4" style={{ background: "#f0f0f0" }} />
-          <div className="h-4 rounded w-64 mb-8" style={{ background: "#f5f5f5" }} />
           <div className="h-44 rounded-[12px]" style={{ background: "#fafafa" }} />
         </div>
       </div>
     );
   }
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "log", label: "Log" },
+    { key: "ideas", label: "Ideas" },
+    { key: "shelf", label: "Shelf" },
+  ];
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
@@ -270,11 +393,37 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div style={{ borderBottom: `1px solid ${BORDER}` }}>
+        <div className="max-w-[640px] mx-auto px-5 flex gap-6">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
+              className="font-mono text-[12px] py-3 transition-colors"
+              style={{
+                color: tab === t.key ? BLUE : DIM,
+                borderBottom: tab === t.key ? `2px solid ${BLUE}` : "2px solid transparent",
+                background: "none", border: "none", borderBottomStyle: "solid", borderBottomWidth: 2,
+                borderBottomColor: tab === t.key ? BLUE : "transparent",
+                cursor: "pointer",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="max-w-[640px] mx-auto px-5 py-8">
-        {plan ? (
-          <PlanView plan={plan} profile={profile!} onNewDump={() => setPlan(null)} />
-        ) : (
-          <DumpView profile={profile!} onPlanGenerated={setPlan} />
+        {tab === "log" && (
+          <LogTab profile={profile!} allDumps={allDumps} onPlanGenerated={handlePlanGenerated} onSwitchToIdeas={switchToIdeas} />
+        )}
+        {tab === "ideas" && (
+          <IdeasTab profile={profile!} allPlans={allPlans} initialWeek={ideasWeek} />
+        )}
+        {tab === "shelf" && (
+          <ShelfTab allPlans={allPlans} />
         )}
       </div>
     </div>

@@ -123,3 +123,53 @@ export async function getCurrentPlan(): Promise<ContentPlan | null> {
   }
   return data as ContentPlan | null;
 }
+
+export async function getAllDumps(): Promise<WeeklyDump[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("weekly_dumps")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error("Failed to fetch dumps:", error); return []; }
+  return data as WeeklyDump[];
+}
+
+export async function getAllPlans(): Promise<ContentPlan[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("content_plans")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("week_start", { ascending: false });
+
+  if (error) { console.error("Failed to fetch plans:", error); return []; }
+  return data as ContentPlan[];
+}
+
+export async function getPlanByWeek(weekStart: string): Promise<ContentPlan | null> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("content_plans")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("week_start", weekStart)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) { console.error("Failed to fetch plan by week:", error); return null; }
+  return data as ContentPlan | null;
+}
+
+export { getWeekStart };
