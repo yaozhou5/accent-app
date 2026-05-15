@@ -5,9 +5,20 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 
 export async function POST(request: NextRequest) {
   try {
-    const { dump, profile } = await request.json();
-    if (!dump?.trim()) return NextResponse.json({ error: "Dump is required" }, { status: 400 });
+    const { dump, entries, profile } = await request.json();
     if (!profile) return NextResponse.json({ error: "Profile is required" }, { status: 400 });
+
+    // Support both: single dump string or array of tagged entries
+    let dumpText: string;
+    if (entries && Array.isArray(entries) && entries.length > 0) {
+      dumpText = "This week's notes:\n" + entries.map((e: { content: string; tags?: string[] }) =>
+        `- [${(e.tags || []).join(", ")}] ${e.content}`
+      ).join("\n");
+    } else if (dump?.trim()) {
+      dumpText = dump.trim();
+    } else {
+      return NextResponse.json({ error: "Dump or entries required" }, { status: 400 });
+    }
 
     // Calculate this week's dates (Mon-Sun)
     const now = new Date();
@@ -69,7 +80,7 @@ ${profile.past_posts}
 
 If past posts are provided, analyze them for: what topics got engagement, what voice/tone the founder naturally uses, what patterns work vs don't. Reference this in your plan. For example, if their personal story posts outperform their announcement posts, lean toward personal stories.
 ` : ""}THIS WEEK'S DUMP:
-${dump}
+${dumpText}
 
 Respond ONLY with valid JSON matching this structure, no other text:
 {
