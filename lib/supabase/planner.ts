@@ -32,12 +32,17 @@ export interface ContentPlan {
   created_at: string;
 }
 
+// If Thursday or later, target next week's Monday
 function getWeekStart(): string {
   const now = new Date();
-  const day = now.getDay();
+  const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
   const diff = day === 0 ? 6 : day - 1;
   const monday = new Date(now);
   monday.setDate(now.getDate() - diff);
+  // Thu=4, Fri=5, Sat=6, Sun=0 → shift to next Monday
+  if (day >= 4 || day === 0) {
+    monday.setDate(monday.getDate() + 7);
+  }
   return monday.toISOString().split("T")[0];
 }
 

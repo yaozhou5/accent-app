@@ -28,6 +28,7 @@ function getWeekLabel(): string {
   const diff = day === 0 ? 6 : day - 1;
   const monday = new Date(now);
   monday.setDate(now.getDate() - diff);
+  if (day >= 4 || day === 0) monday.setDate(monday.getDate() + 7);
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);
   const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
