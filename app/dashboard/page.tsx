@@ -122,7 +122,7 @@ function DumpView({ profile, onPlanGenerated }: { profile: UserProfile; onPlanGe
 }
 
 /* ── Plan View ── */
-function PlanView({ plan, profile }: { plan: ContentPlan; profile: UserProfile }) {
+function PlanView({ plan, profile, onNewDump }: { plan: ContentPlan; profile: UserProfile; onNewDump: () => void }) {
   const [expanded, setExpanded] = useState<number | null>(null);
   const raw = plan.plan;
   const planData: ContentPlanData = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -215,7 +215,7 @@ function PlanView({ plan, profile }: { plan: ContentPlan; profile: UserProfile }
       </div>
 
       <button
-        onClick={() => window.location.reload()}
+        onClick={onNewDump}
         className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
         style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}
       >
@@ -272,7 +272,7 @@ export default function DashboardPage() {
 
       <div className="max-w-[640px] mx-auto px-5 py-8">
         {plan ? (
-          <PlanView plan={plan} profile={profile!} />
+          <PlanView plan={plan} profile={profile!} onNewDump={() => setPlan(null)} />
         ) : (
           <DumpView profile={profile!} onPlanGenerated={setPlan} />
         )}
