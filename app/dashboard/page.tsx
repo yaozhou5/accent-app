@@ -123,7 +123,8 @@ function DumpView({ profile, onPlanGenerated }: { profile: UserProfile; onPlanGe
 /* ── Plan View ── */
 function PlanView({ plan, profile }: { plan: ContentPlan; profile: UserProfile }) {
   const [expanded, setExpanded] = useState<number | null>(null);
-  const planData = plan.plan as ContentPlanData;
+  const raw = plan.plan;
+  const planData: ContentPlanData = typeof raw === "string" ? JSON.parse(raw) : raw;
   const primaryGoal = (profile.goals || [])[0]?.replace("_", " ") || "content";
 
   return (
@@ -182,25 +183,29 @@ function PlanView({ plan, profile }: { plan: ContentPlan; profile: UserProfile }
                   <p className="font-sans font-medium" style={{ fontSize: 15, color: INK, lineHeight: 1.45 }}>
                     {post.hook}
                   </p>
-                  <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55 }}>
-                    {post.reasoning}
-                  </p>
+                  {!isExpanded && (
+                    <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {post.reasoning}
+                    </p>
+                  )}
                 </div>
 
                 <span className="shrink-0 mt-1" style={{ color: FAINT, fontSize: 12, transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "none" }}>▼</span>
               </div>
 
               {isExpanded && (
-                <div className="px-5 pb-5 pt-0 ml-16" style={{ borderTop: `1px solid ${BORDER}` }}>
-                  <div className="pt-4 space-y-3">
-                    <div>
-                      <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Goal alignment</span>
-                      <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{post.goal_alignment}</p>
-                    </div>
-                    <button disabled className="px-5 py-2 rounded-full font-sans text-[13px] opacity-40 cursor-default" style={{ border: `1px solid ${BORDER}`, background: "transparent", color: DIM }}>
-                      Help me write this · coming soon
-                    </button>
+                <div className="px-5 pb-5 pt-0 ml-16 space-y-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+                  <div className="pt-4">
+                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Why this post</span>
+                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{post.reasoning}</p>
                   </div>
+                  <div>
+                    <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Goal alignment</span>
+                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{post.goal_alignment}</p>
+                  </div>
+                  <button disabled className="px-5 py-2 rounded-full font-sans text-[13px] opacity-40 cursor-default" style={{ border: `1px solid ${BORDER}`, background: "transparent", color: DIM }}>
+                    Help me write this · coming soon
+                  </button>
                 </div>
               )}
             </div>
