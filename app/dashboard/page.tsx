@@ -5,7 +5,8 @@ import Link from "next/link";
 import { getProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, getCurrentPlan, getAllPlans, getPlanByWeek, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
-import { createLogEntry, updateLogEntryTags, getLogEntries, getThisWeekEntries, type LogEntry } from "@/lib/supabase/log-entries";
+import { createLogEntry, updateLogEntryTags, getLogEntries, getThisWeekEntries, uploadLogImage, detectUrl, type LogEntry } from "@/lib/supabase/log-entries";
+import { useRef } from "react";
 
 const INK = "#1A1A18";
 const DIM = "#6B6B6B";
@@ -77,13 +78,16 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
 }) {
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null);
   const [dump, setDump] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDumpFallback, setShowDumpFallback] = useState(false);
   const [expandedDump, setExpandedDump] = useState<string | null>(null);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get this week's entries for the generate button
   const now = new Date();
   const day = now.getDay();
   const diff = day === 0 ? 6 : day - 1;
@@ -92,24 +96,40 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
   mondayDate.setHours(0, 0, 0, 0);
   const weekEntries = logEntries.filter(e => new Date(e.created_at) >= mondayDate);
 
+  const tagEntryAsync = (entry: LogEntry) => {
+    const tagContent = entry.content || "";
+    const extras: string[] = [];
+    if (entry.image_url) extras.push("[has attached image]");
+    if (entry.link_url) extras.push(`[link: ${entry.link_url}]`);
+    fetch("/api/tag-entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: `${tagContent} ${extras.join(" ")}`.trim() }),
+    }).then(r => r.json()).then(({ tags }) => {
+      if (tags?.length) {
+        updateLogEntryTags(entry.id, tags);
+        setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === entry.id ? { ...e, tags } : e));
+      }
+    }).catch(() => {});
+  };
+
   const handleSubmitEntry = async () => {
-    if (!input.trim() || submitting) return;
+    if ((!input.trim() && !pendingImage) || submitting) return;
     setSubmitting(true);
-    const entry = await createLogEntry(input.trim());
+
+    let imageUrl: string | null = null;
+    if (pendingImage) {
+      imageUrl = await uploadLogImage(pendingImage);
+      setPendingImage(null);
+      setPendingImagePreview(null);
+    }
+
+    const linkUrl = input.trim() ? detectUrl(input.trim()) : null;
+    const entry = await createLogEntry(input.trim(), { image_url: imageUrl, link_url: linkUrl });
     if (entry) {
       setLogEntries((prev: LogEntry[]) => [entry, ...prev]);
       setInput("");
-      // Tag async in background
-      fetch("/api/tag-entry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: entry.content }),
-      }).then(r => r.json()).then(({ tags }) => {
-        if (tags?.length) {
-          updateLogEntryTags(entry.id, tags);
-          setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === entry.id ? { ...e, tags } : e));
-        }
-      }).catch(() => {});
+      tagEntryAsync(entry);
     }
     setSubmitting(false);
   };
@@ -118,18 +138,34 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitEntry(); }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingImage(file);
+    setPendingImagePreview(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
   const handleGenerateFromEntries = async () => {
     if (weekEntries.length === 0 || generating) return;
     setGenerating(true);
     setError(null);
     try {
-      const combined = weekEntries.map(e => e.content).join("\n");
+      const combined = weekEntries.map(e => e.content || "").join("\n");
       const savedDump = await createWeeklyDump(combined);
       if (!savedDump) { setError("Failed to save."); setGenerating(false); return; }
       const res = await fetch("/api/generate-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries: weekEntries.map(e => ({ content: e.content, tags: e.tags })), profile }),
+        body: JSON.stringify({
+          entries: weekEntries.map(e => ({
+            content: e.content || "",
+            tags: e.tags,
+            image_url: e.image_url,
+            link_url: e.link_url,
+          })),
+          profile,
+        }),
       });
       if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
       const planData: ContentPlanData = await res.json();
@@ -170,23 +206,40 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
   return (
     <div>
       {/* Quick entry input */}
-      <div className="flex gap-2 mb-6">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Quick note... meeting, idea, frustration, anything"
-          className="flex-1 outline-none font-sans"
-          style={{ fontSize: 15, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 24, background: "#fff" }}
-        />
-        <button
-          onClick={handleSubmitEntry}
-          disabled={!input.trim() || submitting}
-          className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center disabled:opacity-30"
-          style={{ background: BLUE, border: "none", cursor: "pointer" }}
-        >
-          <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>+</span>
-        </button>
+      <div className="mb-6">
+        {pendingImagePreview && (
+          <div className="mb-2 relative inline-block">
+            <img src={pendingImagePreview} alt="Preview" className="rounded-[8px]" style={{ maxHeight: 80, border: `1px solid ${BORDER}` }} />
+            <button onClick={() => { setPendingImage(null); setPendingImagePreview(null); }}
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center"
+              style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Quick note... meeting, idea, frustration, anything"
+            className="flex-1 outline-none font-sans"
+            style={{ fontSize: 15, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 24, background: "#fff" }}
+          />
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
+          <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center"
+            style={{ border: `1px solid ${BORDER}`, background: "#fff", cursor: "pointer" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={DIM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+            </svg>
+          </button>
+          <button
+            onClick={handleSubmitEntry}
+            disabled={(!input.trim() && !pendingImage) || submitting}
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center disabled:opacity-30"
+            style={{ background: BLUE, border: "none", cursor: "pointer" }}
+          >
+            <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>+</span>
+          </button>
+        </div>
       </div>
 
       {/* Entries feed */}
@@ -200,20 +253,42 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
             <div key={dayLabel}>
               <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>{dayLabel}</span>
               <div className="space-y-2">
-                {entries.map(entry => (
-                  <div key={entry.id} className="rounded-[10px] p-3.5" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-                    <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{entry.content}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="font-mono text-[10px]" style={{ color: FAINT }}>{formatTime(entry.created_at)}</span>
-                      {entry.tags.map(tag => (
-                        <span key={tag} className="font-mono text-[10px] px-2 py-0.5 rounded-full"
-                          style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>
-                          {tag}
-                        </span>
-                      ))}
+                {entries.map(entry => {
+                  const entryLinkUrl = entry.link_url || (entry.content ? detectUrl(entry.content) : null);
+                  const entryDomain = entryLinkUrl ? (() => { try { return new URL(entryLinkUrl).hostname; } catch { return entryLinkUrl; } })() : null;
+                  return (
+                    <div key={entry.id} className="rounded-[10px] p-3.5" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
+                      {entry.content && <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{entry.content}</p>}
+                      {entry.image_url && (
+                        <div className="mt-2">
+                          <img
+                            src={entry.image_url}
+                            alt="Log attachment"
+                            className="rounded-[6px] cursor-pointer transition-opacity hover:opacity-90"
+                            style={{ maxHeight: expandedImage === entry.id ? 400 : 100, border: `1px solid ${BORDER}`, objectFit: "cover" }}
+                            onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)}
+                          />
+                        </div>
+                      )}
+                      {entryLinkUrl && (
+                        <a href={entryLinkUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-2 p-2.5 rounded-[6px] transition-colors hover:bg-gray-50"
+                          style={{ border: `1px solid ${BORDER}` }}>
+                          <span className="font-mono text-[11px] block" style={{ color: BLUE }}>{entryDomain}</span>
+                          <span className="font-mono text-[10px] block mt-0.5" style={{ color: FAINT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entryLinkUrl}</span>
+                        </a>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="font-mono text-[10px]" style={{ color: FAINT }}>{formatTime(entry.created_at)}</span>
+                        {entry.tags.map(tag => (
+                          <span key={tag} className="font-mono text-[10px] px-2 py-0.5 rounded-full"
+                            style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

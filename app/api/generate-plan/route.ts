@@ -11,9 +11,14 @@ export async function POST(request: NextRequest) {
     // Support both: single dump string or array of tagged entries
     let dumpText: string;
     if (entries && Array.isArray(entries) && entries.length > 0) {
-      dumpText = "This week's notes:\n" + entries.map((e: { content: string; tags?: string[] }) =>
-        `- [${(e.tags || []).join(", ")}] ${e.content}`
-      ).join("\n");
+      dumpText = "This week's notes:\n" + entries.map((e: { content: string; tags?: string[]; image_url?: string; link_url?: string }) => {
+        const parts: string[] = [];
+        parts.push(`[${(e.tags || []).join(", ")}]`);
+        if (e.content) parts.push(e.content);
+        if (e.image_url) parts.push("[image attached: user uploaded a photo]");
+        if (e.link_url) parts.push(`[link: ${e.link_url}]`);
+        return `- ${parts.join(" ")}`;
+      }).join("\n");
     } else if (dump?.trim()) {
       dumpText = dump.trim();
     } else {
