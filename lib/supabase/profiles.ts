@@ -7,6 +7,12 @@ export interface UserProfile {
   channels: string[];
   tone: string | null;
   onboarding_completed: boolean;
+  business_description: string | null;
+  party_pitch: string | null;
+  goals: string[];
+  platforms: string[];
+  posting_frequency: string | null;
+  posting_challenges: string | null;
   created_at: string;
 }
 

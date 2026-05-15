@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard"];
+const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard", "/onboard"];
 
 export async function middleware(request: NextRequest) {
   const response = await updateSession(request);
@@ -21,6 +21,24 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", path);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Onboarding redirect: dashboard -> onboard if not complete, onboard -> dashboard if complete
+    if (path.startsWith("/dashboard") || path.startsWith("/onboard")) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .single();
+
+      const onboarded = profile?.onboarding_completed === true;
+
+      if (path.startsWith("/dashboard") && !onboarded) {
+        return NextResponse.redirect(new URL("/onboard/1", request.url));
+      }
+      if (path.startsWith("/onboard") && onboarded) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
     }
   }
 
