@@ -53,19 +53,21 @@ export async function createLogEntry(
 
   const entryType = opts.type || "note";
 
+  const row: Record<string, unknown> = {
+    user_id: user.id,
+    content: content || null,
+    tags: opts.tags || [],
+    type: entryType,
+    bookmarked: false,
+  };
+  if (opts.url) row.url = opts.url;
+  if (opts.source) row.source = opts.source;
+  if (opts.image_url) row.image_url = opts.image_url;
+  if (opts.link_url) row.link_url = opts.link_url;
+
   const { data, error } = await supabase
     .from("log_entries")
-    .insert({
-      user_id: user.id,
-      content: content || null,
-      image_url: opts.image_url || null,
-      link_url: opts.link_url || null,
-      url: opts.url || null,
-      source: opts.source || null,
-      tags: opts.tags || [],
-      type: entryType,
-      bookmarked: false,
-    })
+    .insert(row)
     .select()
     .single();
 
