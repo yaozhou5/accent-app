@@ -298,13 +298,6 @@ function LogTab({ logEntries, setLogEntries }: {
         </div>
       )}
 
-      {/* Quick check link */}
-      <div className="mt-10 text-center">
-        <Link href="/dashboard/write" className="no-underline font-mono text-[11px]" style={{ color: FAINT }}>
-          ✏️ Quick check — paste any draft for writing feedback
-        </Link>
-      </div>
-
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
@@ -368,7 +361,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   if (showGenerate && !hasCurrentPlan) {
     return (
       <div>
-        <h2 className="font-serif mb-6" style={{ fontSize: 24, fontWeight: 400, color: INK }}>Ready to plan your week?</h2>
+        <h2 className="font-sans mb-6" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
         <div className="rounded-[12px] p-5 mb-6 space-y-3" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
           <div className="flex items-center justify-between">
             <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>📋 Your week at a glance</span>
@@ -791,7 +784,14 @@ export default function DashboardPage() {
       <header style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
-          <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/write" className="no-underline flex items-center" style={{ color: DIM }} title="Quick check">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </Link>
+            <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
+          </div>
         </div>
       </header>
       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
