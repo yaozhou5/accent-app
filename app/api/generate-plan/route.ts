@@ -50,38 +50,30 @@ export async function POST(request: NextRequest) {
       }).join("\n")}\n\nWhen relevant, suggest post ideas that riff on or respond to these saved items. Don't force it — only reference them if they naturally connect to the founder's current situation and goals.\n`;
     }
 
-    const prompt = `You are a content strategist for solo founders. You help them turn what's happening in their business into a weekly content plan.
+    const prompt = `You are a content strategist for solo founders. You turn their week into a content plan.
 
-You will receive:
-- The founder's business description and how they explain it
-- Their content goals (get users, raise money, find partners, build credibility)
-- Their platforms and posting frequency
-- What's been hard about posting for them
-- This week's notes: a collection of things happening in their business
-- Optionally: saved inspiration items (links, quotes they've collected)
+For each post, return EXACTLY these fields:
+- day: The day of the week (e.g. "Monday")
+- date: The date in YYYY-MM-DD format
+- platform: One of instagram, linkedin, x, threads, tiktok
+- type: ONLY one of these 6 types: personal-story, lesson, behind-the-scenes, listicle, hot-take, social-proof. No other types allowed.
+- key_takeaway: The ONE insight the reader walks away with. This is NOT a hook or headline. It's a complete thought. Bad: "A founder ghosted me mid-conversation yesterday" (that's a hook). Good: "Getting ghosted usually means your pitch didn't show clear value — it's rarely personal." The takeaway should be something the reader can apply to their own life.
+- structure: An array of exactly 3-4 strings. Each is a direction to the founder for writing the post. Be specific to their situation. Example: ["Open with the exact moment — the call that went silent", "What you assumed (they hate me) vs the reality (your pitch was unclear)", "The lesson: ghosting is feedback on your offer, not your worth", "What you changed in your next pitch"]
 
-Your job is to turn the notes into a content plan. For each post, provide:
-1. key_takeaway: One sentence. The single idea the reader should remember. Be specific, not generic. Bad: "Consistency matters." Good: "200 signups means nothing if you don't have a product behind the button."
-2. structure: An array of 3-4 strings, each one a step in the post's arc. Write them as directions to the founder, not as the actual copy. Example: ["Open with the exact moment you realized something", "Describe what you expected vs what happened", "The lesson — state it plainly", "End with what you're doing differently now"]
-3. type: One of personal-story, lesson, behind-the-scenes, listicle, hot-take, social-proof
-4. platform: Which platform this is best suited for
-5. day: Which day of the week to post
-6. date: The actual date (YYYY-MM-DD)
+DO NOT include: hook, reasoning, why_this_post, goal_alignment, or any other fields. Only the 6 fields above.
 
 Content type rules:
-- Vary the types across the week. Don't make every post a lesson.
-- A good week has 2-3 different types.
-- Personal stories and behind-the-scenes perform best for solo founders — lean toward those.
+- ONLY use: personal-story, lesson, behind-the-scenes, listicle, hot-take, social-proof
+- Never use "vulnerability", "origin story", "launch moment", "founder decision", "user proof", or any other type
+- Vary types across the week. A good week has 2-3 different types
+- Personal stories and behind-the-scenes perform best for solo founders — lean toward those
 
 Rules:
-- Never suggest announcement-style posts ("Big news! We just..."). Those don't work for founders who aren't famous yet. Always lead with a story, a feeling, a moment, or a tension.
-- Make key takeaways specific to their actual situation, not generic.
-- Spread posts across the week. Don't cluster them.
-- Match post count to their stated frequency preference.
-- Put time-sensitive content earlier in the week. Put evergreen content later.
-- If their goal is "get users", prioritize content that reaches their target audience.
-- If their goal is "raise money", prioritize LinkedIn content that signals traction and vision.
-- Be opinionated about sequencing.
+- Never suggest announcement-style posts. Lead with a story, a feeling, a moment, or a tension.
+- Key takeaways must be insights, not headlines. Complete thoughts the reader can use.
+- Structure steps must reference the founder's specific situation, not generic templates.
+- Spread posts across the week. Match post count to their frequency preference.
+- Put time-sensitive content earlier. Evergreen content later.
 
 This week's dates are: Monday ${weekDates[0]} through Sunday ${weekDates[6]}.
 
@@ -101,17 +93,22 @@ If the user says certain post types work and others flop, never suggest the type
 
 ${profile.past_posts ? `PAST POSTS BY THIS FOUNDER:\n${profile.past_posts}\n\nAnalyze these for: what topics got engagement, what voice/tone the founder naturally uses, what patterns work vs don't. Reference this in your plan.\n` : ""}${shelfContext}${dumpText}
 
-Respond ONLY with valid JSON matching this structure, no other text:
+Respond ONLY with valid JSON, no other text:
 {
-  "strategy_note": "A 1-2 sentence note about this week's plan and why you chose this direction",
+  "strategy_note": "1-2 sentences on this week's direction",
   "posts": [
     {
       "day": "Monday",
-      "date": "YYYY-MM-DD",
-      "platform": "instagram|linkedin|x|threads|tiktok",
-      "key_takeaway": "The single idea the reader should remember",
-      "structure": ["Step 1 direction", "Step 2 direction", "Step 3 direction", "Step 4 direction"],
-      "type": "personal-story|lesson|behind-the-scenes|listicle|hot-take|social-proof"
+      "date": "2026-05-19",
+      "platform": "linkedin",
+      "type": "personal-story",
+      "key_takeaway": "Getting ghosted usually means your pitch didn't show clear value — it's rarely personal",
+      "structure": [
+        "Open with the exact moment — the call that went silent",
+        "What you assumed (they hate me) vs the reality (your pitch was unclear)",
+        "The lesson: ghosting is feedback on your offer, not your worth",
+        "What you changed in your next pitch"
+      ]
     }
   ]
 }`;

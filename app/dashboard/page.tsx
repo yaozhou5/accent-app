@@ -433,12 +433,12 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           <div className="space-y-3">
             {planData.posts.map((post, i) => {
               const isExp = expanded === i;
-              const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
-              const typeLabel = post.type || post.post_type || "";
+              const typeColor = CONTENT_TYPE_COLORS[post.type] || BLUE;
+              const typeLabel = post.type || "";
               const dateObj = new Date(post.date + "T12:00:00");
               const dayNum = dateObj.getDate();
-              const dayName = post.day.slice(0, 3);
-              const displayText = post.key_takeaway || post.hook || "";
+              const dayName = post.day.slice(0, 3).toUpperCase();
+              const takeaway = post.key_takeaway || "";
               const hasStructure = post.structure && post.structure.length > 0;
 
               return (
@@ -446,16 +446,16 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                   style={{ border: `1px solid ${isExp ? BLUE : BORDER}`, background: isExp ? `${BLUE}04` : "#fff" }}>
                   <div className="flex gap-4 p-5">
                     <div className="shrink-0 text-center" style={{ width: 44 }}>
-                      <span className="font-mono uppercase block" style={{ fontSize: 10, color: DIM }}>{dayName}</span>
-                      <span className="font-serif block" style={{ fontSize: 22, fontWeight: 600, color: INK }}>{dayNum}</span>
+                      <span className="font-mono block" style={{ fontSize: 11, color: DIM }}>{dayName}</span>
+                      <span className="font-sans block" style={{ fontSize: 24, fontWeight: 700, color: INK }}>{dayNum}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_ICONS[post.platform] || post.platform}</span>
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: `${typeColor}12`, color: typeColor }}>{typeLabel}</span>
+                        <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_ICONS[post.platform] || post.platform}</span>
                       </div>
                       <span className="font-mono uppercase block mb-1" style={{ fontSize: 9, letterSpacing: "0.06em", color: FAINT }}>Key takeaway</span>
-                      <p className="font-sans font-semibold" style={{ fontSize: 15, color: INK, lineHeight: 1.45 }}>{displayText}</p>
+                      <p className="font-sans font-semibold" style={{ fontSize: 15, color: INK, lineHeight: 1.5 }}>{takeaway}</p>
                       {!isExp && hasStructure && (
                         <div className="mt-2 space-y-1">
                           {post.structure.slice(0, 2).map((s: string, j: number) => (
@@ -466,9 +466,6 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                           {post.structure.length > 2 && <p className="font-mono text-[11px]" style={{ color: FAINT }}>+{post.structure.length - 2} more</p>}
                         </div>
                       )}
-                      {!isExp && !hasStructure && post.reasoning && (
-                        <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{post.reasoning}</p>
-                      )}
                     </div>
                     <span className="shrink-0 mt-1" style={{ color: FAINT, fontSize: 12, transition: "transform 0.2s", transform: isExp ? "rotate(180deg)" : "none" }}>▼</span>
                   </div>
@@ -477,7 +474,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                       {hasStructure && (
                         <div className="pt-4">
                           <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Structure</span>
-                          <ol className="space-y-2 pl-0" style={{ listStyle: "none", counterReset: "step" }}>
+                          <ol className="space-y-2 pl-0" style={{ listStyle: "none" }}>
                             {post.structure.map((step: string, j: number) => (
                               <li key={j} className="font-sans text-[14px] flex gap-2" style={{ color: INK, lineHeight: 1.55 }}>
                                 <span className="font-mono text-[11px] shrink-0 mt-0.5" style={{ color: BLUE }}>{j + 1}.</span>
@@ -487,16 +484,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                           </ol>
                         </div>
                       )}
-                      {post.reasoning && (
-                        <div><span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Why this post</span>
-                          <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{post.reasoning}</p></div>
-                      )}
-                      {post.goal_alignment && (
-                        <div><span className="font-mono uppercase block mb-1" style={{ fontSize: 10, color: FAINT, letterSpacing: "0.06em" }}>Goal alignment</span>
-                          <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55 }}>{post.goal_alignment}</p></div>
-                      )}
                       <button onClick={e => { e.stopPropagation(); if (plan) onWritePost(plan.id, i); }}
-                        className="px-5 py-2 rounded-full font-sans text-[13px] font-medium"
+                        className="px-5 py-2.5 rounded-full font-sans text-[13px] font-medium"
                         style={{ border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
                         Write this →
                       </button>
