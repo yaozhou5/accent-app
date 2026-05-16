@@ -361,7 +361,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   };
 
   // Generate view
-  if (showGenerate && !hasCurrentPlan) {
+  if (showGenerate) {
     return (
       <div>
         <h2 className="font-sans mb-6" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
@@ -510,6 +510,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           <button onClick={onSwitchToLog} className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Add more notes for next week</button>
+          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
+            style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Regenerate plan</button>
         </div>
       )}
     </div>
