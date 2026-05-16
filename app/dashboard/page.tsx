@@ -68,33 +68,19 @@ function groupByDay(entries: LogEntry[]): Map<string, LogEntry[]> {
 }
 
 /* ══════════════ LOG TAB ══════════════ */
-function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated, onSwitchToIdeas }: {
-  profile: UserProfile;
+function LogTab({ allDumps, logEntries, setLogEntries, onSwitchToIdeas }: {
   allDumps: WeeklyDump[];
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
-  onPlanGenerated: (plan: ContentPlan) => void;
   onSwitchToIdeas: (weekStart?: string) => void;
 }) {
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null);
-  const [dump, setDump] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showDumpFallback, setShowDumpFallback] = useState(false);
   const [expandedDump, setExpandedDump] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? 6 : day - 1;
-  const mondayDate = new Date(now);
-  mondayDate.setDate(now.getDate() - diff);
-  mondayDate.setHours(0, 0, 0, 0);
-  const weekEntries = logEntries.filter(e => new Date(e.created_at) >= mondayDate);
 
   const tagEntryAsync = (entry: LogEntry) => {
     const tagContent = entry.content || "";
@@ -144,61 +130,6 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
     setPendingImage(file);
     setPendingImagePreview(URL.createObjectURL(file));
     e.target.value = "";
-  };
-
-  const handleGenerateFromEntries = async () => {
-    if (weekEntries.length === 0 || generating) return;
-    setGenerating(true);
-    setError(null);
-    try {
-      const combined = weekEntries.map(e => e.content || "").join("\n");
-      const savedDump = await createWeeklyDump(combined);
-      if (!savedDump) { setError("Failed to save."); setGenerating(false); return; }
-      const res = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entries: weekEntries.map(e => ({
-            content: e.content || "",
-            tags: e.tags,
-            image_url: e.image_url,
-            link_url: e.link_url,
-          })),
-          profile,
-        }),
-      });
-      if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
-      const planData: ContentPlanData = await res.json();
-      const saved = await savePlan(savedDump.id, planData);
-      if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-      onPlanGenerated(saved);
-    } catch {
-      setError("Something went wrong.");
-    }
-    setGenerating(false);
-  };
-
-  const handleGenerateFromDump = async () => {
-    if (!dump.trim() || generating) return;
-    setGenerating(true);
-    setError(null);
-    try {
-      const savedDump = await createWeeklyDump(dump.trim());
-      if (!savedDump) { setError("Failed to save."); setGenerating(false); return; }
-      const res = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dump: dump.trim(), profile }),
-      });
-      if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
-      const planData: ContentPlanData = await res.json();
-      const saved = await savePlan(savedDump.id, planData);
-      if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-      onPlanGenerated(saved);
-    } catch {
-      setError("Something went wrong.");
-    }
-    setGenerating(false);
   };
 
   const grouped = groupByDay(logEntries);
@@ -296,53 +227,6 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
         </div>
       )}
 
-      {/* Generate from entries */}
-      {weekEntries.length > 0 && (
-        <button
-          onClick={handleGenerateFromEntries}
-          disabled={generating}
-          className="mt-8 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-        >
-          {generating ? "Generating your plan..." : `Generate plan from this week's notes (${weekEntries.length})`}
-        </button>
-      )}
-
-      {error && <p className="font-sans text-[13px] mt-3" style={{ color: "#DC2626" }}>{error}</p>}
-
-      {generating && (
-        <div className="mt-4 space-y-3 animate-pulse">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-[12px] p-5" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} />
-              <div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} />
-              <div className="h-12 rounded" style={{ background: "#f0f0f0" }} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Dump fallback */}
-      <div className="mt-10">
-        <button onClick={() => setShowDumpFallback(!showDumpFallback)}
-          className="font-mono text-[11px] uppercase" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.06em" }}>
-          {showDumpFallback ? "Hide dump area ▲" : "Or dump everything at once ▼"}
-        </button>
-        {showDumpFallback && (
-          <div className="mt-3">
-            <textarea value={dump} onChange={e => setDump(e.target.value)}
-              placeholder="This week we're launching the beta, had a call with a potential investor, onboarding is still broken..."
-              rows={6} className="w-full outline-none resize-y font-sans mb-3"
-              style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "16px 20px", border: `1px solid ${BORDER}`, borderRadius: 12, minHeight: 150 }} />
-            <button onClick={handleGenerateFromDump} disabled={!dump.trim() || generating}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-              {generating ? "Generating..." : "Generate my plan"}
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Past dumps */}
       {allDumps.length > 0 && (
         <div className="mt-10">
@@ -384,34 +268,165 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, initialWeek }: { profile: UserProfile; allPlans: ContentPlan[]; initialWeek?: string }) {
+function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onSwitchToLog }: {
+  profile: UserProfile;
+  allPlans: ContentPlan[];
+  weekEntries: LogEntry[];
+  initialWeek?: string;
+  onPlanGenerated: (plan: ContentPlan) => void;
+  onSwitchToLog: () => void;
+}) {
   const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).sort().reverse();
+  const targetWeek = getWeekStart();
+  const hasCurrentPlan = allPlans.some(p => p.week_start === targetWeek);
+
   const [weekIdx, setWeekIdx] = useState(() => {
     if (initialWeek) { const idx = weeks.indexOf(initialWeek); return idx >= 0 ? idx : 0; }
     return 0;
   });
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [extraContext, setExtraContext] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showGenerate, setShowGenerate] = useState(!hasCurrentPlan);
 
   useEffect(() => {
     if (initialWeek) {
       const idx = weeks.indexOf(initialWeek);
-      if (idx >= 0) setWeekIdx(idx);
+      if (idx >= 0) { setWeekIdx(idx); setShowGenerate(false); }
     }
   }, [initialWeek]);
 
-  if (weeks.length === 0) {
+  const primaryGoal = (profile.goals || [])[0]?.replace(/_/g, " ") || "content";
+  const platformsList = (profile.platforms || []).join(", ") || "not set";
+  const freq = profile.posting_frequency || "not set";
+
+  const handleGenerate = async () => {
+    if (generating) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const entriesPayload = weekEntries.map(e => ({
+        content: e.content || "",
+        tags: e.tags,
+        image_url: e.image_url,
+        link_url: e.link_url,
+      }));
+
+      // If there are entries, use them. If only extra context, send as dump.
+      const combined = weekEntries.map(e => e.content || "").join("\n");
+      const dumpContent = extraContext.trim() ? `${combined}\n\nAdditional context: ${extraContext.trim()}` : combined;
+      const savedDump = await createWeeklyDump(dumpContent || extraContext.trim() || "No notes this week");
+      if (!savedDump) { setError("Failed to save."); setGenerating(false); return; }
+
+      const body = weekEntries.length > 0
+        ? { entries: entriesPayload, dump: extraContext.trim() || undefined, profile }
+        : { dump: extraContext.trim() || "Generate a plan based on my profile and goals", profile };
+
+      const res = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
+      const planData: ContentPlanData = await res.json();
+      const saved = await savePlan(savedDump.id, planData);
+      if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
+      onPlanGenerated(saved);
+      setShowGenerate(false);
+    } catch {
+      setError("Something went wrong.");
+    }
+    setGenerating(false);
+  };
+
+  // Generate view (no current plan)
+  if (showGenerate && !hasCurrentPlan) {
     return (
-      <div className="text-center py-16">
-        <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No plans yet. Go to the Log tab and generate your first plan.</p>
+      <div>
+        <h2 className="font-serif mb-6" style={{ fontSize: 24, fontWeight: 400, color: INK }}>Ready to plan your week?</h2>
+
+        {/* Context summary */}
+        <div className="rounded-[12px] p-5 mb-6 space-y-3" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+          <div className="flex items-center justify-between">
+            <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>Your context</span>
+            <a href="/settings" className="font-mono text-[11px] no-underline" style={{ color: BLUE }}>Edit profile</a>
+          </div>
+          <div className="space-y-2">
+            <p className="font-sans text-[14px]" style={{ color: INK }}>
+              <span style={{ color: FAINT }}>Notes this week:</span> <strong>{weekEntries.length}</strong>{weekEntries.length === 0 && <span style={{ color: FAINT }}> — add some in the Log tab first</span>}
+            </p>
+            <p className="font-sans text-[14px]" style={{ color: INK }}>
+              <span style={{ color: FAINT }}>Goal:</span> <strong style={{ textTransform: "capitalize" }}>{primaryGoal}</strong>
+            </p>
+            <p className="font-sans text-[14px]" style={{ color: INK }}>
+              <span style={{ color: FAINT }}>Posting on:</span> {platformsList}
+            </p>
+            <p className="font-sans text-[14px]" style={{ color: INK }}>
+              <span style={{ color: FAINT }}>Target:</span> {freq} posts/week
+            </p>
+          </div>
+        </div>
+
+        {/* Extra context */}
+        <div className="mb-6">
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>Anything else happening this week? (optional)</label>
+          <textarea
+            value={extraContext}
+            onChange={e => setExtraContext(e.target.value)}
+            placeholder="Launching a new feature, meeting an investor, attending an event..."
+            rows={3}
+            className="w-full outline-none resize-y font-sans"
+            style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
+          />
+        </div>
+
+        {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
+
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
+          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+        >
+          {generating ? "Generating your plan..." : "Generate my plan"}
+        </button>
+
+        {generating && (
+          <div className="mt-6 space-y-3 animate-pulse">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
+                <div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} />
+                <div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} />
+                <div className="h-12 rounded" style={{ background: "#f0f0f0" }} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
+  // No plans at all
+  if (weeks.length === 0 && hasCurrentPlan) {
+    // This shouldn't happen, but fallback
+  }
+  if (weeks.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="font-sans mb-4" style={{ fontSize: 15, color: FAINT }}>No plans yet.</p>
+        <button onClick={() => setShowGenerate(true)} className="font-sans text-[14px]" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>
+          Generate your first plan →
+        </button>
+      </div>
+    );
+  }
+
+  // Plan view with week selector
   const currentWeek = weeks[weekIdx];
   const plan = allPlans.find(p => p.week_start === currentWeek);
   const raw = plan?.plan;
   const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
-  const primaryGoal = (profile.goals || [])[0]?.replace("_", " ") || "content";
 
   return (
     <div>
@@ -496,6 +511,12 @@ function IdeasTab({ profile, allPlans, initialWeek }: { profile: UserProfile; al
               );
             })}
           </div>
+
+          {/* New dump button switches to Log */}
+          <button onClick={onSwitchToLog} className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
+            style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>
+            Add more notes for next week
+          </button>
         </div>
       )}
     </div>
@@ -576,6 +597,15 @@ export default function DashboardPage() {
     load();
   }, []);
 
+  // Week entries for Ideas tab context
+  const nowDate = new Date();
+  const nowDay = nowDate.getDay();
+  const nowDiff = nowDay === 0 ? 6 : nowDay - 1;
+  const mondayDate = new Date(nowDate);
+  mondayDate.setDate(nowDate.getDate() - nowDiff);
+  mondayDate.setHours(0, 0, 0, 0);
+  const weekEntries = logEntriesState.filter(e => new Date(e.created_at) >= mondayDate);
+
   const handlePlanGenerated = (plan: ContentPlan) => {
     setCurrentPlan(plan);
     setAllPlans(prev => [plan, ...prev]);
@@ -645,10 +675,10 @@ export default function DashboardPage() {
 
       <div className="max-w-[640px] mx-auto px-5 py-8">
         {tab === "log" && (
-          <LogTab profile={profile!} allDumps={allDumps} logEntries={logEntriesState} setLogEntries={setLogEntries} onPlanGenerated={handlePlanGenerated} onSwitchToIdeas={switchToIdeas} />
+          <LogTab allDumps={allDumps} logEntries={logEntriesState} setLogEntries={setLogEntries} onSwitchToIdeas={switchToIdeas} />
         )}
         {tab === "ideas" && (
-          <IdeasTab profile={profile!} allPlans={allPlans} initialWeek={ideasWeek} />
+          <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onSwitchToLog={() => setTab("log")} />
         )}
         {tab === "shelf" && (
           <ShelfTab allPlans={allPlans} />
