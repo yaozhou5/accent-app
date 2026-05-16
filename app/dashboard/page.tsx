@@ -531,9 +531,6 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             {planData.posts.map((post, i) => {
               const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
               const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
-              const dayName = post.day.slice(0, 3).toUpperCase();
-              const dateObj = new Date(post.date + "T12:00:00");
-              const dayNum = dateObj.getDate();
               const nudge = post.prompt || post.key_takeaway || post.hook || "";
               const sourceSnippet = post.source_snippet || "";
 
@@ -541,7 +538,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 <div key={i} className="rounded-[12px]" style={{ padding: "24px 20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className="font-mono text-[12px] font-medium px-2.5 py-1 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
-                      <span className="font-mono" style={{ fontSize: 14, color: FAINT }}>{dayName} {dayNum} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
+                      <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
                     </div>
 
                     <p className="font-sans" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 600 }}>{nudge}</p>
