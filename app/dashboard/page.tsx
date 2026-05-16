@@ -9,13 +9,12 @@ import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, dete
 import { getDraft, saveDraft } from "@/lib/supabase/drafts";
 
 // Design tokens
-const INK = "#111111";      // gray-900 — body text, primary
-const DIM = "#6B6B6B";      // gray-500 — secondary descriptions
-const FAINT = "#9ca3af";    // gray-400 — labels, timestamps, secondary
-const PLACEHOLDER = "#d1d5db"; // gray-300 — input placeholders
-const BLUE = "#2563EB";
-const BORDER = "#E5E5E5";
-// Typography: page titles 24px/600, section labels 11px/500 uppercase ls:0.05em, body 16px/400, secondary 13px, chips 12px/500, buttons 15px/500, placeholders 15px
+const INK = "#111827";      // gray-900
+const BODY = "#4b5563";     // gray-600 — body text, log entries
+const DIM = "#6b7280";      // gray-500 — inactive tabs
+const FAINT = "#9ca3af";    // gray-400 — labels, timestamps
+const BLUE = "#3B82F6";     // primary action
+const BORDER = "#e5e7eb";   // gray-200
 
 const PLATFORM_ICONS: Record<string, string> = { linkedin: "LI", x: "X", substack: "SB", xiaohongshu: "小红书", threads: "TH" };
 const CONTENT_TYPE_COLORS: Record<string, string> = {
@@ -170,9 +169,9 @@ function LogTab({ logEntries, setLogEntries }: {
   return (
     <div>
       {/* Compose */}
-      <div className="mb-6 rounded-[12px] sm:rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-        {/* Type chips — min 44px touch targets */}
-        <div className="flex gap-2 px-4 pt-3">
+      <div className="mb-8 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
+        {/* Type chips */}
+        <div className="flex gap-2 px-5 pt-4">
           {(["note", "link", "quote"] as LogEntryType[]).map(t => (
             <button key={t} onClick={() => setEntryType(t)}
               className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
@@ -193,7 +192,7 @@ function LogTab({ logEntries, setLogEntries }: {
           value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
           placeholder={placeholders[entryType]} rows={3}
           className="w-full outline-none resize-none font-sans"
-          style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px 4px", border: "none", background: "transparent", minHeight: 72, fontStyle: entryType === "quote" ? "italic" : "normal" }}
+          style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 20px 8px", border: "none", background: "transparent", minHeight: 80, fontStyle: entryType === "quote" ? "italic" : "normal" }}
         />
         {entryType === "quote" && (
           <div className="px-4 pb-1">
@@ -201,7 +200,7 @@ function LogTab({ logEntries, setLogEntries }: {
               className="w-full outline-none font-sans text-[13px]" style={{ color: DIM, padding: "4px 0", border: "none", background: "transparent" }} />
           </div>
         )}
-        <div className="flex items-center justify-between px-3 pb-3">
+        <div className="flex items-center justify-between px-4 pb-4">
           <div className="flex items-center gap-1">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
             {entryType === "note" && (
@@ -227,26 +226,26 @@ function LogTab({ logEntries, setLogEntries }: {
       {logEntries.length === 0 ? (
         <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No notes yet. What happened today?</p></div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {Array.from(grouped.entries()).map(([dayLabel, entries]) => (
             <div key={dayLabel}>
-              <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{dayLabel}</span>
-              <div className="space-y-2">
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{dayLabel}</span>
+              <div className="space-y-4">
                 {entries.map(entry => {
                   const isQuote = entry.type === "quote";
                   const isLink = entry.type === "link";
                   const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
                   return (
-                    <div key={entry.id} className="rounded-[10px] p-3.5" style={{
-                      border: `1px solid ${BORDER}`, background: "#fff",
+                    <div key={entry.id} className="rounded-[12px]" style={{
+                      padding: "20px 20px", border: `1px solid ${BORDER}`, background: "#fff",
                       borderLeft: isQuote ? `3px solid ${BLUE}` : isLink ? `3px solid #0d9488` : `1px solid ${BORDER}`,
                     }}>
-                      {isQuote && <span style={{ fontSize: 24, color: FAINT, lineHeight: 1 }}>"</span>}
+                      {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
                       {entry.content && (
-                        <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.55, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
+                        <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
                       )}
                       {isQuote && entry.source && (
-                        <p className="font-sans text-[12px] mt-1" style={{ color: FAINT }}>— {entry.source}</p>
+                        <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>
                       )}
                       {entry.image_url && (
                         <div className="mt-2">
@@ -262,8 +261,8 @@ function LogTab({ logEntries, setLogEntries }: {
                           <span className="font-mono text-[10px] block mt-0.5 truncate" style={{ color: FAINT }}>{entryUrl}</span>
                         </a>
                       )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{formatTime(entry.created_at)}</span>
+                      <div className="flex items-center gap-2 mt-3">
+                        <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{formatTime(entry.created_at)}</span>
                         {entry.tags.map(tag => (
                           <span key={tag} className="font-mono text-[12px] font-medium px-2 py-0.5 rounded-full"
                             style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
@@ -487,8 +486,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
         {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-        <button onClick={handleGenerate} disabled={generating} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
-          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+        <button onClick={handleGenerate} disabled={generating} className="w-full py-4 rounded-full font-sans font-medium disabled:opacity-50"
+          style={{ fontSize: 15, background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
           {generating ? "Generating your plan..." : "Generate my plan"}
         </button>
         {generating && <div className="mt-6 space-y-3 animate-pulse">{[1, 2, 3].map(i => <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}><div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} /><div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} /><div className="h-12 rounded" style={{ background: "#f0f0f0" }} /></div>)}</div>}
@@ -513,8 +512,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         <button onClick={() => setWeekIdx(Math.min(weekIdx + 1, weeks.length - 1))} disabled={weekIdx >= weeks.length - 1}
           className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>←</span></button>
         <div className="text-center">
-          <span className="font-mono text-[12px] block" style={{ color: BLUE }}>{weekLabel(currentWeek)}</span>
-          <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
+          <span className="font-sans block" style={{ fontSize: 14, fontWeight: 600, color: INK }}>{weekLabel(currentWeek)}</span>
+          <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
         </div>
         <button onClick={() => setWeekIdx(Math.max(weekIdx - 1, 0))} disabled={weekIdx <= 0}
           className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>→</span></button>
@@ -528,43 +527,40 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
             </div>
           )}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {planData.posts.map((post, i) => {
               const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
               const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
               const dayName = post.day.slice(0, 3).toUpperCase();
               const dateObj = new Date(post.date + "T12:00:00");
               const dayNum = dateObj.getDate();
-              // New format: prompt + source_snippet. Fallback: key_takeaway/hook + reasoning
               const nudge = post.prompt || post.key_takeaway || post.hook || "";
               const sourceSnippet = post.source_snippet || "";
 
               return (
-                <div key={i} className="rounded-[12px]" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-                  <div className="p-5">
+                <div key={i} className="rounded-[12px]" style={{ padding: "24px 20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="font-mono text-[12px] font-medium px-2 py-0.5 rounded capitalize" style={{ background: `${typeColor}12`, color: typeColor }}>{typeLabel}</span>
-                      <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{dayName} {dayNum} · {PLATFORM_ICONS[post.platform] || post.platform}</span>
+                      <span className="font-mono text-[12px] font-medium px-2.5 py-1 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
+                      <span className="font-mono" style={{ fontSize: 14, color: FAINT }}>{dayName} {dayNum} · {PLATFORM_ICONS[post.platform] || post.platform}</span>
                     </div>
 
-                    <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.55, fontWeight: 500 }}>{nudge}</p>
+                    <p className="font-sans" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 600 }}>{nudge}</p>
 
                     {sourceSnippet && (
-                      <div className="mt-3 pl-3" style={{ borderLeft: `2px solid ${BORDER}` }}>
-                        <p className="font-sans italic" style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>"{sourceSnippet}"</p>
+                      <div className="mt-4 pl-4" style={{ borderLeft: `2px solid ${BORDER}` }}>
+                        <p className="font-sans italic" style={{ fontSize: 15, color: BODY, lineHeight: 1.55 }}>"{sourceSnippet}"</p>
                       </div>
                     )}
 
                     {!sourceSnippet && post.reasoning && (
-                      <p className="font-sans mt-2 text-[13px]" style={{ color: DIM, lineHeight: 1.55 }}>{post.reasoning}</p>
+                      <p className="font-sans mt-3" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{post.reasoning}</p>
                     )}
 
                     <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-4 px-5 py-2.5 rounded-full font-sans text-[15px] font-medium"
-                      style={{ border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
+                      className="mt-5 px-6 py-2.5 rounded-full font-sans font-medium"
+                      style={{ fontSize: 15, border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
                       Write this →
                     </button>
-                  </div>
                 </div>
               );
             })}
@@ -735,7 +731,7 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
           value={content} onChange={e => handleChange(e.target.value)}
           placeholder="Start writing..."
           className="w-full outline-none resize-y font-sans"
-          style={{ fontSize: 17, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh" }}
+          style={{ fontSize: 16, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh" }}
           autoFocus
         />
 
@@ -863,13 +859,13 @@ export default function DashboardPage() {
         <div className="max-w-[640px] mx-auto px-5 flex gap-6">
           {TABS.map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
-              className="font-sans py-3" style={{ fontSize: 15, fontWeight: tab === t.key ? 600 : 400, color: tab === t.key ? INK : FAINT, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>
+              className="font-sans py-3.5" style={{ fontSize: 16, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? INK : DIM, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>
               {t.label}
             </button>
           ))}
         </div>
       </div>
-      <div className="max-w-[640px] mx-auto px-5 py-8">
+      <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
         {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
         {tab === "shelf" && <ShelfTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}

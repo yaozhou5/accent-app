@@ -3,11 +3,12 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 
-const INK = "#111111";
-const DIM = "#6B6B6B";
+const INK = "#111827";
+const BODY = "#4b5563";
+const DIM = "#6b7280";
 const FAINT = "#9ca3af";
-const BLUE = "#2563EB";
-const BORDER = "#E5E5E5";
+const BLUE = "#3B82F6";
+const BORDER = "#e5e7eb";
 
 interface CoachFeedback {
   overall: string;
