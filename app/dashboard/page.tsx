@@ -14,7 +14,7 @@ const FAINT = "#AAAAAA";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
 
-const PLATFORM_ICONS: Record<string, string> = { instagram: "IG", linkedin: "in", x: "X", threads: "TH", tiktok: "TT" };
+const PLATFORM_ICONS: Record<string, string> = { instagram: "IG", linkedin: "LI", x: "X", threads: "TH", tiktok: "TT" };
 const CONTENT_TYPE_COLORS: Record<string, string> = {
   "personal-story": "#8b5cf6", "lesson": "#3b82f6", "behind-the-scenes": "#0d9488",
   "listicle": "#f59e0b", "hot-take": "#ef4444", "social-proof": "#22c55e",
