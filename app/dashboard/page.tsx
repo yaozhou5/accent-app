@@ -162,7 +162,7 @@ function LogTab({ logEntries, setLogEntries }: {
 
   const grouped = groupByDay(logEntries);
   const placeholders: Record<LogEntryType, string> = {
-    note: "Quick note... meeting, idea, frustration, anything",
+    note: "Quick note... what happened today, an idea, something you learned",
     link: "Paste a URL that inspired you...",
     quote: "A quote or snippet you want to remember...",
   };
@@ -175,9 +175,9 @@ function LogTab({ logEntries, setLogEntries }: {
         <div className="flex gap-2 px-4 pt-3">
           {(["note", "link", "quote"] as LogEntryType[]).map(t => (
             <button key={t} onClick={() => setEntryType(t)}
-              className="font-mono text-[12px] px-4 py-2 rounded-full transition-all capitalize"
-              style={{ minHeight: 44, background: entryType === t ? `${BLUE}12` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}30` : `1px solid ${BORDER}`, cursor: "pointer" }}>
-              {t === "note" ? "📝 Note" : t === "link" ? "🔗 Link" : "💬 Quote"}
+              className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
+              style={{ minHeight: 36, background: entryType === t ? `${BLUE}08` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}20` : `1px solid transparent`, cursor: "pointer" }}>
+              {t === "note" ? "Note" : t === "link" ? "Link" : "Quote"}
             </button>
           ))}
         </div>
@@ -214,9 +214,9 @@ function LogTab({ logEntries, setLogEntries }: {
             )}
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting}
-            className="px-6 py-2.5 rounded-full font-sans font-semibold text-[14px] disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer", minHeight: 44 }}>
-            {submitting ? "..." : "Log"}
+            className="px-7 py-2.5 rounded-full font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ fontSize: 15, background: BLUE, color: "#fff", border: "none", cursor: "pointer", minHeight: 44 }}>
+            {submitting ? "Saving..." : "Log"}
           </button>
         </div>
       </div>
@@ -863,7 +863,7 @@ export default function DashboardPage() {
         <div className="max-w-[640px] mx-auto px-5 flex gap-6">
           {TABS.map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
-              className="font-mono text-[12px] py-3" style={{ color: tab === t.key ? BLUE : DIM, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? BLUE : "transparent"}`, cursor: "pointer" }}>
+              className="font-sans py-3" style={{ fontSize: 15, fontWeight: tab === t.key ? 600 : 400, color: tab === t.key ? INK : FAINT, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>
               {t.label}
             </button>
           ))}
