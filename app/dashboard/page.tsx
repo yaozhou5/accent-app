@@ -125,9 +125,15 @@ function LogTab({ logEntries, setLogEntries }: {
     setPendingImage(file); setPendingImagePreview(URL.createObjectURL(file)); e.target.value = "";
   };
 
+  const [toast, setToast] = useState<string | null>(null);
+
   const handleToggleBookmark = async (id: string, current: boolean) => {
     const ok = await toggleBookmark(id, !current);
-    if (ok) setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: !current } : e));
+    if (ok) {
+      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: !current } : e));
+      setToast(!current ? "Saved to Shelf" : "Removed from Shelf");
+      setTimeout(() => setToast(null), 1500);
+    }
   };
 
   const grouped = groupByDay(logEntries);
@@ -238,9 +244,12 @@ function LogTab({ logEntries, setLogEntries }: {
                           <span key={tag} className="font-mono text-[10px] px-2 py-0.5 rounded-full"
                             style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
                         ))}
-                        <button onClick={() => handleToggleBookmark(entry.id, entry.bookmarked || false)}
-                          className="ml-auto p-0.5" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, opacity: entry.bookmarked ? 1 : 0.3 }}>
-                          {entry.bookmarked ? "🔖" : "🔖"}
+                        <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
+                          className="ml-auto p-1 transition-all" style={{ background: "none", border: "none", cursor: "pointer" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill={entry.bookmarked ? BLUE : "none"} stroke={entry.bookmarked ? BLUE : FAINT}
+                            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "fill 0.2s, stroke 0.2s" }}>
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -249,6 +258,14 @@ function LogTab({ logEntries, setLogEntries }: {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
+          style={{ background: INK, color: "#fff", animation: "fadeIn 0.2s ease" }}>
+          {toast}
         </div>
       )}
     </div>
