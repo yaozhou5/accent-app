@@ -167,13 +167,13 @@ function LogTab({ logEntries, setLogEntries }: {
   return (
     <div>
       {/* Compose */}
-      <div className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-        {/* Type chips */}
-        <div className="flex gap-1.5 px-4 pt-3">
+      <div className="mb-6 rounded-[12px] sm:rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
+        {/* Type chips — min 44px touch targets */}
+        <div className="flex gap-2 px-4 pt-3">
           {(["note", "link", "quote"] as LogEntryType[]).map(t => (
             <button key={t} onClick={() => setEntryType(t)}
-              className="font-mono text-[11px] px-3 py-1 rounded-full transition-all capitalize"
-              style={{ background: entryType === t ? `${BLUE}12` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}30` : `1px solid transparent`, cursor: "pointer" }}>
+              className="font-mono text-[12px] px-4 py-2 rounded-full transition-all capitalize"
+              style={{ minHeight: 44, background: entryType === t ? `${BLUE}12` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}30` : `1px solid ${BORDER}`, cursor: "pointer" }}>
               {t === "note" ? "📝 Note" : t === "link" ? "🔗 Link" : "💬 Quote"}
             </button>
           ))}
@@ -202,17 +202,17 @@ function LogTab({ logEntries, setLogEntries }: {
           <div className="flex items-center gap-1">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
             {entryType === "note" && (
-              <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full transition-colors hover:bg-gray-50"
-                style={{ border: "none", background: "transparent", cursor: "pointer" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pendingImage ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-full transition-colors hover:bg-gray-50"
+                style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImage ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
                 </svg>
               </button>
             )}
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting}
-            className="px-5 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            className="px-6 py-2.5 rounded-full font-sans font-semibold text-[14px] disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer", minHeight: 44 }}>
             {submitting ? "..." : "Log"}
           </button>
         </div>
@@ -266,7 +266,7 @@ function LogTab({ logEntries, setLogEntries }: {
                             style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
                         ))}
                         <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
-                          className="ml-auto p-1 transition-all" style={{ background: "none", border: "none", cursor: "pointer" }}>
+                          className="ml-auto p-2 transition-all" style={{ background: "none", border: "none", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill={entry.bookmarked ? BLUE : "none"} stroke={entry.bookmarked ? BLUE : FAINT}
                             strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "fill 0.2s, stroke 0.2s" }}>
                             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
