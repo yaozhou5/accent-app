@@ -350,7 +350,10 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
       const planData: ContentPlanData = await res.json();
+      console.log("Plan API response:", JSON.stringify(planData).slice(0, 500));
+      console.log("First post fields:", planData.posts?.[0] ? Object.keys(planData.posts[0]) : "no posts");
       const saved = await savePlan(savedDump.id, planData);
+      console.log("Saved plan object:", JSON.stringify(saved).slice(0, 500));
       if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
       onPlanGenerated(saved); setShowGenerate(false);
     } catch { setError("Something went wrong."); }
@@ -408,6 +411,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const plan = allPlans.find(p => p.week_start === currentWeek);
   const raw = plan?.plan;
   const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
+  if (planData?.posts?.[0]) console.log("Rendering post[0]:", JSON.stringify(planData.posts[0]));
 
   return (
     <div>
