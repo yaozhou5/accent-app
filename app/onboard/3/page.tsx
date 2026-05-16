@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertProfile } from "@/lib/supabase/profiles";
 
-const INK = "#1A1A18";
+const INK = "#111111";
 const DIM = "#6B6B6B";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
@@ -86,13 +86,13 @@ export default function Onboard3() {
 
         {/* Platforms */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Platforms</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Platforms</label>
           <ChipSelect options={PLATFORMS} selected={platforms} onToggle={v => setPlatforms(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])} />
         </div>
 
         {/* Frequency */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Posts per week you can actually do</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Posts per week you can actually do</label>
           <div className="flex gap-2">
             {FREQUENCIES.map(f => (
               <button key={f} onClick={() => setFrequency(f)} className="px-5 py-2.5 rounded-full text-[14px] font-mono transition-all"
@@ -105,7 +105,7 @@ export default function Onboard3() {
 
         {/* Content history toggle */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Have you posted before?</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Have you posted before?</label>
           <div className="flex gap-2 flex-wrap">
             {EXPERIENCE_OPTIONS.map(o => (
               <button key={o} onClick={() => setExperience(o)} className="px-4 py-2 rounded-full text-[13px] font-mono transition-all"
@@ -120,15 +120,15 @@ export default function Onboard3() {
         {showHistory && (
           <div className="space-y-6 mb-6 p-5 rounded-[12px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
             <div>
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>What kind of posts have worked best?</label>
+              <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What kind of posts have worked best?</label>
               <ChipSelect options={POST_TYPE_CHIPS} selected={postsThatWork} onToggle={toggleMulti(postsThatWork, setPostsThatWork)} />
             </div>
             <div>
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>What kind of posts haven't worked?</label>
+              <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What kind of posts haven't worked?</label>
               <ChipSelect options={POST_TYPE_CHIPS} selected={postsThatFlop} onToggle={toggleMulti(postsThatFlop, setPostsThatFlop)} />
             </div>
             <div>
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>How would you describe your tone?</label>
+              <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>How would you describe your tone?</label>
               <ChipSelect options={TONE_CHIPS} selected={voiceTone ? [voiceTone] : []} onToggle={v => setVoiceTone(voiceTone === v ? null : v)} multi={false} />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function Onboard3() {
 
         {/* Challenges */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>What's been hard about posting?</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What's been hard about posting?</label>
           <textarea value={challenges} onChange={e => setChallenges(e.target.value)}
             placeholder="Been in builder mode. Not confident enough yet. Time to focus on content." rows={3}
             className="w-full outline-none resize-y font-sans"
@@ -145,7 +145,7 @@ export default function Onboard3() {
 
         {/* Profile URL */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Your LinkedIn or Instagram profile URL (optional)</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Your LinkedIn or Instagram profile URL (optional)</label>
           <input type="url" value={profileUrl} onChange={e => setProfileUrl(e.target.value)}
             placeholder="https://linkedin.com/in/yourname" className="w-full outline-none font-sans"
             style={{ fontSize: 16, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
@@ -153,7 +153,7 @@ export default function Onboard3() {
 
         {/* Past posts */}
         <div className="mb-8">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Paste 2-3 posts you've written before (optional)</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Paste 2-3 posts you've written before (optional)</label>
           <textarea value={pastPosts} onChange={e => setPastPosts(e.target.value)}
             placeholder="Copy paste any posts you've made. Good ones, bad ones, doesn't matter. This helps us understand your voice and what's worked for you." rows={5}
             className="w-full outline-none resize-y font-sans"

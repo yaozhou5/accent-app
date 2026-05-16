@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertProfile } from "@/lib/supabase/profiles";
 
-const INK = "#1A1A18";
+const INK = "#111111";
 const DIM = "#6B6B6B";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";

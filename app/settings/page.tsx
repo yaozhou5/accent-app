@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const INK = "#1A1A18";
+const INK = "#111111";
 const DIM = "#6B6B6B";
+const FAINT = "#9ca3af";
 const BORDER = "#E5E5E5";
 
 export default function SettingsPage() {
@@ -36,11 +37,11 @@ export default function SettingsPage() {
       </nav>
 
       <div className="max-w-[480px] mx-auto px-6 py-12">
-        <h1 className="font-sans mb-8" style={{ fontSize: 22, fontWeight: 600, color: INK }}>Settings</h1>
+        <h1 className="font-sans mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Settings</h1>
 
         <div className="space-y-6">
           <div>
-            <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>Email</label>
+            <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Email</label>
             <p className="font-sans text-[15px]" style={{ color: INK }}>{email}</p>
           </div>
 

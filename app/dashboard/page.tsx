@@ -8,11 +8,14 @@ import { savePlan, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, 
 import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { getDraft, saveDraft } from "@/lib/supabase/drafts";
 
-const INK = "#1A1A18";
-const DIM = "#6B6B6B";
-const FAINT = "#AAAAAA";
+// Design tokens
+const INK = "#111111";      // gray-900 — body text, primary
+const DIM = "#6B6B6B";      // gray-500 — secondary descriptions
+const FAINT = "#9ca3af";    // gray-400 — labels, timestamps, secondary
+const PLACEHOLDER = "#d1d5db"; // gray-300 — input placeholders
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
+// Typography: page titles 24px/600, section labels 11px/500 uppercase ls:0.05em, body 16px/400, secondary 13px, chips 12px/500, buttons 15px/500, placeholders 15px
 
 const PLATFORM_ICONS: Record<string, string> = { linkedin: "LI", x: "X", substack: "SB", xiaohongshu: "小红书", threads: "TH" };
 const CONTENT_TYPE_COLORS: Record<string, string> = {
@@ -227,7 +230,7 @@ function LogTab({ logEntries, setLogEntries }: {
         <div className="space-y-6">
           {Array.from(grouped.entries()).map(([dayLabel, entries]) => (
             <div key={dayLabel}>
-              <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>{dayLabel}</span>
+              <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{dayLabel}</span>
               <div className="space-y-2">
                 {entries.map(entry => {
                   const isQuote = entry.type === "quote";
@@ -240,7 +243,7 @@ function LogTab({ logEntries, setLogEntries }: {
                     }}>
                       {isQuote && <span style={{ fontSize: 24, color: FAINT, lineHeight: 1 }}>"</span>}
                       {entry.content && (
-                        <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
+                        <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.55, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
                       )}
                       {isQuote && entry.source && (
                         <p className="font-sans text-[12px] mt-1" style={{ color: FAINT }}>— {entry.source}</p>
@@ -260,9 +263,9 @@ function LogTab({ logEntries, setLogEntries }: {
                         </a>
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="font-mono text-[10px]" style={{ color: FAINT }}>{formatTime(entry.created_at)}</span>
+                        <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{formatTime(entry.created_at)}</span>
                         {entry.tags.map(tag => (
-                          <span key={tag} className="font-mono text-[10px] px-2 py-0.5 rounded-full"
+                          <span key={tag} className="font-mono text-[12px] font-medium px-2 py-0.5 rounded-full"
                             style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
                         ))}
                         <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
@@ -394,10 +397,10 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   if (showGenerate) {
     return (
       <div>
-        <h2 className="font-sans mb-6" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
+        <h2 className="font-sans mb-6" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
         <div className="rounded-[12px] p-5 mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
           <div className="flex items-center justify-between mb-3">
-            <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>📋 Your week at a glance</span>
+            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>📋 Your week at a glance</span>
             <button onClick={() => setEditing(!editing)} className="font-mono text-[11px]" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>
               {editing ? "Cancel" : "Edit"}
             </button>
@@ -423,19 +426,19 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>What do you do?</label>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>What do you do?</label>
                 <input value={editWhatYouDo} onChange={e => setEditWhatYouDo(e.target.value)}
                   placeholder="I'm building a content planning tool for founders"
                   className="w-full outline-none font-sans text-[14px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>What are you building?</label>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>What are you building?</label>
                 <input value={editWhatYouBuild} onChange={e => setEditWhatYouBuild(e.target.value)}
                   placeholder="Accent — helps founders post consistently"
                   className="w-full outline-none font-sans text-[14px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Why do you post?</label>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Why do you post?</label>
                 <div className="flex flex-wrap gap-2">
                   {WHY_OPTIONS.map(w => (
                     <button key={w} onClick={() => setEditWhyYouPost(editWhyYouPost === w ? "" : w)}
@@ -447,7 +450,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 </div>
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Platforms</label>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Platforms</label>
                 <div className="flex flex-wrap gap-2">
                   {PLATFORM_OPTIONS.map(p => (
                     <button key={p} onClick={() => setEditPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
@@ -459,7 +462,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 </div>
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>How often?</label>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>How often?</label>
                 <div className="flex gap-2">
                   {FREQ_OPTIONS.map(f => (
                     <button key={f} onClick={() => setEditFrequency(f)}
@@ -479,7 +482,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           )}
         </div>
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>Anything else on your mind this week? (optional)</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Anything else on your mind this week? (optional)</label>
           <textarea value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Launching a new feature, meeting an investor..." rows={3}
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
@@ -511,7 +514,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>←</span></button>
         <div className="text-center">
           <span className="font-mono text-[12px] block" style={{ color: BLUE }}>{weekLabel(currentWeek)}</span>
-          <span className="font-mono text-[10px]" style={{ color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
+          <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
         </div>
         <button onClick={() => setWeekIdx(Math.max(weekIdx - 1, 0))} disabled={weekIdx <= 0}
           className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>→</span></button>
@@ -522,7 +525,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         <div>
           {planData.strategy_note && (
             <div className="mb-5 p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
+              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
             </div>
           )}
           <div className="space-y-3">
@@ -540,15 +543,15 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 <div key={i} className="rounded-[12px]" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
                   <div className="p-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="font-mono text-[10px] px-2 py-0.5 rounded capitalize" style={{ background: `${typeColor}12`, color: typeColor }}>{typeLabel}</span>
-                      <span className="font-mono text-[10px]" style={{ color: FAINT }}>{dayName} {dayNum} · {PLATFORM_ICONS[post.platform] || post.platform}</span>
+                      <span className="font-mono text-[12px] font-medium px-2 py-0.5 rounded capitalize" style={{ background: `${typeColor}12`, color: typeColor }}>{typeLabel}</span>
+                      <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{dayName} {dayNum} · {PLATFORM_ICONS[post.platform] || post.platform}</span>
                     </div>
 
                     <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.55, fontWeight: 500 }}>{nudge}</p>
 
                     {sourceSnippet && (
                       <div className="mt-3 pl-3" style={{ borderLeft: `2px solid ${BORDER}` }}>
-                        <p className="font-sans text-[13px] italic" style={{ color: FAINT, lineHeight: 1.5 }}>"{sourceSnippet}"</p>
+                        <p className="font-sans italic" style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>"{sourceSnippet}"</p>
                       </div>
                     )}
 
@@ -557,7 +560,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                     )}
 
                     <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-4 px-5 py-2.5 rounded-full font-sans text-[13px] font-medium"
+                      className="mt-4 px-5 py-2.5 rounded-full font-sans text-[15px] font-medium"
                       style={{ border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
                       Write this →
                     </button>
@@ -621,7 +624,7 @@ function ShelfTab({ logEntries, setLogEntries }: { logEntries: LogEntry[]; setLo
                 borderLeft: item.type === "quote" ? `3px solid ${BLUE}` : item.type === "link" ? `3px solid #0d9488` : `1px solid ${BORDER}`,
               }}>
                 {item.type === "quote" && <span style={{ fontSize: 20, color: FAINT, lineHeight: 1 }}>"</span>}
-                {item.content && <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.55, fontStyle: item.type === "quote" ? "italic" : "normal" }}>{item.content}</p>}
+                {item.content && <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.55, fontStyle: item.type === "quote" ? "italic" : "normal" }}>{item.content}</p>}
                 {item.type === "quote" && item.source && <p className="font-sans text-[12px] mt-1" style={{ color: FAINT }}>— {item.source}</p>}
                 {entryUrl && (
                   <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-2 p-2 rounded-[6px] hover:bg-gray-50" style={{ border: `1px solid ${BORDER}` }}>
@@ -629,7 +632,7 @@ function ShelfTab({ logEntries, setLogEntries }: { logEntries: LogEntry[]; setLo
                   </a>
                 )}
                 <div className="flex items-center justify-between mt-2">
-                  <span className="font-mono text-[10px]" style={{ color: FAINT }}>{getDayLabel(item.created_at)} · {formatTime(item.created_at)}</span>
+                  <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{getDayLabel(item.created_at)} · {formatTime(item.created_at)}</span>
                   {item.bookmarked && <button onClick={() => handleRemove(item.id)} className="font-mono text-[10px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Remove</button>}
                 </div>
               </div>
@@ -749,24 +752,24 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
         {coaching && (
           <div ref={feedbackRef} className="mt-8 space-y-5 pb-12">
             <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Overall</span>
-              <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
+              <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Overall</span>
+              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
             </div>
 
             {coaching.structure_feedback && (
               <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Structure</span>
-                <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{coaching.structure_feedback}</p>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Structure</span>
+                <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.structure_feedback}</p>
               </div>
             )}
 
             {coaching.phrases_to_improve.length > 0 && (
               <div className="space-y-3">
-                <span className="font-mono uppercase block" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Phrases to improve</span>
+                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Phrases to improve</span>
                 {coaching.phrases_to_improve.map((p, i) => (
                   <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
-                    <p className="font-sans text-[14px] line-through" style={{ color: DIM }}>{p.original}</p>
-                    <p className="font-sans text-[14px] font-medium mt-1" style={{ color: INK }}>{p.suggestion}</p>
+                    <p className="font-sans line-through" style={{ fontSize: 16, color: DIM }}>{p.original}</p>
+                    <p className="font-sans font-medium mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
                     <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>{p.reason}</p>
                   </div>
                 ))}

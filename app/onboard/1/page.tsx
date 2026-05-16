@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertProfile } from "@/lib/supabase/profiles";
 
-const INK = "#1A1A18";
+const INK = "#111111";
 const DIM = "#6B6B6B";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
@@ -36,7 +36,7 @@ export default function Onboard1() {
         <h1 className="font-sans mb-8" style={{ fontSize: 22, fontWeight: 600, color: INK }}>Who are you?</h1>
 
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>What are you building and who's it for?</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What are you building and who's it for?</label>
           <textarea
             value={businessDesc}
             onChange={e => setBusinessDesc(e.target.value)}
@@ -48,7 +48,7 @@ export default function Onboard1() {
         </div>
 
         <div className="mb-8">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.1em", color: DIM }}>How do you explain it at a party?</label>
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>How do you explain it at a party?</label>
           <textarea
             value={partyPitch}
             onChange={e => setPartyPitch(e.target.value)}
