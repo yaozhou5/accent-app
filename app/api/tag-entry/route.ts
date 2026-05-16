@@ -5,13 +5,26 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 
 export async function POST(request: NextRequest) {
   try {
-    const { content } = await request.json();
+    const { content, entryType } = await request.json();
     if (!content?.trim()) return NextResponse.json({ tags: [] });
+
+    // Auto-assign "inspiration" to link and quote entries
+    if (entryType === "link" || entryType === "quote") {
+      return NextResponse.json({ tags: ["inspiration"] });
+    }
 
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 100,
-      messages: [{ role: "user", content: `Given this note from a founder, return 1-3 keyword tags. Only return tags as a JSON array of strings, nothing else. Choose from: launch, frustration, meeting, idea, milestone, rejection, partnership, decision, win, customer feedback, hiring, product, marketing, fundraising, personal.\n\nNote: "${content}"` }],
+      max_tokens: 50,
+      messages: [{ role: "user", content: `Categorize this founder's note into exactly ONE category. Return only a JSON array with one string, nothing else.
+
+Categories:
+- "build log" — shipped something, fixed a bug, made a technical decision
+- "founder diary" — personal reflection, doubt, energy, mindset
+- "market signal" — user feedback, competitor move, trend spotted
+- "milestone" — numbers, launches, signups, revenue, press
+
+Note: "${content}"` }],
     });
 
     const text = message.content[0];

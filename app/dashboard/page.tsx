@@ -20,10 +20,11 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
   "listicle": "#f59e0b", "hot-take": "#ef4444", "social-proof": "#22c55e",
 };
 const TAG_COLORS: Record<string, string> = {
-  launch: "#ef4444", frustration: "#f59e0b", meeting: "#3b82f6", idea: "#8b5cf6",
-  milestone: "#22c55e", rejection: "#ec4899", partnership: "#0d9488", decision: "#f97316",
-  win: "#22c55e", "customer feedback": "#06b6d4", hiring: "#6366f1", product: "#2563EB",
-  marketing: "#e11d48", fundraising: "#7c3aed", personal: "#78716c",
+  "build log": "#64748b",
+  "founder diary": "#a8926a",
+  "market signal": "#5eaaa8",
+  "milestone": "#6ab07c",
+  "inspiration": "#9b8ec4",
 };
 
 function weekLabel(ws: string): string {
@@ -67,14 +68,9 @@ function LogTab({ logEntries, setLogEntries }: {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tagEntryAsync = (entry: LogEntry) => {
-    const tagContent = entry.content || "";
-    const extras: string[] = [];
-    if (entry.image_url) extras.push("[image]");
-    if (entry.url) extras.push(`[link: ${entry.url}]`);
-    if (entry.type === "quote") extras.push("[quote]");
     fetch("/api/tag-entry", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: `${tagContent} ${extras.join(" ")}`.trim() }),
+      body: JSON.stringify({ content: entry.content || "", entryType: entry.type }),
     }).then(r => r.json()).then(({ tags }) => {
       if (tags?.length) {
         updateLogEntryTags(entry.id, tags);
