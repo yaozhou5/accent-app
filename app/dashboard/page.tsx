@@ -126,14 +126,35 @@ function LogTab({ logEntries, setLogEntries }: {
   };
 
   const [toast, setToast] = useState<string | null>(null);
+  const [bookmarkNoteId, setBookmarkNoteId] = useState<string | null>(null);
+  const [bookmarkNote, setBookmarkNote] = useState("");
 
   const handleToggleBookmark = async (id: string, current: boolean) => {
-    const ok = await toggleBookmark(id, !current);
+    if (!current) {
+      // Show note input for bookmarking
+      setBookmarkNoteId(id);
+      setBookmarkNote("");
+      return;
+    }
+    // Unbookmark immediately
+    const ok = await toggleBookmark(id, false);
     if (ok) {
-      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: !current } : e));
-      setToast(!current ? "Saved to Shelf" : "Removed from Shelf");
+      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: false } : e));
+      setToast("Removed from Shelf");
       setTimeout(() => setToast(null), 1500);
     }
+  };
+
+  const handleConfirmBookmark = async () => {
+    if (!bookmarkNoteId) return;
+    const ok = await toggleBookmark(bookmarkNoteId, true, bookmarkNote.trim() || undefined);
+    if (ok) {
+      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === bookmarkNoteId ? { ...e, bookmarked: true } : e));
+      setToast("Saved to Shelf");
+      setTimeout(() => setToast(null), 1500);
+    }
+    setBookmarkNoteId(null);
+    setBookmarkNote("");
   };
 
   const grouped = groupByDay(logEntries);
@@ -252,6 +273,22 @@ function LogTab({ logEntries, setLogEntries }: {
                           </svg>
                         </button>
                       </div>
+                      {bookmarkNoteId === entry.id && (
+                        <div className="mt-2 flex gap-2 items-center" onClick={e => e.stopPropagation()}>
+                          <input value={bookmarkNote} onChange={e => setBookmarkNote(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") handleConfirmBookmark(); }}
+                            placeholder="Why I saved this (optional)"
+                            className="flex-1 outline-none font-sans text-[13px]"
+                            style={{ color: INK, padding: "6px 10px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fafafa" }}
+                            autoFocus />
+                          <button onClick={handleConfirmBookmark}
+                            className="font-sans text-[12px] px-3 py-1.5 rounded-full font-medium shrink-0"
+                            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
+                          <button onClick={() => setBookmarkNoteId(null)}
+                            className="font-sans text-[12px] px-2 py-1.5 shrink-0"
+                            style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -417,11 +454,17 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                         <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_ICONS[post.platform] || post.platform}</span>
                         <span className="font-mono text-[10px] px-2 py-0.5 rounded" style={{ background: `${typeColor}12`, color: typeColor }}>{typeLabel}</span>
                       </div>
+                      <span className="font-mono uppercase block mb-1" style={{ fontSize: 9, letterSpacing: "0.06em", color: FAINT }}>Key takeaway</span>
                       <p className="font-sans font-semibold" style={{ fontSize: 15, color: INK, lineHeight: 1.45 }}>{displayText}</p>
                       {!isExp && hasStructure && (
-                        <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                          {post.structure.join(" → ")}
-                        </p>
+                        <div className="mt-2 space-y-1">
+                          {post.structure.slice(0, 2).map((s: string, j: number) => (
+                            <p key={j} className="font-sans text-[13px] flex gap-1.5" style={{ color: DIM, lineHeight: 1.45 }}>
+                              <span style={{ color: FAINT }}>·</span> {s}
+                            </p>
+                          ))}
+                          {post.structure.length > 2 && <p className="font-mono text-[11px]" style={{ color: FAINT }}>+{post.structure.length - 2} more</p>}
+                        </div>
                       )}
                       {!isExp && !hasStructure && post.reasoning && (
                         <p className="font-sans mt-1.5" style={{ fontSize: 13, color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{post.reasoning}</p>
