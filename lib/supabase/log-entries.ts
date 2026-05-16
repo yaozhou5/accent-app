@@ -73,7 +73,10 @@ export async function createLogEntry(
     .select()
     .single();
 
-  if (error) { console.error("Failed to create log entry:", error); return null; }
+  if (error) {
+    console.error("Failed to create log entry:", JSON.stringify(error));
+    throw new Error(error.message || error.code || "Unknown Supabase error");
+  }
   return data as LogEntry;
 }
 

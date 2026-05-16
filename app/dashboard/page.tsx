@@ -110,11 +110,12 @@ function LogTab({ logEntries, setLogEntries }: {
         setInput(""); setSource("");
         tagEntryAsync(entry);
       } else {
-        setError("Failed to save. Check that the database columns exist (type, url, source, bookmarked).");
+        setError("Failed to save — entry returned null.");
       }
-    } catch (e) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
       console.error("Submit error:", e);
-      setError("Something went wrong. Check console.");
+      setError(`Failed: ${msg}`);
     }
     setSubmitting(false);
   };
