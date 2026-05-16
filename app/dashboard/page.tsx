@@ -60,6 +60,7 @@ function LogTab({ logEntries, setLogEntries }: {
   const [entryType, setEntryType] = useState<LogEntryType>("note");
   const [source, setSource] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -85,27 +86,35 @@ function LogTab({ logEntries, setLogEntries }: {
   const handleSubmit = async () => {
     if ((!input.trim() && !pendingImage) || submitting) return;
     setSubmitting(true);
+    setError(null);
 
-    let imageUrl: string | null = null;
-    if (pendingImage) {
-      imageUrl = await uploadLogImage(pendingImage);
-      setPendingImage(null); setPendingImagePreview(null);
-    }
+    try {
+      let imageUrl: string | null = null;
+      if (pendingImage) {
+        imageUrl = await uploadLogImage(pendingImage);
+        setPendingImage(null); setPendingImagePreview(null);
+      }
 
-    const detectedLink = entryType === "note" ? detectUrl(input.trim()) : null;
-    const entryUrl = entryType === "link" ? (detectUrl(input.trim()) || input.trim()) : null;
+      const detectedLink = entryType === "note" ? detectUrl(input.trim()) : null;
+      const entryUrl = entryType === "link" ? (detectUrl(input.trim()) || input.trim()) : null;
 
-    const entry = await createLogEntry(input.trim(), {
-      image_url: imageUrl,
-      link_url: detectedLink,
-      type: entryType,
-      url: entryUrl,
-      source: entryType === "quote" && source.trim() ? source.trim() : null,
-    });
-    if (entry) {
-      setLogEntries((prev: LogEntry[]) => [entry, ...prev]);
-      setInput(""); setSource("");
-      tagEntryAsync(entry);
+      const entry = await createLogEntry(input.trim(), {
+        image_url: imageUrl,
+        link_url: detectedLink,
+        type: entryType,
+        url: entryUrl,
+        source: entryType === "quote" && source.trim() ? source.trim() : null,
+      });
+      if (entry) {
+        setLogEntries((prev: LogEntry[]) => [entry, ...prev]);
+        setInput(""); setSource("");
+        tagEntryAsync(entry);
+      } else {
+        setError("Failed to save. Check that the database columns exist (type, url, source, bookmarked).");
+      }
+    } catch (e) {
+      console.error("Submit error:", e);
+      setError("Something went wrong. Check console.");
     }
     setSubmitting(false);
   };
@@ -184,6 +193,8 @@ function LogTab({ logEntries, setLogEntries }: {
           </button>
         </div>
       </div>
+
+      {error && <p className="font-sans text-[13px] mb-4" style={{ color: "#DC2626" }}>{error}</p>}
 
       {/* Feed */}
       {logEntries.length === 0 ? (
