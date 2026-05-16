@@ -12,10 +12,12 @@ export interface ContentPlanPost {
   day: string;
   date: string;
   platform: string;
-  key_takeaway: string;
-  structure: string[];
   type: string;
+  prompt: string;
+  source_snippet: string;
   // Legacy fields for backward compat
+  key_takeaway?: string;
+  structure?: string[];
   hook?: string;
   reasoning?: string;
   post_type?: string;
