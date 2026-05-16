@@ -14,7 +14,7 @@ const FAINT = "#AAAAAA";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
 
-const PLATFORM_ICONS: Record<string, string> = { instagram: "IG", linkedin: "LI", x: "X", threads: "TH", tiktok: "TT" };
+const PLATFORM_ICONS: Record<string, string> = { linkedin: "LI", x: "X", substack: "SB", xiaohongshu: "小红书", threads: "TH" };
 const CONTENT_TYPE_COLORS: Record<string, string> = {
   "personal-story": "#8b5cf6", "lesson": "#3b82f6", "behind-the-scenes": "#0d9488",
   "listicle": "#f59e0b", "hot-take": "#ef4444", "social-proof": "#22c55e",
@@ -343,7 +343,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const totalEntries = weekEntries.length;
 
   const WHY_OPTIONS = ["Get customers", "Build authority", "Find collaborators", "Document the journey"];
-  const PLATFORM_OPTIONS = ["LinkedIn", "X", "Substack", "小红书", "TikTok", "Instagram"];
+  const PLATFORM_OPTIONS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
   const FREQ_OPTIONS = ["1-2/week", "3-4/week", "Daily"];
 
   const handleSaveProfile = async () => {

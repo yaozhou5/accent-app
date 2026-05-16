@@ -9,7 +9,7 @@ const DIM = "#6B6B6B";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
 
-const PLATFORMS = ["Instagram", "LinkedIn", "X", "Threads", "TikTok"];
+const PLATFORMS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
 const FREQUENCIES = ["1-2", "3-4", "5+"];
 const EXPERIENCE_OPTIONS = ["Yes regularly", "A little", "Not really"];
 const POST_TYPE_CHIPS = ["Personal stories", "Product updates", "Industry opinions", "Behind the scenes", "Lessons learned", "Engagement posts", "Not sure yet"];

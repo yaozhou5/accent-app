@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 For each post, return EXACTLY these fields:
 - day: The day of the week (e.g. "Monday")
 - date: The date in YYYY-MM-DD format
-- platform: One of instagram, linkedin, x, threads, tiktok
+- platform: One of linkedin, x, substack, xiaohongshu, threads
 - type: ONLY one of these 6 types: personal-story, lesson, behind-the-scenes, listicle, hot-take, social-proof. No other types allowed.
 - key_takeaway: The ONE insight the reader walks away with. This is NOT a hook or headline. It's a complete thought. Bad: "A founder ghosted me mid-conversation yesterday" (that's a hook). Good: "Getting ghosted usually means your pitch didn't show clear value — it's rarely personal." The takeaway should be something the reader can apply to their own life.
 - structure: An array of exactly 3-4 strings. Each is a direction to the founder for writing the post. Be specific to their situation. Example: ["Open with the exact moment — the call that went silent", "What you assumed (they hate me) vs the reality (your pitch was unclear)", "The lesson: ghosting is feedback on your offer, not your worth", "What you changed in your next pitch"]
