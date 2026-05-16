@@ -205,39 +205,40 @@ function LogTab({ profile, allDumps, logEntries, setLogEntries, onPlanGenerated,
 
   return (
     <div>
-      {/* Quick entry input */}
-      <div className="mb-6">
+      {/* Compose input */}
+      <div className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
         {pendingImagePreview && (
-          <div className="mb-2 relative inline-block">
-            <img src={pendingImagePreview} alt="Preview" className="rounded-[8px]" style={{ maxHeight: 80, border: `1px solid ${BORDER}` }} />
+          <div className="px-4 pt-3 relative inline-block">
+            <img src={pendingImagePreview} alt="Preview" className="rounded-[8px]" style={{ maxHeight: 100, border: `1px solid ${BORDER}` }} />
             <button onClick={() => { setPendingImage(null); setPendingImagePreview(null); }}
-              className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center"
+              className="absolute top-1 right-2 w-5 h-5 rounded-full flex items-center justify-center"
               style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
           </div>
         )}
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Quick note... meeting, idea, frustration, anything"
-            className="flex-1 outline-none font-sans"
-            style={{ fontSize: 15, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 24, background: "#fff" }}
-          />
+        <textarea
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Quick note... meeting, idea, frustration, anything"
+          rows={3}
+          className="w-full outline-none resize-none font-sans"
+          style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 16px 8px", border: "none", background: "transparent", minHeight: 80 }}
+        />
+        <div className="flex items-center justify-between px-3 pb-3">
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
-          <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center"
-            style={{ border: `1px solid ${BORDER}`, background: "#fff", cursor: "pointer" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={DIM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full transition-colors hover:bg-gray-50"
+            style={{ border: "none", background: "transparent", cursor: "pointer" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImage ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
             </svg>
           </button>
           <button
             onClick={handleSubmitEntry}
             disabled={(!input.trim() && !pendingImage) || submitting}
-            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center disabled:opacity-30"
-            style={{ background: BLUE, border: "none", cursor: "pointer" }}
+            className="px-5 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
           >
-            <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>+</span>
+            {submitting ? "..." : "Log"}
           </button>
         </div>
       </div>
