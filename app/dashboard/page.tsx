@@ -16,7 +16,7 @@ const FAINT = "#9ca3af";    // gray-400 — labels, timestamps
 const BLUE = "#3B82F6";     // primary action
 const BORDER = "#e5e7eb";   // gray-200
 
-const PLATFORM_ICONS: Record<string, string> = { linkedin: "LI", x: "X", substack: "SB", xiaohongshu: "小红书", threads: "TH" };
+const PLATFORM_LABELS: Record<string, string> = { linkedin: "LinkedIn", x: "X", substack: "Substack", xiaohongshu: "小红书", threads: "Threads" };
 const CONTENT_TYPE_COLORS: Record<string, string> = {
   "personal-story": "#8b5cf6", "lesson": "#3b82f6", "behind-the-scenes": "#0d9488",
   "listicle": "#f59e0b", "hot-take": "#ef4444", "social-proof": "#22c55e",
@@ -541,7 +541,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 <div key={i} className="rounded-[12px]" style={{ padding: "24px 20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className="font-mono text-[12px] font-medium px-2.5 py-1 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
-                      <span className="font-mono" style={{ fontSize: 14, color: FAINT }}>{dayName} {dayNum} · {PLATFORM_ICONS[post.platform] || post.platform}</span>
+                      <span className="font-mono" style={{ fontSize: 14, color: FAINT }}>{dayName} {dayNum} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
                     </div>
 
                     <p className="font-sans" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 600 }}>{nudge}</p>
