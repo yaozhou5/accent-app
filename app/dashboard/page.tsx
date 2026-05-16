@@ -437,13 +437,14 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           <div className="space-y-3">
             {planData.posts.map((post, i) => {
               const isExp = expanded === i;
-              const typeColor = CONTENT_TYPE_COLORS[post.type] || BLUE;
-              const typeLabel = post.type || "";
+              const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
+              const typeLabel = post.type || post.post_type || "";
               const dateObj = new Date(post.date + "T12:00:00");
               const dayNum = dateObj.getDate();
               const dayName = post.day.slice(0, 3).toUpperCase();
-              const takeaway = post.key_takeaway || "";
+              const takeaway = post.key_takeaway || post.hook || "";
               const hasStructure = post.structure && post.structure.length > 0;
+              const fallbackDesc = post.reasoning || "";
 
               return (
                 <div key={i} onClick={() => setExpanded(isExp ? null : i)} className="rounded-[12px] transition-all cursor-pointer"
@@ -470,6 +471,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                           {post.structure.length > 2 && <p className="font-mono text-[11px]" style={{ color: FAINT }}>+{post.structure.length - 2} more</p>}
                         </div>
                       )}
+                      {!isExp && !hasStructure && fallbackDesc && (
+                        <p className="font-sans mt-1.5 text-[13px]" style={{ color: DIM, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{fallbackDesc}</p>
+                      )}
                     </div>
                     <span className="shrink-0 mt-1" style={{ color: FAINT, fontSize: 12, transition: "transform 0.2s", transform: isExp ? "rotate(180deg)" : "none" }}>▼</span>
                   </div>
@@ -486,6 +490,11 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                               </li>
                             ))}
                           </ol>
+                        </div>
+                      )}
+                      {!hasStructure && fallbackDesc && (
+                        <div className="pt-4">
+                          <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{fallbackDesc}</p>
                         </div>
                       )}
                       <button onClick={e => { e.stopPropagation(); if (plan) onWritePost(plan.id, i); }}
