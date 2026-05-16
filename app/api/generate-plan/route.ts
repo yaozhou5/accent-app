@@ -78,11 +78,11 @@ Rules:
 This week's dates are: Monday ${weekDates[0]} through Sunday ${weekDates[6]}.
 
 FOUNDER PROFILE:
-Business: ${profile.business_description || "Not specified"}
-Party pitch: ${profile.party_pitch || "Not specified"}
-Goals: ${(profile.goals || []).join(", ") || "Not specified"}
+What they do: ${profile.what_you_do || profile.business_description || "Not specified"}
+What they're building: ${profile.what_you_build || profile.party_pitch || "Not specified"}
+Why they post: ${profile.why_you_post || (profile.goals || []).join(", ") || "Not specified"}
 Platforms: ${(profile.platforms || []).join(", ") || "Not specified"}
-Posting frequency: ${profile.posting_frequency || "Not specified"} posts per week
+Posting frequency: ${profile.posting_frequency || "Not specified"}
 Posting challenges: ${profile.posting_challenges || "Not specified"}
 Posting experience: ${profile.posting_experience || "Not specified"}
 ${(profile.posts_that_work || []).length > 0 ? `Posts that work for them: ${profile.posts_that_work.join(", ")}` : ""}

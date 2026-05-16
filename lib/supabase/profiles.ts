@@ -19,6 +19,9 @@ export interface UserProfile {
   posts_that_work: string[];
   posts_that_flop: string[];
   voice_tone: string | null;
+  what_you_do: string | null;
+  what_you_build: string | null;
+  why_you_post: string | null;
   created_at: string;
 }
 

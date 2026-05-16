@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { getProfile, type UserProfile } from "@/lib/supabase/profiles";
+import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
@@ -310,10 +310,11 @@ function LogTab({ logEntries, setLogEntries }: {
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onSwitchToLog, onWritePost }: {
+function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onSwitchToLog, onWritePost, onProfileUpdated }: {
   profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[];
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
+  onProfileUpdated: (fields: Partial<UserProfile>) => void;
 }) {
   const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).sort().reverse();
   const targetWeek = getWeekStart();
@@ -328,13 +329,43 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 
   useEffect(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) { setWeekIdx(i); setShowGenerate(false); } } }, [initialWeek]);
 
-  const primaryGoal = (profile.goals || [])[0]?.replace(/_/g, " ") || "content";
-  const platformsList = (profile.platforms || []).join(", ") || "not set";
-  const freq = profile.posting_frequency || "not set";
+  const [editing, setEditing] = useState(false);
+  const [editWhatYouDo, setEditWhatYouDo] = useState(profile.what_you_do || "");
+  const [editWhatYouBuild, setEditWhatYouBuild] = useState(profile.what_you_build || "");
+  const [editWhyYouPost, setEditWhyYouPost] = useState(profile.why_you_post || "");
+  const [editPlatforms, setEditPlatforms] = useState<string[]>(profile.platforms || []);
+  const [editFrequency, setEditFrequency] = useState(profile.posting_frequency || "3-4");
+  const [editSaving, setEditSaving] = useState(false);
+
   const noteCount = weekEntries.filter(e => e.type === "note" || !e.type).length;
   const linkCount = weekEntries.filter(e => e.type === "link").length;
   const quoteCount = weekEntries.filter(e => e.type === "quote").length;
   const totalEntries = weekEntries.length;
+
+  const WHY_OPTIONS = ["Get customers", "Build authority", "Find collaborators", "Document the journey"];
+  const PLATFORM_OPTIONS = ["LinkedIn", "X", "Substack", "小红书", "TikTok", "Instagram"];
+  const FREQ_OPTIONS = ["1-2/week", "3-4/week", "Daily"];
+
+  const handleSaveProfile = async () => {
+    setEditSaving(true);
+    await upsertProfile({
+      what_you_do: editWhatYouDo.trim() || null,
+      what_you_build: editWhatYouBuild.trim() || null,
+      why_you_post: editWhyYouPost || null,
+      platforms: editPlatforms,
+      posting_frequency: editFrequency,
+    });
+    setEditSaving(false);
+    setEditing(false);
+    // Update parent profile
+    onProfileUpdated({
+      what_you_do: editWhatYouDo.trim() || null,
+      what_you_build: editWhatYouBuild.trim() || null,
+      why_you_post: editWhyYouPost || null,
+      platforms: editPlatforms,
+      posting_frequency: editFrequency,
+    });
+  };
 
   const handleGenerate = async () => {
     if (generating) return;
@@ -365,26 +396,87 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     return (
       <div>
         <h2 className="font-sans mb-6" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
-        <div className="rounded-[12px] p-5 mb-6 space-y-3" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <div className="flex items-center justify-between">
+        <div className="rounded-[12px] p-5 mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+          <div className="flex items-center justify-between mb-3">
             <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}>📋 Your week at a glance</span>
-            <Link href="/settings" className="font-mono text-[11px] no-underline" style={{ color: BLUE }}>Edit profile</Link>
+            <button onClick={() => setEditing(!editing)} className="font-mono text-[11px]" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>
+              {editing ? "Cancel" : "Edit"}
+            </button>
           </div>
-          <div className="space-y-2">
-            <p className="font-sans text-[14px]" style={{ color: INK }}>
-              <span style={{ color: FAINT }}>Notes this week:</span> <strong>{noteCount}</strong>
-            </p>
-            {(linkCount > 0 || quoteCount > 0) && (
-              <p className="font-sans text-[14px]" style={{ color: INK }}>
-                <span style={{ color: FAINT }}>Inspiration saved:</span> {linkCount > 0 && <strong>{linkCount} link{linkCount !== 1 ? "s" : ""}</strong>}{linkCount > 0 && quoteCount > 0 && ", "}{quoteCount > 0 && <strong>{quoteCount} quote{quoteCount !== 1 ? "s" : ""}</strong>}
-              </p>
-            )}
-            <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Goal:</span> <strong style={{ textTransform: "capitalize" }}>{primaryGoal}</strong></p>
-            <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Posting on:</span> {platformsList}</p>
-            <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Target:</span> {freq} posts/week</p>
-          </div>
-          {totalEntries < 3 && (
-            <p className="font-sans text-[13px] pt-2" style={{ color: "#f59e0b" }}>Add a few more notes to your Log this week — the more context, the better your plan.</p>
+
+          {!editing ? (
+            <div className="space-y-2">
+              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Notes this week:</span> <strong>{noteCount}</strong></p>
+              {(linkCount > 0 || quoteCount > 0) && (
+                <p className="font-sans text-[14px]" style={{ color: INK }}>
+                  <span style={{ color: FAINT }}>Inspiration:</span> {linkCount > 0 && <strong>{linkCount} link{linkCount !== 1 ? "s" : ""}</strong>}{linkCount > 0 && quoteCount > 0 && ", "}{quoteCount > 0 && <strong>{quoteCount} quote{quoteCount !== 1 ? "s" : ""}</strong>}
+                </p>
+              )}
+              {profile.what_you_do && <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>You:</span> {profile.what_you_do}</p>}
+              {profile.what_you_build && <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Building:</span> {profile.what_you_build}</p>}
+              {profile.why_you_post && <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Why:</span> {profile.why_you_post}</p>}
+              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Platforms:</span> {(profile.platforms || []).join(", ") || "not set"}</p>
+              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Frequency:</span> {profile.posting_frequency || "not set"}</p>
+              {totalEntries < 3 && (
+                <p className="font-sans text-[13px] pt-2" style={{ color: "#f59e0b" }}>Add a few more notes to your Log this week — the more context, the better your plan.</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>What do you do?</label>
+                <input value={editWhatYouDo} onChange={e => setEditWhatYouDo(e.target.value)}
+                  placeholder="I'm building a content planning tool for founders"
+                  className="w-full outline-none font-sans text-[14px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+              </div>
+              <div>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>What are you building?</label>
+                <input value={editWhatYouBuild} onChange={e => setEditWhatYouBuild(e.target.value)}
+                  placeholder="Accent — helps founders post consistently"
+                  className="w-full outline-none font-sans text-[14px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+              </div>
+              <div>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Why do you post?</label>
+                <div className="flex flex-wrap gap-2">
+                  {WHY_OPTIONS.map(w => (
+                    <button key={w} onClick={() => setEditWhyYouPost(editWhyYouPost === w ? "" : w)}
+                      className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
+                      style={{ minHeight: 36, background: editWhyYouPost === w ? `${BLUE}12` : "#fff", color: editWhyYouPost === w ? BLUE : DIM, border: `1px solid ${editWhyYouPost === w ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Platforms</label>
+                <div className="flex flex-wrap gap-2">
+                  {PLATFORM_OPTIONS.map(p => (
+                    <button key={p} onClick={() => setEditPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
+                      className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
+                      style={{ minHeight: 36, background: editPlatforms.includes(p) ? `${BLUE}12` : "#fff", color: editPlatforms.includes(p) ? BLUE : DIM, border: `1px solid ${editPlatforms.includes(p) ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>How often?</label>
+                <div className="flex gap-2">
+                  {FREQ_OPTIONS.map(f => (
+                    <button key={f} onClick={() => setEditFrequency(f)}
+                      className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
+                      style={{ minHeight: 36, background: editFrequency === f ? `${BLUE}12` : "#fff", color: editFrequency === f ? BLUE : DIM, border: `1px solid ${editFrequency === f ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={handleSaveProfile} disabled={editSaving}
+                className="w-full py-2.5 rounded-full font-sans font-semibold text-[13px] disabled:opacity-50"
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                {editSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
           )}
         </div>
         <div className="mb-6">
@@ -810,7 +902,7 @@ export default function DashboardPage() {
       </div>
       <div className="max-w-[640px] mx-auto px-5 py-8">
         {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
         {tab === "shelf" && <ShelfTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
       </div>
     </div>
