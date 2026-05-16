@@ -85,11 +85,9 @@ export async function updateLogEntryTags(id: string, tags: string[]): Promise<bo
   return true;
 }
 
-export async function toggleBookmark(id: string, bookmarked: boolean, note?: string): Promise<boolean> {
+export async function toggleBookmark(id: string, bookmarked: boolean, _note?: string): Promise<boolean> {
   const supabase = createClient();
-  const update: Record<string, unknown> = { bookmarked };
-  if (note !== undefined) update.bookmark_note = note;
-  const { error } = await supabase.from("log_entries").update(update).eq("id", id);
+  const { error } = await supabase.from("log_entries").update({ bookmarked }).eq("id", id);
   if (error) { console.error("Failed to toggle bookmark:", error); return false; }
   return true;
 }
