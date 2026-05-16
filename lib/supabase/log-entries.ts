@@ -11,7 +11,6 @@ export interface LogEntry {
   url: string | null;
   source: string | null;
   tags: string[];
-  entry_type: string;
   type: LogEntryType;
   bookmarked: boolean;
   created_at: string;
@@ -43,7 +42,6 @@ export async function createLogEntry(
     tags?: string[];
     image_url?: string | null;
     link_url?: string | null;
-    entry_type?: string;
     type?: LogEntryType;
     url?: string | null;
     source?: string | null;
@@ -54,7 +52,6 @@ export async function createLogEntry(
   if (!user) return null;
 
   const entryType = opts.type || "note";
-  const legacyEntryType = opts.entry_type || (opts.image_url ? "image" : opts.link_url ? "link" : "text");
 
   const { data, error } = await supabase
     .from("log_entries")
@@ -66,7 +63,6 @@ export async function createLogEntry(
       url: opts.url || null,
       source: opts.source || null,
       tags: opts.tags || [],
-      entry_type: legacyEntryType,
       type: entryType,
       bookmarked: false,
     })
