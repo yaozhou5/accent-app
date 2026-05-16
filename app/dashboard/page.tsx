@@ -298,6 +298,13 @@ function LogTab({ logEntries, setLogEntries }: {
         </div>
       )}
 
+      {/* Quick check link */}
+      <div className="mt-10 text-center">
+        <Link href="/dashboard/write" className="no-underline font-mono text-[11px]" style={{ color: FAINT }}>
+          ✏️ Quick check — paste any draft for writing feedback
+        </Link>
+      </div>
+
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
@@ -580,12 +587,22 @@ function ShelfTab({ logEntries, setLogEntries }: { logEntries: LogEntry[]; setLo
 }
 
 /* ══════════════ WRITE MODE ══════════════ */
+interface CoachFeedback {
+  overall: string;
+  structure_feedback: string;
+  phrases_to_improve: Array<{ original: string; suggestion: string; reason: string }>;
+  micro_lesson: { title: string; explanation: string };
+}
+
 function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIndex: number; post: ContentPlanPost; onBack: () => void }) {
   const [content, setContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showStructure, setShowStructure] = useState(true);
+  const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getDraft(planId, postIndex).then(d => { if (d) setContent(d.content); setLoaded(true); });
@@ -599,6 +616,29 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
       await saveDraft(planId, postIndex, val);
       setSaving(false);
     }, 1000);
+  };
+
+  const handleCheckWriting = async () => {
+    if (!content.trim() || coachLoading) return;
+    setCoachLoading(true);
+    try {
+      const res = await fetch("/api/coach-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          draft: content.trim(),
+          key_takeaway: post.key_takeaway || post.hook,
+          structure: post.structure,
+          platform: post.platform,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoaching(data);
+        setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
+    } catch {}
+    setCoachLoading(false);
   };
 
   if (!loaded) return <div className="py-12 text-center"><span className="font-sans text-[14px]" style={{ color: FAINT }}>Loading...</span></div>;
@@ -637,9 +677,61 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
           value={content} onChange={e => handleChange(e.target.value)}
           placeholder="Start writing..."
           className="w-full outline-none resize-y font-sans"
-          style={{ fontSize: 17, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "50vh" }}
+          style={{ fontSize: 17, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh" }}
           autoFocus
         />
+
+        {/* Check my writing button */}
+        {content.trim().length > 20 && (
+          <button onClick={handleCheckWriting} disabled={coachLoading}
+            className="mt-6 w-full py-3 rounded-full font-sans font-semibold text-[14px] disabled:opacity-50"
+            style={{ background: INK, color: "#fff", border: "none", cursor: "pointer" }}>
+            {coachLoading ? "Checking..." : "Check my writing"}
+          </button>
+        )}
+
+        {/* Coaching feedback */}
+        {coaching && (
+          <div ref={feedbackRef} className="mt-8 space-y-5 pb-12">
+            <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+              <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Overall</span>
+              <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
+            </div>
+
+            {coaching.structure_feedback && (
+              <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Structure</span>
+                <p className="font-sans text-[14px]" style={{ color: INK, lineHeight: 1.6 }}>{coaching.structure_feedback}</p>
+              </div>
+            )}
+
+            {coaching.phrases_to_improve.length > 0 && (
+              <div className="space-y-3">
+                <span className="font-mono uppercase block" style={{ fontSize: 10, letterSpacing: "0.06em", color: FAINT }}>Phrases to improve</span>
+                {coaching.phrases_to_improve.map((p, i) => (
+                  <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
+                    <p className="font-sans text-[14px] line-through" style={{ color: DIM }}>{p.original}</p>
+                    <p className="font-sans text-[14px] font-medium mt-1" style={{ color: INK }}>{p.suggestion}</p>
+                    <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>{p.reason}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {coaching.micro_lesson && (
+              <div className="p-4 rounded-[10px]" style={{ borderLeft: `3px solid ${BLUE}`, background: `${BLUE}04` }}>
+                <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: BLUE }}>Lesson</span>
+                <p className="font-sans text-[15px] font-semibold mb-2" style={{ color: INK }}>{coaching.micro_lesson.title}</p>
+                <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.6 }}>{coaching.micro_lesson.explanation}</p>
+              </div>
+            )}
+
+            <button onClick={() => setCoaching(null)} className="font-mono text-[12px]"
+              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>
+              Dismiss feedback
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -699,10 +791,7 @@ export default function DashboardPage() {
       <header style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/write" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Writing coach</Link>
-            <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
-          </div>
+          <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
         </div>
       </header>
       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
