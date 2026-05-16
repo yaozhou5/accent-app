@@ -12,10 +12,14 @@ export interface ContentPlanPost {
   day: string;
   date: string;
   platform: string;
-  hook: string;
-  reasoning: string;
-  post_type: string;
-  goal_alignment: string;
+  key_takeaway: string;
+  structure: string[];
+  type: string;
+  // Legacy fields for backward compat
+  hook?: string;
+  reasoning?: string;
+  post_type?: string;
+  goal_alignment?: string;
 }
 
 export interface ContentPlanData {

@@ -1,13 +1,19 @@
 import { createClient } from "./client";
 
+export type LogEntryType = "note" | "link" | "quote";
+
 export interface LogEntry {
   id: string;
   user_id: string;
   content: string;
   image_url: string | null;
   link_url: string | null;
+  url: string | null;
+  source: string | null;
   tags: string[];
-  entry_type: "text" | "image" | "link";
+  entry_type: string;
+  type: LogEntryType;
+  bookmarked: boolean;
   created_at: string;
 }
 
@@ -33,13 +39,22 @@ export function detectUrl(text: string): string | null {
 
 export async function createLogEntry(
   content: string,
-  opts: { tags?: string[]; image_url?: string | null; link_url?: string | null; entry_type?: string } = {}
+  opts: {
+    tags?: string[];
+    image_url?: string | null;
+    link_url?: string | null;
+    entry_type?: string;
+    type?: LogEntryType;
+    url?: string | null;
+    source?: string | null;
+  } = {}
 ): Promise<LogEntry | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const entry_type = opts.entry_type || (opts.image_url ? "image" : opts.link_url ? "link" : "text");
+  const entryType = opts.type || "note";
+  const legacyEntryType = opts.entry_type || (opts.image_url ? "image" : opts.link_url ? "link" : "text");
 
   const { data, error } = await supabase
     .from("log_entries")
@@ -48,8 +63,12 @@ export async function createLogEntry(
       content: content || null,
       image_url: opts.image_url || null,
       link_url: opts.link_url || null,
+      url: opts.url || null,
+      source: opts.source || null,
       tags: opts.tags || [],
-      entry_type,
+      entry_type: legacyEntryType,
+      type: entryType,
+      bookmarked: false,
     })
     .select()
     .single();
@@ -62,6 +81,13 @@ export async function updateLogEntryTags(id: string, tags: string[]): Promise<bo
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").update({ tags }).eq("id", id);
   if (error) { console.error("Failed to update tags:", error); return false; }
+  return true;
+}
+
+export async function toggleBookmark(id: string, bookmarked: boolean): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("log_entries").update({ bookmarked }).eq("id", id);
+  if (error) { console.error("Failed to toggle bookmark:", error); return false; }
   return true;
 }
 
