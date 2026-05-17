@@ -62,7 +62,7 @@ export default function QuickCheckPage() {
 
         {content.trim().length > 20 && (
           <button onClick={handleCheck} disabled={checking}
-            className="mt-6 w-full py-3 rounded-full font-sans font-medium disabled:opacity-50"
+            className="mt-6 w-full py-3 rounded-full font-sans font-semibold disabled:opacity-50"
             style={{ fontSize: 15, background: INK, color: "#fff", border: "none", cursor: "pointer" }}>
             {checking ? "Checking..." : "Check my writing"}
           </button>
@@ -88,7 +88,7 @@ export default function QuickCheckPage() {
                 {feedback.phrases_to_improve.map((p, i) => (
                   <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
                     <p className="font-sans line-through" style={{ fontSize: 16, color: DIM }}>{p.original}</p>
-                    <p className="font-sans font-medium mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
+                    <p className="font-sans font-semibold mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
                     <p className="font-mono mt-1" style={{ fontSize: 13, color: FAINT }}>{p.reason}</p>
                   </div>
                 ))}

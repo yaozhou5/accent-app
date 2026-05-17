@@ -213,7 +213,7 @@ function LogTab({ logEntries, setLogEntries }: {
             )}
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting}
-            className="px-7 py-2.5 rounded-full font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-7 py-2.5 rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ fontSize: 15, background: BLUE, color: "#fff", border: "none", cursor: "pointer", minHeight: 44 }}>
             {submitting ? "Saving..." : "Log"}
           </button>
@@ -264,7 +264,7 @@ function LogTab({ logEntries, setLogEntries }: {
                       <div className="flex items-center gap-2 mt-3">
                         <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{formatTime(entry.created_at)}</span>
                         {entry.tags.map(tag => (
-                          <span key={tag} className="font-mono text-[12px] font-medium px-2 py-0.5 rounded-full"
+                          <span key={tag} className="font-mono text-[12px] font-semibold px-2 py-0.5 rounded-full"
                             style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
                         ))}
                         <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
@@ -284,7 +284,7 @@ function LogTab({ logEntries, setLogEntries }: {
                             style={{ color: INK, padding: "6px 10px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fafafa" }}
                             autoFocus />
                           <button onClick={handleConfirmBookmark}
-                            className="font-sans text-[12px] px-3 py-1.5 rounded-full font-medium shrink-0"
+                            className="font-sans text-[12px] px-3 py-1.5 rounded-full font-semibold shrink-0"
                             style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
                           <button onClick={() => setBookmarkNoteId(null)}
                             className="font-sans text-[12px] px-2 py-1.5 shrink-0"
@@ -516,7 +516,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
         {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-        <button onClick={handleGenerate} disabled={generating} className="w-full py-4 rounded-full font-sans font-medium disabled:opacity-50"
+        <button onClick={handleGenerate} disabled={generating} className="w-full py-4 rounded-full font-sans font-semibold disabled:opacity-50"
           style={{ fontSize: 15, background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
           {generating ? "Generating your plan..." : "Generate my plan"}
         </button>
@@ -566,7 +566,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               return (
                 <div key={i} className="rounded-[12px]" style={{ padding: "24px 20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="font-mono text-[12px] font-medium px-2.5 py-1 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
+                      <span className="font-mono text-[12px] font-semibold px-2.5 py-1 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
                       <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
                     </div>
 
@@ -583,7 +583,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                     )}
 
                     <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-5 rounded-[10px] font-sans font-medium accent-btn-outline"
+                      className="mt-5 rounded-[10px] font-sans font-semibold accent-btn-outline"
                       style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
                       Write this →
                     </button>
@@ -593,7 +593,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           {planData.posts.length < 5 && !maxedOut ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
-              className="mt-6 w-full rounded-[10px] font-sans font-medium disabled:opacity-50 accent-btn-outline"
+              className="mt-6 w-full rounded-[10px] font-sans font-semibold disabled:opacity-50 accent-btn-outline"
               style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
@@ -605,7 +605,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           ) : null}
           <button onClick={onSwitchToLog} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Add more notes for next week</button>
-          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full rounded-[10px] font-sans font-medium accent-btn-outline"
+          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full rounded-[10px] font-sans font-semibold accent-btn-outline"
             style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>Regenerate plan</button>
         </div>
       )}
@@ -803,7 +803,7 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
                 {coaching.phrases_to_improve.map((p, i) => (
                   <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
                     <p className="font-sans line-through" style={{ fontSize: 16, color: DIM }}>{p.original}</p>
-                    <p className="font-sans font-medium mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
+                    <p className="font-sans font-semibold mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
                     <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>{p.reason}</p>
                   </div>
                 ))}
@@ -952,7 +952,7 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
           <p className="font-sans text-[14px] mb-3" style={{ color: "#fff", lineHeight: 1.5 }}>{current.text}</p>
           <div className="flex items-center justify-between">
             <span className="font-mono text-[11px]" style={{ color: "#6b7280" }}>{step}/3</span>
-            <button onClick={onNext} className="font-sans text-[13px] font-medium px-3 py-1 rounded-full"
+            <button onClick={onNext} className="font-sans text-[13px] font-semibold px-3 py-1 rounded-full"
               style={{ background: "#3B82F6", color: "#fff", border: "none", cursor: "pointer" }}>
               {step < 3 ? "Next →" : "Got it"}
             </button>
