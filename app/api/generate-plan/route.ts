@@ -122,9 +122,7 @@ Respond ONLY with valid JSON, no other text:
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return NextResponse.json({ error: "Failed to parse plan" }, { status: 500 });
 
-    const parsed = JSON.parse(match[0]);
-    console.log("Plan API response:", JSON.stringify(parsed).slice(0, 500));
-    return NextResponse.json(parsed);
+    return NextResponse.json(JSON.parse(match[0]));
   } catch (error) {
     console.error("Generate plan error:", error);
     return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 });

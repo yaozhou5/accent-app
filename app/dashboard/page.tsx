@@ -375,9 +375,6 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     if (generating) return;
     setGenerating(true); setError(null);
     try {
-      console.log("=== PLAN GENERATION DEBUG ===");
-      console.log("Total log entries in state:", weekEntries.length);
-      console.log("Entries being sent:", weekEntries.map(e => ({ content: (e.content || "").slice(0, 50), type: e.type, created: e.created_at })));
       const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, image_url: e.image_url, link_url: e.link_url, url: e.url, type: e.type, source: e.source }));
       const shelfItems = weekEntries.filter(e => (e.type === "link" || e.type === "quote" || e.bookmarked));
       const combined = weekEntries.map(e => e.content || "").join("\n");
@@ -388,10 +385,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
       const planData: ContentPlanData = await res.json();
-      console.log("Plan API response:", JSON.stringify(planData).slice(0, 500));
-      console.log("First post fields:", planData.posts?.[0] ? Object.keys(planData.posts[0]) : "no posts");
       const saved = await savePlan(savedDump.id, planData);
-      console.log("Saved plan object:", JSON.stringify(saved).slice(0, 500));
       if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
       onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0);
     } catch { setError("Something went wrong."); }
@@ -403,9 +397,6 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     setLoadingMore(true); setError(null);
     try {
       const existingPrompts = currentPlanData.posts.map(p => p.prompt || p.key_takeaway || p.hook || "").filter(Boolean);
-      console.log("=== MORE IDEAS DEBUG ===");
-      console.log("Existing prompts to exclude:", existingPrompts);
-      console.log("Week entries count:", weekEntries.length);
       const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, url: e.url, type: e.type, source: e.source }));
       const body = {
         entries: entriesPayload.length > 0 ? entriesPayload : undefined,
@@ -414,18 +405,10 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         moreIdeas: { count: 2, exclude: existingPrompts },
       };
       const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      console.log("More ideas API status:", res.status);
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("More ideas API error:", errText);
-        setError("Failed to generate more ideas."); setLoadingMore(false); return;
-      }
+      if (!res.ok) { setError("Failed to generate more ideas."); setLoadingMore(false); return; }
       const newData: ContentPlanData = await res.json();
-      console.log("New ideas received:", newData.posts?.length, JSON.stringify(newData).slice(0, 300));
       const merged: ContentPlanData = { strategy_note: currentPlanData.strategy_note, posts: [...currentPlanData.posts, ...newData.posts].slice(0, 5) };
-      console.log("Merged total posts:", merged.posts.length);
       const updated = await updatePlanPosts(currentPlan.id, merged);
-      console.log("Update result:", updated ? "success" : "failed");
       if (updated) {
         onPlanUpdated(updated);
         setMaxedOut(true);
@@ -551,8 +534,6 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const plan = allPlans.find(p => p.week_start === currentWeek);
   const raw = plan?.plan;
   const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
-  if (planData?.posts?.[0]) console.log("Rendering post[0]:", JSON.stringify(planData.posts[0]));
-  console.log("IdeasTab state:", { currentWeek, weekIdx, totalPlans: allPlans.length, weekCount: weeks.length, hasCurrentPlan, showGenerate, targetWeek: getWeekStart() });
 
   return (
     <div>
