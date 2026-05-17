@@ -66,10 +66,11 @@ body {
 ::selection { background: rgba(37,99,235,0.15); }
 
 .accent-btn-outline {
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .accent-btn-outline:hover:not(:disabled) {
   background: #3B82F6 !important;
+  border-color: #3B82F6 !important;
   color: #fff !important;
 }
 

@@ -213,8 +213,8 @@ function LogTab({ logEntries, setLogEntries }: {
             )}
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting}
-            className="px-7 py-2.5 rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, background: BLUE, color: "#fff", border: "none", cursor: "pointer", minHeight: 44 }}>
+            className="rounded-[8px] font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {submitting ? "Saving..." : "Log"}
           </button>
         </div>
@@ -284,8 +284,8 @@ function LogTab({ logEntries, setLogEntries }: {
                             style={{ color: INK, padding: "6px 10px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fafafa" }}
                             autoFocus />
                           <button onClick={handleConfirmBookmark}
-                            className="font-sans text-[12px] px-3 py-1.5 rounded-full font-semibold shrink-0"
-                            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
+                            className="font-sans font-semibold rounded-[8px] shrink-0"
+                            style={{ fontSize: 13, padding: "8px 16px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
                           <button onClick={() => setBookmarkNoteId(null)}
                             className="font-sans text-[12px] px-2 py-1.5 shrink-0"
                             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
@@ -503,8 +503,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 </div>
               </div>
               <button onClick={handleSaveProfile} disabled={editSaving}
-                className="w-full py-2.5 rounded-full font-sans font-semibold text-[13px] disabled:opacity-50"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-50"
+                style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                 {editSaving ? "Saving..." : "Save"}
               </button>
             </div>
@@ -516,8 +516,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
         {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-        <button onClick={handleGenerate} disabled={generating} className="w-full py-4 rounded-full font-sans font-semibold disabled:opacity-50"
-          style={{ fontSize: 15, background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+        <button onClick={handleGenerate} disabled={generating} className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-50"
+          style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
           {generating ? "Generating your plan..." : "Generate my plan"}
         </button>
         {generating && <div className="mt-6 space-y-3 animate-pulse">{[1, 2, 3].map(i => <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}><div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} /><div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} /><div className="h-12 rounded" style={{ background: "#f0f0f0" }} /></div>)}</div>}
@@ -583,8 +583,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                     )}
 
                     <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-5 rounded-[10px] font-sans font-semibold accent-btn-outline"
-                      style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
+                      className="mt-5 rounded-[8px] font-sans font-semibold accent-btn-outline"
+                      style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
                       Write this →
                     </button>
                 </div>
@@ -593,20 +593,20 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           {planData.posts.length < 5 && !maxedOut ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
-              className="mt-6 w-full rounded-[10px] font-sans font-semibold disabled:opacity-50 accent-btn-outline"
-              style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
+              className="mt-6 w-full rounded-[8px] font-sans font-semibold disabled:opacity-50 accent-btn-outline"
+              style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
           ) : planData.posts.length >= 5 || maxedOut ? (
-            <button disabled className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
-              style={{ border: `1px solid ${BORDER}`, color: FAINT, background: "transparent", cursor: "default" }}>
+            <button disabled className="mt-6 w-full rounded-[8px] font-sans font-semibold"
+              style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BORDER}`, color: FAINT, background: "#fff", cursor: "default" }}>
               That's all for this week
             </button>
           ) : null}
-          <button onClick={onSwitchToLog} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
-            style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Add more notes for next week</button>
-          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full rounded-[10px] font-sans font-semibold accent-btn-outline"
-            style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>Regenerate plan</button>
+          <button onClick={onSwitchToLog} className="mt-2 w-full rounded-[8px] font-sans font-semibold accent-btn-outline"
+            style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>Add more notes for next week</button>
+          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full rounded-[8px] font-sans font-semibold accent-btn-outline"
+            style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>Regenerate plan</button>
         </div>
       )}
     </div>
@@ -776,8 +776,8 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
         {/* Check my writing button */}
         {content.trim().length > 20 && (
           <button onClick={handleCheckWriting} disabled={coachLoading}
-            className="mt-6 w-full py-3 rounded-full font-sans font-semibold text-[14px] disabled:opacity-50"
-            style={{ background: INK, color: "#fff", border: "none", cursor: "pointer" }}>
+            className="mt-6 w-full rounded-[8px] font-sans font-semibold disabled:opacity-50"
+            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {coachLoading ? "Checking..." : "Check my writing"}
           </button>
         )}
