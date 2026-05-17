@@ -162,8 +162,8 @@ export default function Onboard3() {
 
         <div className="flex gap-3">
           <button onClick={handleDone} disabled={platforms.length === 0 || saving}
-            className="flex-1 py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            className="flex-1 rounded-[8px] font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {saving ? "Saving..." : "Done, start planning"}
           </button>
           <button onClick={() => router.push("/onboard/2")} className="px-6 py-3 rounded-full font-sans text-[14px]"

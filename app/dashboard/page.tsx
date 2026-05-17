@@ -285,7 +285,7 @@ function LogTab({ logEntries, setLogEntries }: {
                             autoFocus />
                           <button onClick={handleConfirmBookmark}
                             className="font-sans font-semibold rounded-[8px] shrink-0"
-                            style={{ fontSize: 13, padding: "8px 16px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
+                            style={{ fontSize: 14, padding: "8px 18px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
                           <button onClick={() => setBookmarkNoteId(null)}
                             className="font-sans text-[12px] px-2 py-1.5 shrink-0"
                             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
@@ -503,7 +503,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 </div>
               </div>
               <button onClick={handleSaveProfile} disabled={editSaving}
-                className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-50"
+                className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                 {editSaving ? "Saving..." : "Save"}
               </button>
@@ -516,7 +516,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
         {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-        <button onClick={handleGenerate} disabled={generating} className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-50"
+        <button onClick={handleGenerate} disabled={generating} className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
           {generating ? "Generating your plan..." : "Generate my plan"}
         </button>
@@ -776,7 +776,7 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
         {/* Check my writing button */}
         {content.trim().length > 20 && (
           <button onClick={handleCheckWriting} disabled={coachLoading}
-            className="mt-6 w-full rounded-[8px] font-sans font-semibold disabled:opacity-50"
+            className="mt-6 w-full rounded-[8px] font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {coachLoading ? "Checking..." : "Check my writing"}
           </button>
