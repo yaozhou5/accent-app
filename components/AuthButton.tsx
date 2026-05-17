@@ -112,11 +112,7 @@ export function AuthButton() {
 
     setLoading(false);
     if (error) {
-      console.error("[OTP] verify error:", error);
-      console.error("[OTP] error details:", JSON.stringify(error, null, 2));
       setCodeError(error.message || "Invalid or expired code. Please try again.");
-    } else {
-      console.log("[OTP] success:", data);
     }
   };
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertProfile } from "@/lib/supabase/profiles";
 
-const INK = "#111111";
+const INK = "#111827";
 const DIM = "#6B6B6B";
 const BLUE = "#2563EB";
 const BORDER = "#E5E5E5";
@@ -62,11 +62,7 @@ export default function Onboard3() {
       voice_tone: showHistory ? voiceTone : null,
       onboarding_completed: true,
     });
-    if (!ok) {
-      console.error("Failed to save onboarding profile");
-      setSaving(false);
-      return;
-    }
+    if (!ok) { setSaving(false); return; }
     await new Promise(r => setTimeout(r, 500));
     window.location.href = "/dashboard";
   };

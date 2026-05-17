@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const INK = "#111111";
+const INK = "#111827";
 const DIM = "#6B6B6B";
 const FAINT = "#9ca3af";
 const BORDER = "#E5E5E5";

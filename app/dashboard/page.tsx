@@ -112,7 +112,6 @@ function LogTab({ logEntries, setLogEntries }: {
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unknown error";
-      console.error("Submit error:", e);
       setError(`Failed: ${msg}`);
     }
     setSubmitting(false);
@@ -415,8 +414,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       } else {
         setError("Generated ideas but failed to save.");
       }
-    } catch (e) {
-      console.error("More ideas error:", e);
+    } catch {
       setError("Something went wrong.");
     }
     setLoadingMore(false);
