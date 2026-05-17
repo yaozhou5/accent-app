@@ -390,12 +390,12 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const saved = await savePlan(savedDump.id, planData);
       console.log("Saved plan object:", JSON.stringify(saved).slice(0, 500));
       if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-      onPlanGenerated(saved); setShowGenerate(false);
+      onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0);
     } catch { setError("Something went wrong."); }
     setGenerating(false);
   };
 
-  // Generate view
+  // Generate view (either no plan exists, or user clicked Regenerate)
   if (showGenerate) {
     return (
       <div>
@@ -568,7 +568,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           <button onClick={onSwitchToLog} className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Add more notes for next week</button>
-          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
+          <button onClick={() => { console.log("Regenerate clicked"); setShowGenerate(true); }} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Regenerate plan</button>
         </div>
       )}
