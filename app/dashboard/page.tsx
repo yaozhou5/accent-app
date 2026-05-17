@@ -840,12 +840,15 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("log");
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
+  const [tooltipStep, setTooltipStep] = useState<number | null>(null);
 
   useEffect(() => {
     async function load() {
       const [p, plan, dumps, plans, entries] = await Promise.all([getProfile(), getCurrentPlan(), getAllDumps(), getAllPlans(), getLogEntries()]);
       setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(entries);
       if (plan) setTab("ideas");
+      // Show onboarding tooltip for first-time users
+      if (p && !p.tooltip_seen && entries.length === 0 && !plan) setTooltipStep(1);
       setLoading(false);
     }
     load();
@@ -896,18 +899,66 @@ export default function DashboardPage() {
       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 flex gap-6">
           {TABS.map(t => (
-            <button key={t.key} onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
-              className="font-sans py-3.5" style={{ fontSize: 16, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? INK : DIM, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>
+            <button key={t.key} id={`tab-${t.key}`} onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
+              className="font-sans py-3.5 relative" style={{ fontSize: 16, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? INK : DIM, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>
               {t.label}
             </button>
           ))}
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
+        <div id="compose-card">
+          {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
+        </div>
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
         {tab === "shelf" && <ShelfTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
       </div>
+
+      {/* Onboarding tooltip */}
+      {tooltipStep !== null && <OnboardingTooltip step={tooltipStep} onNext={() => {
+        if (tooltipStep < 3) setTooltipStep(tooltipStep + 1);
+        else { setTooltipStep(null); upsertProfile({ tooltip_seen: true }); }
+      }} onDismiss={() => { setTooltipStep(null); upsertProfile({ tooltip_seen: true }); }} />}
     </div>
+  );
+}
+
+/* ══════════════ ONBOARDING TOOLTIP ══════════════ */
+function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: () => void; onDismiss: () => void }) {
+  const steps = [
+    { target: "compose-card", text: "Start here — write what happened today", position: "below" as const },
+    { target: "tab-ideas", text: "We'll turn your notes into a weekly content plan", position: "below" as const },
+    { target: "tab-shelf", text: "Save links and quotes that inspire you", position: "below" as const },
+  ];
+  const current = steps[step - 1];
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    const el = document.getElementById(current.target);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setPos({ top: rect.bottom + window.scrollY + 8, left: rect.left + rect.width / 2, width: rect.width });
+    }
+  }, [step, current.target]);
+
+  if (!pos) return null;
+
+  return (
+    <>
+      <div onClick={onDismiss} className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.15)" }} />
+      <div className="fixed z-50" style={{ top: pos.top, left: pos.left, transform: "translateX(-50%)" }}>
+        <div style={{ width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderBottom: "8px solid #111827", margin: "0 auto" }} />
+        <div className="rounded-[10px] px-4 py-3" style={{ background: "#111827", minWidth: 240, maxWidth: 300 }}>
+          <p className="font-sans text-[14px] mb-3" style={{ color: "#fff", lineHeight: 1.5 }}>{current.text}</p>
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px]" style={{ color: "#6b7280" }}>{step}/3</span>
+            <button onClick={onNext} className="font-sans text-[13px] font-medium px-3 py-1 rounded-full"
+              style={{ background: "#3B82F6", color: "#fff", border: "none", cursor: "pointer" }}>
+              {step < 3 ? "Next →" : "Got it"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

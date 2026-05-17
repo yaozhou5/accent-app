@@ -22,6 +22,7 @@ export interface UserProfile {
   what_you_do: string | null;
   what_you_build: string | null;
   why_you_post: string | null;
+  tooltip_seen: boolean;
   created_at: string;
 }
 
