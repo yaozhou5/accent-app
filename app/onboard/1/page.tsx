@@ -62,7 +62,7 @@ export default function Onboard1() {
         <button
           onClick={handleNext}
           disabled={!businessDesc.trim() || saving}
-          className="w-full rounded-[8px] font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
         >
           {saving ? "Saving..." : "Next"}
