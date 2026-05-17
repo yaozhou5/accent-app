@@ -37,7 +37,7 @@ export default function SettingsPage() {
       </nav>
 
       <div className="max-w-[480px] mx-auto px-6 py-12">
-        <h1 className="font-sans mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Settings</h1>
+        <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Settings</h1>
 
         <div className="space-y-6">
           <div>

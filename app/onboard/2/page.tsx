@@ -43,7 +43,7 @@ export default function Onboard2() {
         </div>
 
         <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>2 of 3</span>
-        <h1 className="font-sans mb-2" style={{ fontSize: 22, fontWeight: 600, color: INK }}>Why are you posting?</h1>
+        <h1 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Why are you posting?</h1>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>Pick your main goal. This shapes what kind of content we plan for you.</p>
 
         <div className="space-y-3 mb-8">

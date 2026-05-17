@@ -33,7 +33,7 @@ export default function Onboard1() {
         </div>
 
         <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>1 of 3</span>
-        <h1 className="font-sans mb-8" style={{ fontSize: 22, fontWeight: 600, color: INK }}>Who are you?</h1>
+        <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Who are you?</h1>
 
         <div className="mb-6">
           <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What are you building and who's it for?</label>

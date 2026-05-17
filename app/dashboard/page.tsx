@@ -426,7 +426,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   if (showGenerate) {
     return (
       <div>
-        <h2 className="font-sans mb-6" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
+        <h2 className="font-serif mb-6" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
         <div className="rounded-[12px] p-5 mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
           <div className="flex items-center justify-between mb-3">
             <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>📋 Your week at a glance</span>
@@ -541,7 +541,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         <button onClick={() => setWeekIdx(Math.min(weekIdx + 1, weeks.length - 1))} disabled={weekIdx >= weeks.length - 1}
           className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>←</span></button>
         <div className="text-center">
-          <span className="font-sans block" style={{ fontSize: 14, fontWeight: 600, color: INK }}>{weekLabel(currentWeek)}</span>
+          <span className="font-serif block" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{weekLabel(currentWeek)}</span>
           <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
         </div>
         <button onClick={() => setWeekIdx(Math.max(weekIdx - 1, 0))} disabled={weekIdx <= 0}
@@ -570,7 +570,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                       <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
                     </div>
 
-                    <p className="font-sans" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 600 }}>{nudge}</p>
+                    <p className="font-serif" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
 
                     {sourceSnippet && (
                       <div className="mt-4 pl-4" style={{ borderLeft: `2px solid ${BORDER}` }}>
@@ -812,7 +812,7 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
             {coaching.micro_lesson && (
               <div className="p-4 rounded-[10px]" style={{ borderLeft: `3px solid ${BLUE}`, background: `${BLUE}04` }}>
                 <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: BLUE }}>Lesson</span>
-                <p className="font-sans text-[15px] font-semibold mb-2" style={{ color: INK }}>{coaching.micro_lesson.title}</p>
+                <p className="font-serif mb-2" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{coaching.micro_lesson.title}</p>
                 <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.6 }}>{coaching.micro_lesson.explanation}</p>
               </div>
             )}

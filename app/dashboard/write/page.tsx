@@ -98,7 +98,7 @@ export default function QuickCheckPage() {
             {feedback.micro_lesson && (
               <div className="p-4 rounded-[10px]" style={{ borderLeft: `3px solid ${BLUE}`, background: `${BLUE}04` }}>
                 <span className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: BLUE, fontWeight: 500 }}>Lesson</span>
-                <p className="font-sans font-semibold mb-2" style={{ fontSize: 16, color: INK }}>{feedback.micro_lesson.title}</p>
+                <p className="font-serif mb-2" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{feedback.micro_lesson.title}</p>
                 <p className="font-sans" style={{ fontSize: 16, color: DIM, lineHeight: 1.6 }}>{feedback.micro_lesson.explanation}</p>
               </div>
             )}

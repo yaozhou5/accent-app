@@ -81,7 +81,7 @@ export default function Onboard3() {
         </div>
 
         <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>3 of 3</span>
-        <h1 className="font-sans mb-2" style={{ fontSize: 22, fontWeight: 600, color: INK }}>Where and how often?</h1>
+        <h1 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Where and how often?</h1>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>Pick the platforms you're on. Be honest about what you can sustain.</p>
 
         {/* Platforms */}
