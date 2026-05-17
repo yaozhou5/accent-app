@@ -583,8 +583,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                     )}
 
                     <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-5 px-6 py-2.5 rounded-full font-sans font-medium"
-                      style={{ fontSize: 15, border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
+                      className="mt-5 rounded-[10px] font-sans font-medium accent-btn-outline"
+                      style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
                       Write this →
                     </button>
                 </div>
@@ -593,8 +593,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           {planData.posts.length < 5 && !maxedOut ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
-              className="mt-6 w-full py-3 rounded-full font-sans font-medium disabled:opacity-50"
-              style={{ fontSize: 15, border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
+              className="mt-6 w-full rounded-[10px] font-sans font-medium disabled:opacity-50 accent-btn-outline"
+              style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
           ) : planData.posts.length >= 5 || maxedOut ? (
@@ -605,8 +605,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           ) : null}
           <button onClick={onSwitchToLog} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Add more notes for next week</button>
-          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
-            style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Regenerate plan</button>
+          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full rounded-[10px] font-sans font-medium accent-btn-outline"
+            style={{ fontSize: 15, padding: "10px 20px", border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>Regenerate plan</button>
         </div>
       )}
     </div>
