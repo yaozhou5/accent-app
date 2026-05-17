@@ -5,7 +5,7 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 
 export async function POST(request: NextRequest) {
   try {
-    const { dump, entries, shelfItems, profile } = await request.json();
+    const { dump, entries, shelfItems, profile, moreIdeas } = await request.json();
     if (!profile) return NextResponse.json({ error: "Profile is required" }, { status: 400 });
 
     // Support both: single dump string or array of tagged entries
@@ -91,6 +91,7 @@ ${profile.voice_tone ? `Their natural tone: ${profile.voice_tone}` : ""}
 If the user says certain post types work and others flop, never suggest the types that flop. Lean into what already works. If they say they haven't found what works yet, mix different post types so they can discover what resonates. Match their stated tone.
 
 ${profile.past_posts ? `PAST POSTS BY THIS FOUNDER:\n${profile.past_posts}\n\nAnalyze these for: what topics got engagement, what voice/tone the founder naturally uses, what patterns work vs don't. Reference this in your plan.\n` : ""}${shelfContext}${dumpText}
+${moreIdeas ? `\nIMPORTANT: Generate exactly ${moreIdeas.count} MORE content ideas. Do NOT repeat or rephrase these existing ideas:\n${(moreIdeas.exclude as string[]).map((p: string) => `- "${p}"`).join("\n")}\n\nFind completely different angles from the same material. Look for moments or details you haven't used yet.` : ""}
 
 Respond ONLY with valid JSON, no other text:
 {

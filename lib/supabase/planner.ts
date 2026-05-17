@@ -109,6 +109,22 @@ export async function savePlan(dumpId: string, plan: ContentPlanData): Promise<C
   return data as ContentPlan;
 }
 
+export async function updatePlanPosts(planId: string, plan: ContentPlanData): Promise<ContentPlan | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("content_plans")
+    .update({ plan })
+    .eq("id", planId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to update plan:", error);
+    return null;
+  }
+  return data as ContentPlan;
+}
+
 export async function getCurrentPlan(): Promise<ContentPlan | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
-import { savePlan, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
+import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { getDraft, saveDraft } from "@/lib/supabase/drafts";
 
@@ -312,9 +312,10 @@ function LogTab({ logEntries, setLogEntries }: {
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onSwitchToLog, onWritePost, onProfileUpdated }: {
+function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated }: {
   profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[];
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
+  onPlanUpdated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
   onProfileUpdated: (fields: Partial<UserProfile>) => void;
 }) {
@@ -327,6 +328,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenerate, setShowGenerate] = useState(!hasCurrentPlan);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [maxedOut, setMaxedOut] = useState(false);
 
   useEffect(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) { setWeekIdx(i); setShowGenerate(false); } } }, [initialWeek]);
 
@@ -393,6 +396,28 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0);
     } catch { setError("Something went wrong."); }
     setGenerating(false);
+  };
+
+  const handleMoreIdeas = async (currentPlan: ContentPlan, currentPlanData: ContentPlanData) => {
+    if (loadingMore || currentPlanData.posts.length >= 5) return;
+    setLoadingMore(true); setError(null);
+    try {
+      const existingPrompts = currentPlanData.posts.map(p => p.prompt || p.key_takeaway || p.hook || "").filter(Boolean);
+      const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, url: e.url, type: e.type, source: e.source }));
+      const body = {
+        entries: entriesPayload.length > 0 ? entriesPayload : undefined,
+        dump: entriesPayload.length === 0 ? "Generate more ideas based on my profile" : undefined,
+        profile,
+        moreIdeas: { count: 2, exclude: existingPrompts },
+      };
+      const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) { setError("Failed to generate more ideas."); setLoadingMore(false); return; }
+      const newData: ContentPlanData = await res.json();
+      const merged: ContentPlanData = { strategy_note: currentPlanData.strategy_note, posts: [...currentPlanData.posts, ...newData.posts].slice(0, 5) };
+      const updated = await updatePlanPosts(currentPlan.id, merged);
+      if (updated) { onPlanUpdated(updated); setMaxedOut(true); }
+    } catch { setError("Something went wrong."); }
+    setLoadingMore(false);
   };
 
   // Generate view (either no plan exists, or user clicked Regenerate)
@@ -566,9 +591,21 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               );
             })}
           </div>
-          <button onClick={onSwitchToLog} className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
+          {planData.posts.length < 5 && !maxedOut ? (
+            <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
+              className="mt-6 w-full py-3 rounded-full font-sans font-medium disabled:opacity-50"
+              style={{ fontSize: 15, border: `1px solid ${BLUE}`, background: "transparent", color: BLUE, cursor: "pointer" }}>
+              {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
+            </button>
+          ) : planData.posts.length >= 5 || maxedOut ? (
+            <button disabled className="mt-6 w-full py-3 rounded-full font-sans text-[14px]"
+              style={{ border: `1px solid ${BORDER}`, color: FAINT, background: "transparent", cursor: "default" }}>
+              That's all for this week
+            </button>
+          ) : null}
+          <button onClick={onSwitchToLog} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Add more notes for next week</button>
-          <button onClick={() => { console.log("Regenerate clicked"); setShowGenerate(true); }} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
+          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full py-3 rounded-full font-sans text-[14px]"
             style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>Regenerate plan</button>
         </div>
       )}
@@ -868,7 +905,7 @@ export default function DashboardPage() {
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
         {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
         {tab === "shelf" && <ShelfTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
       </div>
     </div>
