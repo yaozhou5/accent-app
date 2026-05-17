@@ -372,6 +372,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     if (generating) return;
     setGenerating(true); setError(null);
     try {
+      console.log("=== PLAN GENERATION DEBUG ===");
+      console.log("Total log entries in state:", weekEntries.length);
+      console.log("Entries being sent:", weekEntries.map(e => ({ content: (e.content || "").slice(0, 50), type: e.type, created: e.created_at })));
       const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, image_url: e.image_url, link_url: e.link_url, url: e.url, type: e.type, source: e.source }));
       const shelfItems = weekEntries.filter(e => (e.type === "link" || e.type === "quote" || e.bookmarked));
       const combined = weekEntries.map(e => e.content || "").join("\n");
@@ -505,6 +508,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const raw = plan?.plan;
   const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
   if (planData?.posts?.[0]) console.log("Rendering post[0]:", JSON.stringify(planData.posts[0]));
+  console.log("IdeasTab state:", { currentWeek, weekIdx, totalPlans: allPlans.length, weekCount: weeks.length, hasCurrentPlan, showGenerate, targetWeek: getWeekStart() });
 
   return (
     <div>
