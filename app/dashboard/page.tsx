@@ -598,10 +598,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
           ) : planData.posts.length >= 5 || maxedOut ? (
-            <button disabled className="mt-6 w-full rounded-[8px] font-sans font-semibold"
-              style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BORDER}`, color: FAINT, background: "#fff", cursor: "default" }}>
-              That's all for this week
-            </button>
+            <p className="mt-6 text-center font-sans font-medium" style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}>
+              ✓ All set for this week
+            </p>
           ) : null}
           <button onClick={onSwitchToLog} className="mt-2 w-full rounded-[8px] font-sans font-semibold accent-btn-outline"
             style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>Add more notes for next week</button>
