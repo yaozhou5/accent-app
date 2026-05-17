@@ -403,6 +403,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     setLoadingMore(true); setError(null);
     try {
       const existingPrompts = currentPlanData.posts.map(p => p.prompt || p.key_takeaway || p.hook || "").filter(Boolean);
+      console.log("=== MORE IDEAS DEBUG ===");
+      console.log("Existing prompts to exclude:", existingPrompts);
+      console.log("Week entries count:", weekEntries.length);
       const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, url: e.url, type: e.type, source: e.source }));
       const body = {
         entries: entriesPayload.length > 0 ? entriesPayload : undefined,
@@ -411,12 +414,28 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         moreIdeas: { count: 2, exclude: existingPrompts },
       };
       const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) { setError("Failed to generate more ideas."); setLoadingMore(false); return; }
+      console.log("More ideas API status:", res.status);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("More ideas API error:", errText);
+        setError("Failed to generate more ideas."); setLoadingMore(false); return;
+      }
       const newData: ContentPlanData = await res.json();
+      console.log("New ideas received:", newData.posts?.length, JSON.stringify(newData).slice(0, 300));
       const merged: ContentPlanData = { strategy_note: currentPlanData.strategy_note, posts: [...currentPlanData.posts, ...newData.posts].slice(0, 5) };
+      console.log("Merged total posts:", merged.posts.length);
       const updated = await updatePlanPosts(currentPlan.id, merged);
-      if (updated) { onPlanUpdated(updated); setMaxedOut(true); }
-    } catch { setError("Something went wrong."); }
+      console.log("Update result:", updated ? "success" : "failed");
+      if (updated) {
+        onPlanUpdated(updated);
+        setMaxedOut(true);
+      } else {
+        setError("Generated ideas but failed to save.");
+      }
+    } catch (e) {
+      console.error("More ideas error:", e);
+      setError("Something went wrong.");
+    }
     setLoadingMore(false);
   };
 
