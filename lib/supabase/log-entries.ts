@@ -55,7 +55,7 @@ export async function createLogEntry(
 
   const row: Record<string, unknown> = {
     user_id: user.id,
-    content: content || null,
+    content: content || "",
     tags: opts.tags || [],
     type: entryType,
     bookmarked: false,
