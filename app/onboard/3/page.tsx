@@ -50,19 +50,23 @@ export default function Onboard3() {
   const handleDone = async () => {
     if (platforms.length === 0) return;
     setSaving(true);
+    // Save core fields first (these columns always exist)
     const ok = await upsertProfile({
       platforms,
       posting_frequency: frequency,
       posting_challenges: challenges.trim() || null,
+      onboarding_completed: true,
+    });
+    if (!ok) { setSaving(false); return; }
+    // Save optional fields as best-effort (columns may not exist yet)
+    await upsertProfile({
       profile_url: profileUrl.trim() || null,
       past_posts: pastPosts.trim() || null,
       posting_experience: experience,
       posts_that_work: showHistory ? postsThatWork : [],
       posts_that_flop: showHistory ? postsThatFlop : [],
       voice_tone: showHistory ? voiceTone : null,
-      onboarding_completed: true,
-    });
-    if (!ok) { setSaving(false); return; }
+    }).catch(() => {});
     await new Promise(r => setTimeout(r, 500));
     window.location.href = "/dashboard";
   };
