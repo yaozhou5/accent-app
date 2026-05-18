@@ -247,10 +247,13 @@ function LogTab({ logEntries, setLogEntries }: {
                         <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>
                       )}
                       {entry.image_url && (
-                        <div className="mt-2">
-                          <img src={entry.image_url} alt="" className="rounded-[6px] cursor-pointer hover:opacity-90"
-                            style={{ maxHeight: expandedImage === entry.id ? 400 : 100, border: `1px solid ${BORDER}`, objectFit: "cover" }}
+                        <div className={entry.content ? "mt-3" : ""}>
+                          <img src={entry.image_url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-90"
+                            style={{ maxHeight: 200, objectFit: "cover", border: `1px solid ${BORDER}` }}
                             onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
+                          {expandedImage === entry.id && (
+                            <img src={entry.image_url} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
+                          )}
                         </div>
                       )}
                       {(isLink || entryUrl) && entryUrl && (
