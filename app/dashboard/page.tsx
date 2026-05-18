@@ -6,6 +6,7 @@ import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/prof
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
+import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { getDraft, saveDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
 
 // Design tokens
@@ -1042,13 +1043,25 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       const [p, plan, dumps, plans, entries, draftsList] = await Promise.all([getProfile(), getCurrentPlan(), getAllDumps(), getAllPlans(), getLogEntries(), getAllDrafts()]);
-      setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(entries); setDrafts(draftsList);
+      // If entries are empty but profile exists, retry once (auth session may not be ready)
+      let finalEntries = entries;
+      if (finalEntries.length === 0 && p) {
+        await new Promise(r => setTimeout(r, 500));
+        finalEntries = await getLogEntries();
+      }
+      setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(finalEntries); setDrafts(draftsList);
       if (plan) setTab("ideas");
-      // Show onboarding tooltip for first-time users
-      if (p && !p.tooltip_seen && entries.length === 0 && !plan) setTooltipStep(1);
+      if (p && !p.tooltip_seen && finalEntries.length === 0 && !plan) setTooltipStep(1);
       setLoading(false);
     }
     load();
+
+    // Refetch when auth session changes (login, token refresh)
+    const supabase = createSupabaseClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) load();
+    });
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   const nowDate = new Date(); const nowDay = nowDate.getDay(); const nowDiff = nowDay === 0 ? 6 : nowDay - 1;
