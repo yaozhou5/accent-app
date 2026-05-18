@@ -6,7 +6,7 @@ import { upsertProfile } from "@/lib/supabase/profiles";
 
 const INK = "#111827";
 const DIM = "#6B6B6B";
-const BLUE = "#2563EB";
+const BLUE = "#3B82F6";
 const BORDER = "#E5E5E5";
 
 const PLATFORMS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];

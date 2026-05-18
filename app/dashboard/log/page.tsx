@@ -72,9 +72,8 @@ export default function LogPage() {
       } else {
         setError("Failed to save. Make sure the logs table exists in Supabase.");
       }
-    } catch (e) {
-      console.error("Log submit error:", e);
-      setError("Something went wrong. Check the console for details.");
+    } catch {
+      setError("Something went wrong.");
     }
     setSubmitting(false);
     textareaRef.current?.focus();
