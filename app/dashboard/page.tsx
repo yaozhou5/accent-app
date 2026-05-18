@@ -852,6 +852,9 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 
   const hasStructure = post.structure && post.structure.length > 0;
   const displayText = post.prompt || post.key_takeaway || post.hook || "";
+  const rawSnippet = post.source_snippet || "";
+  const sourceNote = rawSnippet.length > 5 && !/^[\s\-\[\]]*$/.test(rawSnippet) ? rawSnippet : "";
+  const [showNote, setShowNote] = useState(true);
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
@@ -861,15 +864,28 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
           <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : FAINT }}>{saving ? "Saving..." : "Saved"}</span>
         </div>
 
-        <p className="font-sans text-[14px] font-semibold mb-4" style={{ color: DIM }}>{displayText}</p>
+        <p className="font-serif font-semibold mb-4" style={{ fontSize: 18, color: INK }}>{displayText}</p>
+
+        {sourceNote && (
+          <div className="mb-6">
+            <button onClick={() => setShowNote(!showNote)} className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em", fontWeight: 500 }}>
+              Your note <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showNote ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
+            </button>
+            {showNote && (
+              <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic" }}>{sourceNote}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {hasStructure && (
           <div className="mb-6">
-            <button onClick={() => setShowStructure(!showStructure)} className="font-mono text-[11px] uppercase mb-2" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.06em" }}>
-              {showStructure ? "Hide structure ▲" : "Show structure ▼"}
+            <button onClick={() => setShowStructure(!showStructure)} className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em", fontWeight: 500 }}>
+              Structure <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showStructure ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
             </button>
             {showStructure && (
-              <div className="p-4 rounded-[10px] space-y-2" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+              <div className="p-4 rounded-[10px] space-y-2" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
                 {(post.structure || []).map((step: string, j: number) => (
                   <p key={j} className="font-sans text-[13px]" style={{ color: DIM, lineHeight: 1.5 }}>
                     <span className="font-mono text-[11px] mr-2" style={{ color: BLUE }}>{j + 1}.</span>{step}
