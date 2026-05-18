@@ -768,6 +768,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showStructure, setShowStructure] = useState(true);
+  const [showNote, setShowNote] = useState(true);
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -854,7 +855,6 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
   const displayText = post.prompt || post.key_takeaway || post.hook || "";
   const rawSnippet = post.source_snippet || "";
   const sourceNote = rawSnippet.length > 5 && !/^[\s\-\[\]]*$/.test(rawSnippet) ? rawSnippet : "";
-  const [showNote, setShowNote] = useState(true);
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
