@@ -211,7 +211,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   return (
     <div>
       {/* Compose */}
-      <div className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
+      <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
         <div className="flex gap-2 px-5 pt-4">
           {(["note", "link", "quote"] as LogEntryType[]).map(t => (
             <button key={t} onClick={() => setEntryType(t)} className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
@@ -1104,9 +1104,7 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        <div id="compose-card">
-          {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} />}
-        </div>
+        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} />}
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
         {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
@@ -1123,19 +1121,25 @@ export default function DashboardPage() {
 /* ══════════════ ONBOARDING TOOLTIP ══════════════ */
 function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: () => void; onDismiss: () => void }) {
   const steps = [
-    { target: "compose-card", text: "Start here — write what happened today", position: "below" as const },
-    { target: "tab-ideas", text: "We'll turn your notes into a weekly content plan", position: "below" as const },
-    { target: "tab-drafts", text: "Your written posts live here", position: "below" as const },
+    { target: "compose-card", text: "Start here — write what happened today" },
+    { target: "tab-ideas", text: "We'll turn your notes into a weekly content plan" },
+    { target: "tab-drafts", text: "Your written posts live here" },
   ];
   const current = steps[step - 1];
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
-    const el = document.getElementById(current.target);
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      setPos({ top: rect.bottom + window.scrollY + 8, left: rect.left + rect.width / 2, width: rect.width });
-    }
+    const update = () => {
+      const el = document.getElementById(current.target);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
+      }
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
   }, [step, current.target]);
 
   if (!pos) return null;
@@ -1143,7 +1147,7 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
   return (
     <>
       <div onClick={onDismiss} className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.15)" }} />
-      <div className="fixed z-50" style={{ top: pos.top, left: pos.left, transform: "translateX(-50%)" }}>
+      <div className="fixed z-50" style={{ top: pos.top, left: Math.min(Math.max(pos.left, 160), window.innerWidth - 160), transform: "translateX(-50%)" }}>
         <div style={{ width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderBottom: "8px solid #111827", margin: "0 auto" }} />
         <div className="rounded-[10px] px-4 py-3" style={{ background: "#111827", minWidth: 240, maxWidth: 300 }}>
           <p className="font-sans text-[14px] mb-3" style={{ color: "#fff", lineHeight: 1.5 }}>{current.text}</p>
