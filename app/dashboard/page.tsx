@@ -635,7 +635,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
               const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
               const nudge = post.prompt || post.key_takeaway || post.hook || "";
-              const sourceSnippet = post.source_snippet || "";
+              const rawSnippet = post.source_snippet || "";
+              const sourceSnippet = rawSnippet.length > 5 && !/^[\s\-\[\]]*$/.test(rawSnippet) ? rawSnippet : "";
 
               return (
                 <div key={i} className="rounded-[12px]" style={{ padding: "24px 20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
