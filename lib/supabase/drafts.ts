@@ -55,7 +55,7 @@ export async function saveDraft(planId: string, postIndex: number, content: stri
       .eq("id", existing.id)
       .select()
       .single();
-    if (error) { console.error("Failed to update draft:", error); return null; }
+    if (error) { console.error("Failed to update draft:", JSON.stringify(error)); return null; }
     return data as Draft;
   }
 
@@ -65,6 +65,6 @@ export async function saveDraft(planId: string, postIndex: number, content: stri
     .select()
     .single();
 
-  if (error) { console.error("Failed to save draft:", error); return null; }
+  if (error) { console.error("Failed to insert draft:", JSON.stringify(error)); return null; }
   return data as Draft;
 }

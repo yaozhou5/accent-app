@@ -805,12 +805,18 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     }, 1000);
   };
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleExplicitSave = async () => {
-    setSaving(true);
-    await saveDraft(planId, postIndex, content);
+    setSaving(true); setSaveError(null);
+    const result = await saveDraft(planId, postIndex, content);
     lastSavedRef.current = content;
     setSaving(false);
-    onSaveDone();
+    if (result) {
+      onSaveDone();
+    } else {
+      setSaveError("Failed to save draft. Check browser console for details.");
+    }
   };
 
   const handleCheckWriting = async () => {
@@ -861,7 +867,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
           <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to plan</button>
-          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : FAINT }}>{saving ? "Saving..." : "Saved"}</span>
+          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>{saving ? "Saving..." : saveError ? "Save failed" : "Saved"}</span>
         </div>
 
         <p className="font-serif font-semibold mb-4" style={{ fontSize: 18, color: INK }}>{displayText}</p>
@@ -914,6 +920,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
               style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
               Save draft
             </button>
+            {saveError && <p className="font-sans text-[13px] mt-2" style={{ color: "#DC2626" }}>{saveError}</p>}
           </div>
         )}
 
