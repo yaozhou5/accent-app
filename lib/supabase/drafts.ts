@@ -27,6 +27,21 @@ export async function getDraft(planId: string, postIndex: number): Promise<Draft
   return data as Draft | null;
 }
 
+export async function getAllDrafts(): Promise<Draft[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("drafts")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false });
+
+  if (error) { console.error("Failed to fetch drafts:", error); return []; }
+  return data as Draft[];
+}
+
 export async function saveDraft(planId: string, postIndex: number, content: string): Promise<Draft | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();

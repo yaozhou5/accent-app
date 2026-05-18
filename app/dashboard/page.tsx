@@ -6,7 +6,7 @@ import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/prof
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
-import { getDraft, saveDraft } from "@/lib/supabase/drafts";
+import { getDraft, saveDraft, getAllDrafts, type Draft } from "@/lib/supabase/drafts";
 
 // Design tokens
 const INK = "#111827";      // gray-900
@@ -79,7 +79,7 @@ function groupByWeek(entries: LogEntry[]): { label: string; weekStart: Date; ent
 }
 function getDomain(url: string): string { try { return new URL(url).hostname; } catch { return url; } }
 
-type Tab = "log" | "ideas" | "shelf";
+type Tab = "log" | "ideas" | "drafts";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
@@ -686,65 +686,68 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   );
 }
 
-/* ══════════════ SHELF TAB ══════════════ */
-function ShelfTab({ logEntries, setLogEntries }: { logEntries: LogEntry[]; setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void }) {
-  const [filter, setFilter] = useState<"all" | "links" | "quotes" | "bookmarked">("all");
+/* ══════════════ DRAFTS TAB ══════════════ */
+function DraftsTab({ drafts, allPlans, onOpenDraft }: { drafts: Draft[]; allPlans: ContentPlan[]; onOpenDraft: (planId: string, postIndex: number) => void }) {
+  const [filter, setFilter] = useState<"all" | "drafts" | "published">("all");
 
-  const shelfItems = logEntries.filter(e => {
-    if (filter === "links") return e.type === "link";
-    if (filter === "quotes") return e.type === "quote";
-    if (filter === "bookmarked") return e.bookmarked;
-    return e.type === "link" || e.type === "quote" || e.bookmarked;
+  // Match drafts to their plan posts for context
+  const draftsWithContext = drafts.filter(d => d.content.trim()).map(d => {
+    const plan = allPlans.find(p => p.id === d.plan_id);
+    const planData = plan ? (typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan) as ContentPlanData : null;
+    const post = planData?.posts?.[d.post_index];
+    const prompt = post?.prompt || post?.key_takeaway || post?.hook || "";
+    const platform = post?.platform || "";
+    const wordCount = d.content.trim().split(/\s+/).length;
+    const isDraft = wordCount < 100; // rough heuristic: < 100 words = draft, >= 100 = likely done
+    return { ...d, prompt, platform, wordCount, isDraft };
   });
 
-  const handleRemove = async (id: string) => {
-    const entry = logEntries.find(e => e.id === id);
-    if (!entry) return;
-    if (entry.bookmarked) {
-      const ok = await toggleBookmark(id, false);
-      if (ok) setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: false } : e));
-    }
-  };
+  const filtered = draftsWithContext.filter(d => {
+    if (filter === "drafts") return d.isDraft;
+    if (filter === "published") return !d.isDraft;
+    return true;
+  });
+
+  const FILTERS: { key: typeof filter; label: string }[] = [
+    { key: "all", label: "All" }, { key: "drafts", label: "Drafts" }, { key: "published", label: "Published" },
+  ];
 
   return (
     <div>
       <div className="flex gap-2 mb-6 flex-wrap">
-        {(["all", "links", "quotes", "bookmarked"] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className="font-mono text-[11px] px-3 py-1.5 rounded-full capitalize transition-all"
-            style={{ background: filter === f ? `${BLUE}12` : "transparent", color: filter === f ? BLUE : FAINT, border: filter === f ? `1px solid ${BLUE}30` : `1px solid ${BORDER}`, cursor: "pointer" }}>
-            {f === "all" ? "All" : f === "links" ? "🔗 Links" : f === "quotes" ? "💬 Quotes" : "🔖 Bookmarked"}
+        {FILTERS.map(f => (
+          <button key={f.key} onClick={() => setFilter(f.key)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+            style={{ background: filter === f.key ? `${BLUE}10` : "transparent", color: filter === f.key ? BLUE : FAINT, border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`, cursor: "pointer" }}>
+            {f.label}
           </button>
         ))}
       </div>
-      {shelfItems.length === 0 ? (
-        <div className="text-center py-16"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
-          {filter === "all" ? "Save links, quotes, or bookmark notes to build your inspiration bank." : `No ${filter} items yet.`}
-        </p></div>
+      {filtered.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
+            {filter === "all" ? "No drafts yet. Tap \"Write this →\" on any idea to start." : `No ${filter} yet.`}
+          </p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {shelfItems.map(item => {
-            const entryUrl = item.url || item.link_url;
-            return (
-              <div key={item.id} className="rounded-[10px] p-4" style={{
-                border: `1px solid ${BORDER}`, background: "#fff",
-                borderLeft: item.type === "quote" ? `3px solid ${BLUE}` : item.type === "link" ? `3px solid #0d9488` : `1px solid ${BORDER}`,
-              }}>
-                {item.type === "quote" && <span style={{ fontSize: 20, color: FAINT, lineHeight: 1 }}>"</span>}
-                {item.content && <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.55, fontStyle: item.type === "quote" ? "italic" : "normal" }}>{item.content}</p>}
-                {item.type === "quote" && item.source && <p className="font-sans text-[12px] mt-1" style={{ color: FAINT }}>— {item.source}</p>}
-                {entryUrl && (
-                  <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-2 p-2 rounded-[6px] hover:bg-gray-50" style={{ border: `1px solid ${BORDER}` }}>
-                    <span className="font-mono text-[11px]" style={{ color: "#0d9488" }}>{getDomain(entryUrl)}</span>
-                  </a>
-                )}
-                <div className="flex items-center justify-between mt-2">
-                  <span className="font-mono" style={{ fontSize: 13, color: FAINT }}>{getDayLabel(item.created_at)} · {formatTime(item.created_at)}</span>
-                  {item.bookmarked && <button onClick={() => handleRemove(item.id)} className="font-mono text-[10px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Remove</button>}
-                </div>
+        <div className="space-y-4">
+          {filtered.map(d => (
+            <div key={d.id} className="rounded-[12px] cursor-pointer hover:border-blue-200 transition-colors"
+              style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}
+              onClick={() => onOpenDraft(d.plan_id, d.post_index)}>
+              {d.prompt && (
+                <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>{d.prompt}</p>
+              )}
+              <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {d.content}
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                {d.platform && <span className="font-sans text-[12px] px-2 py-0.5 rounded-full" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_LABELS[d.platform] || d.platform}</span>}
+                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{d.wordCount} words</span>
+                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>· {getDayLabel(d.updated_at)}</span>
+                {d.isDraft && <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f59e0b15", color: "#f59e0b" }}>Draft</span>}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -909,6 +912,7 @@ export default function DashboardPage() {
   const [allDumps, setAllDumps] = useState<WeeklyDump[]>([]);
   const [allPlans, setAllPlans] = useState<ContentPlan[]>([]);
   const [logEntriesState, setLogEntries] = useState<LogEntry[]>([]);
+  const [draftsState, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("log");
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
@@ -917,8 +921,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const [p, plan, dumps, plans, entries] = await Promise.all([getProfile(), getCurrentPlan(), getAllDumps(), getAllPlans(), getLogEntries()]);
-      setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(entries);
+      const [p, plan, dumps, plans, entries, draftsList] = await Promise.all([getProfile(), getCurrentPlan(), getAllDumps(), getAllPlans(), getLogEntries(), getAllDrafts()]);
+      setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(entries); setDrafts(draftsList);
       if (plan) setTab("ideas");
       // Show onboarding tooltip for first-time users
       if (p && !p.tooltip_seen && entries.length === 0 && !plan) setTooltipStep(1);
@@ -952,7 +956,7 @@ export default function DashboardPage() {
     </div>
   );
 
-  const TABS: { key: Tab; label: string }[] = [{ key: "log", label: "Log" }, { key: "ideas", label: "Ideas" }, { key: "shelf", label: "Shelf" }];
+  const TABS: { key: Tab; label: string }[] = [{ key: "log", label: "Log" }, { key: "ideas", label: "Ideas" }, { key: "drafts", label: "Drafts" }];
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
@@ -984,7 +988,7 @@ export default function DashboardPage() {
           {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} />}
         </div>
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
-        {tab === "shelf" && <ShelfTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
+        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} />}
       </div>
 
       {/* Onboarding tooltip */}
@@ -1001,7 +1005,7 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
   const steps = [
     { target: "compose-card", text: "Start here — write what happened today", position: "below" as const },
     { target: "tab-ideas", text: "We'll turn your notes into a weekly content plan", position: "below" as const },
-    { target: "tab-shelf", text: "Save links and quotes that inspire you", position: "below" as const },
+    { target: "tab-drafts", text: "Your written posts live here", position: "below" as const },
   ];
   const current = steps[step - 1];
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
