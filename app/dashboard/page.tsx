@@ -762,7 +762,7 @@ interface CoachFeedback {
   micro_lesson: { title: string; explanation: string };
 }
 
-function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIndex: number; post: ContentPlanPost; onBack: () => void }) {
+function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: string; postIndex: number; post: ContentPlanPost; onBack: () => void; onSaveDone: () => void }) {
   const [content, setContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -770,20 +770,45 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveInterval = useRef<NodeJS.Timeout | null>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
+  const lastSavedRef = useRef("");
 
   useEffect(() => {
-    getDraft(planId, postIndex).then(d => { if (d) setContent(d.content); setLoaded(true); });
+    getDraft(planId, postIndex).then(d => { if (d) { setContent(d.content); lastSavedRef.current = d.content; } setLoaded(true); });
   }, [planId, postIndex]);
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    autoSaveInterval.current = setInterval(async () => {
+      if (content.trim() && content !== lastSavedRef.current) {
+        setSaving(true);
+        await saveDraft(planId, postIndex, content);
+        lastSavedRef.current = content;
+        setSaving(false);
+      }
+    }, 30000);
+    return () => { if (autoSaveInterval.current) clearInterval(autoSaveInterval.current); };
+  }, [content, planId, postIndex]);
 
   const handleChange = (val: string) => {
     setContent(val);
+    // Debounced save on typing (1s)
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(async () => {
       setSaving(true);
       await saveDraft(planId, postIndex, val);
+      lastSavedRef.current = val;
       setSaving(false);
     }, 1000);
+  };
+
+  const handleExplicitSave = async () => {
+    setSaving(true);
+    await saveDraft(planId, postIndex, content);
+    lastSavedRef.current = content;
+    setSaving(false);
+    onSaveDone();
   };
 
   const handleCheckWriting = async () => {
@@ -791,22 +816,35 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
     setCoachLoading(true);
     try {
       const res = await fetch("/api/coach-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          draft: content.trim(),
-          key_takeaway: post.prompt || post.key_takeaway || post.hook,
-          structure: post.structure,
-          platform: post.platform,
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft: content.trim(), key_takeaway: post.prompt || post.key_takeaway || post.hook, structure: post.structure, platform: post.platform }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setCoaching(data);
-        setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      }
+      if (res.ok) { const data = await res.json(); setCoaching(data); setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100); }
     } catch {}
     setCoachLoading(false);
+  };
+
+  const handleApplySuggestions = async () => {
+    if (!coaching) return;
+    let updated = content;
+    for (const p of coaching.phrases_to_improve) {
+      if (p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion);
+    }
+    setContent(updated);
+    setSaving(true);
+    await saveDraft(planId, postIndex, updated);
+    lastSavedRef.current = updated;
+    setSaving(false);
+    setCoaching(null);
+  };
+
+  const handleKeepOriginal = async () => {
+    setSaving(true);
+    await saveDraft(planId, postIndex, content);
+    lastSavedRef.current = content;
+    setSaving(false);
+    setCoaching(null);
+    onSaveDone();
   };
 
   if (!loaded) return <div className="py-12 text-center"><span className="font-sans text-[14px]" style={{ color: FAINT }}>Loading...</span></div>;
@@ -841,26 +879,30 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
           </div>
         )}
 
-        <textarea
-          value={content} onChange={e => handleChange(e.target.value)}
-          placeholder="Start writing..."
+        <textarea value={content} onChange={e => handleChange(e.target.value)} placeholder="Start writing..."
           className="w-full outline-none resize-y font-sans"
           style={{ fontSize: 16, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh" }}
-          autoFocus
-        />
+          autoFocus />
 
-        {/* Check my writing button */}
-        {content.trim().length > 20 && (
-          <button onClick={handleCheckWriting} disabled={coachLoading}
-            className="mt-6 w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-            {coachLoading ? "Checking..." : "Check my writing"}
-          </button>
+        {/* Action buttons */}
+        {content.trim().length > 20 && !coaching && (
+          <div className="mt-6 space-y-3">
+            <button onClick={handleCheckWriting} disabled={coachLoading}
+              className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+              {coachLoading ? "Checking..." : "Check my writing"}
+            </button>
+            <button onClick={handleExplicitSave}
+              className="w-full rounded-full font-sans font-semibold accent-btn-outline"
+              style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
+              Save draft
+            </button>
+          </div>
         )}
 
         {/* Coaching feedback */}
         {coaching && (
-          <div ref={feedbackRef} className="mt-8 space-y-5 pb-12">
+          <div ref={feedbackRef} className="mt-8 space-y-5">
             <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
               <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Overall</span>
               <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
@@ -894,10 +936,19 @@ function WriteMode({ planId, postIndex, post, onBack }: { planId: string; postIn
               </div>
             )}
 
-            <button onClick={() => setCoaching(null)} className="font-mono text-[12px]"
-              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>
-              Dismiss feedback
-            </button>
+            {/* Post-feedback actions */}
+            <div className="space-y-3 pt-2 pb-8">
+              <button onClick={handleApplySuggestions}
+                className="w-full rounded-full font-sans font-semibold"
+                style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                Apply suggestions
+              </button>
+              <button onClick={handleKeepOriginal}
+                className="w-full rounded-full font-sans font-semibold accent-btn-outline"
+                style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
+                Keep original & save
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -944,7 +995,7 @@ export default function DashboardPage() {
     if (plan) {
       const planData: ContentPlanData = typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan;
       const post = planData.posts[writeMode.postIndex];
-      if (post) return <WriteMode planId={writeMode.planId} postIndex={writeMode.postIndex} post={post} onBack={() => setWriteMode(null)} />;
+      if (post) return <WriteMode planId={writeMode.planId} postIndex={writeMode.postIndex} post={post} onBack={() => setWriteMode(null)} onSaveDone={() => { setWriteMode(null); setTab("drafts"); getAllDrafts().then(setDrafts); }} />;
     }
     setWriteMode(null);
   }
