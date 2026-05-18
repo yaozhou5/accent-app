@@ -6,7 +6,7 @@ import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/prof
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
-import { getDraft, saveDraft, getAllDrafts, type Draft } from "@/lib/supabase/drafts";
+import { getDraft, saveDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
 
 // Design tokens
 const INK = "#111827";      // gray-900
@@ -688,10 +688,14 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 }
 
 /* ══════════════ DRAFTS TAB ══════════════ */
-function DraftsTab({ drafts, allPlans, onOpenDraft }: { drafts: Draft[]; allPlans: ContentPlan[]; onOpenDraft: (planId: string, postIndex: number) => void }) {
-  const [filter, setFilter] = useState<"all" | "drafts" | "published">("all");
+const PUBLISH_PLATFORMS = ["LinkedIn", "X", "Threads", "Substack", "Other"];
 
-  // Match drafts to their plan posts for context
+function DraftsTab({ drafts, allPlans, onOpenDraft, onDraftsUpdated }: { drafts: Draft[]; allPlans: ContentPlan[]; onOpenDraft: (planId: string, postIndex: number) => void; onDraftsUpdated: () => void }) {
+  const [filter, setFilter] = useState<"all" | "drafts" | "published">("all");
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [pubPlatform, setPubPlatform] = useState("LinkedIn");
+  const [pubUrl, setPubUrl] = useState("");
+
   const draftsWithContext = drafts.filter(d => d.content.trim()).map(d => {
     const plan = allPlans.find(p => p.id === d.plan_id);
     const planData = plan ? (typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan) as ContentPlanData : null;
@@ -699,15 +703,20 @@ function DraftsTab({ drafts, allPlans, onOpenDraft }: { drafts: Draft[]; allPlan
     const prompt = post?.prompt || post?.key_takeaway || post?.hook || "";
     const platform = post?.platform || "";
     const wordCount = d.content.trim().split(/\s+/).length;
-    const isDraft = wordCount < 100; // rough heuristic: < 100 words = draft, >= 100 = likely done
-    return { ...d, prompt, platform, wordCount, isDraft };
+    return { ...d, prompt, platform, wordCount };
   });
 
   const filtered = draftsWithContext.filter(d => {
-    if (filter === "drafts") return d.isDraft;
-    if (filter === "published") return !d.isDraft;
+    if (filter === "drafts") return !d.published;
+    if (filter === "published") return d.published;
     return true;
   });
+
+  const handlePublish = async (draftId: string) => {
+    const result = await markAsPublished(draftId, pubPlatform, pubUrl.trim() || undefined);
+    if (result) { onDraftsUpdated(); }
+    setPublishingId(null); setPubPlatform("LinkedIn"); setPubUrl("");
+  };
 
   const FILTERS: { key: typeof filter; label: string }[] = [
     { key: "all", label: "All" }, { key: "drafts", label: "Drafts" }, { key: "published", label: "Published" },
@@ -732,21 +741,57 @@ function DraftsTab({ drafts, allPlans, onOpenDraft }: { drafts: Draft[]; allPlan
       ) : (
         <div className="space-y-4">
           {filtered.map(d => (
-            <div key={d.id} className="rounded-[12px] cursor-pointer hover:border-blue-200 transition-colors"
-              style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}
-              onClick={() => onOpenDraft(d.plan_id, d.post_index)}>
-              {d.prompt && (
-                <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>{d.prompt}</p>
-              )}
-              <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                {d.content}
-              </p>
-              <div className="flex items-center gap-2 mt-3">
-                {d.platform && <span className="font-sans text-[12px] px-2 py-0.5 rounded-full" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_LABELS[d.platform] || d.platform}</span>}
-                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{d.wordCount} words</span>
-                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>· {getDayLabel(d.updated_at)}</span>
-                {d.isDraft && <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f59e0b15", color: "#f59e0b" }}>Draft</span>}
+            <div key={d.id} className="rounded-[12px]" style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
+              <div className="cursor-pointer" onClick={() => onOpenDraft(d.plan_id, d.post_index)}>
+                {d.prompt && <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>{d.prompt}</p>}
+                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.content}</p>
               </div>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {d.platform && <span className="font-sans text-[12px] px-2 py-0.5 rounded-full" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_LABELS[d.platform] || d.platform}</span>}
+                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{d.wordCount} words · {getDayLabel(d.updated_at)}</span>
+                {d.published ? (
+                  <>
+                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#22c55e15", color: "#16a34a" }}>Published</span>
+                    {d.published_platform && <span className="font-mono text-[11px]" style={{ color: FAINT }}>on {d.published_platform}</span>}
+                    {d.published_url && (
+                      <a href={d.published_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                        className="no-underline font-mono text-[11px]" style={{ color: BLUE }}>View post →</a>
+                    )}
+                  </>
+                ) : (
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f59e0b15", color: "#f59e0b" }}>Draft</span>
+                )}
+              </div>
+              {/* Publish action */}
+              {!d.published && publishingId !== d.id && (
+                <button onClick={(e) => { e.stopPropagation(); setPublishingId(d.id); }}
+                  className="mt-3 font-sans text-[13px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>
+                  Mark as published
+                </button>
+              )}
+              {publishingId === d.id && (
+                <div className="mt-3 p-4 rounded-[10px] space-y-3" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }} onClick={e => e.stopPropagation()}>
+                  <div>
+                    <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Where did you post this?</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {PUBLISH_PLATFORMS.map(p => (
+                        <button key={p} onClick={() => setPubPlatform(p)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+                          style={{ background: pubPlatform === p ? `${BLUE}10` : "#fff", color: pubPlatform === p ? BLUE : DIM, border: `1px solid ${pubPlatform === p ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <input value={pubUrl} onChange={e => setPubUrl(e.target.value)} placeholder="Paste link (optional)"
+                    className="w-full outline-none font-sans text-[13px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+                  <div className="flex gap-2">
+                    <button onClick={() => handlePublish(d.id)} className="font-sans font-semibold rounded-full"
+                      style={{ fontSize: 13, padding: "8px 18px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Mark as published</button>
+                    <button onClick={() => setPublishingId(null)} className="font-sans text-[13px]"
+                      style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1063,7 +1108,7 @@ export default function DashboardPage() {
           {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} />}
         </div>
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
-        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} />}
+        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
       {/* Onboarding tooltip */}

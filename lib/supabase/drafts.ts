@@ -6,6 +6,10 @@ export interface Draft {
   plan_id: string;
   post_index: number;
   content: string;
+  published: boolean;
+  published_platform: string | null;
+  published_url: string | null;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +44,19 @@ export async function getAllDrafts(): Promise<Draft[]> {
 
   if (error) { console.error("Failed to fetch drafts:", error); return []; }
   return data as Draft[];
+}
+
+export async function markAsPublished(draftId: string, platform: string, url?: string): Promise<Draft | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("drafts")
+    .update({ published: true, published_platform: platform, published_url: url || null, published_at: new Date().toISOString() })
+    .eq("id", draftId)
+    .select()
+    .single();
+
+  if (error) { console.error("Failed to mark as published:", JSON.stringify(error)); return null; }
+  return data as Draft;
 }
 
 export async function saveDraft(planId: string, postIndex: number, content: string): Promise<Draft | null> {
