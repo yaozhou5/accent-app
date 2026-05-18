@@ -668,8 +668,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           {planData.posts.length < 5 && !maxedOut ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
-              className="mt-6 w-full rounded-full font-sans font-semibold disabled:opacity-50 accent-btn-outline"
-              style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
+              className="mt-6 w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
           ) : planData.posts.length >= 5 || maxedOut ? (
@@ -677,10 +677,10 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               ✓ All set for this week
             </p>
           ) : null}
-          <button onClick={onSwitchToLog} className="mt-2 w-full rounded-full font-sans font-semibold accent-btn-outline"
+          <button onClick={onSwitchToLog} className="mt-3 w-full rounded-full font-sans font-semibold accent-btn-outline"
             style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>Add more notes for next week</button>
-          <button onClick={() => { setShowGenerate(true); }} className="mt-2 w-full rounded-full font-sans font-semibold accent-btn-outline"
-            style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>Regenerate plan</button>
+          <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
+            style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
         </div>
       )}
     </div>
