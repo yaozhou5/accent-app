@@ -17,7 +17,7 @@ const GOALS = [
 ];
 
 export default function Onboard2() {
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(["get_users"]);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 

@@ -29,7 +29,7 @@ function ChipSelect({ options, selected, onToggle, multi = true }: { options: st
 }
 
 export default function Onboard3() {
-  const [platforms, setPlatforms] = useState<string[]>([]);
+  const [platforms, setPlatforms] = useState<string[]>(["LinkedIn"]);
   const [frequency, setFrequency] = useState("3-4");
   const [challenges, setChallenges] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
