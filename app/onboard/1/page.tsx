@@ -10,8 +10,8 @@ const BLUE = "#3B82F6";
 const BORDER = "#E5E5E5";
 
 export default function Onboard1() {
-  const [businessDesc, setBusinessDesc] = useState("");
-  const [partyPitch, setPartyPitch] = useState("");
+  const [businessDesc, setBusinessDesc] = useState("A social app to connect people IRL for activities. Gen Z and Millennials who want to meet new people.");
+  const [partyPitch, setPartyPitch] = useState("A hangout app to meet new people and make friends through concerts, sports events, and group activities.");
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
