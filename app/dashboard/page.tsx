@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
-import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
+import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { getDraft, saveDraft } from "@/lib/supabase/drafts";
 
 // Design tokens
@@ -45,19 +45,49 @@ function getDayLabel(ds: string): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 function formatTime(ds: string): string { return new Date(ds).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
-function groupByDay(entries: LogEntry[]): Map<string, LogEntry[]> {
-  const g = new Map<string, LogEntry[]>();
-  for (const e of entries) { const l = getDayLabel(e.created_at); g.set(l, [...(g.get(l) || []), e]); }
-  return g;
+function groupByWeek(entries: LogEntry[]): { label: string; weekStart: Date; entries: LogEntry[] }[] {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = today.getDay();
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+
+  const groups = new Map<string, { label: string; weekStart: Date; entries: LogEntry[] }>();
+  for (const e of entries) {
+    const d = new Date(e.created_at);
+    const entryDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const entryDay = entryDate.getDay();
+    const entryMonday = new Date(entryDate);
+    entryMonday.setDate(entryDate.getDate() - (entryDay === 0 ? 6 : entryDay - 1));
+    const key = entryMonday.toISOString().split("T")[0];
+
+    if (!groups.has(key)) {
+      const diff = Math.round((thisMonday.getTime() - entryMonday.getTime()) / 86400000);
+      let label: string;
+      if (diff === 0) label = "This week";
+      else if (diff === 7) label = "Last week";
+      else {
+        const fri = new Date(entryMonday); fri.setDate(entryMonday.getDate() + 4);
+        const fmt = (dt: Date) => dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        label = `${fmt(entryMonday)}–${fmt(fri)}`;
+      }
+      groups.set(key, { label, weekStart: entryMonday, entries: [] });
+    }
+    groups.get(key)!.entries.push(e);
+  }
+  return Array.from(groups.values()).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
 }
 function getDomain(url: string): string { try { return new URL(url).hostname; } catch { return url; } }
 
 type Tab = "log" | "ideas" | "shelf";
+type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
-function LogTab({ logEntries, setLogEntries }: {
+function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
+  allPlans: ContentPlan[];
+  onSwitchToIdeas: () => void;
 }) {
   const [input, setInput] = useState("");
   const [entryType, setEntryType] = useState<LogEntryType>("note");
@@ -67,152 +97,151 @@ function LogTab({ logEntries, setLogEntries }: {
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [bookmarkNoteId, setBookmarkNoteId] = useState<string | null>(null);
+  const [bookmarkNote, setBookmarkNote] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<LogFilter>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Compute which entries were used in plans (match source_snippet to content)
+  const usedContents = new Set<string>();
+  for (const p of allPlans) {
+    const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
+    for (const post of (pd?.posts || [])) {
+      if (post.source_snippet) usedContents.add(post.source_snippet.toLowerCase().trim());
+    }
+  }
+  const isUsedInPlan = (e: LogEntry) => e.content && usedContents.has(e.content.toLowerCase().trim());
+
+  // Filter + search
+  const visibleEntries = logEntries.filter(e => {
+    if (e.archived) return false;
+    if (filter === "notes" && e.type !== "note") return false;
+    if (filter === "links" && e.type !== "link") return false;
+    if (filter === "quotes" && e.type !== "quote") return false;
+    if (filter === "bookmarked" && !e.bookmarked) return false;
+    if (filter === "unused" && (isUsedInPlan(e) || e.bookmarked)) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      if (!(e.content || "").toLowerCase().includes(q) && !(e.tags || []).some(t => t.includes(q))) return false;
+    }
+    return true;
+  });
+
+  // Unused nudge
+  const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const unusedOldCount = logEntries.filter(e => !e.archived && !isUsedInPlan(e) && !e.bookmarked && new Date(e.created_at) < twoWeeksAgo).length;
+
+  const weeks = groupByWeek(visibleEntries);
+
+  // Auto-collapse older weeks
+  useEffect(() => {
+    const toCollapse = new Set<string>();
+    weeks.forEach((w, i) => { if (i > 0) toCollapse.add(w.label); });
+    setCollapsedWeeks(toCollapse);
+  }, [logEntries.length]);
+
   const tagEntryAsync = (entry: LogEntry) => {
-    fetch("/api/tag-entry", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: entry.content || "", entryType: entry.type }),
-    }).then(r => r.json()).then(({ tags }) => {
-      if (tags?.length) {
-        updateLogEntryTags(entry.id, tags);
-        setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === entry.id ? { ...e, tags } : e));
-      }
-    }).catch(() => {});
+    fetch("/api/tag-entry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: entry.content || "", entryType: entry.type }) })
+      .then(r => r.json()).then(({ tags }) => { if (tags?.length) { updateLogEntryTags(entry.id, tags); setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === entry.id ? { ...e, tags } : e)); } }).catch(() => {});
   };
 
   const handleSubmit = async () => {
     if ((!input.trim() && !pendingImage) || submitting) return;
-    setSubmitting(true);
-    setError(null);
-
+    setSubmitting(true); setError(null);
     try {
       let imageUrl: string | null = null;
-      if (pendingImage) {
-        imageUrl = await uploadLogImage(pendingImage);
-        setPendingImage(null); setPendingImagePreview(null);
-      }
-
+      if (pendingImage) { imageUrl = await uploadLogImage(pendingImage); setPendingImage(null); setPendingImagePreview(null); }
       const detectedLink = entryType === "note" ? detectUrl(input.trim()) : null;
       const entryUrl = entryType === "link" ? (detectUrl(input.trim()) || input.trim()) : null;
-
-      const entry = await createLogEntry(input.trim(), {
-        image_url: imageUrl,
-        link_url: detectedLink,
-        type: entryType,
-        url: entryUrl,
-        source: entryType === "quote" && source.trim() ? source.trim() : null,
-      });
-      if (entry) {
-        setLogEntries((prev: LogEntry[]) => [entry, ...prev]);
-        setInput(""); setSource("");
-        tagEntryAsync(entry);
-      } else {
-        setError("Failed to save — entry returned null.");
-      }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Unknown error";
-      setError(`Failed: ${msg}`);
-    }
+      const entry = await createLogEntry(input.trim(), { image_url: imageUrl, link_url: detectedLink, type: entryType, url: entryUrl, source: entryType === "quote" && source.trim() ? source.trim() : null });
+      if (entry) { setLogEntries((prev: LogEntry[]) => [entry, ...prev]); setInput(""); setSource(""); tagEntryAsync(entry); }
+      else setError("Failed to save.");
+    } catch (e: unknown) { setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`); }
     setSubmitting(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && entryType !== "quote") { e.preventDefault(); handleSubmit(); }
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    setPendingImage(file); setPendingImagePreview(URL.createObjectURL(file)); e.target.value = "";
-  };
-
-  const [toast, setToast] = useState<string | null>(null);
-  const [bookmarkNoteId, setBookmarkNoteId] = useState<string | null>(null);
-  const [bookmarkNote, setBookmarkNote] = useState("");
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey && entryType !== "quote") { e.preventDefault(); handleSubmit(); } };
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; setPendingImage(file); setPendingImagePreview(URL.createObjectURL(file)); e.target.value = ""; };
 
   const handleToggleBookmark = async (id: string, current: boolean) => {
-    if (!current) {
-      // Show note input for bookmarking
-      setBookmarkNoteId(id);
-      setBookmarkNote("");
-      return;
-    }
-    // Unbookmark immediately
+    if (!current) { setBookmarkNoteId(id); setBookmarkNote(""); return; }
     const ok = await toggleBookmark(id, false);
-    if (ok) {
-      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: false } : e));
-      setToast("Removed from Shelf");
-      setTimeout(() => setToast(null), 1500);
-    }
+    if (ok) { setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: false } : e)); setToast("Removed from Shelf"); setTimeout(() => setToast(null), 1500); }
   };
-
   const handleConfirmBookmark = async () => {
     if (!bookmarkNoteId) return;
     const ok = await toggleBookmark(bookmarkNoteId, true, bookmarkNote.trim() || undefined);
-    if (ok) {
-      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === bookmarkNoteId ? { ...e, bookmarked: true } : e));
-      setToast("Saved to Shelf");
-      setTimeout(() => setToast(null), 1500);
-    }
-    setBookmarkNoteId(null);
-    setBookmarkNote("");
+    if (ok) { setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === bookmarkNoteId ? { ...e, bookmarked: true } : e)); setToast("Saved to Shelf"); setTimeout(() => setToast(null), 1500); }
+    setBookmarkNoteId(null); setBookmarkNote("");
   };
 
-  const grouped = groupByDay(logEntries);
+  const toggleSelect = (id: string) => { const s = new Set(selected); if (s.has(id)) s.delete(id); else s.add(id); setSelected(s); };
+  const handleBulkBookmark = async () => {
+    for (const id of selected) { await toggleBookmark(id, true); }
+    setLogEntries((prev: LogEntry[]) => prev.map(e => selected.has(e.id) ? { ...e, bookmarked: true } : e));
+    setSelected(new Set()); setSelectMode(false); setToast(`${selected.size} bookmarked`); setTimeout(() => setToast(null), 1500);
+  };
+  const handleBulkArchive = async () => {
+    const ids = Array.from(selected);
+    const ok = await archiveLogEntries(ids);
+    if (ok) { setLogEntries((prev: LogEntry[]) => prev.map(e => selected.has(e.id) ? { ...e, archived: true } : e)); }
+    setSelected(new Set()); setSelectMode(false); setToast(`${ids.length} archived`); setTimeout(() => setToast(null), 1500);
+  };
+  const handleBulkDelete = async () => {
+    for (const id of selected) { await deleteLogEntry(id); }
+    setLogEntries((prev: LogEntry[]) => prev.filter(e => !selected.has(e.id)));
+    setSelected(new Set()); setSelectMode(false); setToast(`Deleted`); setTimeout(() => setToast(null), 1500);
+  };
+
   const placeholders: Record<LogEntryType, string> = {
     note: "Quick note... what happened today, an idea, something you learned",
     link: "Paste a URL that inspired you...",
     quote: "A quote or snippet you want to remember...",
   };
+  const FILTERS: { key: LogFilter; label: string }[] = [
+    { key: "all", label: "All" }, { key: "notes", label: "Notes" }, { key: "links", label: "Links" },
+    { key: "quotes", label: "Quotes" }, { key: "bookmarked", label: "Saved" }, { key: "unused", label: "Unused" },
+  ];
 
   return (
     <div>
       {/* Compose */}
-      <div className="mb-8 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-        {/* Type chips */}
+      <div className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
         <div className="flex gap-2 px-5 pt-4">
           {(["note", "link", "quote"] as LogEntryType[]).map(t => (
-            <button key={t} onClick={() => setEntryType(t)}
-              className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
+            <button key={t} onClick={() => setEntryType(t)} className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
               style={{ minHeight: 36, background: entryType === t ? `${BLUE}08` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}20` : `1px solid transparent`, cursor: "pointer" }}>
               {t === "note" ? "Note" : t === "link" ? "Link" : "Quote"}
             </button>
           ))}
         </div>
         {pendingImagePreview && (
-          <div className="px-4 pt-3 relative inline-block">
-            <img src={pendingImagePreview} alt="Preview" className="rounded-full" style={{ maxHeight: 100, border: `1px solid ${BORDER}` }} />
-            <button onClick={() => { setPendingImage(null); setPendingImagePreview(null); }}
-              className="absolute top-1 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+          <div className="px-5 pt-3 relative inline-block">
+            <img src={pendingImagePreview} alt="" className="rounded-[8px]" style={{ maxHeight: 100, border: `1px solid ${BORDER}` }} />
+            <button onClick={() => { setPendingImage(null); setPendingImagePreview(null); }} className="absolute top-1 right-3 w-5 h-5 rounded-full flex items-center justify-center"
               style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
           </div>
         )}
-        <textarea
-          value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-          placeholder={placeholders[entryType]} rows={3}
-          className="w-full outline-none resize-none font-sans"
-          style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 20px 8px", border: "none", background: "transparent", minHeight: 80, fontStyle: entryType === "quote" ? "italic" : "normal" }}
-        />
+        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={placeholders[entryType]} rows={3}
+          className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 20px 8px", border: "none", background: "transparent", minHeight: 80, fontStyle: entryType === "quote" ? "italic" : "normal" }} />
         {entryType === "quote" && (
-          <div className="px-4 pb-1">
-            <input value={source} onChange={e => setSource(e.target.value)} placeholder="Source (optional): Paul Graham, a podcast, overheard..."
-              className="w-full outline-none font-sans text-[13px]" style={{ color: DIM, padding: "4px 0", border: "none", background: "transparent" }} />
-          </div>
+          <div className="px-5 pb-1"><input value={source} onChange={e => setSource(e.target.value)} placeholder="Source (optional)" className="w-full outline-none font-sans text-[13px]" style={{ color: DIM, padding: "4px 0", border: "none", background: "transparent" }} /></div>
         )}
         <div className="flex items-center justify-between px-4 pb-4">
           <div className="flex items-center gap-1">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
             {entryType === "note" && (
-              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-full transition-colors hover:bg-gray-50"
-                style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImage ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
-                </svg>
+              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-full hover:bg-gray-50" style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImage ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
               </button>
             )}
           </div>
-          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting}
-            className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {submitting ? "Saving..." : "Log"}
           </button>
@@ -221,84 +250,128 @@ function LogTab({ logEntries, setLogEntries }: {
 
       {error && <p className="font-sans text-[13px] mb-4" style={{ color: "#DC2626" }}>{error}</p>}
 
+      {/* Unused nudge */}
+      {unusedOldCount >= 5 && filter !== "unused" && (
+        <div className="mb-6 p-4 rounded-[12px] flex items-center justify-between" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
+          <p className="font-sans text-[14px]" style={{ color: INK }}>You have <strong>{unusedOldCount}</strong> unused notes — ready to turn them into content?</p>
+          <button onClick={onSwitchToIdeas} className="font-sans text-[13px] font-semibold shrink-0 ml-3" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Ideas →</button>
+        </div>
+      )}
+
+      {/* Search + filters */}
+      {logEntries.length > 0 && (
+        <div className="mb-6 space-y-3">
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
+            className="w-full outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+          <div className="flex items-center gap-2 flex-wrap">
+            {FILTERS.map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+                style={{ background: filter === f.key ? `${BLUE}10` : "transparent", color: filter === f.key ? BLUE : FAINT, border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`, cursor: "pointer" }}>
+                {f.label}
+              </button>
+            ))}
+            <button onClick={() => { setSelectMode(!selectMode); setSelected(new Set()); }} className="ml-auto font-sans text-[12px] px-3 py-1.5 rounded-full"
+              style={{ color: selectMode ? BLUE : FAINT, border: `1px solid ${selectMode ? BLUE : BORDER}`, background: selectMode ? `${BLUE}08` : "transparent", cursor: "pointer" }}>
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk actions bar */}
+      {selectMode && selected.size > 0 && (
+        <div className="mb-4 flex items-center gap-2 p-3 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+          <span className="font-sans text-[13px]" style={{ color: DIM }}>{selected.size} selected</span>
+          <div className="ml-auto flex gap-2">
+            <button onClick={handleBulkBookmark} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Bookmark</button>
+            <button onClick={handleBulkArchive} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Archive</button>
+            <button onClick={handleBulkDelete} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}>Delete</button>
+          </div>
+        </div>
+      )}
+
       {/* Feed */}
-      {logEntries.length === 0 ? (
-        <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No notes yet. What happened today?</p></div>
+      {visibleEntries.length === 0 ? (
+        <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>{search || filter !== "all" ? "No matching notes." : "No notes yet. What happened today?"}</p></div>
       ) : (
-        <div className="space-y-8">
-          {Array.from(grouped.entries()).map(([dayLabel, entries]) => (
-            <div key={dayLabel}>
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{dayLabel}</span>
-              <div className="space-y-4">
-                {entries.map(entry => {
-                  const isQuote = entry.type === "quote";
-                  const isLink = entry.type === "link";
-                  const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
-                  return (
-                    <div key={entry.id} className="rounded-[12px]" style={{
-                      padding: "20px 20px", border: `1px solid ${BORDER}`, background: "#fff",
-                      borderLeft: isQuote ? `3px solid ${BLUE}` : isLink ? `3px solid #0d9488` : `1px solid ${BORDER}`,
-                    }}>
-                      {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
-                      {entry.content && (
-                        <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
-                      )}
-                      {isQuote && entry.source && (
-                        <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>
-                      )}
-                      {entry.image_url && (
-                        <div className={entry.content ? "mt-3" : ""}>
-                          <img src={entry.image_url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-90"
-                            style={{ maxHeight: 200, objectFit: "cover", border: `1px solid ${BORDER}` }}
-                            onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
-                          {expandedImage === entry.id && (
-                            <img src={entry.image_url} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
+        <div className="space-y-6">
+          {weeks.map(({ label, entries: weekEntries }) => {
+            const isCollapsed = collapsedWeeks.has(label);
+            return (
+              <div key={label}>
+                <button onClick={() => { const s = new Set(collapsedWeeks); if (s.has(label)) s.delete(label); else s.add(label); setCollapsedWeeks(s); }}
+                  className="flex items-center gap-2 mb-3 w-full" style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{label}</span>
+                  <span className="font-mono" style={{ fontSize: 11, color: FAINT }}>{weekEntries.length}</span>
+                  <span style={{ fontSize: 10, color: FAINT, transition: "transform 0.2s", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0)", marginLeft: 2 }}>▼</span>
+                </button>
+                {!isCollapsed && (
+                  <div className="space-y-4">
+                    {weekEntries.map(entry => {
+                      const isQuote = entry.type === "quote";
+                      const isLink = entry.type === "link";
+                      const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
+                      const used = isUsedInPlan(entry);
+                      const isSelected = selected.has(entry.id);
+                      return (
+                        <div key={entry.id} onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
+                          className="rounded-[12px] transition-all" style={{
+                          padding: "20px", border: `1px solid ${isSelected ? BLUE : BORDER}`, background: isSelected ? `${BLUE}04` : "#fff",
+                          borderLeft: isQuote ? `3px solid ${BLUE}` : isLink ? `3px solid #0d9488` : isSelected ? `3px solid ${BLUE}` : `1px solid ${BORDER}`,
+                          cursor: selectMode ? "pointer" : "default",
+                        }}>
+                          {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
+                          {entry.content && <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>}
+                          {isQuote && entry.source && <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>}
+                          {entry.image_url && (
+                            <div className={entry.content ? "mt-3" : ""}>
+                              <img src={entry.image_url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-90" style={{ maxHeight: 200, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
+                              {expandedImage === entry.id && <img src={entry.image_url} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />}
+                            </div>
+                          )}
+                          {(isLink || entryUrl) && entryUrl && (
+                            <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-2 p-2.5 rounded-[6px] hover:bg-gray-50" style={{ border: `1px solid ${BORDER}` }}>
+                              <span className="font-mono text-[11px] block" style={{ color: "#0d9488" }}>{getDomain(entryUrl)}</span>
+                              <span className="font-mono text-[10px] block mt-0.5 truncate" style={{ color: FAINT }}>{entryUrl}</span>
+                            </a>
+                          )}
+                          <div className="flex items-center gap-2 mt-3 flex-wrap">
+                            <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{getDayLabel(entry.created_at)} {formatTime(entry.created_at)}</span>
+                            {entry.tags.map(tag => (
+                              <span key={tag} className="font-mono text-[12px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
+                            ))}
+                            {used && <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}10`, color: BLUE }}>Used in Ideas</span>}
+                            {entry.bookmarked && <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f59e0b15", color: "#f59e0b" }}>Saved</span>}
+                            {!selectMode && (
+                              <button onClick={(ev) => { ev.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
+                                className="ml-auto p-2" style={{ background: "none", border: "none", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill={entry.bookmarked ? BLUE : "none"} stroke={entry.bookmarked ? BLUE : FAINT}
+                                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "fill 0.2s, stroke 0.2s" }}>
+                                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                          {bookmarkNoteId === entry.id && (
+                            <div className="mt-2 flex gap-2 items-center" onClick={ev => ev.stopPropagation()}>
+                              <input value={bookmarkNote} onChange={ev => setBookmarkNote(ev.target.value)} onKeyDown={ev => { if (ev.key === "Enter") handleConfirmBookmark(); }}
+                                placeholder="Why I saved this (optional)" className="flex-1 outline-none font-sans text-[13px]"
+                                style={{ color: INK, padding: "6px 10px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fafafa" }} autoFocus />
+                              <button onClick={handleConfirmBookmark} className="font-sans font-semibold rounded-full shrink-0"
+                                style={{ fontSize: 14, padding: "8px 18px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
+                              <button onClick={() => setBookmarkNoteId(null)} className="font-sans text-[12px] px-2 py-1.5 shrink-0"
+                                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+                            </div>
                           )}
                         </div>
-                      )}
-                      {(isLink || entryUrl) && entryUrl && (
-                        <a href={entryUrl} target="_blank" rel="noopener noreferrer"
-                          className="no-underline block mt-2 p-2.5 rounded-[6px] hover:bg-gray-50" style={{ border: `1px solid ${BORDER}` }}>
-                          <span className="font-mono text-[11px] block" style={{ color: "#0d9488" }}>{getDomain(entryUrl)}</span>
-                          <span className="font-mono text-[10px] block mt-0.5 truncate" style={{ color: FAINT }}>{entryUrl}</span>
-                        </a>
-                      )}
-                      <div className="flex items-center gap-2 mt-3">
-                        <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{formatTime(entry.created_at)}</span>
-                        {entry.tags.map(tag => (
-                          <span key={tag} className="font-mono text-[12px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
-                        ))}
-                        <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
-                          className="ml-auto p-2 transition-all" style={{ background: "none", border: "none", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill={entry.bookmarked ? BLUE : "none"} stroke={entry.bookmarked ? BLUE : FAINT}
-                            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "fill 0.2s, stroke 0.2s" }}>
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                          </svg>
-                        </button>
-                      </div>
-                      {bookmarkNoteId === entry.id && (
-                        <div className="mt-2 flex gap-2 items-center" onClick={e => e.stopPropagation()}>
-                          <input value={bookmarkNote} onChange={e => setBookmarkNote(e.target.value)}
-                            onKeyDown={e => { if (e.key === "Enter") handleConfirmBookmark(); }}
-                            placeholder="Why I saved this (optional)"
-                            className="flex-1 outline-none font-sans text-[13px]"
-                            style={{ color: INK, padding: "6px 10px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fafafa" }}
-                            autoFocus />
-                          <button onClick={handleConfirmBookmark}
-                            className="font-sans font-semibold rounded-full shrink-0"
-                            style={{ fontSize: 14, padding: "8px 18px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
-                          <button onClick={() => setBookmarkNoteId(null)}
-                            className="font-sans text-[12px] px-2 py-1.5 shrink-0"
-                            style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -908,7 +981,7 @@ export default function DashboardPage() {
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
         <div id="compose-card">
-          {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}
+          {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} />}
         </div>
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
         {tab === "shelf" && <ShelfTab logEntries={logEntriesState} setLogEntries={setLogEntries} />}

@@ -13,6 +13,7 @@ export interface LogEntry {
   tags: string[];
   type: LogEntryType;
   bookmarked: boolean;
+  archived: boolean;
   created_at: string;
 }
 
@@ -128,6 +129,13 @@ export async function getThisWeekEntries(): Promise<LogEntry[]> {
 
   if (error) { console.error("Failed to fetch week entries:", error); return []; }
   return data as LogEntry[];
+}
+
+export async function archiveLogEntries(ids: string[]): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("log_entries").update({ archived: true }).in("id", ids);
+  if (error) { console.error("Failed to archive:", error); return false; }
+  return true;
 }
 
 export async function deleteLogEntry(id: string): Promise<boolean> {
