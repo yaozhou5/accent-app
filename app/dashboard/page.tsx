@@ -79,6 +79,16 @@ function groupByWeek(entries: LogEntry[]): { label: string; weekStart: Date; ent
   return Array.from(groups.values()).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
 }
 function getDomain(url: string): string { try { return new URL(url).hostname; } catch { return url; } }
+function getReadableTitle(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/$/, "").split("/").pop() || "";
+    if (path && path !== "") {
+      return path.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+    return u.hostname;
+  } catch { return url; }
+}
 
 type Tab = "log" | "ideas" | "drafts";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
@@ -414,7 +424,9 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                             </div>
                           )}
                           {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
-                          {entry.content && <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>}
+                          {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
+                            <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
+                          )}
                           {isQuote && entry.source && <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>}
                           {entry.image_url && (
                             <div className={entry.content ? "mt-3" : ""}>
@@ -429,7 +441,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                               <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity" style={{ border: `1px solid ${BORDER}` }}>
                                 {og?.image && <img src={og.image} alt="" className="w-full" style={{ maxHeight: 160, objectFit: "cover" }} />}
                                 <div style={{ padding: "12px 14px" }}>
-                                  <p className="font-sans font-semibold" style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}>{og?.title || getDomain(entryUrl)}</p>
+                                  <p className="font-sans font-semibold" style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}>{og?.title || getReadableTitle(entryUrl)}</p>
                                   {og?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{og.description}</p>}
                                   <span className="font-mono block mt-1.5" style={{ fontSize: 11, color: FAINT }}>{getDomain(entryUrl)}</span>
                                 </div>
