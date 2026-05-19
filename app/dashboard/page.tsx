@@ -379,7 +379,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                       return (
                         <div key={entry.id} onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
                           className="rounded-[12px] transition-all relative" style={{
-                          padding: "20px", border: `1px solid ${isSelected ? BLUE : BORDER}`, background: isSelected ? `${BLUE}04` : "#fff",
+                          padding: "20px 44px 20px 20px", border: `1px solid ${isSelected ? BLUE : BORDER}`, background: isSelected ? `${BLUE}04` : "#fff",
                           borderLeft: isQuote ? `3px solid ${BLUE}` : isLink ? `3px solid #0d9488` : isSelected ? `3px solid ${BLUE}` : `1px solid ${BORDER}`,
                           cursor: selectMode ? "pointer" : "default",
                         }}>
