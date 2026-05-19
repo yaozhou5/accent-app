@@ -90,8 +90,16 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   allPlans: ContentPlan[];
   onSwitchToIdeas: () => void;
 }) {
-  const [input, setInput] = useState("");
-  const [entryType, setEntryType] = useState<LogEntryType>("note");
+  const [input, setInputRaw] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
+    return "";
+  });
+  const setInput = (val: string) => { setInputRaw(val); if (typeof window !== "undefined") localStorage.setItem("accent-log-draft", val); };
+  const [entryType, setEntryType] = useState<LogEntryType>(() => {
+    if (typeof window !== "undefined") return (localStorage.getItem("accent-log-type") as LogEntryType) || "note";
+    return "note";
+  });
+  const setEntryTypeWithSave = (t: LogEntryType) => { setEntryType(t); if (typeof window !== "undefined") localStorage.setItem("accent-log-type", t); };
   const [source, setSource] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +111,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   const [bookmarkNote, setBookmarkNote] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<LogFilter>("all");
+  const [ogCache, setOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
@@ -138,6 +147,21 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   const unusedOldCount = logEntries.filter(e => !e.archived && !isUsedInPlan(e) && !e.bookmarked && new Date(e.created_at) < twoWeeksAgo).length;
 
   const weeks = groupByWeek(visibleEntries);
+
+  // Fetch OG metadata for link entries
+  useEffect(() => {
+    const urls = logEntries
+      .filter(e => (e.type === "link" || e.url || e.link_url) && !ogCache[e.url || e.link_url || ""])
+      .map(e => e.url || e.link_url)
+      .filter((u): u is string => !!u);
+    const unique = [...new Set(urls)].slice(0, 10); // limit to 10 fetches
+    for (const url of unique) {
+      fetch("/api/og-meta", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) })
+        .then(r => r.json())
+        .then(data => setOgCache(prev => ({ ...prev, [url]: data })))
+        .catch(() => {});
+    }
+  }, [logEntries.length]);
 
   // Auto-collapse older weeks
   useEffect(() => {
@@ -215,7 +239,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
       <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
         <div className="flex gap-2 px-5 pt-4">
           {(["note", "link", "quote"] as LogEntryType[]).map(t => (
-            <button key={t} onClick={() => setEntryType(t)} className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
+            <button key={t} onClick={() => setEntryTypeWithSave(t)} className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
               style={{ minHeight: 36, background: entryType === t ? `${BLUE}08` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}20` : `1px solid transparent`, cursor: "pointer" }}>
               {t === "note" ? "Note" : t === "link" ? "Link" : "Quote"}
             </button>
@@ -331,12 +355,19 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                               {expandedImage === entry.id && <img src={entry.image_url} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />}
                             </div>
                           )}
-                          {(isLink || entryUrl) && entryUrl && (
-                            <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-2 p-2.5 rounded-[6px] hover:bg-gray-50" style={{ border: `1px solid ${BORDER}` }}>
-                              <span className="font-mono text-[11px] block" style={{ color: "#0d9488" }}>{getDomain(entryUrl)}</span>
-                              <span className="font-mono text-[10px] block mt-0.5 truncate" style={{ color: FAINT }}>{entryUrl}</span>
-                            </a>
-                          )}
+                          {(isLink || entryUrl) && entryUrl && (() => {
+                            const og = ogCache[entryUrl];
+                            return (
+                              <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity" style={{ border: `1px solid ${BORDER}` }}>
+                                {og?.image && <img src={og.image} alt="" className="w-full" style={{ maxHeight: 160, objectFit: "cover" }} />}
+                                <div style={{ padding: "12px 14px" }}>
+                                  <p className="font-sans font-semibold" style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}>{og?.title || getDomain(entryUrl)}</p>
+                                  {og?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{og.description}</p>}
+                                  <span className="font-mono block mt-1.5" style={{ fontSize: 11, color: FAINT }}>{getDomain(entryUrl)}</span>
+                                </div>
+                              </a>
+                            );
+                          })()}
                           <div className="flex items-center gap-2 mt-3 flex-wrap">
                             <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{getDayLabel(entry.created_at)} {formatTime(entry.created_at)}</span>
                             {entry.tags.map(tag => (
