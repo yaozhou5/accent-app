@@ -337,7 +337,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
               className="flex-1 outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
             <button onClick={() => { setSelectMode(!selectMode); setSelected(new Set()); }}
-              className="font-sans text-[13px] shrink-0" style={{ color: selectMode ? BLUE : FAINT, background: "none", border: "none", cursor: "pointer" }}>
+              className="font-sans text-[13px] shrink-0" style={{ color: selectMode ? BLUE : FAINT, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
               {selectMode ? "Cancel" : "Select"}
             </button>
           </div>
