@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
-import { createLogEntry, updateLogEntryTags, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
+import { createLogEntry, updateLogEntryTags, updateLogEntry, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { getDraft, saveDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
 
@@ -114,6 +114,9 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   const [ogCache, setOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -223,6 +226,30 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
     setSelected(new Set()); setSelectMode(false); setToast(`Deleted`); setTimeout(() => setToast(null), 1500);
   };
 
+  const handleStartEdit = (entry: LogEntry) => {
+    setEditingId(entry.id);
+    setInput(entry.content || "");
+    setMenuOpen(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const handleSaveEdit = async () => {
+    if (!editingId || !input.trim()) return;
+    setSubmitting(true);
+    const ok = await updateLogEntry(editingId, input.trim());
+    if (ok) {
+      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === editingId ? { ...e, content: input.trim() } : e));
+      setInput(""); setEditingId(null);
+    }
+    setSubmitting(false);
+  };
+  const handleCancelEdit = () => { setEditingId(null); setInput(""); };
+  const handleDeleteEntry = async (id: string) => {
+    await deleteLogEntry(id);
+    setLogEntries((prev: LogEntry[]) => prev.filter(e => e.id !== id));
+    setDeleteConfirmId(null);
+    setToast("Deleted"); setTimeout(() => setToast(null), 1500);
+  };
+
   const placeholders: Record<LogEntryType, string> = {
     note: "Quick note... what happened today, an idea, something you learned",
     link: "Paste a URL that inspired you...",
@@ -234,7 +261,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
   ];
 
   return (
-    <div>
+    <div onClick={() => { if (menuOpen) setMenuOpen(null); }}>
       {/* Compose */}
       <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
         <div className="flex gap-2 px-5 pt-4">
@@ -266,10 +293,20 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
               </button>
             )}
           </div>
-          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-            {submitting ? "Saving..." : "Log"}
-          </button>
+          {editingId ? (
+            <div className="flex gap-2">
+              <button onClick={handleCancelEdit} className="font-sans text-[13px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+              <button onClick={handleSaveEdit} disabled={!input.trim() || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                {submitting ? "Saving..." : "Save"}
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+              {submitting ? "Saving..." : "Log"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -340,11 +377,42 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                       const isSelected = selected.has(entry.id);
                       return (
                         <div key={entry.id} onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
-                          className="rounded-[12px] transition-all" style={{
+                          className="rounded-[12px] transition-all relative" style={{
                           padding: "20px", border: `1px solid ${isSelected ? BLUE : BORDER}`, background: isSelected ? `${BLUE}04` : "#fff",
                           borderLeft: isQuote ? `3px solid ${BLUE}` : isLink ? `3px solid #0d9488` : isSelected ? `3px solid ${BLUE}` : `1px solid ${BORDER}`,
                           cursor: selectMode ? "pointer" : "default",
                         }}>
+                          {/* Menu */}
+                          {!selectMode && (
+                            <div className="absolute" style={{ top: 12, right: 12 }}>
+                              <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(menuOpen === entry.id ? null : entry.id); }}
+                                className="p-1.5 rounded-full hover:bg-gray-100" style={{ background: "none", border: "none", cursor: "pointer", lineHeight: 1 }}>
+                                <span style={{ fontSize: 16, color: FAINT, letterSpacing: 1 }}>···</span>
+                              </button>
+                              {menuOpen === entry.id && (
+                                <div className="absolute right-0 mt-1 rounded-[8px] overflow-hidden" style={{ background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, minWidth: 120 }}>
+                                  <button onClick={(ev) => { ev.stopPropagation(); handleStartEdit(entry); }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}>Edit</button>
+                                  <button onClick={(ev) => { ev.stopPropagation(); setDeleteConfirmId(entry.id); setMenuOpen(null); }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Delete confirmation */}
+                          {deleteConfirmId === entry.id && (
+                            <div className="absolute inset-0 rounded-[12px] flex items-center justify-center" style={{ background: "rgba(255,255,255,0.95)", zIndex: 5 }} onClick={ev => ev.stopPropagation()}>
+                              <div className="text-center">
+                                <p className="font-sans text-[14px] mb-3" style={{ color: INK }}>Delete this note?</p>
+                                <div className="flex gap-2 justify-center">
+                                  <button onClick={() => setDeleteConfirmId(null)} className="font-sans text-[13px] px-4 py-2 rounded-full"
+                                    style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Cancel</button>
+                                  <button onClick={() => handleDeleteEntry(entry.id)} className="font-sans text-[13px] px-4 py-2 rounded-full"
+                                    style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer" }}>Delete</button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
                           {entry.content && <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>}
                           {isQuote && entry.source && <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>}

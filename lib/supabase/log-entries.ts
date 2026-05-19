@@ -131,6 +131,13 @@ export async function getThisWeekEntries(): Promise<LogEntry[]> {
   return data as LogEntry[];
 }
 
+export async function updateLogEntry(id: string, content: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("log_entries").update({ content }).eq("id", id);
+  if (error) { return false; }
+  return true;
+}
+
 export async function archiveLogEntries(ids: string[]): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").update({ archived: true }).in("id", ids);
