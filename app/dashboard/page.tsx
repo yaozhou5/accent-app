@@ -333,14 +333,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
       {/* Search + filters */}
       {logEntries.length > 0 && (
         <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-3">
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
-              className="flex-1 outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
-            <button onClick={() => { setSelectMode(!selectMode); setSelected(new Set()); }}
-              className="font-sans text-[13px] shrink-0" style={{ color: selectMode ? BLUE : FAINT, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
-              {selectMode ? "Cancel" : "Select"}
-            </button>
-          </div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
+            className="w-full outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
           <div className="flex items-center gap-2 flex-wrap">
             {FILTERS.map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
@@ -353,13 +347,18 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
       )}
 
       {/* Bulk actions bar */}
-      {selectMode && selected.size > 0 && (
+      {selectMode && (
         <div className="mb-4 flex items-center gap-2 p-3 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
           <span className="font-sans text-[13px]" style={{ color: DIM }}>{selected.size} selected</span>
           <div className="ml-auto flex gap-2">
-            <button onClick={handleBulkBookmark} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Bookmark</button>
-            <button onClick={handleBulkArchive} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Archive</button>
-            <button onClick={handleBulkDelete} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}>Delete</button>
+            {selected.size > 0 && (
+              <>
+                <button onClick={handleBulkBookmark} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Bookmark</button>
+                <button onClick={handleBulkDelete} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}>Delete</button>
+              </>
+            )}
+            <button onClick={() => { setSelectMode(false); setSelected(new Set()); }} className="font-sans text-[13px]"
+              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
           </div>
         </div>
       )}
@@ -407,6 +406,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}>Edit</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setDeleteConfirmId(entry.id); setMenuOpen(null); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
+                                  <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
                                 </div>
                               )}
                             </div>
