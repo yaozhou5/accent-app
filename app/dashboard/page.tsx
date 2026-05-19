@@ -385,10 +385,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                         }}>
                           {/* Menu */}
                           {!selectMode && editingId !== entry.id && (
-                            <div className="absolute" style={{ top: 12, right: 12 }}>
+                            <div className="absolute" style={{ top: 16, right: 16 }}>
                               <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(menuOpen === entry.id ? null : entry.id); }}
-                                className="p-1.5 rounded-full hover:bg-gray-100" style={{ background: "none", border: "none", cursor: "pointer", lineHeight: 1 }}>
-                                <span style={{ fontSize: 16, color: "#6B7280", letterSpacing: 1 }}>···</span>
+                                className="rounded hover:bg-gray-100 flex items-center justify-center" style={{ width: 28, height: 28, background: "none", border: "none", cursor: "pointer" }}>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="#6B7280"><circle cx="8" cy="3" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg>
                               </button>
                               {menuOpen === entry.id && (
                                 <div className="absolute right-0 mt-1 rounded-[8px] overflow-hidden" style={{ background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, minWidth: 120 }}>
