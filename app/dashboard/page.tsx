@@ -236,23 +236,23 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
     setSelected(new Set()); setSelectMode(false); setToast(`Deleted`); setTimeout(() => setToast(null), 1500);
   };
 
+  const [editText, setEditText] = useState("");
   const handleStartEdit = (entry: LogEntry) => {
     setEditingId(entry.id);
-    setInput(entry.content || "");
+    setEditText(entry.content || "");
     setMenuOpen(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleSaveEdit = async () => {
-    if (!editingId || !input.trim()) return;
+    if (!editingId) return;
     setSubmitting(true);
-    const ok = await updateLogEntry(editingId, input.trim());
+    const ok = await updateLogEntry(editingId, editText.trim());
     if (ok) {
-      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === editingId ? { ...e, content: input.trim() } : e));
-      setInput(""); setEditingId(null);
+      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === editingId ? { ...e, content: editText.trim() } : e));
+      setEditingId(null); setEditText("");
     }
     setSubmitting(false);
   };
-  const handleCancelEdit = () => { setEditingId(null); setInput(""); };
+  const handleCancelEdit = () => { setEditingId(null); setEditText(""); };
   const handleDeleteEntry = async (id: string) => {
     await deleteLogEntry(id);
     setLogEntries((prev: LogEntry[]) => prev.filter(e => e.id !== id));
@@ -303,20 +303,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
               </button>
             )}
           </div>
-          {editingId ? (
-            <div className="flex gap-2">
-              <button onClick={handleCancelEdit} className="font-sans text-[13px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
-              <button onClick={handleSaveEdit} disabled={!input.trim() || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                {submitting ? "Saving..." : "Save"}
-              </button>
-            </div>
-          ) : (
-            <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-              {submitting ? "Saving..." : "Log"}
-            </button>
-          )}
+          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            {submitting ? "Saving..." : "Log"}
+          </button>
         </div>
       </div>
 
@@ -394,7 +384,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                           cursor: selectMode ? "pointer" : "default",
                         }}>
                           {/* Menu */}
-                          {!selectMode && (
+                          {!selectMode && editingId !== entry.id && (
                             <div className="absolute" style={{ top: 12, right: 12 }}>
                               <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(menuOpen === entry.id ? null : entry.id); }}
                                 className="p-1.5 rounded-full hover:bg-gray-100" style={{ background: "none", border: "none", cursor: "pointer", lineHeight: 1 }}>
@@ -426,9 +416,29 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                               </div>
                             </div>
                           )}
-                          {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
-                          {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
-                            <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
+                          {editingId === entry.id ? (
+                            <div onClick={ev => ev.stopPropagation()}>
+                              <textarea value={editText} onChange={ev => setEditText(ev.target.value)} rows={3}
+                                className="w-full outline-none resize-y font-sans"
+                                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "8px 10px", border: `1px solid ${BLUE}`, borderRadius: 8, background: "#fafafa" }}
+                                autoFocus />
+                              <div className="flex gap-2 mt-2 justify-end">
+                                <button onClick={handleCancelEdit} className="font-sans text-[13px]"
+                                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+                                <button onClick={handleSaveEdit} disabled={submitting}
+                                  className="font-sans font-semibold rounded-full disabled:opacity-30"
+                                  style={{ fontSize: 13, padding: "6px 16px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                                  {submitting ? "..." : "Save"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
+                              {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
+                                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
+                              )}
+                            </>
                           )}
                           {isQuote && entry.source && <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>}
                           {entry.image_url && (
