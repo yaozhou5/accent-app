@@ -333,8 +333,14 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
       {/* Search + filters */}
       {logEntries.length > 0 && (
         <div className="mb-6 space-y-3">
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
-            className="w-full outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+          <div className="flex items-center gap-3">
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
+              className="flex-1 outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+            <button onClick={() => { setSelectMode(!selectMode); setSelected(new Set()); }}
+              className="font-sans text-[13px] shrink-0" style={{ color: selectMode ? BLUE : FAINT, background: "none", border: "none", cursor: "pointer" }}>
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             {FILTERS.map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
@@ -342,10 +348,6 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                 {f.label}
               </button>
             ))}
-            <button onClick={() => { setSelectMode(!selectMode); setSelected(new Set()); }} className="ml-auto font-sans text-[12px] px-3 py-1.5 rounded-full"
-              style={{ color: selectMode ? BLUE : FAINT, border: `1px solid ${selectMode ? BLUE : BORDER}`, background: selectMode ? `${BLUE}08` : "transparent", cursor: "pointer" }}>
-              {selectMode ? "Cancel" : "Select"}
-            </button>
           </div>
         </div>
       )}
