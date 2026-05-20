@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 const INK = "#1A1A18";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
-const ACCENT = "#B8964E";
+const ACCENT = "#4A6CF7";
 const CREAM = "#F7F4EF";
 
 /* ───── GAME DATA ───── */

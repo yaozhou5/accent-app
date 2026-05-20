@@ -50,7 +50,7 @@ export async function GET() {
               fontSize: "56px",
               fontFamily: "Fraunces",
               fontWeight: 700,
-              color: "#1B3A2D",
+              color: "#1A1A18",
               lineHeight: 1,
             }}
           >
@@ -61,7 +61,7 @@ export async function GET() {
               width: "16px",
               height: "16px",
               borderRadius: "50%",
-              background: "#F5C842",
+              background: "#4A6CF7",
               marginLeft: "6px",
               marginTop: "14px",
             }}
@@ -106,7 +106,7 @@ export async function GET() {
             display: "flex",
             alignItems: "center",
             fontSize: "24px",
-            color: "#1B3A2D",
+            color: "#1A1A18",
             fontFamily: "Fraunces",
             fontWeight: 700,
           }}
