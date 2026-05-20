@@ -783,8 +783,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                     )}
 
                     <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-5 rounded-full font-sans font-semibold accent-btn-outline"
-                      style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
+                      className="mt-5 px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
+                      style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
                       Write this →
                     </button>
                 </div>
@@ -802,8 +802,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               ✓ All set for this week
             </p>
           ) : null}
-          <button onClick={onSwitchToLog} className="mt-3 w-full rounded-full font-sans font-semibold accent-btn-outline"
-            style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>Add more notes for next week</button>
+          <button onClick={onSwitchToLog} className="mt-3 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Add more notes for next week</button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
         </div>
@@ -1086,8 +1086,8 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button onClick={handleExplicitSave}
-              className="w-full rounded-full font-sans font-semibold accent-btn-outline"
-              style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
               Save draft
             </button>
             {saveError && <p className="font-sans text-[13px] mt-2" style={{ color: "#DC2626" }}>{saveError}</p>}
@@ -1138,8 +1138,8 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
                 Apply suggestions
               </button>
               <button onClick={handleKeepOriginal}
-                className="w-full rounded-full font-sans font-semibold accent-btn-outline"
-                style={{ fontSize: 15, padding: "10px 20px", border: `2px solid ${BLUE}`, background: "#fff", color: BLUE, cursor: "pointer" }}>
+                className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
                 Keep original & save
               </button>
             </div>
