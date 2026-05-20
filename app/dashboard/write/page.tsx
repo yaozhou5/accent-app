@@ -62,8 +62,8 @@ export default function QuickCheckPage() {
 
         {content.trim().length > 20 && (
           <button onClick={handleCheck} disabled={checking}
-            className="mt-6 w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
             {checking ? "Checking..." : "Check my writing"}
           </button>
         )}

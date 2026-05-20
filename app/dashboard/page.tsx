@@ -303,8 +303,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
               </button>
             )}
           </div>
-          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
             {submitting ? "Saving..." : "Log"}
           </button>
         </div>
@@ -702,8 +702,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                 </div>
               </div>
               <button onClick={handleSaveProfile} disabled={editSaving}
-                className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
                 {editSaving ? "Saving..." : "Save"}
               </button>
             </div>
@@ -715,8 +715,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
         {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-        <button onClick={handleGenerate} disabled={generating} className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+        <button onClick={handleGenerate} disabled={generating} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+          style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
           {generating ? "Generating your plan..." : "Generate my plan"}
         </button>
         {generating && <div className="mt-6 space-y-3 animate-pulse">{[1, 2, 3].map(i => <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}><div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} /><div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} /><div className="h-12 rounded" style={{ background: "#f0f0f0" }} /></div>)}</div>}
@@ -793,8 +793,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
           {planData.posts.length < 5 && !maxedOut ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
-              className="mt-6 w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+              className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
           ) : planData.posts.length >= 5 || maxedOut ? (
@@ -1082,7 +1082,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
           <div className="mt-6 space-y-3">
             <button onClick={handleCheckWriting} disabled={coachLoading}
               className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button onClick={handleExplicitSave}
@@ -1134,7 +1134,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
             <div className="space-y-3 pt-2 pb-8">
               <button onClick={handleApplySuggestions}
                 className="w-full rounded-full font-sans font-semibold"
-                style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
                 Apply suggestions
               </button>
               <button onClick={handleKeepOriginal}
