@@ -203,7 +203,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
     setSubmitting(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey && entryType !== "quote") { e.preventDefault(); handleSubmit(); } };
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); } };
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; setPendingImage(file); setPendingImagePreview(URL.createObjectURL(file)); e.target.value = ""; };
 
   const handleToggleBookmark = async (id: string, current: boolean) => {
@@ -289,8 +289,9 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
               style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
           </div>
         )}
-        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={placeholders[entryType]} rows={3}
-          className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 20px 8px", border: "none", background: "transparent", minHeight: 80, fontStyle: entryType === "quote" ? "italic" : "normal" }} />
+        <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(80, el.scrollHeight) + "px"; } }}
+          value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={placeholders[entryType]}
+          className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 20px 8px", border: "none", background: "transparent", minHeight: 80, fontStyle: entryType === "quote" ? "italic" : "normal", overflow: "hidden" }} />
         {entryType === "quote" && (
           <div className="px-5 pb-1"><input value={source} onChange={e => setSource(e.target.value)} placeholder="Source (optional)" className="w-full outline-none font-sans text-[13px]" style={{ color: DIM, padding: "4px 0", border: "none", background: "transparent" }} /></div>
         )}
@@ -418,9 +419,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                           )}
                           {editingId === entry.id ? (
                             <div onClick={ev => ev.stopPropagation()}>
-                              <textarea value={editText} onChange={ev => setEditText(ev.target.value)} rows={3}
-                                className="w-full outline-none resize-y font-sans"
-                                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "8px 10px", border: `1px solid ${BLUE}`, borderRadius: 8, background: "#fafafa" }}
+                              <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(60, el.scrollHeight) + "px"; } }}
+                                value={editText} onChange={ev => setEditText(ev.target.value)}
+                                className="w-full outline-none resize-none font-sans"
+                                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "8px 10px", border: `1px solid ${BLUE}`, borderRadius: 8, background: "#fafafa", overflow: "hidden" }}
                                 autoFocus />
                               <div className="flex gap-2 mt-2 justify-end">
                                 <button onClick={handleCancelEdit} className="font-sans text-[13px]"
@@ -436,7 +438,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                             <>
                               {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
                               {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
-                                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
+                                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, whiteSpace: "pre-wrap", fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
                               )}
                             </>
                           )}
