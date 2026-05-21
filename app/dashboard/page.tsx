@@ -1375,10 +1375,11 @@ export default function DashboardPage() {
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/write" className="no-underline flex items-center" style={{ color: DIM }} title="Quick check">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <Link href="/dashboard/write" className="no-underline flex items-center gap-1.5 px-4 py-1.5 rounded-full font-sans text-[13px] font-semibold transition-transform hover:scale-[1.02]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
+              Write
             </Link>
             <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
           </div>
