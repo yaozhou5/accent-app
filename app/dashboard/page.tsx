@@ -7,7 +7,7 @@ import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/p
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, updateLogEntry, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
-import { getDraft, saveDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
+import { getDraft, saveDraft, saveDraftById, createStandaloneDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
 
 // Design tokens
 const INK = "#111827";      // gray-900
@@ -94,11 +94,12 @@ type Tab = "log" | "ideas" | "drafts";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
-function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
+function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartDraft }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
   onSwitchToIdeas: () => void;
+  onStartDraft: (draft: Draft) => void;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -399,6 +400,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas }: {
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
+                                  <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const d = await createStandaloneDraft(entry.content || "", entry.content || "", entry.id); if (d) onStartDraft(d); }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Start draft</button>
                                 </div>
                               )}
                             </div>
@@ -815,18 +818,24 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 /* ══════════════ DRAFTS TAB ══════════════ */
 const PUBLISH_PLATFORMS = ["LinkedIn", "X", "Threads", "Substack", "Other"];
 
-function DraftsTab({ drafts, allPlans, onOpenDraft, onDraftsUpdated }: { drafts: Draft[]; allPlans: ContentPlan[]; onOpenDraft: (planId: string, postIndex: number) => void; onDraftsUpdated: () => void }) {
+function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDraftsUpdated }: { drafts: Draft[]; allPlans: ContentPlan[]; onOpenDraft: (planId: string, postIndex: number) => void; onOpenStandaloneDraft: (draft: Draft) => void; onDraftsUpdated: () => void }) {
   const [filter, setFilter] = useState<"all" | "drafts" | "published">("all");
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [pubPlatform, setPubPlatform] = useState("LinkedIn");
   const [pubUrl, setPubUrl] = useState("");
 
   const draftsWithContext = drafts.filter(d => d.content.trim()).map(d => {
-    const plan = allPlans.find(p => p.id === d.plan_id);
-    const planData = plan ? (typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan) as ContentPlanData : null;
-    const post = planData?.posts?.[d.post_index];
-    const prompt = post?.prompt || post?.key_takeaway || post?.hook || "";
-    const platform = post?.platform || "";
+    let prompt = "";
+    let platform = "";
+    if (d.plan_id) {
+      const plan = allPlans.find(p => p.id === d.plan_id);
+      const planData = plan ? (typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan) as ContentPlanData : null;
+      const post = planData?.posts?.[d.post_index ?? 0];
+      prompt = post?.prompt || post?.key_takeaway || post?.hook || "";
+      platform = post?.platform || "";
+    } else {
+      prompt = d.source_note ? `From your note: "${d.source_note.slice(0, 80)}${d.source_note.length > 80 ? "..." : ""}"` : "Standalone draft";
+    }
     const wordCount = d.content.trim().split(/\s+/).length;
     return { ...d, prompt, platform, wordCount };
   });
@@ -867,7 +876,7 @@ function DraftsTab({ drafts, allPlans, onOpenDraft, onDraftsUpdated }: { drafts:
         <div className="space-y-4">
           {filtered.map(d => (
             <div key={d.id} className="rounded-[12px]" style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
-              <div className="cursor-pointer" onClick={() => onOpenDraft(d.plan_id, d.post_index)}>
+              <div className="cursor-pointer" onClick={() => d.plan_id ? onOpenDraft(d.plan_id, d.post_index ?? 0) : onOpenStandaloneDraft(d)}>
                 {d.prompt && <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>{d.prompt}</p>}
                 <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.content}</p>
               </div>
@@ -1150,6 +1159,145 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
   );
 }
 
+/* ══════════════ STANDALONE WRITE MODE ══════════════ */
+function StandaloneWriteMode({ draft, onBack, onSaveDone }: { draft: Draft; onBack: () => void; onSaveDone: () => void }) {
+  const [content, setContent] = useState(draft.content);
+  const [saving, setSaving] = useState(false);
+  const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [showNote, setShowNote] = useState(true);
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const lastSavedRef = useRef(draft.content);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (content.trim() && content !== lastSavedRef.current) {
+        setSaving(true);
+        await saveDraftById(draft.id, content);
+        lastSavedRef.current = content;
+        setSaving(false);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [content, draft.id]);
+
+  const handleChange = (val: string) => {
+    setContent(val);
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(async () => {
+      setSaving(true);
+      await saveDraftById(draft.id, val);
+      lastSavedRef.current = val;
+      setSaving(false);
+    }, 1000);
+  };
+
+  const handleExplicitSave = async () => {
+    setSaving(true); setSaveError(null);
+    const result = await saveDraftById(draft.id, content);
+    lastSavedRef.current = content;
+    setSaving(false);
+    if (result) onSaveDone();
+    else setSaveError("Failed to save.");
+  };
+
+  const handleCheckWriting = async () => {
+    if (!content.trim() || coachLoading) return;
+    setCoachLoading(true);
+    try {
+      const res = await fetch("/api/coach-draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draft: content.trim() }) });
+      if (res.ok) { const data = await res.json(); setCoaching(data); setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100); }
+    } catch {}
+    setCoachLoading(false);
+  };
+
+  const handleApplySuggestions = async () => {
+    if (!coaching) return;
+    let updated = content;
+    for (const p of coaching.phrases_to_improve) { if (p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion); }
+    setContent(updated);
+    setSaving(true);
+    await saveDraftById(draft.id, updated);
+    lastSavedRef.current = updated;
+    setSaving(false);
+    setCoaching(null);
+  };
+
+  return (
+    <div className="min-h-screen" style={{ background: "#fff" }}>
+      <div className="max-w-[640px] mx-auto px-5 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back</button>
+          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>{saving ? "Saving..." : saveError ? "Save failed" : "Saved"}</span>
+        </div>
+
+        {draft.source_note && (
+          <div className="mb-6">
+            <button onClick={() => setShowNote(!showNote)} className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em", fontWeight: 500 }}>
+              Your note <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showNote ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
+            </button>
+            {showNote && (
+              <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap" }}>{draft.source_note}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(200, el.scrollHeight) + "px"; } }}
+          value={content} onChange={e => handleChange(e.target.value)} placeholder="Start writing..."
+          className="w-full outline-none resize-none font-sans"
+          style={{ fontSize: 16, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh", overflow: "hidden" }}
+          autoFocus />
+
+        {content.trim().length > 20 && !coaching && (
+          <div className="mt-6 space-y-3">
+            <button onClick={handleCheckWriting} disabled={coachLoading}
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              {coachLoading ? "Checking..." : "Check my writing"}
+            </button>
+            <button onClick={handleExplicitSave}
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              Save draft
+            </button>
+            {saveError && <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>{saveError}</p>}
+          </div>
+        )}
+
+        {coaching && (
+          <div ref={feedbackRef} className="mt-8 space-y-5">
+            <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+              <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Overall</span>
+              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
+            </div>
+            {coaching.phrases_to_improve.length > 0 && (
+              <div className="space-y-3">
+                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Phrases to improve</span>
+                {coaching.phrases_to_improve.map((p, i) => (
+                  <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
+                    <p className="font-sans line-through" style={{ fontSize: 16, color: DIM }}>{p.original}</p>
+                    <p className="font-sans font-semibold mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="space-y-3 pt-2 pb-8">
+              <button onClick={handleApplySuggestions} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Apply suggestions</button>
+              <button onClick={() => { setCoaching(null); handleExplicitSave(); }} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Keep original & save</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════ DASHBOARD PAGE ══════════════ */
 export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -1162,6 +1310,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("log");
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
+  const [standaloneDraft, setStandaloneDraft] = useState<Draft | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
 
   useEffect(() => {
@@ -1195,7 +1344,12 @@ export default function DashboardPage() {
   const handlePlanGenerated = (plan: ContentPlan) => { setCurrentPlan(plan); setAllPlans(prev => [plan, ...prev]); setTab("ideas"); };
   const switchToIdeas = (ws?: string) => { setIdeasWeek(ws); setTab("ideas"); };
 
-  // Write mode
+  // Standalone write mode (from note → draft)
+  if (standaloneDraft) {
+    return <StandaloneWriteMode draft={standaloneDraft} onBack={() => setStandaloneDraft(null)} onSaveDone={() => { setStandaloneDraft(null); setTab("drafts"); getAllDrafts().then(setDrafts); }} />;
+  }
+
+  // Write mode (from plan idea)
   if (writeMode) {
     const plan = allPlans.find(p => p.id === writeMode.planId);
     if (plan) {
@@ -1241,9 +1395,9 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} />}
+        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={d => setStandaloneDraft(d)} />}
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
-        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
+        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft(d)} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
       {/* Onboarding tooltip */}

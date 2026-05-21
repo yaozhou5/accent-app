@@ -3,9 +3,11 @@ import { createClient } from "./client";
 export interface Draft {
   id: string;
   user_id: string;
-  plan_id: string;
-  post_index: number;
+  plan_id: string | null;
+  post_index: number | null;
   content: string;
+  source_note: string | null;
+  source_entry_id: string | null;
   published: boolean;
   published_platform: string | null;
   published_url: string | null;
@@ -56,6 +58,34 @@ export async function markAsPublished(draftId: string, platform: string, url?: s
     .single();
 
   if (error) { console.error("Failed to mark as published:", JSON.stringify(error)); return null; }
+  return data as Draft;
+}
+
+export async function createStandaloneDraft(content: string, sourceNote: string, sourceEntryId: string): Promise<Draft | null> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("drafts")
+    .insert({ user_id: user.id, content, source_note: sourceNote, source_entry_id: sourceEntryId })
+    .select()
+    .single();
+
+  if (error) { console.error("Failed to create standalone draft:", JSON.stringify(error)); return null; }
+  return data as Draft;
+}
+
+export async function saveDraftById(draftId: string, content: string): Promise<Draft | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("drafts")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", draftId)
+    .select()
+    .single();
+
+  if (error) { console.error("Failed to save draft by id:", JSON.stringify(error)); return null; }
   return data as Draft;
 }
 
