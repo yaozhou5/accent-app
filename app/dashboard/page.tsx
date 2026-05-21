@@ -400,7 +400,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
-                                  <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const d = await createStandaloneDraft(entry.content || "", entry.content || "", entry.id); if (d) onStartDraft(d); }}
+                                  <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const d = await createStandaloneDraft("", entry.content || "", entry.id); if (d) onStartDraft(d); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Start draft</button>
                                 </div>
                               )}
@@ -1095,8 +1095,8 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button onClick={handleExplicitSave}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, borderRadius: 40, cursor: "pointer" }}>
               Save draft
             </button>
             {saveError && <p className="font-sans text-[13px] mt-2" style={{ color: "#DC2626" }}>{saveError}</p>}
@@ -1260,8 +1260,8 @@ function StandaloneWriteMode({ draft, onBack, onSaveDone }: { draft: Draft; onBa
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button onClick={handleExplicitSave}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, borderRadius: 40, cursor: "pointer" }}>
               Save draft
             </button>
             {saveError && <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>{saveError}</p>}
