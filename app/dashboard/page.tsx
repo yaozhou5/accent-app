@@ -1240,7 +1240,7 @@ function StandaloneWriteMode({ draft, onBack, onSaveDone }: { draft: Draft; onBa
             </button>
             {showNote && (
               <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
-                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap" }}>{draft.source_note}</p>
+                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{draft.source_note}</p>
               </div>
             )}
           </div>
