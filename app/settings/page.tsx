@@ -6,9 +6,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 const INK = "#111827";
-const DIM = "#6B6B6B";
+const DIM = "#6b7280";
 const FAINT = "#9ca3af";
-const BORDER = "#E5E5E5";
+const BORDER = "#e5e7eb";
 
 export default function SettingsPage() {
   const [email, setEmail] = useState("");

@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createLog, getLogs, type LogEntry } from "@/lib/supabase/logs";
 
-const INK = "#1A1A18";
-const DIM = "#6B6B6B";
-const FAINT = "#AAAAAA";
-const BORDER = "#E5E5E5";
+const INK = "#111827";
+const DIM = "#6b7280";
+const FAINT = "#9ca3af";
+const BORDER = "#e5e7eb";
 const TEAL = "#0d9488";
 const TEAL_LIGHT = "#f0fdfa";
 

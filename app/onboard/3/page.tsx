@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { upsertProfile } from "@/lib/supabase/profiles";
 
 const INK = "#111827";
-const DIM = "#6B6B6B";
+const DIM = "#6b7280";
 const BLUE = "#3B82F6";
-const BORDER = "#E5E5E5";
+const BORDER = "#e5e7eb";
 
 const PLATFORMS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
 const FREQUENCIES = ["1-2", "3-4", "5+"];
