@@ -531,7 +531,6 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const [error, setError] = useState<string | null>(null);
   const [showGenerate, setShowGenerate] = useState(!hasCurrentPlan);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [maxedOut, setMaxedOut] = useState(false);
 
   useEffect(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) { setWeekIdx(i); setShowGenerate(false); } } }, [initialWeek]);
 
@@ -595,7 +594,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   };
 
   const handleMoreIdeas = async (currentPlan: ContentPlan, currentPlanData: ContentPlanData) => {
-    if (loadingMore || currentPlanData.posts.length >= 5) return;
+    if (loadingMore || currentPlanData.posts.length >= 15) return;
     setLoadingMore(true); setError(null);
     try {
       const existingPrompts = currentPlanData.posts.map(p => p.prompt || p.key_takeaway || p.hook || "").filter(Boolean);
@@ -609,11 +608,10 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) { setError("Failed to generate more ideas."); setLoadingMore(false); return; }
       const newData: ContentPlanData = await res.json();
-      const merged: ContentPlanData = { strategy_note: currentPlanData.strategy_note, posts: [...currentPlanData.posts, ...newData.posts].slice(0, 5) };
+      const merged: ContentPlanData = { strategy_note: currentPlanData.strategy_note, posts: [...currentPlanData.posts, ...newData.posts].slice(0, 15) };
       const updated = await updatePlanPosts(currentPlan.id, merged);
       if (updated) {
         onPlanUpdated(updated);
-        setMaxedOut(true);
       } else {
         setError("Generated ideas but failed to save.");
       }
@@ -793,17 +791,17 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               );
             })}
           </div>
-          {planData.posts.length < 5 && !maxedOut ? (
+          {planData.posts.length < 15 ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
               className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
-          ) : planData.posts.length >= 5 || maxedOut ? (
+          ) : (
             <p className="mt-6 text-center font-sans font-medium" style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}>
               ✓ All set for this week
             </p>
-          ) : null}
+          )}
           <button onClick={onSwitchToLog} className="mt-3 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
             style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Add more notes for next week</button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
