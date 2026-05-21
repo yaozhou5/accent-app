@@ -3,19 +3,26 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
 const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard", "/onboard"];
+const AUTH_PAGES = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
   const response = await updateSession(request);
   const path = request.nextUrl.pathname;
 
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { cookies: { getAll() { return request.cookies.getAll(); }, setAll() {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Redirect logged-in users away from landing, login, signup
+  if (user && (path === "/" || AUTH_PAGES.some(p => path.startsWith(p)))) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // Check auth for protected routes
   if (PROTECTED.some(p => path.startsWith(p))) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      { cookies: { getAll() { return request.cookies.getAll(); }, setAll() {} } }
-    );
-    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       const loginUrl = new URL("/login", request.url);
