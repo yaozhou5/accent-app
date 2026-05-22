@@ -7,6 +7,7 @@ export interface LogEntry {
   user_id: string;
   content: string;
   image_url: string | null;
+  image_urls: string[];
   link_url: string | null;
   url: string | null;
   source: string | null;
@@ -47,6 +48,7 @@ export async function createLogEntry(
   opts: {
     tags?: string[];
     image_url?: string | null;
+    image_urls?: string[];
     link_url?: string | null;
     type?: LogEntryType;
     url?: string | null;
@@ -69,6 +71,7 @@ export async function createLogEntry(
   if (opts.url) row.url = opts.url;
   if (opts.source) row.source = opts.source;
   if (opts.image_url) row.image_url = opts.image_url;
+  if (opts.image_urls && opts.image_urls.length > 0) row.image_urls = opts.image_urls;
   if (opts.link_url) row.link_url = opts.link_url;
 
   const { data, error } = await supabase
