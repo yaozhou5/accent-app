@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { draft, channel, originalEntry, angle, audienceProfile } = await request.json();
     if (!draft?.trim()) return NextResponse.json({ error: "Draft is required" }, { status: 400 });
 

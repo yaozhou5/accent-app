@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { draft, key_takeaway, structure, platform } = await request.json();
     if (!draft?.trim()) return NextResponse.json({ error: "Draft is required" }, { status: 400 });
+    if (draft.length > 50000) return NextResponse.json({ error: "Input too long" }, { status: 400 });
 
     const prompt = `You are a writing coach for solo founders. A founder just wrote a draft for a ${platform || "social media"} post. Their intended key takeaway was: "${key_takeaway || "not specified"}"
 ${structure?.length ? `\nThe intended structure was:\n${structure.map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")}` : ""}

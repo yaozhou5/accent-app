@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { dump, entries, shelfItems, profile, moreIdeas } = await request.json();
     if (!profile) return NextResponse.json({ error: "Profile is required" }, { status: 400 });
+    if (typeof dump === "string" && dump.length > 50000) return NextResponse.json({ error: "Input too long" }, { status: 400 });
 
     // Support both: single dump string or array of tagged entries
     let dumpText: string;

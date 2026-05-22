@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -13,11 +14,16 @@ const CHANNEL_GUIDANCE: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { draft, channels } = await request.json();
 
     if (!draft?.trim()) {
       return NextResponse.json({ error: "Draft is required" }, { status: 400 });
     }
+    if (draft.length > 50000) return NextResponse.json({ error: "Input too long" }, { status: 400 });
 
     const selectedChannels = (channels || ["linkedin", "cold_dm", "tweet", "newsletter", "community_post"])
       .filter((c: string) => CHANNEL_GUIDANCE[c]);

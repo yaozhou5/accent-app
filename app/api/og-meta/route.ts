@@ -1,9 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { url } = await request.json();
     if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
+
+    // Validate URL to prevent SSRF
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+    }
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      return NextResponse.json({ error: "Invalid URL protocol" }, { status: 400 });
+    }
+    const hostname = parsedUrl.hostname;
+    if (
+      hostname === "localhost" ||
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("169.254.") ||
+      hostname.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+      hostname === "[::1]"
+    ) {
+      return NextResponse.json({ error: "URL not allowed" }, { status: 400 });
+    }
 
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; AccentBot/1.0)" },

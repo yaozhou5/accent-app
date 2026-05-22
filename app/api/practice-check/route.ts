@@ -3,11 +3,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildPracticeCheckPrompt } from "@/lib/prompts";
 import type { PracticeCheckRequest, PracticeCheckResponse } from "@/lib/types";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
 
 const anthropic = new Anthropic({ maxRetries: 3 });
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const ip = getClientIp(request);
     const rateLimit = checkRateLimit(ip);
     if (!rateLimit.allowed) {

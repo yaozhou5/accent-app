@@ -4,11 +4,16 @@ import { buildFixPrompt } from "@/lib/prompts";
 import type { QuickCheckResponse } from "@/lib/types";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { createClient } from "@/lib/supabase/server";
 
 const anthropic = new Anthropic({ maxRetries: 3 });
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const ip = getClientIp(request);
     const rateLimit = checkRateLimit(ip);
     const distinctId = request.headers.get("X-POSTHOG-DISTINCT-ID") || ip;

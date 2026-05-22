@@ -18,11 +18,16 @@ export interface LogEntry {
 }
 
 export async function uploadLogImage(file: File): Promise<string | null> {
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(file.type)) return null;
+  if (file.size > 5 * 1024 * 1024) return null;
+
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const ext = file.name.split(".").pop() || "jpg";
+  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const ext = extMap[file.type] || "jpg";
   const path = `${user.id}/${Date.now()}.${ext}`;
 
   const { error } = await supabase.storage.from("log-images").upload(path, file);
