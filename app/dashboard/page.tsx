@@ -99,7 +99,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
   onSwitchToIdeas: () => void;
-  onStartDraft: (draft: Draft) => void;
+  onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -315,13 +315,13 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
           <div className="px-5 pb-1"><input value={source} onChange={e => setSource(e.target.value)} placeholder="Source (optional)" className="w-full outline-none font-sans text-[13px]" style={{ color: DIM, padding: "4px 0", border: "none", background: "transparent" }} /></div>
         )}
         <div className="flex items-center justify-between px-4 pb-4">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageSelect} className="hidden" />
-            {entryType === "note" && (
-              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-full hover:bg-gray-50" style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
-              </button>
-            )}
+            <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-50 transition-colors"
+              style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : DIM} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+              <span className="font-sans text-[13px]" style={{ color: pendingImages.length > 0 ? BLUE : DIM }}>{pendingImages.length > 0 ? `${pendingImages.length} image${pendingImages.length > 1 ? "s" : ""}` : "Add image"}</span>
+            </button>
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && pendingImages.length === 0) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
             style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
@@ -418,7 +418,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
-                                  <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const d = await createStandaloneDraft("", entry.content || "", entry.id); if (d) onStartDraft(d); }}
+                                  <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const imgs = (entry.image_urls?.length ? entry.image_urls : entry.image_url ? [entry.image_url] : []); const d = await createStandaloneDraft("", entry.content || "", entry.id); if (d) onStartDraft({ draft: d, images: imgs }); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Start draft</button>
                                 </div>
                               )}
@@ -470,19 +470,19 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                             return (
                               <div className={entry.content ? "mt-3" : ""}>
                                 {images.length === 1 ? (
-                                  <>
-                                    <img src={images[0]} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-90" style={{ maxHeight: 200, objectFit: "cover", border: `1px solid ${BORDER}` }}
-                                      onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
-                                    {expandedImage === entry.id && <img src={images[0]} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />}
-                                  </>
+                                  <img src={images[0]} alt="" className="w-full rounded-[10px] cursor-pointer hover:opacity-95" style={{ maxHeight: 360, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                    onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
                                 ) : (
-                                  <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                                  <div className="grid gap-2" style={{ gridTemplateColumns: images.length === 2 ? "1fr 1fr" : "1fr 1fr 1fr" }}>
                                     {images.map((url, idx) => (
-                                      <img key={idx} src={url} alt="" className="rounded-[8px] shrink-0 cursor-pointer hover:opacity-90"
-                                        style={{ width: images.length <= 3 ? `${100 / images.length - 1}%` : 140, height: 120, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                      <img key={idx} src={url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-95"
+                                        style={{ height: images.length === 2 ? 180 : 140, objectFit: "cover", border: `1px solid ${BORDER}` }}
                                         onClick={() => setExpandedImage(expandedImage === url ? null : url)} />
                                     ))}
                                   </div>
+                                )}
+                                {expandedImage === entry.id && images.length === 1 && (
+                                  <img src={images[0]} alt="" className="w-full rounded-[10px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
                                 )}
                                 {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
                                   <img src={expandedImage} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
@@ -1197,7 +1197,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 }
 
 /* ══════════════ STANDALONE WRITE MODE ══════════════ */
-function StandaloneWriteMode({ draft, onBack, onSaveDone }: { draft: Draft; onBack: () => void; onSaveDone: () => void }) {
+function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draft: Draft; sourceImages?: string[]; onBack: () => void; onSaveDone: () => void }) {
   const [content, setContent] = useState(draft.content);
   const [saving, setSaving] = useState(false);
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
@@ -1283,6 +1283,17 @@ function StandaloneWriteMode({ draft, onBack, onSaveDone }: { draft: Draft; onBa
           </div>
         )}
 
+        {sourceImages && sourceImages.length > 0 && (
+          <div className="mb-6">
+            <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}>Reference images</span>
+            <div className={sourceImages.length === 1 ? "" : "grid gap-2"} style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}>
+              {sourceImages.map((url, i) => (
+                <img key={i} src={url} alt="" className="w-full rounded-[10px]" style={{ maxHeight: sourceImages.length === 1 ? 300 : 180, objectFit: "cover", border: `1px solid ${BORDER}` }} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(200, el.scrollHeight) + "px"; } }}
           value={content} onChange={e => handleChange(e.target.value)} placeholder="Start writing..."
           className="w-full outline-none resize-none font-sans"
@@ -1347,7 +1358,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("log");
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
-  const [standaloneDraft, setStandaloneDraft] = useState<Draft | null>(null);
+  const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
 
   useEffect(() => {
@@ -1383,7 +1394,7 @@ export default function DashboardPage() {
 
   // Standalone write mode (from note → draft)
   if (standaloneDraft) {
-    return <StandaloneWriteMode draft={standaloneDraft} onBack={() => setStandaloneDraft(null)} onSaveDone={() => { setStandaloneDraft(null); setTab("drafts"); getAllDrafts().then(setDrafts); }} />;
+    return <StandaloneWriteMode draft={standaloneDraft.draft} sourceImages={standaloneDraft.images} onBack={() => setStandaloneDraft(null)} onSaveDone={() => { setStandaloneDraft(null); setTab("drafts"); getAllDrafts().then(setDrafts); }} />;
   }
 
   // Write mode (from plan idea)
@@ -1433,9 +1444,9 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={d => setStandaloneDraft(d)} />}
+        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} />}
         {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
-        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft(d)} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
+        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
       {/* Onboarding tooltip */}
