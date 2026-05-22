@@ -114,8 +114,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const [source, setSource] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingImage, setPendingImage] = useState<File | null>(null);
-  const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [bookmarkNoteId, setBookmarkNoteId] = useState<string | null>(null);
@@ -190,14 +190,18 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   };
 
   const handleSubmit = async () => {
-    if ((!input.trim() && !pendingImage) || submitting) return;
+    if ((!input.trim() && pendingImages.length === 0) || submitting) return;
     setSubmitting(true); setError(null);
     try {
-      let imageUrl: string | null = null;
-      if (pendingImage) { imageUrl = await uploadLogImage(pendingImage); setPendingImage(null); setPendingImagePreview(null); }
+      let imageUrls: string[] = [];
+      if (pendingImages.length > 0) {
+        const uploads = await Promise.all(pendingImages.map(f => uploadLogImage(f)));
+        imageUrls = uploads.filter((u): u is string => u !== null);
+        setPendingImages([]); setPendingPreviews([]);
+      }
       const detectedLink = entryType === "note" ? detectUrl(input.trim()) : null;
       const entryUrl = entryType === "link" ? (detectUrl(input.trim()) || input.trim()) : null;
-      const entry = await createLogEntry(input.trim(), { image_url: imageUrl, link_url: detectedLink, type: entryType, url: entryUrl, source: entryType === "quote" && source.trim() ? source.trim() : null });
+      const entry = await createLogEntry(input.trim(), { image_url: imageUrls[0] || null, image_urls: imageUrls, link_url: detectedLink, type: entryType, url: entryUrl, source: entryType === "quote" && source.trim() ? source.trim() : null });
       if (entry) { setLogEntries((prev: LogEntry[]) => [entry, ...prev]); setInput(""); setSource(""); tagEntryAsync(entry); }
       else setError("Failed to save.");
     } catch (e: unknown) { setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`); }
@@ -205,7 +209,17 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); } };
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; setPendingImage(file); setPendingImagePreview(URL.createObjectURL(file)); e.target.value = ""; };
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, 5); // max 5
+    if (files.length === 0) return;
+    setPendingImages(prev => [...prev, ...files].slice(0, 5));
+    setPendingPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 5));
+    e.target.value = "";
+  };
+  const removePendingImage = (idx: number) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== idx));
+    setPendingPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
 
   const handleToggleBookmark = async (id: string, current: boolean) => {
     if (!current) { setBookmarkNoteId(id); setBookmarkNote(""); return; }
@@ -283,11 +297,15 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
             </button>
           ))}
         </div>
-        {pendingImagePreview && (
-          <div className="px-5 pt-3 relative inline-block">
-            <img src={pendingImagePreview} alt="" className="rounded-[8px]" style={{ maxHeight: 100, border: `1px solid ${BORDER}` }} />
-            <button onClick={() => { setPendingImage(null); setPendingImagePreview(null); }} className="absolute top-1 right-3 w-5 h-5 rounded-full flex items-center justify-center"
-              style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
+        {pendingPreviews.length > 0 && (
+          <div className="px-5 pt-3 flex gap-2 flex-wrap">
+            {pendingPreviews.map((preview, idx) => (
+              <div key={idx} className="relative inline-block">
+                <img src={preview} alt="" className="rounded-[8px]" style={{ width: 72, height: 72, objectFit: "cover", border: `1px solid ${BORDER}` }} />
+                <button onClick={() => removePendingImage(idx)} className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
+              </div>
+            ))}
           </div>
         )}
         <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(80, el.scrollHeight) + "px"; } }}
@@ -298,14 +316,14 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
         )}
         <div className="flex items-center justify-between px-4 pb-4">
           <div className="flex items-center gap-1">
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageSelect} className="hidden" />
             {entryType === "note" && (
               <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-full hover:bg-gray-50" style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImage ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
               </button>
             )}
           </div>
-          <button onClick={handleSubmit} disabled={(!input.trim() && !pendingImage) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+          <button onClick={handleSubmit} disabled={(!input.trim() && pendingImages.length === 0) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
             style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
             {submitting ? "Saving..." : "Log"}
           </button>
@@ -446,13 +464,32 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                             </>
                           )}
                           {isQuote && entry.source && <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>}
-                          {entry.image_url && (
-                            <div className={entry.content ? "mt-3" : ""}>
-                              <img src={entry.image_url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-90" style={{ maxHeight: 200, objectFit: "cover", border: `1px solid ${BORDER}` }}
-                                onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
-                              {expandedImage === entry.id && <img src={entry.image_url} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />}
-                            </div>
-                          )}
+                          {(() => {
+                            const images = (entry.image_urls && entry.image_urls.length > 0) ? entry.image_urls : (entry.image_url ? [entry.image_url] : []);
+                            if (images.length === 0) return null;
+                            return (
+                              <div className={entry.content ? "mt-3" : ""}>
+                                {images.length === 1 ? (
+                                  <>
+                                    <img src={images[0]} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-90" style={{ maxHeight: 200, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                      onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
+                                    {expandedImage === entry.id && <img src={images[0]} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />}
+                                  </>
+                                ) : (
+                                  <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                                    {images.map((url, idx) => (
+                                      <img key={idx} src={url} alt="" className="rounded-[8px] shrink-0 cursor-pointer hover:opacity-90"
+                                        style={{ width: images.length <= 3 ? `${100 / images.length - 1}%` : 140, height: 120, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                        onClick={() => setExpandedImage(expandedImage === url ? null : url)} />
+                                    ))}
+                                  </div>
+                                )}
+                                {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
+                                  <img src={expandedImage} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
+                                )}
+                              </div>
+                            );
+                          })()}
                           {(isLink || entryUrl) && entryUrl && (() => {
                             const og = ogCache[entryUrl];
                             return (
