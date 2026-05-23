@@ -122,6 +122,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const [bookmarkNote, setBookmarkNote] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<LogFilter>("all");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [ogCache, setOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
@@ -149,6 +150,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     if (filter === "quotes" && e.type !== "quote") return false;
     if (filter === "bookmarked" && !e.bookmarked) return false;
     if (filter === "unused" && (isUsedInPlan(e) || e.bookmarked)) return false;
+    if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
     if (search.trim()) {
       const q = search.toLowerCase();
       if (!(e.content || "").toLowerCase().includes(q) && !(e.tags || []).some(t => t.includes(q))) return false;
@@ -284,6 +286,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     { key: "all", label: "All" }, { key: "notes", label: "Notes" }, { key: "links", label: "Links" },
     { key: "quotes", label: "Quotes" }, { key: "bookmarked", label: "Saved" }, { key: "unused", label: "Unused" },
   ];
+  const availableTags = Array.from(new Set(logEntries.filter(e => !e.archived).flatMap(e => e.tags || []))).filter(Boolean).sort();
 
   return (
     <div onClick={() => { if (menuOpen) setMenuOpen(null); }}>
@@ -347,12 +350,26 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
             className="w-full outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
           <div className="flex items-center gap-2 flex-wrap">
             {FILTERS.map(f => (
-              <button key={f.key} onClick={() => setFilter(f.key)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+              <button key={f.key} onClick={() => { setFilter(f.key); }} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
                 style={{ background: filter === f.key ? `${BLUE}10` : "transparent", color: filter === f.key ? BLUE : FAINT, border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`, cursor: "pointer" }}>
                 {f.label}
               </button>
             ))}
           </div>
+          {availableTags.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>Tags:</span>
+              {availableTags.map(tag => (
+                <button key={tag} onClick={() => setTagFilter(tagFilter === tag ? null : tag)} className="font-mono text-[11px] px-2.5 py-1 rounded-full transition-all"
+                  style={{ background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent", color: TAG_COLORS[tag] || DIM, border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`, cursor: "pointer" }}>
+                  {tag}
+                </button>
+              ))}
+              {tagFilter && (
+                <button onClick={() => setTagFilter(null)} className="font-sans text-[11px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Clear</button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
