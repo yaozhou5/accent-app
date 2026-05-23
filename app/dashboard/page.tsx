@@ -987,6 +987,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
   const [showNote, setShowNote] = useState(true);
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
+  const [accepted, setAccepted] = useState<Set<number>>(new Set());
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const autoSaveInterval = useRef<NodeJS.Timeout | null>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -1048,12 +1049,12 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     setCoachLoading(false);
   };
 
-  const handleApplySuggestions = async () => {
+  const handleSaveWithSuggestions = async () => {
     if (!coaching) return;
     let updated = content;
-    for (const p of coaching.phrases_to_improve) {
-      if (p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion);
-    }
+    coaching.phrases_to_improve.forEach((p, i) => {
+      if (accepted.has(i) && p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion);
+    });
     setContent(updated);
     setSaving(true);
     await saveDraft(planId, postIndex, updated);
@@ -1157,14 +1158,29 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 
             {coaching.phrases_to_improve.length > 0 && (
               <div className="space-y-3">
-                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Phrases to improve</span>
-                {coaching.phrases_to_improve.map((p, i) => (
-                  <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
-                    <p className="font-sans line-through" style={{ fontSize: 16, color: DIM }}>{p.original}</p>
-                    <p className="font-sans font-semibold mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
-                    <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>{p.reason}</p>
-                  </div>
-                ))}
+                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Suggestions</span>
+                {coaching.phrases_to_improve.map((p, i) => {
+                  const isAccepted = accepted.has(i);
+                  return (
+                    <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${isAccepted ? BLUE : BORDER}`, background: isAccepted ? `${BLUE}04` : "#fff" }}>
+                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
+                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>Original: {p.original}</p>
+                      <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>{p.reason}</p>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.add(i); return s; })}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
+                          style={{ background: isAccepted ? BLUE : "#fff", color: isAccepted ? "#fff" : DIM, border: `1px solid ${isAccepted ? BLUE : BORDER}`, cursor: "pointer" }}>
+                          ✓ Accept
+                        </button>
+                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.delete(i); return s; })}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
+                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
+                          ✕ Skip
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -1178,15 +1194,15 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 
             {/* Post-feedback actions */}
             <div className="space-y-3 pt-2 pb-8">
-              <button onClick={handleApplySuggestions}
-                className="w-full rounded-full font-sans font-semibold"
-                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
-                Apply suggestions
-              </button>
-              <button onClick={handleKeepOriginal}
+              <button onClick={handleSaveWithSuggestions}
                 className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
                 style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
-                Keep original & save
+                {accepted.size > 0 ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}` : "Save as-is"}
+              </button>
+              <button onClick={handleKeepOriginal}
+                className="w-full font-sans text-[14px]"
+                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>
+                Dismiss feedback
               </button>
             </div>
           </div>
@@ -1202,6 +1218,7 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
   const [saving, setSaving] = useState(false);
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
+  const [accepted, setAccepted] = useState<Set<number>>(new Set());
   const [showNote, setShowNote] = useState(true);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -1253,13 +1270,15 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
   const handleApplySuggestions = async () => {
     if (!coaching) return;
     let updated = content;
-    for (const p of coaching.phrases_to_improve) { if (p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion); }
+    coaching.phrases_to_improve.forEach((p, i) => {
+      if (accepted.has(i) && p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion);
+    });
     setContent(updated);
     setSaving(true);
     await saveDraftById(draft.id, updated);
     lastSavedRef.current = updated;
     setSaving(false);
-    setCoaching(null);
+    setCoaching(null); setAccepted(new Set());
   };
 
   return (
@@ -1324,20 +1343,39 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
             </div>
             {coaching.phrases_to_improve.length > 0 && (
               <div className="space-y-3">
-                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Phrases to improve</span>
-                {coaching.phrases_to_improve.map((p, i) => (
-                  <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${BORDER}` }}>
-                    <p className="font-sans line-through" style={{ fontSize: 16, color: DIM }}>{p.original}</p>
-                    <p className="font-sans font-semibold mt-1" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
-                  </div>
-                ))}
+                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Suggestions</span>
+                {coaching.phrases_to_improve.map((p, i) => {
+                  const isAccepted = accepted.has(i);
+                  return (
+                    <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${isAccepted ? BLUE : BORDER}`, background: isAccepted ? `${BLUE}04` : "#fff" }}>
+                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
+                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>Original: {p.original}</p>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.add(i); return s; })}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
+                          style={{ background: isAccepted ? BLUE : "#fff", color: isAccepted ? "#fff" : DIM, border: `1px solid ${isAccepted ? BLUE : BORDER}`, cursor: "pointer" }}>
+                          ✓ Accept
+                        </button>
+                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.delete(i); return s; })}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
+                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
+                          ✕ Skip
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
             <div className="space-y-3 pt-2 pb-8">
               <button onClick={handleApplySuggestions} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Apply suggestions</button>
-              <button onClick={() => { setCoaching(null); handleExplicitSave(); }} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Keep original & save</button>
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+                {accepted.size > 0 ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}` : "Save as-is"}
+              </button>
+              <button onClick={() => { setCoaching(null); setAccepted(new Set()); }} className="w-full font-sans text-[14px]"
+                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>
+                Dismiss feedback
+              </button>
             </div>
           </div>
         )}
