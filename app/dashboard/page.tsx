@@ -842,8 +842,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               ✓ All set for this week
             </p>
           )}
-          <button onClick={onSwitchToLog} className="mt-3 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>Add more notes for next week</button>
+          <button onClick={onSwitchToLog} className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, borderRadius: 40, cursor: "pointer" }}>Add more notes for next week</button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
         </div>
