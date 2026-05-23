@@ -422,13 +422,13 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                         }}>
                           {/* Menu */}
                           {!selectMode && editingId !== entry.id && (
-                            <div className="absolute" style={{ top: 16, right: 16 }}>
+                            <div className="absolute" style={{ top: 8, right: 4 }}>
                               <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(menuOpen === entry.id ? null : entry.id); }}
-                                className="rounded hover:bg-gray-100 flex items-center justify-center" style={{ width: 28, height: 28, background: "none", border: "none", cursor: "pointer" }}>
+                                className="rounded hover:bg-gray-100 flex items-center justify-center" style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}>
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="#6B7280"><circle cx="8" cy="3" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg>
                               </button>
                               {menuOpen === entry.id && (
-                                <div className="absolute right-0 mt-1 rounded-[8px] overflow-hidden" style={{ background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, minWidth: 120 }}>
+                                <div className="absolute right-0 sm:right-0 mt-1 rounded-[8px] overflow-hidden" style={{ background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, minWidth: 130, right: 0 }}>
                                   <button onClick={(ev) => { ev.stopPropagation(); handleStartEdit(entry); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}>Edit</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setDeleteConfirmId(entry.id); setMenuOpen(null); }}
@@ -490,10 +490,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                                   <img src={images[0]} alt="" className="w-full rounded-[10px] cursor-pointer hover:opacity-95" style={{ maxHeight: 360, objectFit: "cover", border: `1px solid ${BORDER}` }}
                                     onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
                                 ) : (
-                                  <div className="grid gap-2" style={{ gridTemplateColumns: images.length === 2 ? "1fr 1fr" : "1fr 1fr 1fr" }}>
+                                  <div className="grid gap-2 grid-cols-2">
                                     {images.map((url, idx) => (
                                       <img key={idx} src={url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-95"
-                                        style={{ height: images.length === 2 ? 180 : 140, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                        style={{ height: 140, objectFit: "cover", border: `1px solid ${BORDER}` }}
                                         onClick={() => setExpandedImage(expandedImage === url ? null : url)} />
                                     ))}
                                   </div>
@@ -1477,8 +1477,8 @@ export default function DashboardPage() {
       <header style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/write" className="no-underline flex items-center gap-1.5 px-4 py-1.5 rounded-full font-sans text-[13px] font-semibold transition-transform hover:scale-[1.02]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/dashboard/write" className="no-underline flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full font-sans text-[12px] sm:text-[13px] font-semibold transition-transform hover:scale-[1.02]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
@@ -1489,7 +1489,7 @@ export default function DashboardPage() {
         </div>
       </header>
       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="max-w-[640px] mx-auto px-5 flex gap-6">
+        <div className="max-w-[640px] mx-auto px-5 flex gap-4 sm:gap-6">
           {TABS.map(t => (
             <button key={t.key} id={`tab-${t.key}`} onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
               className="font-sans py-3.5 relative" style={{ fontSize: 16, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? INK : DIM, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>

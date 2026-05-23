@@ -19,7 +19,7 @@ function ChipSelect({ options, selected, onToggle, multi = true }: { options: st
   return (
     <div className="flex flex-wrap gap-2">
       {options.map(o => (
-        <button key={o} onClick={() => onToggle(o)} className="px-4 py-2 rounded-full text-[13px] font-mono transition-all"
+        <button key={o} onClick={() => onToggle(o)} className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] sm:text-[13px] font-mono transition-all"
           style={{ background: selected.includes(o) ? BLUE : "transparent", color: selected.includes(o) ? "#fff" : DIM, border: selected.includes(o) ? "none" : `1px solid ${BORDER}`, cursor: "pointer" }}>
           {o}
         </button>
@@ -95,7 +95,7 @@ export default function Onboard3() {
           <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Posts per week you can actually do</label>
           <div className="flex gap-2">
             {FREQUENCIES.map(f => (
-              <button key={f} onClick={() => setFrequency(f)} className="px-5 py-2.5 rounded-full text-[14px] font-mono transition-all"
+              <button key={f} onClick={() => setFrequency(f)} className="flex-1 px-3 py-2 rounded-full text-[13px] sm:text-[14px] font-mono transition-all"
                 style={{ background: frequency === f ? BLUE : "transparent", color: frequency === f ? "#fff" : DIM, border: frequency === f ? "none" : `1px solid ${BORDER}`, cursor: "pointer" }}>
                 {f}
               </button>
@@ -163,7 +163,7 @@ export default function Onboard3() {
         <div className="flex gap-3">
           <button onClick={handleDone} disabled={platforms.length === 0 || saving}
             className="flex-1 rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            style={{ fontSize: 15, padding: "14px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {saving ? "Saving..." : "Done, start planning"}
           </button>
           <button onClick={() => router.push("/onboard/2")} className="px-6 py-3 rounded-full font-sans text-[14px]"

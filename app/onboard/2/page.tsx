@@ -69,7 +69,7 @@ export default function Onboard2() {
             onClick={handleNext}
             disabled={selected.length === 0 || saving}
             className="flex-1 rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "12px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+            style={{ fontSize: 15, padding: "14px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
           >
             {saving ? "Saving..." : "Next"}
           </button>

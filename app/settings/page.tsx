@@ -30,13 +30,13 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <nav style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="max-w-[640px] mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
           <Link href="/dashboard" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>← Back</Link>
         </div>
       </nav>
 
-      <div className="max-w-[480px] mx-auto px-6 py-12">
+      <div className="max-w-[480px] mx-auto px-5 py-12">
         <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Settings</h1>
 
         <div className="space-y-6">
