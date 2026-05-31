@@ -530,7 +530,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   onProfileUpdated: (fields: Partial<UserProfile>) => void;
   onQuickLog: (text: string) => Promise<void>;
 }) {
-  const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).sort().reverse();
+  // Filter out future weeks — never show weeks that haven't started yet
+  const todayStr = new Date().toISOString().split("T")[0];
+  const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).filter(w => w <= todayStr).sort().reverse();
   const targetWeek = getCurrentWeekMonday(); // display: always this week
   const planTargetWeek = getWeekStart(); // generation: may target next week Thu+
   const hasCurrentPlan = allPlans.some(p => p.week_start === targetWeek || p.week_start === planTargetWeek);
@@ -835,7 +837,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         ) : <div style={{ minWidth: 44 }} />}
         <div className="text-center shrink-0">
           <span className="font-serif block" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{weekLabel(currentWeek)}</span>
-          <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
+          <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{planData ? `${planData.posts.length} post${planData.posts.length === 1 ? "" : "s"}` : "No plan"}</span>
         </div>
         {weekIdx > 0 ? (
           <button onClick={() => setWeekIdx(weekIdx - 1)}
@@ -924,19 +926,24 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               });
             })()}
           </div>
-          {planData.posts.length < 15 ? (
+          {weekEntries.length >= 3 && planData.posts.length < 15 ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
               className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
+          ) : weekEntries.length < 3 ? (
+            <div className="mt-6 p-4 rounded-[12px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+              <p className="font-sans text-[14px] mb-3" style={{ color: BODY }}>Your best content comes from your real week. Drop a few more notes and I'll find the stories.</p>
+              <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Add more notes →</button>
+            </div>
           ) : (
             <p className="mt-6 text-center font-sans font-medium" style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}>
               ✓ All set for this week
             </p>
           )}
           <button onClick={onSwitchToLog} className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes for next week</button>
+            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes →</button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
         </div>
