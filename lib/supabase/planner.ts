@@ -38,7 +38,17 @@ export interface ContentPlan {
   created_at: string;
 }
 
-// If Thursday or later, target next week's Monday
+// Current week's Monday (always includes today)
+export function getCurrentWeekMonday(): string {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diff);
+  return monday.toISOString().split("T")[0];
+}
+
+// If Thursday or later, target next week's Monday (for plan generation)
 function getWeekStart(): string {
   const now = new Date();
   const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
-import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
+import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, getCurrentWeekMonday, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, updateLogEntry, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { getDraft, saveDraft, saveDraftById, createStandaloneDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
@@ -563,10 +563,17 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   onQuickLog: (text: string) => Promise<void>;
 }) {
   const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).sort().reverse();
-  const targetWeek = getWeekStart();
-  const hasCurrentPlan = allPlans.some(p => p.week_start === targetWeek);
+  const targetWeek = getCurrentWeekMonday(); // display: always this week
+  const planTargetWeek = getWeekStart(); // generation: may target next week Thu+
+  const hasCurrentPlan = allPlans.some(p => p.week_start === targetWeek || p.week_start === planTargetWeek);
 
-  const [weekIdx, setWeekIdx] = useState(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); return i >= 0 ? i : 0; } return 0; });
+  const [weekIdx, setWeekIdx] = useState(() => {
+    if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) return i; }
+    // Default to the week containing today
+    const todayIdx = weeks.indexOf(targetWeek);
+    if (todayIdx >= 0) return todayIdx;
+    return 0;
+  });
   const [extraContext, setExtraContext] = useState("");
   const [quickLog, setQuickLog] = useState("");
   const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
