@@ -102,11 +102,11 @@ DO NOT include: hook, reasoning, structure, key_takeaway, goal_alignment, or any
 Rules:
 - The prompt should feel like a text from a friend, not a content brief
 - Be specific. Reference their actual words and situation.
-- Every idea must trace back to something they actually logged. If they didn't log much, suggest fewer posts.
+- EVERY idea MUST trace back to a specific log entry. The source_snippet MUST be a direct quote from one of their notes. NEVER generate an orphan idea with no source. If there are only 2 notes, generate only 2 ideas.
+- Generate AT MOST ${maxPosts} ideas, but FEWER if the notes don't support that many. Quality over quantity. If you can only find 2 good angles from the notes, return 2.
+- Each idea MUST be genuinely different: different angle, different content type, different platform if possible. If two ideas would reference the same source, they must explore completely different aspects. If you can't find a genuinely different angle, don't force it — return fewer ideas.
+- NEVER generate generic filler like "share a lesson" or "what did you change your mind about" — every idea must come from something specific they wrote.
 - Vary content types. Personal stories and behind-the-scenes work best for solo founders.
-- Generate EXACTLY ${maxPosts} post ideas. No more, no less.
-- Each idea MUST be genuinely different: different angle, different content type, different platform if possible. If two ideas reference the same source, they must explore completely different aspects of it. Never generate two ideas that feel like variations of the same post.
-- If the notes are thin (few entries), suggest ideas not tied to any specific note — like "share a lesson from this week" or "what's one thing you changed your mind about."
 - Spread across the week. Time-sensitive stuff earlier.
 
 This week's dates are: Monday ${weekDates[0]} through Sunday ${weekDates[6]}.

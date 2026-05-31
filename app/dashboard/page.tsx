@@ -554,12 +554,13 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated }: {
+function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
   profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[];
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
   onPlanUpdated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
   onProfileUpdated: (fields: Partial<UserProfile>) => void;
+  onQuickLog: (text: string) => Promise<void>;
 }) {
   const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).sort().reverse();
   const targetWeek = getWeekStart();
@@ -567,6 +568,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 
   const [weekIdx, setWeekIdx] = useState(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); return i >= 0 ? i : 0; } return 0; });
   const [extraContext, setExtraContext] = useState("");
+  const [quickLog, setQuickLog] = useState("");
+  const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
   const [ideasOgCache, setIdeasOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -590,6 +593,16 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         .then(r => r.json()).then(data => setIdeasOgCache(prev => ({ ...prev, [url]: data }))).catch(() => {});
     });
   }, [allPlans.length]);
+
+  // Surface unwritten past ideas
+  const pastIdeas = allPlans
+    .filter(p => p.week_start !== targetWeek)
+    .flatMap(p => {
+      const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
+      return (pd?.posts || []).map((post: ContentPlanPost) => ({ prompt: post.prompt || post.key_takeaway || post.hook || "", type: post.type || "", weekLabel: weekLabel(p.week_start) }));
+    })
+    .filter(p => p.prompt)
+    .slice(0, 3);
 
   const [editing, setEditing] = useState(false);
   const [editWhatYouDo, setEditWhatYouDo] = useState(profile.what_you_do || "");
@@ -706,9 +719,17 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Platforms:</span> {(profile.platforms || []).join(", ") || "not set"}</p>
               <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Frequency:</span> {profile.posting_frequency || "not set"}</p>
               {totalEntries < 3 && (
-                <div className="pt-3">
-                  <p className="font-sans text-[13px]" style={{ color: "#f59e0b" }}>Light week on notes. Drop a few more fragments to unlock better ideas.</p>
-                  <button onClick={onSwitchToLog} className="font-sans text-[13px] mt-1" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Log →</button>
+                <div className="pt-3 space-y-3">
+                  <p className="font-sans text-[13px]" style={{ color: "#f59e0b" }}>Your best content comes from your real week. Drop a few more notes and I'll find the stories.</p>
+                  <div className="flex gap-2">
+                    <input value={quickLog} onChange={e => setQuickLog(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && quickLog.trim()) handleQuickLog(); }}
+                      placeholder="Quick note..." className="flex-1 outline-none font-sans text-[14px]"
+                      style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+                    <button onClick={handleQuickLog} disabled={!quickLog.trim()}
+                      className="px-4 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30"
+                      style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Log</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -775,11 +796,42 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           <textarea value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Launching a new feature, meeting an investor..." rows={3}
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
+        {/* Unwritten past ideas */}
+        {pastIdeas.length > 0 && (
+          <div className="mb-6">
+            <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Still relevant? You never wrote these</span>
+            <div className="space-y-2">
+              {pastIdeas.map((idea, i) => (
+                <div key={i} className="p-3 rounded-[10px]" style={{ border: `1px solid ${BORDER}`, background: "#fafafa" }}>
+                  <p className="font-sans text-[14px]" style={{ color: BODY, lineHeight: 1.5 }}>{idea.prompt}</p>
+                  <span className="font-mono text-[11px] mt-1 block" style={{ color: FAINT }}>{idea.weekLabel} · {idea.type}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
-        <button onClick={handleGenerate} disabled={generating} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-          style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
-          {generating ? "Generating your plan..." : "Generate my plan"}
-        </button>
+
+        {totalEntries === 0 ? (
+          <div className="text-center py-6">
+            <p className="font-sans mb-4" style={{ fontSize: 15, color: FAINT }}>Nothing to work with yet. Your ideas come from your week — start logging.</p>
+            <div className="flex gap-2 max-w-sm mx-auto">
+              <input value={quickLog} onChange={e => setQuickLog(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && quickLog.trim()) handleQuickLog(); }}
+                placeholder="What happened today?" className="flex-1 outline-none font-sans text-[14px]"
+                style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+              <button onClick={handleQuickLog} disabled={!quickLog.trim()}
+                className="px-4 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30"
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Log</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={handleGenerate} disabled={generating} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+            {generating ? "Generating your plan..." : "Generate my plan"}
+          </button>
+        )}
         {generating && <div className="mt-6 space-y-3 animate-pulse">{[1, 2, 3].map(i => <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}><div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} /><div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} /><div className="h-12 rounded" style={{ background: "#f0f0f0" }} /></div>)}</div>}
       </div>
     );
@@ -1547,7 +1599,7 @@ export default function DashboardPage() {
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
         {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
         {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
