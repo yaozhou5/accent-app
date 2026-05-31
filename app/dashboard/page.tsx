@@ -584,12 +584,29 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 
   const [weekIdx, setWeekIdx] = useState(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); return i >= 0 ? i : 0; } return 0; });
   const [extraContext, setExtraContext] = useState("");
+  const [ideasOgCache, setIdeasOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenerate, setShowGenerate] = useState(!hasCurrentPlan);
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) { setWeekIdx(i); setShowGenerate(false); } } }, [initialWeek]);
+
+  // Fetch OG metadata for URLs in plan source_snippets
+  useEffect(() => {
+    const urls = new Set<string>();
+    for (const p of allPlans) {
+      const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
+      for (const post of (pd?.posts || [])) {
+        const match = (post.source_snippet || "").match(/(https?:\/\/[^\s"]+)/);
+        if (match && !ideasOgCache[match[1]]) urls.add(match[1]);
+      }
+    }
+    Array.from(urls).slice(0, 10).forEach(url => {
+      fetch("/api/og-meta", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) })
+        .then(r => r.json()).then(data => setIdeasOgCache(prev => ({ ...prev, [url]: data }))).catch(() => {});
+    });
+  }, [allPlans.length]);
 
   const [editing, setEditing] = useState(false);
   const [editWhatYouDo, setEditWhatYouDo] = useState(profile.what_you_do || "");
@@ -829,11 +846,31 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 
                     <p className="font-serif" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
 
-                    {sourceSnippet && (
-                      <div className="mt-4 pl-4" style={{ borderLeft: `2px solid ${BORDER}` }}>
-                        <p className="font-sans italic" style={{ fontSize: 15, color: BODY, lineHeight: 1.55 }}>"{sourceSnippet}"</p>
-                      </div>
-                    )}
+                    {sourceSnippet && (() => {
+                      const urlMatch = sourceSnippet.match(/(https?:\/\/[^\s"]+)/);
+                      if (urlMatch) {
+                        const url = urlMatch[1];
+                        const og = ideasOgCache[url];
+                        const domain = (() => { try { return new URL(url).hostname.replace("www.", ""); } catch { return url; } })();
+                        const cleanSnippet = sourceSnippet.replace(url, "").replace(/^[\s"]+|[\s"]+$/g, "").trim();
+                        return (
+                          <div className="mt-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+                            <div style={{ padding: "12px 14px" }}>
+                              <p className="font-sans font-semibold" style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}>
+                                🔗 {og?.title || cleanSnippet || getReadableTitle(url)}
+                              </p>
+                              {og?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{og.description}</p>}
+                              <span className="font-mono block mt-1" style={{ fontSize: 11, color: FAINT }}>{domain}</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="mt-4 pl-4" style={{ borderLeft: `2px solid ${BORDER}` }}>
+                          <p className="font-sans italic" style={{ fontSize: 15, color: BODY, lineHeight: 1.55 }}>"{sourceSnippet}"</p>
+                        </div>
+                      );
+                    })()}
 
                     {!sourceSnippet && post.reasoning && (
                       <p className="font-sans mt-3" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{post.reasoning}</p>
