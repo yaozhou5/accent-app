@@ -851,13 +851,21 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     <div>
       <div className="flex items-center justify-between mb-6">
         <button onClick={() => setWeekIdx(Math.min(weekIdx + 1, weeks.length - 1))} disabled={weekIdx >= weeks.length - 1}
-          className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>←</span></button>
+          className="flex items-center gap-1.5 rounded-full disabled:opacity-20 transition-colors hover:bg-gray-100"
+          style={{ minWidth: 44, minHeight: 44, padding: "8px 12px", border: `1.5px solid ${BORDER}`, background: "#fff", cursor: "pointer" }}>
+          <span style={{ fontSize: 16, color: INK }}>←</span>
+          {weekIdx < weeks.length - 1 && <span className="font-sans text-[12px] hidden sm:inline" style={{ color: FAINT }}>{weekLabel(weeks[weekIdx + 1])}</span>}
+        </button>
         <div className="text-center">
           <span className="font-serif block" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{weekLabel(currentWeek)}</span>
           <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{planData ? `${planData.posts.length} posts` : "No plan"}</span>
         </div>
         <button onClick={() => setWeekIdx(Math.max(weekIdx - 1, 0))} disabled={weekIdx <= 0}
-          className="p-2 rounded-full disabled:opacity-20" style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}><span style={{ fontSize: 14, color: DIM }}>→</span></button>
+          className="flex items-center gap-1.5 rounded-full disabled:opacity-20 transition-colors hover:bg-gray-100"
+          style={{ minWidth: 44, minHeight: 44, padding: "8px 12px", border: `1.5px solid ${BORDER}`, background: "#fff", cursor: "pointer" }}>
+          {weekIdx > 0 && <span className="font-sans text-[12px] hidden sm:inline" style={{ color: FAINT }}>{weekLabel(weeks[weekIdx - 1])}</span>}
+          <span style={{ fontSize: 16, color: INK }}>→</span>
+        </button>
       </div>
       {!planData ? (
         <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No plan for this week.</p></div>
