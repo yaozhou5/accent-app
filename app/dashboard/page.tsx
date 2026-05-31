@@ -129,7 +129,6 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Compute which entries were used in plans (match source_snippet to content)
@@ -162,7 +161,17 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
   const unusedOldCount = logEntries.filter(e => !e.archived && !isUsedInPlan(e) && !e.bookmarked && new Date(e.created_at) < twoWeeksAgo).length;
 
-  const weeks = groupByWeek(visibleEntries);
+  // Group by day for simple chronological feed
+  const dayGroups = (() => {
+    const groups: { label: string; entries: LogEntry[] }[] = [];
+    const map = new Map<string, LogEntry[]>();
+    for (const e of visibleEntries) {
+      const label = getDayLabel(e.created_at);
+      if (!map.has(label)) { map.set(label, []); groups.push({ label, entries: map.get(label)! }); }
+      map.get(label)!.push(e);
+    }
+    return groups;
+  })();
 
   // Fetch OG metadata for link entries
   useEffect(() => {
@@ -179,12 +188,6 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     }
   }, [logEntries.length]);
 
-  // Auto-collapse older weeks
-  useEffect(() => {
-    const toCollapse = new Set<string>();
-    weeks.forEach((w, i) => { if (i > 0) toCollapse.add(w.label); });
-    setCollapsedWeeks(toCollapse);
-  }, [logEntries.length]);
 
   const tagEntryAsync = (entry: LogEntry) => {
     fetch("/api/tag-entry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: entry.content || "", entryType: entry.type }) })
@@ -201,9 +204,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
         imageUrls = uploads.filter((u): u is string => u !== null);
         setPendingImages([]); setPendingPreviews([]);
       }
-      const detectedLink = entryType === "note" ? detectUrl(input.trim()) : null;
-      const entryUrl = entryType === "link" ? (detectUrl(input.trim()) || input.trim()) : null;
-      const entry = await createLogEntry(input.trim(), { image_url: imageUrls[0] || null, image_urls: imageUrls, link_url: detectedLink, type: entryType, url: entryUrl, source: entryType === "quote" && source.trim() ? source.trim() : null });
+      const detectedUrl = detectUrl(input.trim());
+      const isLinkOnly = detectedUrl && input.trim() === detectedUrl;
+      const autoType: LogEntryType = isLinkOnly ? "link" : "note";
+      const entry = await createLogEntry(input.trim(), { image_url: imageUrls[0] || null, image_urls: imageUrls, link_url: detectedUrl, type: autoType, url: isLinkOnly ? detectedUrl : null });
       if (entry) { setLogEntries((prev: LogEntry[]) => [entry, ...prev]); setInput(""); setSource(""); tagEntryAsync(entry); }
       else setError("Failed to save.");
     } catch (e: unknown) { setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`); }
@@ -290,16 +294,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 
   return (
     <div onClick={() => { if (menuOpen) setMenuOpen(null); }}>
-      {/* Compose */}
+      {/* Compose — single text field, no type selector */}
       <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-        <div className="flex gap-2 px-5 pt-4">
-          {(["note", "link", "quote"] as LogEntryType[]).map(t => (
-            <button key={t} onClick={() => setEntryTypeWithSave(t)} className="font-sans text-[13px] px-3.5 py-1.5 rounded-full transition-all"
-              style={{ minHeight: 36, background: entryType === t ? `${BLUE}08` : "transparent", color: entryType === t ? BLUE : FAINT, border: entryType === t ? `1px solid ${BLUE}20` : `1px solid transparent`, cursor: "pointer" }}>
-              {t === "note" ? "Note" : t === "link" ? "Link" : "Quote"}
-            </button>
-          ))}
-        </div>
         {pendingPreviews.length > 0 && (
           <div className="px-5 pt-3 flex gap-2 flex-wrap">
             {pendingPreviews.map((preview, idx) => (
@@ -311,19 +307,16 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
             ))}
           </div>
         )}
-        <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(80, el.scrollHeight) + "px"; } }}
-          value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={placeholders[entryType]}
-          className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 20px 8px", border: "none", background: "transparent", minHeight: 80, fontStyle: entryType === "quote" ? "italic" : "normal", overflow: "hidden" }} />
-        {entryType === "quote" && (
-          <div className="px-5 pb-1"><input value={source} onChange={e => setSource(e.target.value)} placeholder="Source (optional)" className="w-full outline-none font-sans text-[13px]" style={{ color: DIM, padding: "4px 0", border: "none", background: "transparent" }} /></div>
-        )}
-        <div className="flex items-center justify-between px-4 pb-4">
-          <div className="flex items-center">
+        <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(56, el.scrollHeight) + "px"; } }}
+          value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+          placeholder="A call, a win, a frustration, something you read..."
+          className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 16px 8px", border: "none", background: "transparent", minHeight: 56, overflow: "hidden" }} />
+        <div className="flex items-center justify-between px-3 pb-3">
+          <div className="flex items-center gap-2">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageSelect} className="hidden" />
-            <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-50 transition-colors"
-              style={{ border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : DIM} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
-              <span className="font-sans text-[13px]" style={{ color: pendingImages.length > 0 ? BLUE : DIM }}>{pendingImages.length > 0 ? `${pendingImages.length} image${pendingImages.length > 1 ? "s" : ""}` : "Add image"}</span>
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-gray-50"
+              style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
             </button>
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && pendingImages.length === 0) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
@@ -395,19 +388,11 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
         <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>{search || filter !== "all" ? "No matching notes." : "No notes yet. What happened today?"}</p></div>
       ) : (
         <div className="space-y-6">
-          {weeks.map(({ label, entries: weekEntries }) => {
-            const isCollapsed = collapsedWeeks.has(label);
-            return (
+          {dayGroups.map(({ label, entries: dayEntries }) => (
               <div key={label}>
-                <button onClick={() => { const s = new Set(collapsedWeeks); if (s.has(label)) s.delete(label); else s.add(label); setCollapsedWeeks(s); }}
-                  className="flex items-center gap-2 mb-3 w-full" style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{label}</span>
-                  <span className="font-mono" style={{ fontSize: 11, color: FAINT }}>{weekEntries.length}</span>
-                  <span style={{ fontSize: 10, color: FAINT, transition: "transform 0.2s", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0)", marginLeft: 2 }}>▼</span>
-                </button>
-                {!isCollapsed && (
-                  <div className="space-y-4">
-                    {weekEntries.map(entry => {
+                <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{label}</span>
+                  <div className="space-y-3">
+                    {dayEntries.map(entry => {
                       const isQuote = entry.type === "quote";
                       const isLink = entry.type === "link";
                       const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
@@ -552,10 +537,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                       );
                     })}
                   </div>
-                )}
               </div>
-            );
-          })}
+          ))}
         </div>
       )}
 
@@ -656,7 +639,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const dumpContent = extraContext.trim() ? `${combined}\n\nAdditional context: ${extraContext.trim()}` : combined;
       const savedDump = await createWeeklyDump(dumpContent || extraContext.trim() || "No notes this week");
       if (!savedDump) { setError("Failed to save."); setGenerating(false); return; }
-      const body = { entries: entriesPayload.length > 0 ? entriesPayload : undefined, dump: extraContext.trim() || (entriesPayload.length === 0 ? "Generate a plan based on my profile" : undefined), shelfItems: shelfItems.length > 0 ? shelfItems : undefined, profile };
+      const entryCount = entriesPayload.length;
+      const body = { entries: entriesPayload.length > 0 ? entriesPayload : undefined, dump: extraContext.trim() || (entriesPayload.length === 0 ? "Generate a plan based on my profile" : undefined), shelfItems: shelfItems.length > 0 ? shelfItems : undefined, profile, entryCount };
       const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
       const planData: ContentPlanData = await res.json();
@@ -722,7 +706,10 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Platforms:</span> {(profile.platforms || []).join(", ") || "not set"}</p>
               <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Frequency:</span> {profile.posting_frequency || "not set"}</p>
               {totalEntries < 3 && (
-                <p className="font-sans text-[13px] pt-2" style={{ color: "#f59e0b" }}>Add a few more notes to your Log this week — the more context, the better your plan.</p>
+                <div className="pt-3">
+                  <p className="font-sans text-[13px]" style={{ color: "#f59e0b" }}>Light week on notes. Drop a few more fragments to unlock better ideas.</p>
+                  <button onClick={onSwitchToLog} className="font-sans text-[13px] mt-1" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Log →</button>
+                </div>
               )}
             </div>
           ) : (
@@ -1447,7 +1434,30 @@ export default function DashboardPage() {
   const [logEntriesState, setLogEntries] = useState<LogEntry[]>([]);
   const [draftsState, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>("log");
+  const [tab, setTabRaw] = useState<Tab>(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "") as Tab;
+      if (["log", "ideas", "drafts"].includes(hash)) return hash;
+    }
+    return "log";
+  });
+  const setTab = (t: Tab) => {
+    setTabRaw(t);
+    if (typeof window !== "undefined") {
+      window.history.pushState({ tab: t }, "", `#${t}`);
+    }
+  };
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const handlePop = (e: PopStateEvent) => {
+      const hash = window.location.hash.replace("#", "") as Tab;
+      if (["log", "ideas", "drafts"].includes(hash)) setTabRaw(hash);
+      else setTabRaw("log");
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
   const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);

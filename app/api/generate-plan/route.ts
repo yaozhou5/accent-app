@@ -10,8 +10,10 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { dump, entries, shelfItems, profile, moreIdeas } = await request.json();
+    const { dump, entries, shelfItems, profile, moreIdeas, entryCount: rawEntryCount } = await request.json();
     if (!profile) return NextResponse.json({ error: "Profile is required" }, { status: 400 });
+    const entryCount = rawEntryCount || (entries?.length || 0);
+    const maxPosts = entryCount < 3 ? 3 : entryCount <= 5 ? 5 : 7;
     if (typeof dump === "string" && dump.length > 50000) return NextResponse.json({ error: "Input too long" }, { status: 400 });
 
     // Support both: single dump string or array of tagged entries
@@ -102,7 +104,9 @@ Rules:
 - Be specific. Reference their actual words and situation.
 - Every idea must trace back to something they actually logged. If they didn't log much, suggest fewer posts.
 - Vary content types. Personal stories and behind-the-scenes work best for solo founders.
-- Match post count to their frequency preference.
+- Generate EXACTLY ${maxPosts} post ideas. No more, no less.
+- Each idea MUST be genuinely different: different angle, different content type, different platform if possible. If two ideas reference the same source, they must explore completely different aspects of it. Never generate two ideas that feel like variations of the same post.
+- If the notes are thin (few entries), suggest ideas not tied to any specific note — like "share a lesson from this week" or "what's one thing you changed your mind about."
 - Spread across the week. Time-sensitive stuff earlier.
 
 This week's dates are: Monday ${weekDates[0]} through Sunday ${weekDates[6]}.
