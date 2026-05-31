@@ -46,38 +46,6 @@ function getDayLabel(ds: string): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 function formatTime(ds: string): string { return new Date(ds).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
-function groupByWeek(entries: LogEntry[]): { label: string; weekStart: Date; entries: LogEntry[] }[] {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const day = today.getDay();
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-
-  const groups = new Map<string, { label: string; weekStart: Date; entries: LogEntry[] }>();
-  for (const e of entries) {
-    const d = new Date(e.created_at);
-    const entryDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const entryDay = entryDate.getDay();
-    const entryMonday = new Date(entryDate);
-    entryMonday.setDate(entryDate.getDate() - (entryDay === 0 ? 6 : entryDay - 1));
-    const key = entryMonday.toISOString().split("T")[0];
-
-    if (!groups.has(key)) {
-      const diff = Math.round((thisMonday.getTime() - entryMonday.getTime()) / 86400000);
-      let label: string;
-      if (diff === 0) label = "This week";
-      else if (diff === 7) label = "Last week";
-      else {
-        const fri = new Date(entryMonday); fri.setDate(entryMonday.getDate() + 4);
-        const fmt = (dt: Date) => dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        label = `${fmt(entryMonday)}–${fmt(fri)}`;
-      }
-      groups.set(key, { label, weekStart: entryMonday, entries: [] });
-    }
-    groups.get(key)!.entries.push(e);
-  }
-  return Array.from(groups.values()).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
-}
 function getDomain(url: string): string { try { return new URL(url).hostname; } catch { return url; } }
 function getReadableTitle(url: string): string {
   try {
