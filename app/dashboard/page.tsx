@@ -288,7 +288,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
             </button>
           </div>
           <button onClick={handleSubmit} disabled={(!input.trim() && pendingImages.length === 0) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {submitting ? "Saving..." : "Log"}
           </button>
         </div>
@@ -760,7 +760,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               </div>
               <button onClick={handleSaveProfile} disabled={editSaving}
                 className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                 {editSaving ? "Saving..." : "Save"}
               </button>
             </div>
@@ -803,7 +803,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
         ) : (
           <button onClick={handleGenerate} disabled={generating} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
             {generating ? "Generating your plan..." : "Generate my plan"}
           </button>
         )}
@@ -912,7 +912,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                             <p className="font-serif" style={{ fontSize: 16, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
                             <button onClick={() => { if (plan) onWritePost(plan.id, post.idx); }}
                               className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-                              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+                              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                               Write this →
                             </button>
                           </div>
@@ -927,7 +927,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           {planData.posts.length < 15 ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
               className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
               {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
             </button>
           ) : (
@@ -936,7 +936,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             </p>
           )}
           <button onClick={onSwitchToLog} className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, borderRadius: 40, cursor: "pointer" }}>Add more notes for next week</button>
+            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes for next week</button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
         </div>
@@ -1221,13 +1221,13 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
         {content.trim().length > 20 && !coaching && (
           <div className="mt-6 space-y-3">
             <button onClick={handleCheckWriting} disabled={coachLoading}
-              className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button onClick={handleExplicitSave}
               className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, borderRadius: 40, cursor: "pointer" }}>
+              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>
               Save draft
             </button>
             {saveError && <p className="font-sans text-[13px] mt-2" style={{ color: "#DC2626" }}>{saveError}</p>}
@@ -1289,7 +1289,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
             <div className="space-y-3 pt-2 pb-8">
               <button onClick={handleSaveWithSuggestions}
                 className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                 {accepted.size > 0 ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}` : "Save as-is"}
               </button>
               <button onClick={handleKeepOriginal}
@@ -1415,13 +1415,13 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
         {content.trim().length > 20 && !coaching && (
           <div className="mt-6 space-y-3">
             <button onClick={handleCheckWriting} disabled={coachLoading}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button onClick={handleExplicitSave}
               className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, borderRadius: 40, cursor: "pointer" }}>
+              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>
               Save draft
             </button>
             {saveError && <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>{saveError}</p>}
@@ -1462,7 +1462,7 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
             )}
             <div className="space-y-3 pt-2 pb-8">
               <button onClick={handleApplySuggestions} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                 {accepted.size > 0 ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}` : "Save as-is"}
               </button>
               <button onClick={() => { setCoaching(null); setAccepted(new Set()); }} className="w-full font-sans text-[14px]"
@@ -1577,7 +1577,7 @@ export default function DashboardPage() {
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link href="/dashboard/write" className="no-underline flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full font-sans text-[12px] sm:text-[13px] font-semibold transition-transform hover:scale-[1.02]" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
+            <Link href="/dashboard/write" className="no-underline flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full font-sans text-[12px] sm:text-[13px] font-semibold transition-transform hover:scale-[1.02]" style={{ background: BLUE, color: "#fff" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
