@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { upsertProfile } from "@/lib/supabase/profiles";
 
 const INK = "#111827";
 const DIM = "#6b7280";
@@ -12,6 +13,7 @@ const BORDER = "#e5e7eb";
 
 export default function SettingsPage() {
   const [email, setEmail] = useState("");
+  const [resetting, setResetting] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -45,7 +47,12 @@ export default function SettingsPage() {
             <p className="font-sans text-[15px]" style={{ color: INK }}>{email}</p>
           </div>
 
-          <div className="pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+          <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+            <button onClick={async () => { setResetting(true); await upsertProfile({ onboarding_completed: false }); window.location.href = "/onboard/1"; }}
+              disabled={resetting}
+              className="w-full py-3 rounded-full font-sans text-[14px]" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>
+              {resetting ? "Redirecting..." : "Redo onboarding"}
+            </button>
             <button onClick={handleSignOut} className="w-full py-3 rounded-full font-sans text-[14px]" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>
               Sign out
             </button>
