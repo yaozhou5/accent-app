@@ -55,8 +55,17 @@ export async function POST(request: NextRequest) {
       return null;
     };
 
-    const title = getMetaContent("og:title") || getMetaContent("twitter:title") || html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || null;
-    const description = getMetaContent("og:description") || getMetaContent("twitter:description") || getMetaContent("description") || null;
+    // Title: OG → Twitter → <title> → <h1>
+    const h1Match = html.match(/<h1[^>]*>([^<]*)<\/h1>/i);
+    const title = getMetaContent("og:title") || getMetaContent("twitter:title") || html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || h1Match?.[1]?.trim() || null;
+
+    // Description: OG → Twitter → meta description → first meaningful <p>
+    let description = getMetaContent("og:description") || getMetaContent("twitter:description") || getMetaContent("description") || null;
+    if (!description) {
+      const pMatch = html.match(/<p[^>]*>([^<]{30,})<\/p>/i);
+      if (pMatch?.[1]) description = pMatch[1].trim().slice(0, 200);
+    }
+
     const image = getMetaContent("og:image") || getMetaContent("twitter:image") || null;
 
     return NextResponse.json({ title, description, image });

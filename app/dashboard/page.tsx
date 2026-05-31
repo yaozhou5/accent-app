@@ -887,61 +887,74 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
               <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
             </div>
           )}
-          <div className="space-y-4">
-            {planData.posts.map((post, i) => {
-              const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
-              const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
-              const nudge = post.prompt || post.key_takeaway || post.hook || "";
-              const rawSnippet = post.source_snippet || "";
-              const sourceSnippet = rawSnippet.length > 5 && !/^[\s\-\[\]]*$/.test(rawSnippet) ? rawSnippet : "";
+          <div className="space-y-6">
+            {(() => {
+              // Group ideas by source log entry
+              type PostWithIndex = ContentPlanPost & { idx: number };
+              const groups: { source: string; isUrl: boolean; ogData?: { title: string | null; description: string | null }; posts: PostWithIndex[] }[] = [];
+              const groupMap = new Map<string, typeof groups[0]>();
 
-              return (
-                <div key={i} className="rounded-[12px]" style={{ padding: "24px 20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="font-mono text-[12px] font-semibold px-2.5 py-1 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
-                      <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
-                    </div>
+              planData.posts.forEach((post, i) => {
+                const raw = post.source_snippet || "";
+                const snippet = raw.length > 5 && !/^[\s\-\[\]]*$/.test(raw) ? raw : "";
+                const key = snippet.toLowerCase().trim() || `orphan-${i}`;
+                if (!groupMap.has(key)) {
+                  const urlMatch = snippet.match(/(https?:\/\/[^\s"]+)/);
+                  const isUrl = !!urlMatch;
+                  const url = urlMatch?.[1];
+                  const og = url ? ideasOgCache[url] : undefined;
+                  groupMap.set(key, { source: snippet, isUrl, ogData: og ? { title: og.title, description: og.description } : undefined, posts: [] });
+                  groups.push(groupMap.get(key)!);
+                }
+                groupMap.get(key)!.posts.push({ ...post, idx: i });
+              });
 
-                    <p className="font-serif" style={{ fontSize: 18, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
+              return groups.map((group, gi) => {
+                const domain = group.isUrl ? (() => { const m = group.source.match(/(https?:\/\/[^\s"]+)/); if (m) try { return new URL(m[1]).hostname.replace("www.", ""); } catch {} return ""; })() : "";
+                const displayTitle = group.isUrl ? (group.ogData?.title || getReadableTitle(group.source.match(/(https?:\/\/[^\s"]+)/)?.[1] || "")) : group.source;
 
-                    {sourceSnippet && (() => {
-                      const urlMatch = sourceSnippet.match(/(https?:\/\/[^\s"]+)/);
-                      if (urlMatch) {
-                        const url = urlMatch[1];
-                        const og = ideasOgCache[url];
-                        const domain = (() => { try { return new URL(url).hostname.replace("www.", ""); } catch { return url; } })();
-                        const cleanSnippet = sourceSnippet.replace(url, "").replace(/^[\s"]+|[\s"]+$/g, "").trim();
+                return (
+                  <div key={gi} className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
+                    {/* Source log entry header */}
+                    {group.source && (
+                      <div style={{ padding: "16px 20px", background: "#fafafa", borderBottom: `1px solid ${BORDER}` }}>
+                        {group.isUrl ? (
+                          <div>
+                            <p className="font-sans font-semibold" style={{ fontSize: 15, color: INK, lineHeight: 1.4 }}>🔗 {displayTitle}</p>
+                            {group.ogData?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{group.ogData.description}</p>}
+                            {domain && <span className="font-mono block mt-1" style={{ fontSize: 11, color: FAINT }}>{domain}</span>}
+                          </div>
+                        ) : (
+                          <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>📝 "{displayTitle}"</p>
+                        )}
+                      </div>
+                    )}
+                    {/* Child ideas */}
+                    <div>
+                      {group.posts.map((post, pi) => {
+                        const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
+                        const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
+                        const nudge = post.prompt || post.key_takeaway || post.hook || "";
                         return (
-                          <div className="mt-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
-                            <div style={{ padding: "12px 14px" }}>
-                              <p className="font-sans font-semibold" style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}>
-                                🔗 {og?.title || cleanSnippet || getReadableTitle(url)}
-                              </p>
-                              {og?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{og.description}</p>}
-                              <span className="font-mono block mt-1" style={{ fontSize: 11, color: FAINT }}>{domain}</span>
+                          <div key={pi} style={{ padding: "16px 20px", borderTop: pi > 0 ? `1px solid ${BORDER}` : "none" }}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
+                              <span className="font-sans text-[13px]" style={{ color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
                             </div>
+                            <p className="font-serif" style={{ fontSize: 16, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
+                            <button onClick={() => { if (plan) onWritePost(plan.id, post.idx); }}
+                              className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
+                              style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
+                              Write this →
+                            </button>
                           </div>
                         );
-                      }
-                      return (
-                        <div className="mt-4 pl-4" style={{ borderLeft: `2px solid ${BORDER}` }}>
-                          <p className="font-sans italic" style={{ fontSize: 15, color: BODY, lineHeight: 1.55 }}>"{sourceSnippet}"</p>
-                        </div>
-                      );
-                    })()}
-
-                    {!sourceSnippet && post.reasoning && (
-                      <p className="font-sans mt-3" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{post.reasoning}</p>
-                    )}
-
-                    <button onClick={() => { if (plan) onWritePost(plan.id, i); }}
-                      className="mt-5 px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-                      style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}>
-                      Write this →
-                    </button>
-                </div>
-              );
-            })}
+                      })}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
           {planData.posts.length < 15 ? (
             <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
