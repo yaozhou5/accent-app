@@ -530,9 +530,13 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   onProfileUpdated: (fields: Partial<UserProfile>) => void;
   onQuickLog: (text: string) => Promise<void>;
 }) {
-  // Filter out future weeks — never show weeks that haven't started yet
-  const todayStr = new Date().toISOString().split("T")[0];
-  const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).filter(w => w <= todayStr).sort().reverse();
+  // Filter out future weeks — only show weeks where week_start is before next Monday
+  const now = new Date();
+  const nowDay = now.getDay();
+  const nextMonday = new Date(now);
+  nextMonday.setDate(now.getDate() + (nowDay === 0 ? 1 : 8 - nowDay));
+  const nextMondayStr = nextMonday.toISOString().split("T")[0];
+  const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).filter(w => w < nextMondayStr).sort().reverse();
   const targetWeek = getCurrentWeekMonday(); // display: always this week
   const planTargetWeek = getWeekStart(); // generation: may target next week Thu+
   const hasCurrentPlan = allPlans.some(p => p.week_start === targetWeek || p.week_start === planTargetWeek);

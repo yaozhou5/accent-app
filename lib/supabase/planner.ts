@@ -38,6 +38,10 @@ export interface ContentPlan {
   created_at: string;
 }
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // Current week's Monday (always includes today)
 export function getCurrentWeekMonday(): string {
   const now = new Date();
@@ -45,7 +49,7 @@ export function getCurrentWeekMonday(): string {
   const diff = day === 0 ? 6 : day - 1;
   const monday = new Date(now);
   monday.setDate(now.getDate() - diff);
-  return monday.toISOString().split("T")[0];
+  return toLocalDateStr(monday);
 }
 
 // If Thursday or later, target next week's Monday (for plan generation)
@@ -59,7 +63,7 @@ function getWeekStart(): string {
   if (day >= 4 || day === 0) {
     monday.setDate(monday.getDate() + 7);
   }
-  return monday.toISOString().split("T")[0];
+  return toLocalDateStr(monday);
 }
 
 export async function createWeeklyDump(content: string): Promise<WeeklyDump | null> {
