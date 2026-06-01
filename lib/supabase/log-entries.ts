@@ -19,7 +19,7 @@ export interface LogEntry {
 }
 
 export async function uploadLogImage(file: File): Promise<string | null> {
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   if (!allowedTypes.includes(file.type)) return null;
   if (file.size > 5 * 1024 * 1024) return null;
 
@@ -27,7 +27,7 @@ export async function uploadLogImage(file: File): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
   const ext = extMap[file.type] || "jpg";
   const path = `${user.id}/${Date.now()}.${ext}`;
 

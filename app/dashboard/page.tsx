@@ -98,6 +98,33 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
+
+  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+  const addImageFiles = (files: File[]) => {
+    const valid: File[] = [];
+    for (const f of files) {
+      if (!ALLOWED_IMAGE_TYPES.includes(f.type)) { setAttachError("Only JPG, PNG, WebP, and GIF allowed."); continue; }
+      if (f.size > MAX_IMAGE_SIZE) { setAttachError("Max 5MB per image."); continue; }
+      valid.push(f);
+    }
+    if (valid.length > 0) {
+      setAttachError(null);
+      setPendingImages(prev => [...prev, ...valid].slice(0, 5));
+      setPendingPreviews(prev => [...prev, ...valid.map(f => URL.createObjectURL(f))].slice(0, 5));
+    }
+  };
+
+  // Prevent browser from opening dropped files globally
+  useEffect(() => {
+    const prevent = (e: DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+    window.addEventListener("dragover", prevent);
+    window.addEventListener("drop", prevent);
+    return () => { window.removeEventListener("dragover", prevent); window.removeEventListener("drop", prevent); };
+  }, []);
 
   // Compute which entries were used in plans (match source_snippet to content)
   const usedContents = new Set<string>();
@@ -184,10 +211,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); } };
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).slice(0, 5); // max 5
-    if (files.length === 0) return;
-    setPendingImages(prev => [...prev, ...files].slice(0, 5));
-    setPendingPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 5));
+    addImageFiles(Array.from(e.target.files || []));
     e.target.value = "";
   };
   const removePendingImage = (idx: number) => {
@@ -262,8 +286,12 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 
   return (
     <div onClick={() => { if (menuOpen) setMenuOpen(null); }}>
-      {/* Compose — single text field, no type selector */}
-      <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
+      {/* Compose — single text field with paste/drop/attach */}
+      <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden transition-colors"
+        style={{ border: dragOver ? `2px solid ${BLUE}` : `1px solid ${BORDER}`, background: dragOver ? `${BLUE}04` : "#fff" }}
+        onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+        onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+        onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); addImageFiles(Array.from(e.dataTransfer.files)); }}>
         {pendingPreviews.length > 0 && (
           <div className="px-5 pt-3 flex gap-2 flex-wrap">
             {pendingPreviews.map((preview, idx) => (
@@ -277,11 +305,17 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
         )}
         <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(56, el.scrollHeight) + "px"; } }}
           value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+          onPaste={e => {
+            const items = Array.from(e.clipboardData.items);
+            const imageFiles = items.filter(it => it.type.startsWith("image/")).map(it => it.getAsFile()).filter((f): f is File => f !== null);
+            if (imageFiles.length > 0) { e.preventDefault(); addImageFiles(imageFiles); }
+          }}
           placeholder="A call, a win, a frustration, something you read..."
           className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 16px 8px", border: "none", background: "transparent", minHeight: 56, overflow: "hidden" }} />
+        {attachError && <p className="font-sans text-[12px] px-4 pb-1" style={{ color: "#DC2626" }}>{attachError}</p>}
         <div className="flex items-center justify-between px-3 pb-3">
           <div className="flex items-center gap-2">
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageSelect} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handleImageSelect} className="hidden" />
             <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-gray-50"
               style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
