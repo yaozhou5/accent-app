@@ -204,7 +204,12 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
       const isLinkOnly = detectedUrl && input.trim() === detectedUrl;
       const autoType: LogEntryType = isLinkOnly ? "link" : "note";
       const entry = await createLogEntry(input.trim(), { image_url: imageUrls[0] || null, image_urls: imageUrls, link_url: detectedUrl, type: autoType, url: isLinkOnly ? detectedUrl : null });
-      if (entry) { setLogEntries((prev: LogEntry[]) => [entry, ...prev]); setInput(""); setSource(""); tagEntryAsync(entry); posthog.capture("note_logged", { type: entry.type, has_images: imageUrls.length > 0, has_url: !!detectedUrl }); }
+      if (entry) {
+        setLogEntries((prev: LogEntry[]) => [entry, ...prev]);
+        setInput(""); setSource("");
+        tagEntryAsync(entry);
+        try { posthog.capture("note_logged", { type: entry.type, has_images: imageUrls.length > 0, has_url: !!detectedUrl }); } catch {}
+      }
       else setError("Failed to save.");
     } catch (e: unknown) { setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`); }
     setSubmitting(false);
@@ -675,7 +680,8 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const planData: ContentPlanData = await res.json();
       const saved = await savePlan(savedDump.id, planData);
       if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-      onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0); posthog.capture("plan_generated", { number_of_ideas: planData.posts?.length || 0, entry_count: entryCount });
+      onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0);
+      try { posthog.capture("plan_generated", { number_of_ideas: planData.posts?.length || 0, entry_count: entryCount }); } catch {}
     } catch { setError("Something went wrong."); }
     setGenerating(false);
   };
