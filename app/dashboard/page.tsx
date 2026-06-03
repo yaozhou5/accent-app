@@ -7,6 +7,7 @@ import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/p
 import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, getCurrentWeekMonday, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
 import { createLogEntry, updateLogEntryTags, updateLogEntry, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
+import posthog from "posthog-js";
 import { getDraft, saveDraft, saveDraftById, createStandaloneDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
 
 // Design tokens
@@ -203,7 +204,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
       const isLinkOnly = detectedUrl && input.trim() === detectedUrl;
       const autoType: LogEntryType = isLinkOnly ? "link" : "note";
       const entry = await createLogEntry(input.trim(), { image_url: imageUrls[0] || null, image_urls: imageUrls, link_url: detectedUrl, type: autoType, url: isLinkOnly ? detectedUrl : null });
-      if (entry) { setLogEntries((prev: LogEntry[]) => [entry, ...prev]); setInput(""); setSource(""); tagEntryAsync(entry); }
+      if (entry) { setLogEntries((prev: LogEntry[]) => [entry, ...prev]); setInput(""); setSource(""); tagEntryAsync(entry); posthog.capture("note_logged", { type: entry.type, has_images: imageUrls.length > 0, has_url: !!detectedUrl }); }
       else setError("Failed to save.");
     } catch (e: unknown) { setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`); }
     setSubmitting(false);
@@ -674,7 +675,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
       const planData: ContentPlanData = await res.json();
       const saved = await savePlan(savedDump.id, planData);
       if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-      onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0);
+      onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0); posthog.capture("plan_generated", { number_of_ideas: planData.posts?.length || 0, entry_count: entryCount });
     } catch { setError("Something went wrong."); }
     setGenerating(false);
   };
@@ -950,7 +951,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
                               <span className="font-sans text-[13px]" style={{ color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
                             </div>
                             <p className="font-serif" style={{ fontSize: 16, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
-                            <button onClick={() => { if (plan) onWritePost(plan.id, post.idx); }}
+                            <button onClick={() => { if (plan) { onWritePost(plan.id, post.idx); posthog.capture("write_from_idea_clicked", { content_type: post.type || "", platform: post.platform || "" }); } }}
                               className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
                               style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                               Write this →
@@ -1023,7 +1024,7 @@ function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDra
 
   const handlePublish = async (draftId: string) => {
     const result = await markAsPublished(draftId, pubPlatform, pubUrl.trim() || undefined);
-    if (result) { onDraftsUpdated(); }
+    if (result) { posthog.capture("marked_published", { platform: pubPlatform, has_url: !!pubUrl.trim() }); onDraftsUpdated(); }
     setPublishingId(null); setPubPlatform("LinkedIn"); setPubUrl("");
   };
 
@@ -1168,6 +1169,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     lastSavedRef.current = content;
     setSaving(false);
     if (result) {
+      posthog.capture("draft_saved", { source: "idea", word_count: content.trim().split(/\s+/).length });
       onSaveDone();
     } else {
       setSaveError("Failed to save draft. Check browser console for details.");
@@ -1391,7 +1393,7 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
     const result = await saveDraftById(draft.id, content);
     lastSavedRef.current = content;
     setSaving(false);
-    if (result) onSaveDone();
+    if (result) { posthog.capture("draft_saved", { source: "standalone", word_count: content.trim().split(/\s+/).length }); onSaveDone(); }
     else setSaveError("Failed to save.");
   };
 

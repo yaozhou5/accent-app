@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertProfile } from "@/lib/supabase/profiles";
+import posthog from "posthog-js";
 
 const INK = "#111827";
 const DIM = "#6b7280";
@@ -67,6 +68,7 @@ export default function Onboard3() {
       posts_that_flop: showHistory ? postsThatFlop : [],
       voice_tone: showHistory ? voiceTone : null,
     }).catch(() => {});
+    posthog.capture("onboarding_completed", { platforms, posting_frequency: frequency, has_past_posts: !!pastPosts.trim() });
     await new Promise(r => setTimeout(r, 500));
     window.location.href = "/dashboard";
   };
