@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { upsertProfile } from "@/lib/supabase/profiles";
+import { getProfile, upsertProfile } from "@/lib/supabase/profiles";
 import posthog from "posthog-js";
 
 const INK = "#111827";
@@ -41,6 +41,14 @@ export default function Onboard3() {
   const [voiceTone, setVoiceTone] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    getProfile().then(p => {
+      if (p?.platforms && p.platforms.length > 0) setPlatforms(p.platforms);
+      if (p?.posting_frequency) setFrequency(p.posting_frequency);
+      if (p?.posting_challenges) setChallenges(p.posting_challenges);
+    });
+  }, []);
 
   const toggleMulti = (arr: string[], setArr: (v: string[]) => void) => (v: string) => {
     setArr(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);

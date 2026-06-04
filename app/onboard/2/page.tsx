@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { upsertProfile } from "@/lib/supabase/profiles";
+import { getProfile, upsertProfile } from "@/lib/supabase/profiles";
 
 const INK = "#111827";
 const DIM = "#6b7280";
@@ -20,6 +20,12 @@ export default function Onboard2() {
   const [selected, setSelected] = useState<string[]>(["get_users"]);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    getProfile().then(p => {
+      if (p?.goals && p.goals.length > 0) setSelected(p.goals);
+    });
+  }, []);
 
   const toggle = (key: string) => {
     setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);

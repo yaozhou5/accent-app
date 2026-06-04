@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { upsertProfile } from "@/lib/supabase/profiles";
+import { getProfile, upsertProfile } from "@/lib/supabase/profiles";
 
 const INK = "#111827";
 const DIM = "#6b7280";
 const BLUE = "#3B82F6";
 const BORDER = "#e5e7eb";
 
+const DEFAULT_BIZ = "A social app to connect people IRL for activities. Gen Z and Millennials who want to meet new people.";
+const DEFAULT_PITCH = "A hangout app to meet new people and make friends through concerts, sports events, and group activities.";
+
 export default function Onboard1() {
-  const [businessDesc, setBusinessDesc] = useState("A social app to connect people IRL for activities. Gen Z and Millennials who want to meet new people.");
-  const [partyPitch, setPartyPitch] = useState("A hangout app to meet new people and make friends through concerts, sports events, and group activities.");
+  const [businessDesc, setBusinessDesc] = useState(DEFAULT_BIZ);
+  const [partyPitch, setPartyPitch] = useState(DEFAULT_PITCH);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    getProfile().then(p => {
+      if (p?.business_description) setBusinessDesc(p.business_description);
+      if (p?.party_pitch) setPartyPitch(p.party_pitch);
+    });
+  }, []);
 
   const handleNext = async () => {
     if (!businessDesc.trim()) return;
