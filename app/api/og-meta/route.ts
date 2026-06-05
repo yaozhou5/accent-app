@@ -33,6 +33,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "URL not allowed" }, { status: 400 });
     }
 
+    // YouTube/Vimeo: use oEmbed API for reliable metadata
+    const ytMatch = hostname.match(/youtube\.com|youtu\.be/);
+    if (ytMatch) {
+      try {
+        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, { signal: AbortSignal.timeout(5000) });
+        if (oembedRes.ok) {
+          const data = await oembedRes.json();
+          return NextResponse.json({ title: data.title || null, description: data.author_name ? `by ${data.author_name}` : null, image: data.thumbnail_url || null });
+        }
+      } catch {}
+    }
+    if (hostname.match(/vimeo\.com/)) {
+      try {
+        const oembedRes = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(5000) });
+        if (oembedRes.ok) {
+          const data = await oembedRes.json();
+          return NextResponse.json({ title: data.title || null, description: data.author_name ? `by ${data.author_name}` : null, image: data.thumbnail_url || null });
+        }
+      } catch {}
+    }
+
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; AccentBot/1.0)" },
       signal: AbortSignal.timeout(5000),
