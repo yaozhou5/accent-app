@@ -562,8 +562,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
-  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[];
+function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
+  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[];
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
   onPlanUpdated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
@@ -606,7 +606,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     setCoachReply("");
     setCoachLoading(true);
     try {
-      const recentNotes = weekEntries.filter(e => e.id !== entry.id).map(e => e.content || "").filter(Boolean).slice(0, 5);
+      const recentNotes = allEntries.filter(e => e.id !== entry.id).map(e => e.content || "").filter(Boolean).slice(0, 5);
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ note: entry.content, recentNotes, profile, step: "question" }),
@@ -1008,9 +1008,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   return (
     <div>
       {/* PRIMARY: Develop a note */}
-      {weekEntries.length > 0 && (() => {
-        const undeveloped = weekEntries.filter(e => !developedIds.has(e.id));
-        const developed = weekEntries.filter(e => developedIds.has(e.id));
+      {allEntries.length > 0 && (() => {
+        const undeveloped = allEntries.filter(e => !developedIds.has(e.id));
+        const developed = allEntries.filter(e => developedIds.has(e.id));
         return (
           <div className="mb-8">
             <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
@@ -1050,7 +1050,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           </div>
         );
       })()}
-      {weekEntries.length === 0 && (
+      {allEntries.length === 0 && (
         <div className="mb-8 text-center py-8">
           <p className="font-sans mb-3" style={{ fontSize: 15, color: FAINT }}>No notes yet. Log something and come back to develop it.</p>
           <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Log →</button>
@@ -1848,7 +1848,7 @@ export default function DashboardPage() {
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
         {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
         {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
