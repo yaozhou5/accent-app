@@ -1131,6 +1131,25 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
             style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes →</button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
+
+          {/* Develop a note — always visible on plan view */}
+          {weekEntries.length > 0 && (
+            <div className="mt-8">
+              <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Develop a note into content</span>
+              <div className="space-y-2">
+                {weekEntries.slice(0, 5).map(entry => (
+                  <div key={entry.id} className="flex items-center gap-3 p-3 rounded-[10px] cursor-pointer hover:bg-gray-50 transition-colors"
+                    style={{ border: `1px solid ${BORDER}` }}
+                    onClick={() => startCoaching(entry)}>
+                    <p className="font-sans flex-1" style={{ fontSize: 14, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {entry.content || "(image)"}
+                    </p>
+                    <span className="font-sans text-[13px] shrink-0" style={{ color: BLUE }}>Develop →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
