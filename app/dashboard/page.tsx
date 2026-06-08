@@ -633,10 +633,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const [editFrequency, setEditFrequency] = useState(profile.posting_frequency || "3-4");
   const [editSaving, setEditSaving] = useState(false);
 
-  const noteCount = weekEntries.filter(e => e.type === "note" || !e.type).length;
+  const totalEntries = weekEntries.length;
   const linkCount = weekEntries.filter(e => e.type === "link").length;
   const quoteCount = weekEntries.filter(e => e.type === "quote").length;
-  const totalEntries = weekEntries.length;
 
   const WHY_OPTIONS = ["Get customers", "Build authority", "Find collaborators", "Document the journey"];
   const PLATFORM_OPTIONS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
@@ -729,7 +728,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
 
           {!editing ? (
             <div className="space-y-2">
-              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Notes this week:</span> <strong>{noteCount}</strong></p>
+              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Notes this week:</span> <strong>{totalEntries}</strong></p>
               {(linkCount > 0 || quoteCount > 0) && (
                 <p className="font-sans text-[14px]" style={{ color: INK }}>
                   <span style={{ color: FAINT }}>Inspiration:</span> {linkCount > 0 && <strong>{linkCount} link{linkCount !== 1 ? "s" : ""}</strong>}{linkCount > 0 && quoteCount > 0 && ", "}{quoteCount > 0 && <strong>{quoteCount} quote{quoteCount !== 1 ? "s" : ""}</strong>}
