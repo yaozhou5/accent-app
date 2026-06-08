@@ -999,18 +999,46 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
     );
   }
 
-  if (weeks.length === 0) {
-    return (<div className="text-center py-16"><p className="font-sans mb-4" style={{ fontSize: 15, color: FAINT }}>No plans yet.</p>
-      <button onClick={() => setShowGenerate(true)} className="font-sans text-[14px]" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Generate your first plan →</button></div>);
-  }
-
-  const currentWeek = weeks[weekIdx];
-  const plan = allPlans.find(p => p.week_start === currentWeek);
+  const currentWeek = weeks.length > 0 ? weeks[weekIdx] : null;
+  const plan = currentWeek ? allPlans.find(p => p.week_start === currentWeek) : null;
   const raw = plan?.plan;
   const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
 
   return (
     <div>
+      {/* PRIMARY: Develop a note */}
+      {weekEntries.length > 0 && (
+        <div className="mb-8">
+          <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Develop a note into content</span>
+          <div className="space-y-2">
+            {weekEntries.slice(0, 8).map(entry => (
+              <div key={entry.id} className="flex items-center gap-3 p-4 rounded-[12px] cursor-pointer hover:bg-gray-50 transition-colors"
+                style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
+                onClick={() => startCoaching(entry)}>
+                <p className="font-sans flex-1" style={{ fontSize: 15, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-wrap" }}>
+                  {entry.content || "(image)"}
+                </p>
+                <span className="font-sans text-[14px] font-semibold shrink-0" style={{ color: BLUE }}>Develop →</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {weekEntries.length === 0 && (
+        <div className="mb-8 text-center py-8">
+          <p className="font-sans mb-3" style={{ fontSize: 15, color: FAINT }}>No notes yet. Log something and come back to develop it.</p>
+          <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Log →</button>
+        </div>
+      )}
+
+      {/* SECONDARY: Weekly plan */}
+      <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Weekly plan</span>
+      {!currentWeek ? (
+        <div className="mb-6 p-4 rounded-[12px] text-center" style={{ border: `1px solid ${BORDER}` }}>
+          <p className="font-sans mb-3" style={{ fontSize: 14, color: FAINT }}>No batch plan yet.</p>
+          <button onClick={() => setShowGenerate(true)} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Generate a weekly plan →</button>
+        </div>
+      ) : (<>
       <div className="flex items-center justify-between mb-6 gap-3">
         {weekIdx < weeks.length - 1 ? (
           <button onClick={() => setWeekIdx(weekIdx + 1)}
@@ -1132,26 +1160,9 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
 
-          {/* Develop a note — always visible on plan view */}
-          {weekEntries.length > 0 && (
-            <div className="mt-8">
-              <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Develop a note into content</span>
-              <div className="space-y-2">
-                {weekEntries.slice(0, 5).map(entry => (
-                  <div key={entry.id} className="flex items-center gap-3 p-3 rounded-[10px] cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ border: `1px solid ${BORDER}` }}
-                    onClick={() => startCoaching(entry)}>
-                    <p className="font-sans flex-1" style={{ fontSize: 14, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {entry.content || "(image)"}
-                    </p>
-                    <span className="font-sans text-[13px] shrink-0" style={{ color: BLUE }}>Develop →</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
+      </>)}
     </div>
   );
 }
