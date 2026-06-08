@@ -590,7 +590,43 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   });
   const [extraContext, setExtraContext] = useState("");
   const [quickLog, setQuickLog] = useState("");
+  // Coaching conversation state
+  const [coachNote, setCoachNote] = useState<LogEntry | null>(null);
+  const [coachQuestion, setCoachQuestion] = useState<string | null>(null);
+  const [coachReply, setCoachReply] = useState("");
+  const [coachSuggestion, setCoachSuggestion] = useState<{ hook: string; platform: string; type: string; why: string } | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
   const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
+
+  const startCoaching = async (entry: LogEntry) => {
+    setCoachNote(entry);
+    setCoachQuestion(null);
+    setCoachSuggestion(null);
+    setCoachReply("");
+    setCoachLoading(true);
+    try {
+      const recentNotes = weekEntries.filter(e => e.id !== entry.id).map(e => e.content || "").filter(Boolean).slice(0, 5);
+      const res = await fetch("/api/coach-note", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: entry.content, recentNotes, profile, step: "question" }),
+      });
+      if (res.ok) { const data = await res.json(); setCoachQuestion(data.response); }
+    } catch {}
+    setCoachLoading(false);
+  };
+
+  const submitCoachReply = async () => {
+    if (!coachReply.trim() || !coachNote) return;
+    setCoachLoading(true);
+    try {
+      const res = await fetch("/api/coach-note", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: coachNote.content, userReply: coachReply.trim(), profile, step: "suggest" }),
+      });
+      if (res.ok) { const data = await res.json(); if (data.structured) setCoachSuggestion(data.structured); }
+    } catch {}
+    setCoachLoading(false);
+  };
   const [ideasOgCache, setIdeasOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -714,6 +750,92 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   };
 
   // Generate view (either no plan exists, or user clicked Regenerate)
+  // Coaching conversation view
+  if (coachNote) {
+    return (
+      <div>
+        <button onClick={() => { setCoachNote(null); setCoachQuestion(null); setCoachSuggestion(null); setCoachReply(""); }}
+          className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to Ideas</button>
+
+        {/* Source note */}
+        <div className="p-4 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+          <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Your note</span>
+          <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{coachNote.content}</p>
+        </div>
+
+        {/* Step 1: Accent's question */}
+        {coachLoading && !coachQuestion && (
+          <div className="flex items-start gap-3 mb-6">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
+            <div className="p-3 rounded-[10px] animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
+          </div>
+        )}
+        {coachQuestion && (
+          <div className="flex items-start gap-3 mb-6">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
+            <div className="p-4 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
+              <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{coachQuestion}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 1b: User reply */}
+        {coachQuestion && !coachSuggestion && (
+          <div className="flex items-start gap-3 mb-6">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
+            <div className="flex-1">
+              <textarea value={coachReply} onChange={e => setCoachReply(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && coachReply.trim()) { e.preventDefault(); submitCoachReply(); } }}
+                placeholder="Your answer..."
+                className="w-full outline-none resize-none font-sans rounded-[12px]"
+                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, background: "#fff", minHeight: 80 }}
+                autoFocus />
+              <div className="flex justify-end mt-2">
+                <button onClick={submitCoachReply} disabled={!coachReply.trim() || coachLoading}
+                  className="px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] disabled:opacity-30"
+                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                  {coachLoading ? "Thinking..." : "Reply"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Accent's story suggestion */}
+        {coachSuggestion && (
+          <>
+            {/* Show user's reply */}
+            <div className="flex items-start gap-3 mb-6">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
+              <div className="p-4 rounded-[12px] flex-1" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
+                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{coachReply}</p>
+              </div>
+            </div>
+
+            {/* Accent's suggestion */}
+            <div className="flex items-start gap-3 mb-6">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
+              <div className="p-5 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Story angle</span>
+                <p className="font-serif mb-3" style={{ fontSize: 17, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{coachSuggestion.hook}</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded capitalize" style={{ background: `${BLUE}10`, color: BLUE }}>{coachSuggestion.type}</span>
+                  <span className="font-sans text-[13px]" style={{ color: FAINT }}>{coachSuggestion.platform}</span>
+                </div>
+                <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>{coachSuggestion.why}</p>
+                <button onClick={() => { /* TODO: start draft from this */ }}
+                  className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
+                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                  Write this →
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (showGenerate) {
     return (
       <div>
@@ -817,6 +939,25 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
           <textarea value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Launching a new feature, meeting an investor..." rows={3}
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
+        {/* Develop a note */}
+        {weekEntries.length > 0 && (
+          <div className="mb-6">
+            <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Develop a note into content</span>
+            <div className="space-y-2">
+              {weekEntries.slice(0, 5).map(entry => (
+                <div key={entry.id} className="flex items-center gap-3 p-3 rounded-[10px] cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ border: `1px solid ${BORDER}` }}
+                  onClick={() => startCoaching(entry)}>
+                  <p className="font-sans flex-1" style={{ fontSize: 14, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {entry.content || "(image)"}
+                  </p>
+                  <span className="font-sans text-[13px] shrink-0" style={{ color: BLUE }}>Develop →</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Unwritten past ideas */}
         {pastIdeas.length > 0 && (
           <div className="mb-6">
