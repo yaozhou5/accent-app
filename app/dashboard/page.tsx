@@ -592,6 +592,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   const [quickLog, setQuickLog] = useState("");
   // Coaching conversation state
   const [coachNote, setCoachNote] = useState<LogEntry | null>(null);
+  const [developedIds, setDevelopedIds] = useState<Set<string>>(new Set());
   const [coachQuestion, setCoachQuestion] = useState<string | null>(null);
   const [coachReply, setCoachReply] = useState("");
   const [coachSuggestion, setCoachSuggestion] = useState<{ hook: string; platform: string; type: string; why: string } | null>(null);
@@ -623,7 +624,7 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ note: coachNote.content, userReply: coachReply.trim(), profile, step: "suggest" }),
       });
-      if (res.ok) { const data = await res.json(); if (data.structured) setCoachSuggestion(data.structured); }
+      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestion(data.structured); if (coachNote) setDevelopedIds(prev => new Set(prev).add(coachNote.id)); } }
     } catch {}
     setCoachLoading(false);
   };
@@ -1007,23 +1008,48 @@ function IdeasTab({ profile, allPlans, weekEntries, initialWeek, onPlanGenerated
   return (
     <div>
       {/* PRIMARY: Develop a note */}
-      {weekEntries.length > 0 && (
-        <div className="mb-8">
-          <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Develop a note into content</span>
-          <div className="space-y-2">
-            {weekEntries.slice(0, 8).map(entry => (
-              <div key={entry.id} className="flex items-center gap-3 p-4 rounded-[12px] cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
-                onClick={() => startCoaching(entry)}>
-                <p className="font-sans flex-1" style={{ fontSize: 15, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-wrap" }}>
-                  {entry.content || "(image)"}
-                </p>
-                <span className="font-sans text-[14px] font-semibold shrink-0" style={{ color: BLUE }}>Develop →</span>
+      {weekEntries.length > 0 && (() => {
+        const undeveloped = weekEntries.filter(e => !developedIds.has(e.id));
+        const developed = weekEntries.filter(e => developedIds.has(e.id));
+        return (
+          <div className="mb-8">
+            <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
+              Develop a note into content {undeveloped.length > 0 && <span style={{ color: BODY }}>· {undeveloped.length} note{undeveloped.length === 1 ? "" : "s"}</span>}
+            </span>
+            {undeveloped.length > 0 ? (
+              <div className="space-y-2" style={{ maxHeight: 400, overflowY: "auto" }}>
+                {undeveloped.map(entry => (
+                  <div key={entry.id} className="flex items-center gap-3 p-4 rounded-[12px] cursor-pointer hover:bg-gray-50 transition-colors"
+                    style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
+                    onClick={() => startCoaching(entry)}>
+                    <p className="font-sans flex-1" style={{ fontSize: 15, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-wrap" }}>
+                      {entry.content || "(image)"}
+                    </p>
+                    <span className="font-sans text-[14px] font-semibold shrink-0" style={{ color: BLUE }}>Develop →</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="font-sans text-[14px] py-4" style={{ color: FAINT }}>All notes developed. Log more to keep going.</p>
+            )}
+            {developed.length > 0 && (
+              <div className="mt-4">
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.05em", color: FAINT }}>Developed · {developed.length}</span>
+                <div className="space-y-1">
+                  {developed.map(entry => (
+                    <div key={entry.id} className="flex items-center gap-3 p-3 rounded-[10px]" style={{ background: "#fafafa" }}>
+                      <p className="font-sans flex-1" style={{ fontSize: 13, color: FAINT, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {entry.content || "(image)"}
+                      </p>
+                      <span className="font-mono text-[11px]" style={{ color: FAINT }}>✓</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
       {weekEntries.length === 0 && (
         <div className="mb-8 text-center py-8">
           <p className="font-sans mb-3" style={{ fontSize: 15, color: FAINT }}>No notes yet. Log something and come back to develop it.</p>
