@@ -63,12 +63,13 @@ type Tab = "log" | "ideas" | "drafts";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
-function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartDraft }: {
+function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartDraft, onDevelopNote }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
   onSwitchToIdeas: () => void;
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
+  onDevelopNote: (entry: LogEntry) => void;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -428,6 +429,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
+                                  <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); onDevelopNote(entry); }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Develop →</button>
                                   <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const imgs = (entry.image_urls?.length ? entry.image_urls : entry.image_url ? [entry.image_url] : []); const d = await createStandaloneDraft("", entry.content || "", entry.id); if (d) onStartDraft({ draft: d, images: imgs }); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Start draft</button>
                                 </div>
@@ -562,8 +565,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
-  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[];
+function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, initialDevelopEntry, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
+  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[]; initialDevelopEntry?: LogEntry | null;
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
   onPlanUpdated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
@@ -599,6 +602,15 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onP
   const [coachSuggestion, setCoachSuggestion] = useState<{ hook: string; platform: string; type: string; why: string } | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
   const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
+
+  // Auto-start coaching if navigated from Log tab with a specific entry
+  const autoStartRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (initialDevelopEntry && autoStartRef.current !== initialDevelopEntry.id) {
+      autoStartRef.current = initialDevelopEntry.id;
+      startCoaching(initialDevelopEntry);
+    }
+  }, [initialDevelopEntry]);
 
   const startCoaching = async (entry: LogEntry) => {
     setCoachNote(entry);
@@ -1790,6 +1802,7 @@ export default function DashboardPage() {
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
   const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
+  const [developEntry, setDevelopEntry] = useState<LogEntry | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
 
   useEffect(() => {
@@ -1875,8 +1888,8 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
+        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} onDevelopNote={(entry) => { setDevelopEntry(entry); setTab("ideas"); }} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} initialDevelopEntry={developEntry} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
         {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
