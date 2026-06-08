@@ -591,6 +591,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onP
   const [extraContext, setExtraContext] = useState("");
   const [quickLog, setQuickLog] = useState("");
   // Coaching conversation state
+  const [selectedNote, setSelectedNote] = useState<LogEntry | null>(null);
   const [coachNote, setCoachNote] = useState<LogEntry | null>(null);
   const [developedIds, setDevelopedIds] = useState<Set<string>>(new Set());
   const [coachQuestion, setCoachQuestion] = useState<string | null>(null);
@@ -837,6 +838,28 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onP
     );
   }
 
+  if (selectedNote) {
+    const isDeveloped = developedIds.has(selectedNote.id);
+    return (
+      <div>
+        <button onClick={() => setSelectedNote(null)}
+          className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to Ideas</button>
+        <div className="p-5 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+          <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Your note</span>
+          <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedNote.content}</p>
+          {selectedNote.created_at && (
+            <span className="font-mono text-[11px] block mt-3" style={{ color: FAINT }}>{new Date(selectedNote.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+          )}
+        </div>
+        <button onClick={() => { setSelectedNote(null); startCoaching(selectedNote); }}
+          className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px]"
+          style={{ background: isDeveloped ? "#f3f4f6" : BLUE, color: isDeveloped ? DIM : "#fff", border: "none", cursor: "pointer" }}>
+          {isDeveloped ? "Develop again →" : "Develop this note →"}
+        </button>
+      </div>
+    );
+  }
+
   if (showGenerate) {
     return (
       <div>
@@ -1017,15 +1040,18 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onP
               Develop a note into content {undeveloped.length > 0 && <span style={{ color: BODY }}>· {undeveloped.length} note{undeveloped.length === 1 ? "" : "s"}</span>}
             </span>
             {undeveloped.length > 0 ? (
-              <div className="space-y-2" style={{ maxHeight: 400, overflowY: "auto" }}>
-                {undeveloped.map(entry => (
-                  <div key={entry.id} className="flex items-center gap-3 p-4 rounded-[12px] cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
-                    onClick={() => startCoaching(entry)}>
-                    <p className="font-sans flex-1" style={{ fontSize: 15, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-wrap" }}>
-                      {entry.content || "(image)"}
+              <div className="rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, maxHeight: 440, overflowY: "auto" }}>
+                {undeveloped.map((entry, i) => (
+                  <div key={entry.id}
+                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                    style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}
+                    onClick={() => setSelectedNote(entry)}>
+                    <p className="font-sans flex-1 truncate" style={{ fontSize: 14, color: BODY }}>
+                      {(entry.content || "(image)").slice(0, 80)}{(entry.content || "").length > 80 ? "..." : ""}
                     </p>
-                    <span className="font-sans text-[14px] font-semibold shrink-0" style={{ color: BLUE }}>Develop →</span>
+                    <span className="font-mono text-[11px] shrink-0" style={{ color: FAINT }}>
+                      {entry.created_at ? new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -1035,13 +1061,15 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, onP
             {developed.length > 0 && (
               <div className="mt-4">
                 <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.05em", color: FAINT }}>Developed · {developed.length}</span>
-                <div className="space-y-1">
-                  {developed.map(entry => (
-                    <div key={entry.id} className="flex items-center gap-3 p-3 rounded-[10px]" style={{ background: "#fafafa" }}>
-                      <p className="font-sans flex-1" style={{ fontSize: 13, color: FAINT, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                        {entry.content || "(image)"}
+                <div className="rounded-[10px] overflow-hidden" style={{ background: "#fafafa" }}>
+                  {developed.map((entry, i) => (
+                    <div key={entry.id} className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 transition-colors"
+                      style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}
+                      onClick={() => setSelectedNote(entry)}>
+                      <span className="font-mono text-[11px] shrink-0" style={{ color: FAINT }}>✓</span>
+                      <p className="font-sans flex-1 truncate" style={{ fontSize: 13, color: FAINT }}>
+                        {(entry.content || "(image)").slice(0, 80)}{(entry.content || "").length > 80 ? "..." : ""}
                       </p>
-                      <span className="font-mono text-[11px]" style={{ color: FAINT }}>✓</span>
                     </div>
                   ))}
                 </div>
