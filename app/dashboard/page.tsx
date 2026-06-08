@@ -63,13 +63,14 @@ type Tab = "log" | "ideas" | "drafts";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
-function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartDraft, onDevelopNote }: {
+function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartDraft, onDevelopNote, onDevelopNotes }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
   onSwitchToIdeas: () => void;
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
   onDevelopNote: (entry: LogEntry) => void;
+  onDevelopNotes: (entries: LogEntry[]) => void;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -553,6 +554,17 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
         </div>
       )}
 
+      {/* Develop selected floating button */}
+      {selectMode && selected.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+          <button onClick={() => { const entries = logEntries.filter(e => selected.has(e.id)); setSelectMode(false); setSelected(new Set()); onDevelopNotes(entries); }}
+            className="px-6 py-3.5 rounded-full font-sans font-semibold text-[15px] shadow-lg"
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            Develop {selected.size} note{selected.size === 1 ? "" : "s"} →
+          </button>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
@@ -565,8 +577,8 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, initialDevelopEntry, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
-  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[]; initialDevelopEntry?: LogEntry | null;
+function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, initialDevelopEntries, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
+  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[]; initialDevelopEntries?: LogEntry[] | null;
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
   onPlanUpdated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
@@ -594,35 +606,37 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const [extraContext, setExtraContext] = useState("");
   const [quickLog, setQuickLog] = useState("");
   // Coaching conversation state
-  const [selectedNote, setSelectedNote] = useState<LogEntry | null>(null);
-  const [coachNote, setCoachNote] = useState<LogEntry | null>(null);
-  const [developedIds, setDevelopedIds] = useState<Set<string>>(new Set());
+  const [coachNotes, setCoachNotes] = useState<LogEntry[]>([]);
   const [coachQuestion, setCoachQuestion] = useState<string | null>(null);
   const [coachReply, setCoachReply] = useState("");
   const [coachSuggestion, setCoachSuggestion] = useState<{ hook: string; platform: string; type: string; why: string } | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
   const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
 
-  // Auto-start coaching if navigated from Log tab with a specific entry
+  // Auto-start coaching if navigated from Log tab
   const autoStartRef = useRef<string | null>(null);
   useEffect(() => {
-    if (initialDevelopEntry && autoStartRef.current !== initialDevelopEntry.id) {
-      autoStartRef.current = initialDevelopEntry.id;
-      startCoaching(initialDevelopEntry);
+    if (initialDevelopEntries?.length) {
+      const key = initialDevelopEntries.map(e => e.id).join(",");
+      if (autoStartRef.current !== key) {
+        autoStartRef.current = key;
+        startCoaching(initialDevelopEntries);
+      }
     }
-  }, [initialDevelopEntry]);
+  }, [initialDevelopEntries]);
 
-  const startCoaching = async (entry: LogEntry) => {
-    setCoachNote(entry);
+  const startCoaching = async (entries: LogEntry[]) => {
+    setCoachNotes(entries);
     setCoachQuestion(null);
     setCoachSuggestion(null);
     setCoachReply("");
     setCoachLoading(true);
+    const combinedNote = entries.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
     try {
-      const recentNotes = allEntries.filter(e => e.id !== entry.id).map(e => e.content || "").filter(Boolean).slice(0, 5);
+      const recentNotes = allEntries.filter(e => !entries.some(n => n.id === e.id)).map(e => e.content || "").filter(Boolean).slice(0, 5);
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: entry.content, recentNotes, profile, step: "question" }),
+        body: JSON.stringify({ note: combinedNote, notes: entries.map(e => e.content || "").filter(Boolean), recentNotes, profile, step: "question" }),
       });
       if (res.ok) { const data = await res.json(); setCoachQuestion(data.response); }
     } catch {}
@@ -630,14 +644,15 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   };
 
   const submitCoachReply = async () => {
-    if (!coachReply.trim() || !coachNote) return;
+    if (!coachReply.trim() || coachNotes.length === 0) return;
+    const combinedNote = coachNotes.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
     setCoachLoading(true);
     try {
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: coachNote.content, userReply: coachReply.trim(), profile, step: "suggest" }),
+        body: JSON.stringify({ note: combinedNote, notes: coachNotes.map(e => e.content || "").filter(Boolean), userReply: coachReply.trim(), profile, step: "suggest" }),
       });
-      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestion(data.structured); if (coachNote) setDevelopedIds(prev => new Set(prev).add(coachNote.id)); } }
+      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestion(data.structured); } }
     } catch {}
     setCoachLoading(false);
   };
@@ -765,16 +780,23 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
 
   // Generate view (either no plan exists, or user clicked Regenerate)
   // Coaching conversation view
-  if (coachNote) {
+  if (coachNotes.length > 0) {
     return (
       <div>
-        <button onClick={() => { setCoachNote(null); setCoachQuestion(null); setCoachSuggestion(null); setCoachReply(""); }}
+        <button onClick={() => { setCoachNotes([]); setCoachQuestion(null); setCoachSuggestion(null); setCoachReply(""); }}
           className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to Ideas</button>
 
-        {/* Source note */}
+        {/* Source notes */}
         <div className="p-4 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Your note</span>
-          <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{coachNote.content}</p>
+          <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
+            {coachNotes.length === 1 ? "Your note" : `Your ${coachNotes.length} notes`}
+          </span>
+          {coachNotes.map((n, i) => (
+            <div key={n.id}>
+              {i > 0 && <hr className="my-3" style={{ border: "none", borderTop: `1px solid ${BORDER}` }} />}
+              <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.content}</p>
+            </div>
+          ))}
         </div>
 
         {/* Step 1: Accent's question */}
@@ -846,28 +868,6 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
             </div>
           </>
         )}
-      </div>
-    );
-  }
-
-  if (selectedNote) {
-    const isDeveloped = developedIds.has(selectedNote.id);
-    return (
-      <div>
-        <button onClick={() => setSelectedNote(null)}
-          className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to Ideas</button>
-        <div className="p-5 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Your note</span>
-          <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedNote.content}</p>
-          {selectedNote.created_at && (
-            <span className="font-mono text-[11px] block mt-3" style={{ color: FAINT }}>{new Date(selectedNote.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-          )}
-        </div>
-        <button onClick={() => { setSelectedNote(null); startCoaching(selectedNote); }}
-          className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px]"
-          style={{ background: isDeveloped ? "#f3f4f6" : BLUE, color: isDeveloped ? DIM : "#fff", border: "none", cursor: "pointer" }}>
-          {isDeveloped ? "Develop again →" : "Develop this note →"}
-        </button>
       </div>
     );
   }
@@ -975,25 +975,6 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           <textarea value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Launching a new feature, meeting an investor..." rows={3}
             className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
         </div>
-        {/* Develop a note */}
-        {weekEntries.length > 0 && (
-          <div className="mb-6">
-            <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Develop a note into content</span>
-            <div className="space-y-2">
-              {weekEntries.slice(0, 5).map(entry => (
-                <div key={entry.id} className="flex items-center gap-3 p-3 rounded-[10px] cursor-pointer hover:bg-gray-50 transition-colors"
-                  style={{ border: `1px solid ${BORDER}` }}
-                  onClick={() => startCoaching(entry)}>
-                  <p className="font-sans flex-1" style={{ fontSize: 14, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                    {entry.content || "(image)"}
-                  </p>
-                  <span className="font-sans text-[13px] shrink-0" style={{ color: BLUE }}>Develop →</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Unwritten past ideas */}
         {pastIdeas.length > 0 && (
           <div className="mb-6">
@@ -1042,62 +1023,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
 
   return (
     <div>
-      {/* PRIMARY: Develop a note */}
-      {allEntries.length > 0 && (() => {
-        const undeveloped = allEntries.filter(e => !developedIds.has(e.id));
-        const developed = allEntries.filter(e => developedIds.has(e.id));
-        return (
-          <div className="mb-8">
-            <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
-              Develop a note into content {undeveloped.length > 0 && <span style={{ color: BODY }}>· {undeveloped.length} note{undeveloped.length === 1 ? "" : "s"}</span>}
-            </span>
-            {undeveloped.length > 0 ? (
-              <div className="rounded-[12px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, maxHeight: 440, overflowY: "auto" }}>
-                {undeveloped.map((entry, i) => (
-                  <div key={entry.id}
-                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}
-                    onClick={() => setSelectedNote(entry)}>
-                    <p className="font-sans flex-1 truncate" style={{ fontSize: 14, color: BODY }}>
-                      {(entry.content || "(image)").slice(0, 80)}{(entry.content || "").length > 80 ? "..." : ""}
-                    </p>
-                    <span className="font-mono text-[11px] shrink-0" style={{ color: FAINT }}>
-                      {entry.created_at ? new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="font-sans text-[14px] py-4" style={{ color: FAINT }}>All notes developed. Log more to keep going.</p>
-            )}
-            {developed.length > 0 && (
-              <div className="mt-4">
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 10, letterSpacing: "0.05em", color: FAINT }}>Developed · {developed.length}</span>
-                <div className="rounded-[10px] overflow-hidden" style={{ background: "#fafafa" }}>
-                  {developed.map((entry, i) => (
-                    <div key={entry.id} className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 transition-colors"
-                      style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}
-                      onClick={() => setSelectedNote(entry)}>
-                      <span className="font-mono text-[11px] shrink-0" style={{ color: FAINT }}>✓</span>
-                      <p className="font-sans flex-1 truncate" style={{ fontSize: 13, color: FAINT }}>
-                        {(entry.content || "(image)").slice(0, 80)}{(entry.content || "").length > 80 ? "..." : ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-      {allEntries.length === 0 && (
-        <div className="mb-8 text-center py-8">
-          <p className="font-sans mb-3" style={{ fontSize: 15, color: FAINT }}>No notes yet. Log something and come back to develop it.</p>
-          <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Log →</button>
-        </div>
-      )}
-
-      {/* SECONDARY: Weekly plan */}
+      {/* Weekly plan */}
       <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Weekly plan</span>
       {!currentWeek ? (
         <div className="mb-6 p-4 rounded-[12px] text-center" style={{ border: `1px solid ${BORDER}` }}>
@@ -1802,7 +1728,7 @@ export default function DashboardPage() {
   const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
   const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
-  const [developEntry, setDevelopEntry] = useState<LogEntry | null>(null);
+  const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
 
   useEffect(() => {
@@ -1888,8 +1814,8 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} onDevelopNote={(entry) => { setDevelopEntry(entry); setTab("ideas"); }} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} initialDevelopEntry={developEntry} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
+        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} onDevelopNote={(entry) => { setDevelopEntries([entry]); setTab("ideas"); }} onDevelopNotes={(entries) => { setDevelopEntries(entries); setTab("ideas"); }} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} initialDevelopEntries={developEntries} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
         {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 

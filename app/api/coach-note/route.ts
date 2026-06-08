@@ -10,8 +10,9 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { note, recentNotes, profile, userReply, step } = await request.json();
+    const { note, notes, recentNotes, profile, userReply, step } = await request.json();
     if (!note?.trim()) return NextResponse.json({ error: "Note required" }, { status: 400 });
+    const isMultiNote = Array.isArray(notes) && notes.length > 1;
 
     const profileContext = profile ? `
 About this founder:
@@ -25,10 +26,21 @@ About this founder:
 
     if (step === "question") {
       // Step 1: Ask one follow-up question
-      const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 150,
-        messages: [{ role: "user", content: `You're a content coach for solo founders. A founder just logged this note:
+      const questionPrompt = isMultiNote
+        ? `You're a content coach for solo founders. A founder selected these ${notes.length} notes to develop together:
+
+${notes.map((n: string, i: number) => `Note ${i + 1}: "${n}"`).join("\n\n")}
+${profileContext}
+${recentContext}
+
+These notes were chosen together because the founder senses a connection. Ask ONE follow-up question that:
+- Points out a specific thread or tension you see connecting these notes
+- Helps them see the story that emerges from combining them
+- Draws on their profile/goals if available
+- Feels like a smart friend saying "wait, I see something here..."
+
+Return ONLY the question. One or two sentences max. Conversational tone.`
+        : `You're a content coach for solo founders. A founder just logged this note:
 
 "${note}"
 ${profileContext}
@@ -40,7 +52,12 @@ Ask ONE follow-up question that helps them see why this moment matters for conte
 - Help them realize there's a story here they haven't seen yet
 - Feel like a smart friend asking "wait, tell me more about..."
 
-Return ONLY the question. One or two sentences max. Conversational tone.` }],
+Return ONLY the question. One or two sentences max. Conversational tone.`;
+
+      const message = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 150,
+        messages: [{ role: "user", content: questionPrompt }],
       });
 
       const content = message.content[0];
@@ -48,10 +65,28 @@ Return ONLY the question. One or two sentences max. Conversational tone.` }],
 
     } else if (step === "suggest") {
       // Step 2: Suggest a story angle based on their reply
-      const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 250,
-        messages: [{ role: "user", content: `You're a content coach for solo founders. Here's the conversation so far:
+      const suggestPrompt = isMultiNote
+        ? `You're a content coach for solo founders. Here's the conversation so far:
+
+Their ${notes.length} notes:
+${notes.map((n: string, i: number) => `Note ${i + 1}: "${n}"`).join("\n")}
+
+Your question was asked, and they replied: "${userReply}"
+${profileContext}
+
+These notes together reveal a story. Suggest ONE specific story angle that weaves these notes into a single post. Include:
+1. A one-line hook (the opening line of the post)
+2. Which platform it fits best (from their platforms: ${(profile?.platforms || []).join(", ") || "LinkedIn"})
+3. What content type it is (personal-story, lesson, behind-the-scenes, hot-take)
+
+Format your response as:
+HOOK: [the opening line]
+PLATFORM: [platform name]
+TYPE: [content type]
+WHY: [one sentence on why combining these notes makes a stronger story]
+
+Be specific to their situation. No generic advice.`
+        : `You're a content coach for solo founders. Here's the conversation so far:
 
 Their note: "${note}"
 Your question was asked, and they replied: "${userReply}"
@@ -68,7 +103,12 @@ PLATFORM: [platform name]
 TYPE: [content type]
 WHY: [one sentence on why this angle works for their audience]
 
-Be specific to their situation. No generic advice.` }],
+Be specific to their situation. No generic advice.`;
+
+      const message = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 250,
+        messages: [{ role: "user", content: suggestPrompt }],
       });
 
       const content = message.content[0];
