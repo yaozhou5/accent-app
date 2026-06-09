@@ -578,11 +578,12 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, initialDevelopEntries, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onProfileUpdated, onQuickLog }: {
+function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, initialDevelopEntries, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onStartDraft, onProfileUpdated, onQuickLog }: {
   profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[]; initialDevelopEntries?: LogEntry[] | null;
   initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
   onPlanUpdated: (plan: ContentPlan) => void;
   onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
+  onStartDraft: (data: { draft: Draft }) => void;
   onProfileUpdated: (fields: Partial<UserProfile>) => void;
   onQuickLog: (text: string) => Promise<void>;
 }) {
@@ -860,7 +861,12 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
                   <span className="font-sans text-[13px]" style={{ color: FAINT }}>{coachSuggestion.platform}</span>
                 </div>
                 <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>{coachSuggestion.why}</p>
-                <button onClick={() => { /* TODO: start draft from this */ }}
+                <button onClick={async () => {
+                    const sourceNote = coachNotes.map(n => n.content || "").filter(Boolean).join("\n\n");
+                    const content = coachSuggestion.hook + "\n\n";
+                    const d = await createStandaloneDraft(content, sourceNote, coachNotes[0]?.id || "");
+                    if (d) onStartDraft({ draft: d });
+                  }}
                   className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
                   style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
                   Write this <ArrowRight size={12} color="#fff" />
@@ -1816,7 +1822,7 @@ export default function DashboardPage() {
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
         {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} onDevelopNote={(entry) => { setDevelopEntries([entry]); setTab("ideas"); }} onDevelopNotes={(entries) => { setDevelopEntries(entries); setTab("ideas"); }} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} initialDevelopEntries={developEntries} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
+        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} initialDevelopEntries={developEntries} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onStartDraft={data => setStandaloneDraft(data)} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
         {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
       </div>
 
