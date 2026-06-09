@@ -137,7 +137,7 @@ export default function LandingPage() {
           <h2 className="font-serif text-center mb-8 md:mb-12" style={{ fontSize: "clamp(24px, 3.6vw, 32px)", fontWeight: 400, color: INK }}>Why this works when everything else didn't.</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {[
-              { title: "It starts with your story.", desc: "You don't need AI telling you what to post. You need help seeing the content that's already hiding in your week." },
+              { title: "Your story comes first.", desc: "You don't need AI telling you what to post. You need help seeing the content that's already hiding in your week." },
               { title: "It's not ChatGPT.", desc: "ChatGPT starts from zero every time. Accent knows your voice, your themes, your last 20 weeks. The longer you use it, the better it knows your story." },
               { title: "It starts with you, not AI.", desc: "Log what happened first. Then ideas come from your stories — not from a prompt. Real input, real output." },
               { title: "The rhythm is the feature.", desc: "Great content isn't one viral post. It's showing up every week. Accent makes the habit invisible." },
