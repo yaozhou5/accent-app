@@ -660,16 +660,19 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     setCoachMessages(updatedMessages);
     setCoachReply("");
     setCoachLoading(true);
+    // Count user replies — force suggest on 3rd reply
+    const userReplyCount = updatedMessages.filter(m => m.role === "user").length;
+    const forceAngles = userReplyCount >= 3;
     try {
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...coachApiPayload(coachNotes), step: "respond", conversation: updatedMessages }),
+        body: JSON.stringify({ ...coachApiPayload(coachNotes), step: forceAngles ? "suggest" : "respond", conversation: updatedMessages }),
       });
       if (res.ok) {
         const data = await res.json();
         if (data.type === "followup" && data.response) {
           setCoachMessages(prev => [...prev, { role: "ai", text: data.response }]);
-        } else if (data.type === "suggest" && data.structured) {
+        } else if ((data.type === "suggest" || forceAngles) && data.structured) {
           setCoachSuggestions(prev => [...prev, data.structured]);
         }
       }

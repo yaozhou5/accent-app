@@ -50,9 +50,10 @@ These notes were chosen together because the founder senses a connection. Ask ON
 - Points out a specific thread or tension you see connecting these notes
 - Helps them see the story that emerges from combining them
 - Draws on their profile/goals if available
-- Feels like a smart friend saying "wait, I see something here..."
 
-Return ONLY the question. One or two sentences max. Conversational tone.`
+TONE: You are a thoughtful editor, not an excited friend. Never start with "Wait," "Wait, so," "Oh," "Wow," or similar exclamations. Vary your openings — sometimes ask directly, sometimes make a short observation first, sometimes name the tension.
+
+Return ONLY the question. One or two sentences max. Calm, direct tone.`
         : `You're a content coach for solo founders. A founder just logged this note:
 
 ${noteBlock}
@@ -63,9 +64,10 @@ Ask ONE follow-up question that helps them see why this moment matters for conte
 - Be specific to what they wrote (not generic)
 - Draw on their profile/goals if available
 - Help them realize there's a story here they haven't seen yet
-- Feel like a smart friend asking "wait, tell me more about..."
 
-Return ONLY the question. One or two sentences max. Conversational tone.`;
+TONE: You are a thoughtful editor, not an excited friend. Never start with "Wait," "Wait, so," "Oh," "Wow," or similar exclamations. Vary your openings — sometimes ask directly, sometimes make a short observation first, sometimes name the tension.
+
+Return ONLY the question. One or two sentences max. Calm, direct tone.`;
 
       const message = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
@@ -78,6 +80,9 @@ Return ONLY the question. One or two sentences max. Conversational tone.`;
 
     } else if (step === "respond") {
       // Evaluate the user's reply and decide: follow-up or suggest angles
+      // Count user replies to determine if we should lean toward suggesting
+      const userReplies = Array.isArray(conversation) ? conversation.filter((m: { role: string }) => m.role === "user").length : 0;
+
       const respondPrompt = `You're a content coach for solo founders. You read replies the way a good editor reads a draft — not "what content can I make from this" but "is there something real here yet."
 
 The founder's ${isMultiNote ? `${(notes as string[]).length} notes` : "note"}:
@@ -87,31 +92,40 @@ ${profileContext}
 Conversation so far:
 ${convoHistory}
 
-Now evaluate their latest reply (the last "They replied" above) and choose ONE path:
+This is reply #${userReplies} of maximum 3. ${userReplies >= 2 ? "This is the last exchange — generate a story angle from the best material you have so far, even if it's not perfect." : ""}
+
+Evaluate their latest reply and choose ONE path:
 
 PATH A — LOW-EFFORT REPLY (under ~15 words, vague, "idk", "yeah", "not sure", single-word answers):
 Ask a specific follow-up that makes it EASY to answer. Give them something concrete to react to.
-Examples: "What specifically caught your eye about this?" or "Was it funny, frustrating, or something else?"
 
 PATH B — SURFACE-LEVEL REPLY (has a real thought but hasn't gone deep enough):
-Reflect their idea back and push one layer deeper. Show them the interesting tension in what they said.
-Example: "You said AI tools make us feel like our capacity is larger. Is that true, or is it an illusion? That distinction might be the post."
+Reflect their idea back and push one layer deeper. Name the tension in what they said.
 
-PATH C — SUBSTANTIVE REPLY (personal connection, specific insight, honest admission, real emotion):
-Generate a story angle because there's something real to work with.
+PATH C — SUBSTANTIVE REPLY: Generate a story angle. Choose this if you see ANY of these signals:
+- A personal admission ("honestly I..." "the truth is...")
+- A specific example with real details
+- An emotional reaction (frustration, excitement, surprise)
+- A contradiction they noticed
+- An insight that connects their experience to something universal
+Don't keep asking once they've given you something real. The goal is 2-3 exchanges, not an interview.
+
+TONE RULES (apply to all paths):
+- Never start with "Wait," "Wait, so," "Oh," "Wow," "Interesting," or similar exclamations
+- Vary your openings: sometimes ask directly, sometimes make a short observation, sometimes name the tension ("There's a contradiction in what you just said.")
+- Sound like a thoughtful editor, not an excited friend having epiphanies
+- Calm, direct, precise
 
 Respond in EXACTLY one of these formats:
 
 If PATH A or B:
-FOLLOWUP: [your question or reflection, 1-3 sentences, conversational]
+FOLLOWUP: [your question or reflection, 1-3 sentences]
 
 If PATH C:
 HOOK: [one-line opening for the post]
 PLATFORM: [best platform from: ${(profile?.platforms || []).join(", ") || "LinkedIn"}]
 TYPE: [personal-story, lesson, behind-the-scenes, or hot-take]
-WHY: [one sentence on why this angle works]
-
-Choose PATH C only when the material is genuinely strong. Never generate angles from thin material.`;
+WHY: [one sentence on why this angle works]`;
 
       const message = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
