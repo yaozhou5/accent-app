@@ -609,7 +609,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const [quickLog, setQuickLog] = useState("");
   // Coaching conversation state
   const [coachNotes, setCoachNotes] = useState<LogEntry[]>([]);
-  const [coachQuestion, setCoachQuestion] = useState<string | null>(null);
+  const [coachMessages, setCoachMessages] = useState<{ role: "ai" | "user"; text: string }[]>([]);
   const [coachReply, setCoachReply] = useState("");
   const [coachSuggestions, setCoachSuggestions] = useState<{ hook: string; platform: string; type: string; why: string }[]>([]);
   const [coachLoading, setCoachLoading] = useState(false);
@@ -627,46 +627,63 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     }
   }, [initialDevelopEntries]);
 
+  const coachApiPayload = (entries: LogEntry[]) => {
+    const combinedNote = entries.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
+    const notesList = entries.map(e => e.content || "").filter(Boolean);
+    const recentNotes = allEntries.filter(e => !entries.some(n => n.id === e.id)).map(e => e.content || "").filter(Boolean).slice(0, 5);
+    return { note: combinedNote, notes: notesList, recentNotes, profile };
+  };
+
   const startCoaching = async (entries: LogEntry[]) => {
     setCoachNotes(entries);
-    setCoachQuestion(null);
+    setCoachMessages([]);
     setCoachSuggestions([]);
     setCoachReply("");
     setCoachLoading(true);
-    const combinedNote = entries.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
     try {
-      const recentNotes = allEntries.filter(e => !entries.some(n => n.id === e.id)).map(e => e.content || "").filter(Boolean).slice(0, 5);
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: combinedNote, notes: entries.map(e => e.content || "").filter(Boolean), recentNotes, profile, step: "question" }),
+        body: JSON.stringify({ ...coachApiPayload(entries), step: "question" }),
       });
-      if (res.ok) { const data = await res.json(); setCoachQuestion(data.response); }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.response) setCoachMessages([{ role: "ai", text: data.response }]);
+      }
     } catch {}
     setCoachLoading(false);
   };
 
   const submitCoachReply = async () => {
     if (!coachReply.trim() || coachNotes.length === 0) return;
-    const combinedNote = coachNotes.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
+    const reply = coachReply.trim();
+    const updatedMessages = [...coachMessages, { role: "user" as const, text: reply }];
+    setCoachMessages(updatedMessages);
+    setCoachReply("");
     setCoachLoading(true);
     try {
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: combinedNote, notes: coachNotes.map(e => e.content || "").filter(Boolean), userReply: coachReply.trim(), profile, step: "suggest" }),
+        body: JSON.stringify({ ...coachApiPayload(coachNotes), step: "respond", conversation: updatedMessages }),
       });
-      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestions(prev => [...prev, data.structured]); } }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.type === "followup" && data.response) {
+          setCoachMessages(prev => [...prev, { role: "ai", text: data.response }]);
+        } else if (data.type === "suggest" && data.structured) {
+          setCoachSuggestions(prev => [...prev, data.structured]);
+        }
+      }
     } catch {}
     setCoachLoading(false);
   };
 
   const getAnotherAngle = async () => {
     if (coachSuggestions.length >= 3 || coachNotes.length === 0) return;
-    const combinedNote = coachNotes.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
     setCoachLoading(true);
     try {
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: combinedNote, notes: coachNotes.map(e => e.content || "").filter(Boolean), userReply: coachReply.trim(), profile, step: "suggest", previousAngles: coachSuggestions.map(s => s.hook) }),
+        body: JSON.stringify({ ...coachApiPayload(coachNotes), step: "suggest", conversation: coachMessages, previousAngles: coachSuggestions.map(s => s.hook) }),
       });
       if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestions(prev => [...prev, data.structured]); } }
     } catch {}
@@ -797,9 +814,11 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   // Generate view (either no plan exists, or user clicked Regenerate)
   // Coaching conversation view
   if (coachNotes.length > 0) {
+    const lastMessage = coachMessages[coachMessages.length - 1];
+    const waitingForReply = lastMessage?.role === "ai" && coachSuggestions.length === 0;
     return (
       <div>
-        <button onClick={() => { setCoachNotes([]); setCoachQuestion(null); setCoachSuggestions([]); setCoachReply(""); }}
+        <button onClick={() => { setCoachNotes([]); setCoachMessages([]); setCoachSuggestions([]); setCoachReply(""); }}
           className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back to Ideas</button>
 
         {/* Source notes */}
@@ -815,24 +834,37 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           ))}
         </div>
 
-        {/* Step 1: Accent's question */}
-        {coachLoading && !coachQuestion && (
+        {/* Conversation turns */}
+        {coachMessages.map((msg, i) => (
+          <div key={i} className="flex items-start gap-3 mb-6">
+            {msg.role === "ai" ? (
+              <>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
+                <div className="p-4 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
+                  <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{msg.text}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
+                <div className="p-4 rounded-[12px] flex-1" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
+                  <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{msg.text}</p>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+
+        {/* Loading indicator */}
+        {coachLoading && coachSuggestions.length === 0 && (
           <div className="flex items-start gap-3 mb-6">
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
             <div className="p-3 rounded-[10px] animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
           </div>
         )}
-        {coachQuestion && (
-          <div className="flex items-start gap-3 mb-6">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
-            <div className="p-4 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-              <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{coachQuestion}</p>
-            </div>
-          </div>
-        )}
 
-        {/* Step 1b: User reply */}
-        {coachQuestion && coachSuggestions.length === 0 && (
+        {/* Reply input */}
+        {waitingForReply && !coachLoading && (
           <div className="flex items-start gap-3 mb-6">
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
             <div className="flex-1">
@@ -846,25 +878,16 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
                 <button onClick={submitCoachReply} disabled={!coachReply.trim() || coachLoading}
                   className="px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] disabled:opacity-30"
                   style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                  {coachLoading ? "Thinking..." : "Reply"}
+                  Reply
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 2: Accent's story suggestions */}
+        {/* Story angle suggestions */}
         {coachSuggestions.length > 0 && (
           <>
-            {/* Show user's reply */}
-            <div className="flex items-start gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
-              <div className="p-4 rounded-[12px] flex-1" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
-                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{coachReply}</p>
-              </div>
-            </div>
-
-            {/* Suggestion cards */}
             {coachSuggestions.map((suggestion, i) => (
               <div key={i} className="flex items-start gap-3 mb-4">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
