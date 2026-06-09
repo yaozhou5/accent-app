@@ -611,7 +611,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const [coachNotes, setCoachNotes] = useState<LogEntry[]>([]);
   const [coachQuestion, setCoachQuestion] = useState<string | null>(null);
   const [coachReply, setCoachReply] = useState("");
-  const [coachSuggestion, setCoachSuggestion] = useState<{ hook: string; platform: string; type: string; why: string } | null>(null);
+  const [coachSuggestions, setCoachSuggestions] = useState<{ hook: string; platform: string; type: string; why: string }[]>([]);
   const [coachLoading, setCoachLoading] = useState(false);
   const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
 
@@ -630,7 +630,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const startCoaching = async (entries: LogEntry[]) => {
     setCoachNotes(entries);
     setCoachQuestion(null);
-    setCoachSuggestion(null);
+    setCoachSuggestions([]);
     setCoachReply("");
     setCoachLoading(true);
     const combinedNote = entries.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
@@ -654,7 +654,21 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ note: combinedNote, notes: coachNotes.map(e => e.content || "").filter(Boolean), userReply: coachReply.trim(), profile, step: "suggest" }),
       });
-      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestion(data.structured); } }
+      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestions(prev => [...prev, data.structured]); } }
+    } catch {}
+    setCoachLoading(false);
+  };
+
+  const getAnotherAngle = async () => {
+    if (coachSuggestions.length >= 3 || coachNotes.length === 0) return;
+    const combinedNote = coachNotes.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
+    setCoachLoading(true);
+    try {
+      const res = await fetch("/api/coach-note", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: combinedNote, notes: coachNotes.map(e => e.content || "").filter(Boolean), userReply: coachReply.trim(), profile, step: "suggest", previousAngles: coachSuggestions.map(s => s.hook) }),
+      });
+      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestions(prev => [...prev, data.structured]); } }
     } catch {}
     setCoachLoading(false);
   };
@@ -785,7 +799,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   if (coachNotes.length > 0) {
     return (
       <div>
-        <button onClick={() => { setCoachNotes([]); setCoachQuestion(null); setCoachSuggestion(null); setCoachReply(""); }}
+        <button onClick={() => { setCoachNotes([]); setCoachQuestion(null); setCoachSuggestions([]); setCoachReply(""); }}
           className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back to Ideas</button>
 
         {/* Source notes */}
@@ -818,7 +832,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         )}
 
         {/* Step 1b: User reply */}
-        {coachQuestion && !coachSuggestion && (
+        {coachQuestion && coachSuggestions.length === 0 && (
           <div className="flex items-start gap-3 mb-6">
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
             <div className="flex-1">
@@ -839,8 +853,8 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           </div>
         )}
 
-        {/* Step 2: Accent's story suggestion */}
-        {coachSuggestion && (
+        {/* Step 2: Accent's story suggestions */}
+        {coachSuggestions.length > 0 && (
           <>
             {/* Show user's reply */}
             <div className="flex items-start gap-3 mb-6">
@@ -850,29 +864,48 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
               </div>
             </div>
 
-            {/* Accent's suggestion */}
-            <div className="flex items-start gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
-              <div className="p-5 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Story angle</span>
-                <p className="font-serif mb-3" style={{ fontSize: 17, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{coachSuggestion.hook}</p>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="font-mono text-[11px] px-2 py-0.5 rounded capitalize" style={{ background: `${BLUE}10`, color: BLUE }}>{coachSuggestion.type}</span>
-                  <span className="font-sans text-[13px]" style={{ color: FAINT }}>{coachSuggestion.platform}</span>
+            {/* Suggestion cards */}
+            {coachSuggestions.map((suggestion, i) => (
+              <div key={i} className="flex items-start gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
+                <div className="p-5 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
+                  <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
+                    Story angle{coachSuggestions.length > 1 ? ` ${i + 1}` : ""}
+                  </span>
+                  <p className="font-serif mb-3" style={{ fontSize: 17, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{suggestion.hook}</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-mono text-[11px] px-2 py-0.5 rounded capitalize" style={{ background: `${BLUE}10`, color: BLUE }}>{suggestion.type}</span>
+                    <span className="font-sans text-[13px]" style={{ color: FAINT }}>{suggestion.platform}</span>
+                  </div>
+                  <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>{suggestion.why}</p>
+                  <button onClick={async () => {
+                      const sourceNote = coachNotes.map(n => n.content || "").filter(Boolean).join("\n\n");
+                      const content = suggestion.hook + "\n\n";
+                      const d = await createStandaloneDraft(content, sourceNote, coachNotes[0]?.id || "");
+                      if (d) onStartDraft({ draft: d });
+                    }}
+                    className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
+                    style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                    Write this <ArrowRight size={12} color="#fff" />
+                  </button>
                 </div>
-                <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>{coachSuggestion.why}</p>
-                <button onClick={async () => {
-                    const sourceNote = coachNotes.map(n => n.content || "").filter(Boolean).join("\n\n");
-                    const content = coachSuggestion.hook + "\n\n";
-                    const d = await createStandaloneDraft(content, sourceNote, coachNotes[0]?.id || "");
-                    if (d) onStartDraft({ draft: d });
-                  }}
-                  className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
-                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                  Write this <ArrowRight size={12} color="#fff" />
+              </div>
+            ))}
+
+            {/* Show another angle */}
+            {coachSuggestions.length < 3 && !coachLoading && (
+              <div className="flex justify-center mb-4">
+                <button onClick={getAnotherAngle} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>
+                  Show another angle
                 </button>
               </div>
-            </div>
+            )}
+            {coachLoading && coachSuggestions.length > 0 && (
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
+                <div className="p-3 rounded-[10px] animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
+              </div>
+            )}
           </>
         )}
       </div>

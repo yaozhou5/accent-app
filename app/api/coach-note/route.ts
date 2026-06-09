@@ -10,9 +10,12 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { note, notes, recentNotes, profile, userReply, step } = await request.json();
+    const { note, notes, recentNotes, profile, userReply, step, previousAngles } = await request.json();
     if (!note?.trim()) return NextResponse.json({ error: "Note required" }, { status: 400 });
     const isMultiNote = Array.isArray(notes) && notes.length > 1;
+    const avoidAngles = Array.isArray(previousAngles) && previousAngles.length > 0
+      ? `\n\nIMPORTANT: You already suggested these angles. Give a COMPLETELY DIFFERENT angle:\n${previousAngles.map((a: string) => `- "${a}"`).join("\n")}`
+      : "";
 
     const profileContext = profile ? `
 About this founder:
@@ -85,7 +88,7 @@ PLATFORM: [platform name]
 TYPE: [content type]
 WHY: [one sentence on why combining these notes makes a stronger story]
 
-Be specific to their situation. No generic advice.`
+Be specific to their situation. No generic advice.${avoidAngles}`
         : `You're a content coach for solo founders. Here's the conversation so far:
 
 Their note: "${note}"
@@ -103,7 +106,7 @@ PLATFORM: [platform name]
 TYPE: [content type]
 WHY: [one sentence on why this angle works for their audience]
 
-Be specific to their situation. No generic advice.`;
+Be specific to their situation. No generic advice.${avoidAngles}`;
 
       const message = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
