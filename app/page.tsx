@@ -77,9 +77,9 @@ export default function LandingPage() {
         <div className="max-w-[640px] mx-auto px-6 py-10 md:py-14">
           <div className="pl-6" style={{ borderLeft: `2px solid ${BLUE}` }}>
             <p className="font-serif italic" style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}>
-              "I have things worth sharing. I just don't have time to figure out how to share them."
+              "I have plenty of material scattered everywhere. I just never know which piece matters most, for which channel, or when to post it. So I end up posting nothing."
             </p>
-            <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>— Every founder, eventually</p>
+            <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>— Heather, founder</p>
           </div>
         </div>
       </section>
