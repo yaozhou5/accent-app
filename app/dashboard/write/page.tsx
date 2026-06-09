@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "@/components/ArrowIcon";
 
 const INK = "#111827";
 const BODY = "#4b5563";
@@ -45,7 +46,7 @@ export default function QuickCheckPage() {
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
-          <Link href="/dashboard" className="no-underline font-mono" style={{ fontSize: 13, color: FAINT }}>← Back</Link>
+          <Link href="/dashboard" className="no-underline font-mono" style={{ fontSize: 13, color: FAINT }}><ArrowLeft size={12} /> Back</Link>
         </div>
 
         <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Quick check</span>

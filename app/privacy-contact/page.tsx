@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { PrivacyContactForm } from "@/components/PrivacyContactForm";
 import { PRIVACY_POLICY_HTML } from "@/lib/privacy-policy-html";
+import { ArrowLeft } from "@/components/ArrowIcon";
 
 export const metadata: Metadata = {
   title: "Privacy & Contact · accent.",
@@ -27,7 +28,7 @@ export default function PrivacyContactPage() {
             href="/"
             className="text-sm font-sans text-ink/60 hover:text-ink transition-colors"
           >
-            ← Back to app
+            <ArrowLeft size={12} /> Back to app
           </Link>
         </header>
 
@@ -81,7 +82,7 @@ export default function PrivacyContactPage() {
               href="/"
               className="font-sans text-sm text-ink/60 hover:text-ink transition-colors"
             >
-              ← Back to accent
+              <ArrowLeft size={12} /> Back to accent
             </Link>
           </footer>
         </main>

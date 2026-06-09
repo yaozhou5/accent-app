@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { upsertProfile } from "@/lib/supabase/profiles";
+import { ArrowLeft } from "@/components/ArrowIcon";
 
 const INK = "#111827";
 const DIM = "#6b7280";
@@ -34,7 +35,7 @@ export default function SettingsPage() {
       <nav style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
-          <Link href="/dashboard" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>← Back</Link>
+          <Link href="/dashboard" className="no-underline font-mono text-[12px]" style={{ color: DIM }}><ArrowLeft size={12} /> Back</Link>
         </div>
       </nav>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import AccentAnimated from "@/components/AccentAnimated";
+import { ArrowRight } from "@/components/ArrowIcon";
 
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
@@ -65,7 +66,7 @@ export default function LandingPage() {
             One system. Your real week becomes your best content. Your voice stays yours.
           </p>
           <div className="mt-6 md:mt-8">
-            <Link href="/signup" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Start your workspace →</Link>
+            <Link href="/signup" className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>Start your workspace <ArrowRight size={14} color="#fff" /></Link>
             <p className="mt-2 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Start free. No credit card.</p>
           </div>
           <a href="#demo" className="no-underline inline-block mt-4 font-sans text-[13px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.5)" }}>See how it works ↓</a>
@@ -96,7 +97,7 @@ export default function LandingPage() {
           </div>
           <div className="text-center mt-10">
             <Link href="/signup" className="no-underline inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
-              Start your workspace →
+              Start your workspace <ArrowRight size={14} color="#fff" />
             </Link>
             <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>Start free. No credit card.</p>
           </div>
@@ -219,7 +220,7 @@ export default function LandingPage() {
             3 posts free every month. Unlimited for $19/month.
           </p>
           <Link href="/signup" className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px" style={{ background: BLUE, color: "#fff", borderRadius: 40 }}>
-            Start your workspace →
+            Start your workspace <ArrowRight size={14} color="#fff" />
           </Link>
           <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>Start free. No credit card.</p>
         </div>

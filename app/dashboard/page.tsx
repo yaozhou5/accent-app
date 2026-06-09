@@ -9,6 +9,7 @@ import { createLogEntry, updateLogEntryTags, updateLogEntry, getLogEntries, uplo
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import posthog from "posthog-js";
 import { getDraft, saveDraft, saveDraftById, createStandaloneDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
+import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
 
 // Design tokens
 const INK = "#111827";      // gray-900
@@ -342,7 +343,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
       {unusedOldCount >= 5 && filter !== "unused" && (
         <div className="mb-6 p-4 rounded-[12px] flex items-center justify-between" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
           <p className="font-sans text-[14px]" style={{ color: INK }}>You have <strong>{unusedOldCount}</strong> unused notes — ready to turn them into content?</p>
-          <button onClick={onSwitchToIdeas} className="font-sans text-[13px] font-semibold shrink-0 ml-3" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Ideas →</button>
+          <button onClick={onSwitchToIdeas} className="font-sans text-[13px] font-semibold shrink-0 ml-3" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Ideas <ArrowRight size={12} /></button>
         </div>
       )}
 
@@ -431,7 +432,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
                                   <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
                                   <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); onDevelopNote(entry); }}
-                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Develop →</button>
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Develop <ArrowRight size={12} /></button>
                                   <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const imgs = (entry.image_urls?.length ? entry.image_urls : entry.image_url ? [entry.image_url] : []); const d = await createStandaloneDraft("", entry.content || "", entry.id); if (d) onStartDraft({ draft: d, images: imgs }); }}
                                     className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Start draft</button>
                                 </div>
@@ -560,7 +561,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
           <button onClick={() => { const entries = logEntries.filter(e => selected.has(e.id)); setSelectMode(false); setSelected(new Set()); onDevelopNotes(entries); }}
             className="px-6 py-3.5 rounded-full font-sans font-semibold text-[15px] shadow-lg"
             style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-            Develop {selected.size} note{selected.size === 1 ? "" : "s"} →
+            Develop {selected.size} note{selected.size === 1 ? "" : "s"} <ArrowRight size={14} color="#fff" />
           </button>
         </div>
       )}
@@ -784,7 +785,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     return (
       <div>
         <button onClick={() => { setCoachNotes([]); setCoachQuestion(null); setCoachSuggestion(null); setCoachReply(""); }}
-          className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to Ideas</button>
+          className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back to Ideas</button>
 
         {/* Source notes */}
         <div className="p-4 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
@@ -862,7 +863,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
                 <button onClick={() => { /* TODO: start draft from this */ }}
                   className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
                   style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                  Write this →
+                  Write this <ArrowRight size={12} color="#fff" />
                 </button>
               </div>
             </div>
@@ -1028,7 +1029,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
       {!currentWeek ? (
         <div className="mb-6 p-4 rounded-[12px] text-center" style={{ border: `1px solid ${BORDER}` }}>
           <p className="font-sans mb-3" style={{ fontSize: 14, color: FAINT }}>No batch plan yet.</p>
-          <button onClick={() => setShowGenerate(true)} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Generate a weekly plan →</button>
+          <button onClick={() => setShowGenerate(true)} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Generate a weekly plan <ArrowRight size={12} /></button>
         </div>
       ) : (<>
       <div className="flex items-center justify-between mb-6 gap-3">
@@ -1036,7 +1037,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           <button onClick={() => setWeekIdx(weekIdx + 1)}
             className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
             style={{ minHeight: 44, padding: "8px 14px", border: `1.5px solid ${DIM}40`, background: "#fff", cursor: "pointer" }}>
-            <span style={{ fontSize: 15, color: INK }}>←</span>
+            <ArrowLeft size={14} color={INK} />
             <span className="font-sans text-[12px]" style={{ color: DIM }}>{weekLabel(weeks[weekIdx + 1])}</span>
           </button>
         ) : <div style={{ minWidth: 44 }} />}
@@ -1049,7 +1050,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
             className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
             style={{ minHeight: 44, padding: "8px 14px", border: `1.5px solid ${DIM}40`, background: "#fff", cursor: "pointer" }}>
             <span className="font-sans text-[12px]" style={{ color: DIM }}>{weekLabel(weeks[weekIdx - 1])}</span>
-            <span style={{ fontSize: 15, color: INK }}>→</span>
+            <ArrowRight size={14} color={INK} />
           </button>
         ) : <div style={{ minWidth: 44 }} />}
       </div>
@@ -1120,7 +1121,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
                             <button onClick={() => { if (plan) { onWritePost(plan.id, post.idx); posthog.capture("write_from_idea_clicked", { content_type: post.type || "", platform: post.platform || "" }); } }}
                               className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
                               style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                              Write this →
+                              Write this <ArrowRight size={12} color="#fff" />
                             </button>
                           </div>
                         );
@@ -1140,7 +1141,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           ) : weekEntries.length < 3 ? (
             <div className="mt-6 p-4 rounded-[12px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
               <p className="font-sans text-[14px] mb-3" style={{ color: BODY }}>Your best content comes from your real week. Drop a few more notes and I'll find the stories.</p>
-              <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Add more notes →</button>
+              <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Add more notes <ArrowRight size={12} /></button>
             </div>
           ) : (
             <p className="mt-6 text-center font-sans font-medium" style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}>
@@ -1148,7 +1149,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
             </p>
           )}
           <button onClick={onSwitchToLog} className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes →</button>
+            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes <ArrowRight size={12} /></button>
           <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
             style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
 
@@ -1213,7 +1214,7 @@ function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDra
       {filtered.length === 0 ? (
         <div className="text-center py-16">
           <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
-            {filter === "all" ? "No drafts yet. Tap \"Write this →\" on any idea to start." : `No ${filter} yet.`}
+            {filter === "all" ? "No drafts yet. Tap \"Write this\" on any idea to start." : `No ${filter} yet.`}
           </p>
         </div>
       ) : (
@@ -1233,7 +1234,7 @@ function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDra
                     {d.published_platform && <span className="font-mono text-[11px]" style={{ color: FAINT }}>on {d.published_platform}</span>}
                     {d.published_url && (
                       <a href={d.published_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                        className="no-underline font-mono text-[11px]" style={{ color: BLUE }}>View post →</a>
+                        className="no-underline font-mono text-[11px]" style={{ color: BLUE }}>View post <ArrowRight size={10} /></a>
                     )}
                   </>
                 ) : (
@@ -1391,7 +1392,7 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back to plan</button>
+          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back to plan</button>
           <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>{saving ? "Saving..." : saveError ? "Save failed" : "Saved"}</span>
         </div>
 
@@ -1593,7 +1594,7 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}>← Back</button>
+          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back</button>
           <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>{saving ? "Saving..." : saveError ? "Save failed" : "Saved"}</span>
         </div>
 
@@ -1865,7 +1866,7 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
             <span className="font-mono text-[11px]" style={{ color: "#6b7280" }}>{step}/3</span>
             <button onClick={onNext} className="font-sans text-[13px] font-semibold px-3 py-1 rounded-full"
               style={{ background: "#3B82F6", color: "#fff", border: "none", cursor: "pointer" }}>
-              {step < 3 ? "Next →" : "Got it"}
+              {step < 3 ? <>Next <ArrowRight size={11} color="#fff" /></> : "Got it"}
             </button>
           </div>
         </div>

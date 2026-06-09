@@ -128,3 +128,11 @@ mark {
   color: var(--color-ink);
   font-weight: 600;
 }
+
+/* Arrow hover animations */
+button:hover .arrow-right,
+a:hover .arrow-right,
+[role="button"]:hover .arrow-right { transform: translateX(4px); }
+button:hover .arrow-left,
+a:hover .arrow-left,
+[role="button"]:hover .arrow-left { transform: translateX(-4px); }
