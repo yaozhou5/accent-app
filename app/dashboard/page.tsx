@@ -938,6 +938,8 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
                   </div>
                   <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>{suggestion.why}</p>
                   <button onClick={async () => {
+                      // Persist session before navigating away
+                      await saveCoachingSession(coachNotes.map(n => n.id), coachMessages, coachSuggestions);
                       const sourceNote = coachNotes.map(n => n.content || "").filter(Boolean).join("\n\n");
                       const content = suggestion.hook + "\n\n";
                       const d = await createStandaloneDraft(content, sourceNote, coachNotes[0]?.id || "");
