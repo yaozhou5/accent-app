@@ -10,6 +10,7 @@ import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import posthog from "posthog-js";
 import { getDraft, saveDraft, saveDraftById, createStandaloneDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
 import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
+import { getCoachingSession, saveCoachingSession, type CoachingMessage, type CoachingSuggestion } from "@/lib/supabase/coaching";
 
 // Design tokens
 const INK = "#111827";      // gray-900
@@ -609,11 +610,17 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const [quickLog, setQuickLog] = useState("");
   // Coaching conversation state
   const [coachNotes, setCoachNotes] = useState<LogEntry[]>([]);
-  const [coachMessages, setCoachMessages] = useState<{ role: "ai" | "user"; text: string }[]>([]);
+  const [coachMessages, setCoachMessages] = useState<CoachingMessage[]>([]);
   const [coachReply, setCoachReply] = useState("");
-  const [coachSuggestions, setCoachSuggestions] = useState<{ hook: string; platform: string; type: string; why: string }[]>([]);
+  const [coachSuggestions, setCoachSuggestions] = useState<CoachingSuggestion[]>([]);
   const [coachLoading, setCoachLoading] = useState(false);
   const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
+
+  // Persist coaching session to DB (fire-and-forget)
+  const persistSession = (entries: LogEntry[], messages: CoachingMessage[], suggestions: CoachingSuggestion[]) => {
+    if (entries.length === 0) return;
+    saveCoachingSession(entries.map(e => e.id), messages, suggestions).catch(() => {});
+  };
 
   // Auto-start coaching if navigated from Log tab
   const autoStartRef = useRef<string | null>(null);
@@ -636,10 +643,21 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
 
   const startCoaching = async (entries: LogEntry[]) => {
     setCoachNotes(entries);
-    setCoachMessages([]);
-    setCoachSuggestions([]);
     setCoachReply("");
     setCoachLoading(true);
+    // Check for existing session first
+    try {
+      const existing = await getCoachingSession(entries.map(e => e.id));
+      if (existing && existing.messages.length > 0) {
+        setCoachMessages(existing.messages);
+        setCoachSuggestions(existing.suggestions);
+        setCoachLoading(false);
+        return;
+      }
+    } catch {}
+    // No existing session — start fresh
+    setCoachMessages([]);
+    setCoachSuggestions([]);
     try {
       const res = await fetch("/api/coach-note", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -647,7 +665,11 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.response) setCoachMessages([{ role: "ai", text: data.response }]);
+        if (data.response) {
+          const msgs: CoachingMessage[] = [{ role: "ai", text: data.response }];
+          setCoachMessages(msgs);
+          persistSession(entries, msgs, []);
+        }
       }
     } catch {}
     setCoachLoading(false);
@@ -656,7 +678,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const submitCoachReply = async () => {
     if (!coachReply.trim() || coachNotes.length === 0) return;
     const reply = coachReply.trim();
-    const updatedMessages = [...coachMessages, { role: "user" as const, text: reply }];
+    const updatedMessages: CoachingMessage[] = [...coachMessages, { role: "user", text: reply }];
     setCoachMessages(updatedMessages);
     setCoachReply("");
     setCoachLoading(true);
@@ -671,9 +693,13 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
       if (res.ok) {
         const data = await res.json();
         if (data.type === "followup" && data.response) {
-          setCoachMessages(prev => [...prev, { role: "ai", text: data.response }]);
+          const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: data.response }];
+          setCoachMessages(newMsgs);
+          persistSession(coachNotes, newMsgs, coachSuggestions);
         } else if ((data.type === "suggest" || forceAngles) && data.structured) {
-          setCoachSuggestions(prev => [...prev, data.structured]);
+          const newSuggestions = [...coachSuggestions, data.structured];
+          setCoachSuggestions(newSuggestions);
+          persistSession(coachNotes, updatedMessages, newSuggestions);
         }
       }
     } catch {}
@@ -688,7 +714,14 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...coachApiPayload(coachNotes), step: "suggest", conversation: coachMessages, previousAngles: coachSuggestions.map(s => s.hook) }),
       });
-      if (res.ok) { const data = await res.json(); if (data.structured) { setCoachSuggestions(prev => [...prev, data.structured]); } }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.structured) {
+          const newSuggestions = [...coachSuggestions, data.structured];
+          setCoachSuggestions(newSuggestions);
+          persistSession(coachNotes, coachMessages, newSuggestions);
+        }
+      }
     } catch {}
     setCoachLoading(false);
   };
