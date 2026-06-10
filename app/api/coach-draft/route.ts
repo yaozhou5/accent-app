@@ -78,7 +78,15 @@ For phrases like these: leave them alone. They are the voice working.`;
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return NextResponse.json({ error: "Failed to parse" }, { status: 500 });
 
-    return NextResponse.json(JSON.parse(match[0]));
+    const parsed = JSON.parse(match[0]);
+    // Filter out no-op suggestions where original === suggestion
+    if (Array.isArray(parsed.phrases_to_improve)) {
+      parsed.phrases_to_improve = parsed.phrases_to_improve.filter(
+        (p: { original?: string; suggestion?: string }) =>
+          p.original && p.suggestion && p.original.trim() !== p.suggestion.trim()
+      );
+    }
+    return NextResponse.json(parsed);
   } catch (error) {
     console.error("Coach draft error:", error);
     return NextResponse.json({ error: "Failed to coach" }, { status: 500 });
