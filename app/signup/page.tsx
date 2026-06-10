@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import posthog from "posthog-js";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -33,7 +34,10 @@ export default function SignupPage() {
     const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: "email" });
     setLoading(false);
     if (error) setError("Invalid or expired code.");
-    else window.location.href = "/onboard/1";
+    else {
+      posthog.capture("signup_completed", { email: email.trim().toLowerCase() });
+      window.location.href = "/onboard/1";
+    }
   };
 
   return (
