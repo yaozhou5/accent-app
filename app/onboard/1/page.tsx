@@ -19,7 +19,7 @@ export default function Onboard() {
   const [q3, setQ3] = useState("");
   const [q4, setQ4] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ story: string; inferred_profile: { account_type: string; goal: string; confidence: string } } | null>(null);
+  const [result, setResult] = useState<{ direction: string; inferred_profile: { account_type: string; goal: string; confidence: string } } | null>(null);
 
   const handleNext = () => {
     if (step < 4) { setStep(step + 1); return; }
@@ -87,22 +87,22 @@ export default function Onboard() {
             </div>
           ) : (
             <>
-              <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>I see something here.</h1>
+              <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>I can see a post in this.</h1>
 
               <div className="p-4 rounded-[12px] mb-4" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>What you told me</span>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Your moment</span>
                 <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{q2}</p>
               </div>
 
               <div className="p-4 rounded-[12px] mb-8" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Here's a story I see in that</span>
-                <p className="font-serif" style={{ fontSize: 17, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{result.story}</p>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Here's where the post is</span>
+                <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{result.direction}</p>
               </div>
 
               <button onClick={handleStart}
                 className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px]"
                 style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                Start logging <ArrowRight size={14} color="#fff" />
+                Develop this <ArrowRight size={14} color="#fff" />
               </button>
             </>
           )}

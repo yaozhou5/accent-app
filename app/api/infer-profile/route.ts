@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Answers required" }, { status: 400 });
     }
 
-    const prompt = `You are analyzing onboarding answers from a new user of Accent, a content tool. Your job is to (a) infer their account type and (b) surface the story angle hiding in their recent moment.
+    const prompt = `You are analyzing onboarding answers from a new user of Accent, a content tool. Your job is to (a) infer their account type and (b) give direction on the post hiding in their recent moment.
 
 Their answers:
 
@@ -37,7 +37,7 @@ Return ONLY valid JSON, no preamble:
     "goal": "one short phrase summarizing their main goal",
     "confidence": "high" | "low"
   },
-  "story": "1-2 sentence story ANGLE from their Q2 answer — the insight or tension in their moment"
+  "direction": "2-3 sentences of editorial direction (see rules below)"
 }
 
 Rules for account_type:
@@ -46,11 +46,16 @@ Rules for account_type:
 - "company" if they speak about a product with no personal "I" and no personal-brand intent
 - "unsure" if answers are too short or ambiguous. Do NOT guess. Set confidence to "low"
 
-Rules for story:
-- Surface the angle hiding in their Q2 moment. What's the insight, tension, or surprise?
-- Output ONLY the angle (1-2 sentences). Never write a finished or draft post.
-- Be specific to their actual moment. Generic observations like "there's a story about growth here" are failures.
-- If account_type is "unsure", the story must stay neutral and not assume there is a person behind the account.`;
+Rules for direction (this is the "Idea" step, NOT a draft):
+1. Name what kind of moment this is in one specific phrase — the recognizable theme a reader would relate to (e.g. "this is an activation story," "this is a hard-pivot moment," "this is a customer-truth moment"). Be specific to their content, not a generic label.
+2. Point at what would make it a strong post — 1-2 concrete questions or details that are currently missing, drawn from their specific moment. (e.g. "What did seeing 450 feel like before you checked usage? What did you expect that didn't happen?")
+3. Invite the next step — frame it as "add a bit more and this becomes a post worth publishing."
+
+Do NOT write a finished post, a story angle, or a thesis. Give DIRECTION only.
+Do NOT paraphrase what they said back to them.
+The missing-detail questions must be specific to their actual moment, not generic. If the questions would fit any founder, they've failed.
+BANNED clichés: "vanity metrics," "the journey from X to Y," "the harsh reality," "the only number that matters."
+Warm and curious in tone, like a smart editor who sees the post hiding in there and wants to draw it out. 2-3 sentences total.`;
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
