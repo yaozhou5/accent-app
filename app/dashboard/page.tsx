@@ -1871,12 +1871,21 @@ export default function DashboardPage() {
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const developId = params.get("develop");
-        if (developId && finalEntries.length > 0) {
-          const entry = finalEntries.find(e => e.id === developId);
+        if (developId) {
+          let entry = finalEntries.find(e => e.id === developId);
+          // Entry may not be available yet — retry once
+          if (!entry) {
+            await new Promise(r => setTimeout(r, 1000));
+            const retried = await getLogEntries();
+            if (retried.length > finalEntries.length) {
+              finalEntries = retried;
+              setLogEntries(retried);
+            }
+            entry = retried.find(e => e.id === developId);
+          }
           if (entry) {
             setDevelopEntries([entry]);
             setTabRaw("ideas");
-            // Clean up the URL
             window.history.replaceState({}, "", "/dashboard#ideas");
           }
         }
