@@ -19,6 +19,7 @@ export default function Onboard() {
   const [q3, setQ3] = useState("");
   const [q4, setQ4] = useState("");
   const [loading, setLoading] = useState(false);
+  const [seededEntryId, setSeededEntryId] = useState<string | null>(null);
   const [result, setResult] = useState<{ direction: string; inferred_profile: { account_type: string; goal: string; confidence: string } } | null>(null);
 
   const handleNext = () => {
@@ -32,7 +33,8 @@ export default function Onboard() {
     setLoading(true);
 
     // Seed the Log FIRST so it's never empty, even if the AI call fails
-    await createLogEntry(q2.trim(), { type: "note", source: "onboarding" }).catch(() => {});
+    const seededEntry = await createLogEntry(q2.trim(), { type: "note", source: "onboarding" }).catch(() => null);
+    if (seededEntry) setSeededEntryId(seededEntry.id);
 
     // Save interview answers immediately (profile fields that don't need AI)
     await upsertProfile({
@@ -79,10 +81,10 @@ export default function Onboard() {
   };
 
   const handleStart = async () => {
-    // Mark onboarding complete and go to dashboard
+    // Mark onboarding complete and go to dashboard → develop flow
     await upsertProfile({ onboarding_completed: true });
     posthog.capture("onboarding_completed", { account_type: result?.inferred_profile?.account_type || "unknown" });
-    window.location.href = "/dashboard";
+    window.location.href = seededEntryId ? `/dashboard?develop=${seededEntryId}` : "/dashboard";
   };
 
   const canAdvance = () => {

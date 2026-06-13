@@ -1866,6 +1866,22 @@ export default function DashboardPage() {
       setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(finalEntries); setDrafts(draftsList);
       if (plan) setTab("ideas");
       if (p && !p.tooltip_seen && finalEntries.length === 0 && !plan) setTooltipStep(1);
+
+      // Check for ?develop=<entryId> param (from onboarding payoff)
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const developId = params.get("develop");
+        if (developId && finalEntries.length > 0) {
+          const entry = finalEntries.find(e => e.id === developId);
+          if (entry) {
+            setDevelopEntries([entry]);
+            setTabRaw("ideas");
+            // Clean up the URL
+            window.history.replaceState({}, "", "/dashboard#ideas");
+          }
+        }
+      }
+
       setLoading(false);
     }
     load();
