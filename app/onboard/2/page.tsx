@@ -63,6 +63,8 @@ export default function Onboard2() {
                 background: selected.includes(g.key) ? `${BLUE}08` : "transparent",
                 cursor: "pointer",
                 transition: "border-color 0.15s ease, background 0.15s ease",
+                WebkitTapHighlightColor: "transparent",
+                outline: "none",
               }}
             >
               <span className="block font-sans text-[15px] font-medium" style={{ color: INK }}>{g.label}</span>

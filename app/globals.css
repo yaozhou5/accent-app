@@ -57,6 +57,7 @@
 }
 
 html { scroll-behavior: smooth; overflow-x: hidden; }
+button { -webkit-tap-highlight-color: transparent; }
 body {
   background: var(--color-paper);
   color: var(--color-ink);
