@@ -60,9 +60,9 @@ export default function Onboard2() {
               className="w-full text-left p-4 rounded-[10px]"
               style={{
                 border: `1.5px solid ${selected.includes(g.key) ? BLUE : BORDER}`,
-                background: selected.includes(g.key) ? `${BLUE}08` : "transparent",
+                background: selected.includes(g.key) ? `${BLUE}08` : "#fff",
                 cursor: "pointer",
-                transition: "border-color 0.15s ease, background 0.15s ease",
+                transition: "border-color 0.15s ease, background-color 0.15s ease",
                 WebkitTapHighlightColor: "transparent",
                 outline: "none",
               }}

@@ -23,7 +23,7 @@ function ChipSelect({ options, selected, onToggle, multi = true }: { options: st
         const active = selected.includes(o);
         return (
           <button key={o} onClick={() => onToggle(o)} className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] sm:text-[13px] font-mono"
-            style={{ background: active ? BLUE : "transparent", color: active ? "#fff" : DIM, border: `1px solid ${active ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
+            style={{ background: active ? BLUE : "#fff", color: active ? "#fff" : DIM, border: `1px solid ${active ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
             {o}
           </button>
         );
@@ -111,7 +111,7 @@ export default function Onboard3() {
           <div className="flex gap-2">
             {FREQUENCIES.map(f => (
               <button key={f} onClick={() => setFrequency(f)} className="flex-1 px-3 py-2 rounded-full text-[13px] sm:text-[14px] font-mono"
-                style={{ background: frequency === f ? BLUE : "transparent", color: frequency === f ? "#fff" : DIM, border: `1px solid ${frequency === f ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
+                style={{ background: frequency === f ? BLUE : "#fff", color: frequency === f ? "#fff" : DIM, border: `1px solid ${frequency === f ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
                 {f}
               </button>
             ))}
@@ -124,7 +124,7 @@ export default function Onboard3() {
           <div className="flex gap-2 flex-wrap">
             {EXPERIENCE_OPTIONS.map(o => (
               <button key={o} onClick={() => setExperience(o)} className="px-4 py-2 rounded-full text-[13px] font-mono"
-                style={{ background: experience === o ? BLUE : "transparent", color: experience === o ? "#fff" : DIM, border: `1px solid ${experience === o ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
+                style={{ background: experience === o ? BLUE : "#fff", color: experience === o ? "#fff" : DIM, border: `1px solid ${experience === o ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
                 {o}
               </button>
             ))}
@@ -151,7 +151,7 @@ export default function Onboard3() {
                 } else {
                   const without = voiceTones.filter(t => t !== v && t !== FIGURING);
                   if (voiceTones.includes(v)) { setVoiceTones(without); }
-                  else if (without.length < 2) { setVoiceTones([...without, v]); }
+                  else { setVoiceTones([...without, v]); }
                 }
               }} />
             </div>
