@@ -30,33 +30,51 @@ export default function Onboard() {
   const handleSubmit = async () => {
     setStep(5); // show generating state
     setLoading(true);
+
+    // Seed the Log FIRST so it's never empty, even if the AI call fails
+    await createLogEntry(q2.trim(), { type: "note", source: "onboarding" }).catch(() => {});
+
+    // Save interview answers immediately (profile fields that don't need AI)
+    await upsertProfile({
+      business_description: q1.trim(),
+      interview_q1: q1.trim(),
+      interview_q2: q2.trim(),
+      interview_q3: q3.trim(),
+      interview_q4: q4.trim() || null,
+      why_you_post: q3.trim(),
+    }).catch(() => {});
+
     try {
       const res = await fetch("/api/infer-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ q1: q1.trim(), q2: q2.trim(), q3: q3.trim(), q4: q4.trim() }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setResult(data);
+      const data = await res.json();
+      console.log("infer-profile response:", data);
 
-        // Save interview answers + inferred profile
+      if (data.direction && data.inferred_profile) {
+        setResult(data);
+        // Save inferred profile fields
         await upsertProfile({
-          business_description: q1.trim(),
-          interview_q1: q1.trim(),
-          interview_q2: q2.trim(),
-          interview_q3: q3.trim(),
-          interview_q4: q4.trim() || null,
           account_type: data.inferred_profile?.account_type || null,
           inferred_goal: data.inferred_profile?.goal || null,
           account_type_confidence: data.inferred_profile?.confidence || null,
-          why_you_post: q3.trim(),
         }).catch(() => {});
-
-        // Seed the Log with Q2 as the first entry
-        await createLogEntry(q2.trim(), { type: "note", source: "onboarding" }).catch(() => {});
+      } else {
+        // AI returned something unexpected — use fallback
+        setResult({
+          direction: "Tell me a bit more in your first log and I'll help you find the angle.",
+          inferred_profile: { account_type: "unsure", goal: "", confidence: "low" },
+        });
       }
-    } catch {}
+    } catch (err) {
+      console.error("infer-profile error:", err);
+      setResult({
+        direction: "Tell me a bit more in your first log and I'll help you find the angle.",
+        inferred_profile: { account_type: "unsure", goal: "", confidence: "low" },
+      });
+    }
     setLoading(false);
   };
 
@@ -87,7 +105,7 @@ export default function Onboard() {
             </div>
           ) : (
             <>
-              <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>I can see a post in this.</h1>
+              <h1 className="font-serif mb-8" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Here's where the post is.</h1>
 
               <div className="p-4 rounded-[12px] mb-4" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
                 <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Your moment</span>
@@ -95,7 +113,7 @@ export default function Onboard() {
               </div>
 
               <div className="p-4 rounded-[12px] mb-8" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Here's where the post is</span>
+                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>What's missing</span>
                 <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{result.direction}</p>
               </div>
 
