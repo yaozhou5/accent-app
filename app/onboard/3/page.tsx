@@ -19,12 +19,15 @@ const TONE_CHIPS = ["Casual and honest", "Professional", "Funny", "Inspirational
 function ChipSelect({ options, selected, onToggle, multi = true }: { options: string[]; selected: string[]; onToggle: (v: string) => void; multi?: boolean }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {options.map(o => (
-        <button key={o} onClick={() => onToggle(o)} className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] sm:text-[13px] font-mono transition-all"
-          style={{ background: selected.includes(o) ? BLUE : "transparent", color: selected.includes(o) ? "#fff" : DIM, border: selected.includes(o) ? "none" : `1px solid ${BORDER}`, cursor: "pointer" }}>
-          {o}
-        </button>
-      ))}
+      {options.map(o => {
+        const active = selected.includes(o);
+        return (
+          <button key={o} onClick={() => onToggle(o)} className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] sm:text-[13px] font-mono"
+            style={{ background: active ? BLUE : "transparent", color: active ? "#fff" : DIM, border: `1px solid ${active ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background 0.15s ease, color 0.15s ease" }}>
+            {o}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -34,11 +37,13 @@ export default function Onboard3() {
   const [frequency, setFrequency] = useState("3-4");
   const [challenges, setChallenges] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
-  const [pastPosts, setPastPosts] = useState("");
+  const [pastPost1, setPastPost1] = useState("");
+  const [pastPost2, setPastPost2] = useState("");
+  const [pastPost3, setPastPost3] = useState("");
   const [experience, setExperience] = useState<string | null>(null);
   const [postsThatWork, setPostsThatWork] = useState<string[]>([]);
   const [postsThatFlop, setPostsThatFlop] = useState<string[]>([]);
-  const [voiceTone, setVoiceTone] = useState<string | null>(null);
+  const [voiceTones, setVoiceTones] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
@@ -70,13 +75,13 @@ export default function Onboard3() {
     // Save optional fields as best-effort (columns may not exist yet)
     await upsertProfile({
       profile_url: profileUrl.trim() || null,
-      past_posts: pastPosts.trim() || null,
+      past_posts: [pastPost1, pastPost2, pastPost3].map(p => p.trim()).filter(Boolean).join("\n\n---\n\n") || null,
       posting_experience: experience,
       posts_that_work: showHistory ? postsThatWork : [],
       posts_that_flop: showHistory ? postsThatFlop : [],
-      voice_tone: showHistory ? voiceTone : null,
+      voice_tone: showHistory && voiceTones.length > 0 ? voiceTones.join(", ") : null,
     }).catch(() => {});
-    posthog.capture("onboarding_completed", { platforms, posting_frequency: frequency, has_past_posts: !!pastPosts.trim() });
+    posthog.capture("onboarding_completed", { platforms, posting_frequency: frequency, has_past_posts: !!(pastPost1.trim() || pastPost2.trim() || pastPost3.trim()) });
     await new Promise(r => setTimeout(r, 500));
     window.location.href = "/dashboard";
   };
@@ -105,8 +110,8 @@ export default function Onboard3() {
           <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Posts per week you can actually do</label>
           <div className="flex gap-2">
             {FREQUENCIES.map(f => (
-              <button key={f} onClick={() => setFrequency(f)} className="flex-1 px-3 py-2 rounded-full text-[13px] sm:text-[14px] font-mono transition-all"
-                style={{ background: frequency === f ? BLUE : "transparent", color: frequency === f ? "#fff" : DIM, border: frequency === f ? "none" : `1px solid ${BORDER}`, cursor: "pointer" }}>
+              <button key={f} onClick={() => setFrequency(f)} className="flex-1 px-3 py-2 rounded-full text-[13px] sm:text-[14px] font-mono"
+                style={{ background: frequency === f ? BLUE : "transparent", color: frequency === f ? "#fff" : DIM, border: `1px solid ${frequency === f ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background 0.15s ease, color 0.15s ease" }}>
                 {f}
               </button>
             ))}
@@ -118,8 +123,8 @@ export default function Onboard3() {
           <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Have you posted before?</label>
           <div className="flex gap-2 flex-wrap">
             {EXPERIENCE_OPTIONS.map(o => (
-              <button key={o} onClick={() => setExperience(o)} className="px-4 py-2 rounded-full text-[13px] font-mono transition-all"
-                style={{ background: experience === o ? BLUE : "transparent", color: experience === o ? "#fff" : DIM, border: experience === o ? "none" : `1px solid ${BORDER}`, cursor: "pointer" }}>
+              <button key={o} onClick={() => setExperience(o)} className="px-4 py-2 rounded-full text-[13px] font-mono"
+                style={{ background: experience === o ? BLUE : "transparent", color: experience === o ? "#fff" : DIM, border: `1px solid ${experience === o ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background 0.15s ease, color 0.15s ease" }}>
                 {o}
               </button>
             ))}
@@ -139,7 +144,16 @@ export default function Onboard3() {
             </div>
             <div>
               <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>How would you describe your tone?</label>
-              <ChipSelect options={TONE_CHIPS} selected={voiceTone ? [voiceTone] : []} onToggle={v => setVoiceTone(voiceTone === v ? null : v)} multi={false} />
+              <ChipSelect options={TONE_CHIPS} selected={voiceTones} onToggle={v => {
+                const FIGURING = "Still figuring it out";
+                if (v === FIGURING) {
+                  setVoiceTones(voiceTones.includes(v) ? [] : [FIGURING]);
+                } else {
+                  const without = voiceTones.filter(t => t !== v && t !== FIGURING);
+                  if (voiceTones.includes(v)) { setVoiceTones(without); }
+                  else if (without.length < 2) { setVoiceTones([...without, v]); }
+                }
+              }} />
             </div>
           </div>
         )}
@@ -163,11 +177,36 @@ export default function Onboard3() {
 
         {/* Past posts */}
         <div className="mb-8">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Paste 2-3 posts you've written before (optional)</label>
-          <textarea value={pastPosts} onChange={e => setPastPosts(e.target.value)}
-            placeholder="Copy paste any posts you've made. Good ones, bad ones, doesn't matter. This helps us understand your voice and what's worked for you." rows={5}
-            className="w-full outline-none resize-y font-sans"
-            style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
+          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Paste posts you've written before (optional)</label>
+          <p className="font-sans text-[13px] mb-3" style={{ color: DIM }}>This helps us understand your voice. Good ones, bad ones, doesn't matter.</p>
+          <div className="space-y-3">
+            <div>
+              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>Post 1</span>
+              <textarea value={pastPost1} onChange={e => setPastPost1(e.target.value)}
+                placeholder="Paste a post you've shared before" rows={3}
+                className="w-full outline-none resize-y font-sans"
+                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8 }} />
+            </div>
+            <div>
+              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>Post 2 (optional)</span>
+              <textarea value={pastPost2} onChange={e => setPastPost2(e.target.value)}
+                placeholder="Another one, if you have it" rows={3}
+                className="w-full outline-none resize-y font-sans"
+                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8 }} />
+            </div>
+            <div>
+              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>Post 3 (optional)</span>
+              <textarea value={pastPost3} onChange={e => setPastPost3(e.target.value)}
+                placeholder="One more, if you want" rows={3}
+                className="w-full outline-none resize-y font-sans"
+                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8 }} />
+            </div>
+          </div>
+          <button onClick={handleDone} disabled={platforms.length === 0 || saving}
+            className="font-sans text-[13px] mt-3"
+            style={{ color: "#9ca3af", background: "none", border: "none", cursor: "pointer" }}>
+            I don't have posts yet — skip
+          </button>
         </div>
 
         <div className="flex gap-3">

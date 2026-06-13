@@ -57,11 +57,12 @@ export default function Onboard2() {
             <button
               key={g.key}
               onClick={() => toggle(g.key)}
-              className="w-full text-left p-4 rounded-[10px] transition-all"
+              className="w-full text-left p-4 rounded-[10px]"
               style={{
-                border: selected.includes(g.key) ? `1.5px solid ${BLUE}` : `1px solid ${BORDER}`,
+                border: `1.5px solid ${selected.includes(g.key) ? BLUE : BORDER}`,
                 background: selected.includes(g.key) ? `${BLUE}08` : "transparent",
                 cursor: "pointer",
+                transition: "border-color 0.15s ease, background 0.15s ease",
               }}
             >
               <span className="block font-sans text-[15px] font-medium" style={{ color: INK }}>{g.label}</span>
