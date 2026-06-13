@@ -103,6 +103,7 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composeRef = useRef<HTMLTextAreaElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
 
@@ -313,7 +314,28 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
             ))}
           </div>
         )}
-        <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(56, el.scrollHeight) + "px"; } }}
+        {/* Prompt chips */}
+        {!input.trim() && pendingImages.length === 0 && (
+          <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
+            {[
+              { label: "A call or conversation", stem: "Today I talked to " },
+              { label: "A win", stem: "Something that went well today: " },
+              { label: "A frustration", stem: "I got frustrated when " },
+              { label: "Something I read", stem: "I read something that stuck with me: " },
+              { label: "A decision I made", stem: "I decided to " },
+            ].map(chip => (
+              <button key={chip.label} onClick={() => {
+                setInput(input.trim() ? input + "\n" + chip.stem : chip.stem);
+                setTimeout(() => { composeRef.current?.focus(); }, 0);
+              }}
+                className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors hover:bg-gray-50"
+                style={{ color: DIM, border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}>
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <textarea ref={el => { composeRef.current = el; if (el) { el.style.height = "auto"; el.style.height = Math.max(56, el.scrollHeight) + "px"; } }}
           value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
           onPaste={e => {
             const items = Array.from(e.clipboardData.items);

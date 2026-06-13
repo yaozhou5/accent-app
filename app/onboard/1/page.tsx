@@ -9,12 +9,9 @@ const DIM = "#6b7280";
 const BLUE = "#3B82F6";
 const BORDER = "#e5e7eb";
 
-const DEFAULT_BIZ = "A social app to connect people IRL for activities. Gen Z and Millennials who want to meet new people.";
-const DEFAULT_PITCH = "A hangout app to meet new people and make friends through concerts, sports events, and group activities.";
-
 export default function Onboard1() {
-  const [businessDesc, setBusinessDesc] = useState(DEFAULT_BIZ);
-  const [partyPitch, setPartyPitch] = useState(DEFAULT_PITCH);
+  const [businessDesc, setBusinessDesc] = useState("");
+  const [partyPitch, setPartyPitch] = useState("");
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
@@ -26,7 +23,7 @@ export default function Onboard1() {
   }, []);
 
   const handleNext = async () => {
-    if (!businessDesc.trim()) return;
+    if (!businessDesc.trim() || !partyPitch.trim()) return;
     setSaving(true);
     await upsertProfile({ business_description: businessDesc.trim(), party_pitch: partyPitch.trim() });
     setSaving(false);
@@ -50,7 +47,7 @@ export default function Onboard1() {
           <textarea
             value={businessDesc}
             onChange={e => setBusinessDesc(e.target.value)}
-            placeholder="A social app to connect people IRL for activities. Gen Z and Millennials who want to meet new people."
+            placeholder="e.g. A tool that helps founders turn their week into content"
             rows={3}
             className="w-full outline-none resize-y font-sans"
             style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
@@ -62,7 +59,7 @@ export default function Onboard1() {
           <textarea
             value={partyPitch}
             onChange={e => setPartyPitch(e.target.value)}
-            placeholder="A hangout app to meet new people and make friends through concerts, sports events, and group activities."
+            placeholder="e.g. It's like a journal that becomes your LinkedIn posts"
             rows={3}
             className="w-full outline-none resize-y font-sans"
             style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
@@ -71,7 +68,7 @@ export default function Onboard1() {
 
         <button
           onClick={handleNext}
-          disabled={!businessDesc.trim() || saving}
+          disabled={!businessDesc.trim() || !partyPitch.trim() || saving}
           className="w-full rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ fontSize: 15, padding: "14px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
         >
