@@ -23,6 +23,13 @@ export interface UserProfile {
   what_you_build: string | null;
   why_you_post: string | null;
   tooltip_seen: boolean;
+  interview_q1: string | null;
+  interview_q2: string | null;
+  interview_q3: string | null;
+  interview_q4: string | null;
+  account_type: string | null;
+  inferred_goal: string | null;
+  account_type_confidence: string | null;
   created_at: string;
 }
 
