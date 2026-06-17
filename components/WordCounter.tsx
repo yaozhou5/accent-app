@@ -11,11 +11,7 @@ export function WordCounter({ text }: WordCounterProps) {
   const isOver = wordCount > WORD_LIMIT;
 
   return (
-    <p
-      className={`mt-1.5 text-xs font-sans text-right ${
-        isOver ? "text-ink font-medium" : "text-ink/30"
-      }`}
-    >
+    <p className={`mt-1.5 text-xs font-sans text-right ${isOver ? "text-ink font-medium" : "text-ink/30"}`}>
       {wordCount} / {WORD_LIMIT} words
     </p>
   );

@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { url } = await request.json();
@@ -37,19 +39,31 @@ export async function POST(request: NextRequest) {
     const ytMatch = hostname.match(/youtube\.com|youtu\.be/);
     if (ytMatch) {
       try {
-        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, { signal: AbortSignal.timeout(5000) });
+        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, {
+          signal: AbortSignal.timeout(5000),
+        });
         if (oembedRes.ok) {
           const data = await oembedRes.json();
-          return NextResponse.json({ title: data.title || null, description: data.author_name ? `by ${data.author_name}` : null, image: data.thumbnail_url || null });
+          return NextResponse.json({
+            title: data.title || null,
+            description: data.author_name ? `by ${data.author_name}` : null,
+            image: data.thumbnail_url || null,
+          });
         }
       } catch {}
     }
     if (hostname.match(/vimeo\.com/)) {
       try {
-        const oembedRes = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(5000) });
+        const oembedRes = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`, {
+          signal: AbortSignal.timeout(5000),
+        });
         if (oembedRes.ok) {
           const data = await oembedRes.json();
-          return NextResponse.json({ title: data.title || null, description: data.author_name ? `by ${data.author_name}` : null, image: data.thumbnail_url || null });
+          return NextResponse.json({
+            title: data.title || null,
+            description: data.author_name ? `by ${data.author_name}` : null,
+            image: data.thumbnail_url || null,
+          });
         }
       } catch {}
     }
@@ -78,10 +92,19 @@ export async function POST(request: NextRequest) {
 
     // Title: OG → Twitter → <title> → <h1>
     const h1Match = html.match(/<h1[^>]*>([^<]*)<\/h1>/i);
-    const title = getMetaContent("og:title") || getMetaContent("twitter:title") || html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || h1Match?.[1]?.trim() || null;
+    const title =
+      getMetaContent("og:title") ||
+      getMetaContent("twitter:title") ||
+      html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() ||
+      h1Match?.[1]?.trim() ||
+      null;
 
     // Description: OG → Twitter → meta description → first meaningful <p>
-    let description = getMetaContent("og:description") || getMetaContent("twitter:description") || getMetaContent("description") || null;
+    let description =
+      getMetaContent("og:description") ||
+      getMetaContent("twitter:description") ||
+      getMetaContent("description") ||
+      null;
     if (!description) {
       const pMatch = html.match(/<p[^>]*>([^<]{30,})<\/p>/i);
       if (pMatch?.[1]) description = pMatch[1].trim().slice(0, 200);

@@ -12,15 +12,7 @@ interface ShelfDetailProps {
   onDelete: (id: string) => void;
 }
 
-function HighlightedText({
-  text,
-  phrases,
-  color,
-}: {
-  text: string;
-  phrases: string[];
-  color: "coral" | "teal";
-}) {
+function HighlightedText({ text, phrases, color }: { text: string; phrases: string[]; color: "coral" | "teal" }) {
   if (phrases.length === 0) {
     const cls =
       color === "coral"
@@ -48,13 +40,11 @@ function HighlightedText({
   const segments: Array<{ text: string; highlight: boolean }> = [];
   let cursor = 0;
   for (const m of filtered) {
-    if (m.start > cursor)
-      segments.push({ text: text.slice(cursor, m.start), highlight: false });
+    if (m.start > cursor) segments.push({ text: text.slice(cursor, m.start), highlight: false });
     segments.push({ text: text.slice(m.start, m.end), highlight: true });
     cursor = m.end;
   }
-  if (cursor < text.length)
-    segments.push({ text: text.slice(cursor), highlight: false });
+  if (cursor < text.length) segments.push({ text: text.slice(cursor), highlight: false });
 
   const baseCls =
     color === "coral"
@@ -88,18 +78,14 @@ function LessonPill({ lesson }: { lesson: Issue }) {
       <button
         onClick={() => setExpanded(!expanded)}
         className={`text-[12px] font-sans rounded-full px-3 py-1 transition-colors ${
-          expanded
-            ? "bg-teal-light text-[#111]"
-            : "bg-warm text-ink/50 hover:bg-teal-light hover:text-[#111]"
+          expanded ? "bg-teal-light text-[#111]" : "bg-warm text-ink/50 hover:bg-teal-light hover:text-[#111]"
         }`}
       >
         {lesson.title}
       </button>
       {expanded && (
         <div className="mt-2 bg-teal-light/40 rounded-[8px] px-3.5 py-3 space-y-1.5">
-          <p className="font-sans text-sm font-medium text-[#111]">
-            {lesson.lesson_title || lesson.title}
-          </p>
+          <p className="font-sans text-sm font-medium text-[#111]">{lesson.lesson_title || lesson.title}</p>
           <p
             className="font-sans text-xs leading-relaxed text-ink/60 lesson-body"
             dangerouslySetInnerHTML={{ __html: lesson.lesson_body }}
@@ -112,19 +98,12 @@ function LessonPill({ lesson }: { lesson: Issue }) {
 
 type CopyState = "default" | "copying" | "copied";
 
-export function ShelfDetail({
-  entry,
-  locale,
-  onBack,
-  onDelete,
-}: ShelfDetailProps) {
+export function ShelfDetail({ entry, locale, onBack, onDelete }: ShelfDetailProps) {
   const [copyState, setCopyState] = useState<CopyState>("default");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const coralPhrases = entry.lessons.map((l) => l.phrase).filter(Boolean);
-  const tealPhrases = entry.lessons
-    .map((l) => l.fixed_phrase)
-    .filter(Boolean);
+  const tealPhrases = entry.lessons.map((l) => l.fixed_phrase).filter(Boolean);
 
   const handleCopy = useCallback(async () => {
     if (copyState !== "default") return;
@@ -155,9 +134,7 @@ export function ShelfDetail({
       <div className="text-xs font-sans text-ink/40">
         {dateStr}
         {" \u00B7 "}
-        {entry.mode === "quick"
-          ? "\u26A1 Quick fix"
-          : "\uD83D\uDCD6 Teach me"}
+        {entry.mode === "quick" ? "\u26A1 Quick fix" : "\uD83D\uDCD6 Teach me"}
       </div>
 
       {/* Original */}
@@ -165,15 +142,9 @@ export function ShelfDetail({
         className="border-l-[3px] border-[#C4553A] rounded-[8px] px-4 py-3"
         style={{ backgroundColor: "rgba(196, 85, 58, 0.08)" }}
       >
-        <span className="text-xs font-sans font-semibold text-ink tracking-wide">
-          Your original
-        </span>
+        <span className="text-xs font-sans font-semibold text-ink tracking-wide">Your original</span>
         <div className="mt-1.5">
-          <HighlightedText
-            text={entry.original}
-            phrases={coralPhrases}
-            color="coral"
-          />
+          <HighlightedText text={entry.original} phrases={coralPhrases} color="coral" />
         </div>
       </div>
 
@@ -184,24 +155,16 @@ export function ShelfDetail({
 
       {/* Improved */}
       <div className="border-l-[3px] border-teal/40 rounded-[8px] bg-teal-light/50 px-4 py-3">
-        <span className="text-xs font-sans font-semibold text-teal tracking-wide">
-          Improved
-        </span>
+        <span className="text-xs font-sans font-semibold text-teal tracking-wide">Improved</span>
         <div className="mt-1.5">
-          <HighlightedText
-            text={entry.improved}
-            phrases={tealPhrases}
-            color="teal"
-          />
+          <HighlightedText text={entry.improved} phrases={tealPhrases} color="teal" />
         </div>
       </div>
 
       {/* Lesson pills */}
       {entry.lessons.length > 0 && (
         <div className="space-y-2">
-          <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">
-            Lessons
-          </span>
+          <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">Lessons</span>
           <div className="flex flex-wrap gap-2">
             {entry.lessons.map((lesson, i) => (
               <LessonPill key={i} lesson={lesson} />
@@ -222,11 +185,7 @@ export function ShelfDetail({
               : "bg-[#2563EB] text-white hover:opacity-90"
         }`}
       >
-        {copyState === "copied"
-          ? "Copied \u2713"
-          : copyState === "copying"
-            ? "Copying\u2026"
-            : "Copy improved"}
+        {copyState === "copied" ? "Copied \u2713" : copyState === "copying" ? "Copying\u2026" : "Copy improved"}
       </button>
 
       {/* Back to shelf */}

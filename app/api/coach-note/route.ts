@@ -7,36 +7,49 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { note, notes, recentNotes, profile, step, conversation, previousAngles } = await request.json();
     if (!note?.trim()) return NextResponse.json({ error: "Note required" }, { status: 400 });
     const isMultiNote = Array.isArray(notes) && notes.length > 1;
-    const avoidAngles = Array.isArray(previousAngles) && previousAngles.length > 0
-      ? `\n\nIMPORTANT: You already suggested these angles. Give a COMPLETELY DIFFERENT angle:\n${previousAngles.map((a: string) => `- "${a}"`).join("\n")}`
-      : "";
+    const avoidAngles =
+      Array.isArray(previousAngles) && previousAngles.length > 0
+        ? `\n\nIMPORTANT: You already suggested these angles. Give a COMPLETELY DIFFERENT angle:\n${previousAngles.map((a: string) => `- "${a}"`).join("\n")}`
+        : "";
 
-    const profileContext = profile ? `
+    const profileContext = profile
+      ? `
 About this founder:
 - What they do: ${profile.what_you_do || profile.business_description || "Not specified"}
 - Building: ${profile.what_you_build || profile.party_pitch || "Not specified"}
 - Why they post: ${profile.why_you_post || (profile.goals || []).join(", ") || "Not specified"}
 - Platforms: ${(profile.platforms || []).join(", ") || "Not specified"}
-- Tone: ${profile.voice_tone || "Not specified"}` : "";
+- Tone: ${profile.voice_tone || "Not specified"}`
+      : "";
 
-    const recentContext = recentNotes?.length ? `\nTheir recent notes (for context):\n${recentNotes.slice(0, 5).map((n: string) => `- ${n}`).join("\n")}` : "";
+    const recentContext = recentNotes?.length
+      ? `\nTheir recent notes (for context):\n${recentNotes
+          .slice(0, 5)
+          .map((n: string) => `- ${n}`)
+          .join("\n")}`
+      : "";
 
     const noteBlock = isMultiNote
       ? `${(notes as string[]).map((n: string, i: number) => `Note ${i + 1}: "${n}"`).join("\n\n")}`
       : `"${note}"`;
 
     // Build conversation history string
-    const convoHistory = Array.isArray(conversation) && conversation.length > 0
-      ? conversation.map((m: { role: string; text: string }) =>
-          m.role === "ai" ? `You asked: "${m.text}"` : `They replied: "${m.text}"`
-        ).join("\n")
-      : "";
+    const convoHistory =
+      Array.isArray(conversation) && conversation.length > 0
+        ? conversation
+            .map((m: { role: string; text: string }) =>
+              m.role === "ai" ? `You asked: "${m.text}"` : `They replied: "${m.text}"`
+            )
+            .join("\n")
+        : "";
 
     if (step === "question") {
       const questionPrompt = isMultiNote
@@ -77,11 +90,12 @@ Return ONLY the question. One or two sentences max. Calm, direct tone.`;
 
       const content = message.content[0];
       return NextResponse.json({ type: "followup", response: content.type === "text" ? content.text.trim() : null });
-
     } else if (step === "respond") {
       // Evaluate the user's reply and decide: follow-up or suggest angles
       // Count user replies to determine if we should lean toward suggesting
-      const userReplies = Array.isArray(conversation) ? conversation.filter((m: { role: string }) => m.role === "user").length : 0;
+      const userReplies = Array.isArray(conversation)
+        ? conversation.filter((m: { role: string }) => m.role === "user").length
+        : 0;
 
       const respondPrompt = `You're a content coach for solo founders. You read replies the way a good editor reads a draft — not "what content can I make from this" but "is there something real here yet."
 
@@ -159,17 +173,16 @@ WHY: [one sentence on why this angle works]`;
             platform: platformMatch?.[1]?.trim() || null,
             type: typeMatch?.[1]?.trim() || null,
             why: whyMatch?.[1]?.trim() || null,
-          }
+          },
         });
       }
 
       // Fallback: treat as follow-up
       return NextResponse.json({ type: "followup", response: text });
-
     } else if (step === "suggest") {
       // Force generate a story angle (used by "Show another angle")
       const lastReply = Array.isArray(conversation)
-        ? (conversation.filter((m: { role: string }) => m.role === "user").pop()?.text || "")
+        ? conversation.filter((m: { role: string }) => m.role === "user").pop()?.text || ""
         : "";
 
       const suggestPrompt = `You're a content coach for solo founders. Here's the full conversation:
@@ -216,7 +229,7 @@ Be specific to their situation. No generic advice.${avoidAngles}`;
           platform: platformMatch?.[1]?.trim() || null,
           type: typeMatch?.[1]?.trim() || null,
           why: whyMatch?.[1]?.trim() || null,
-        }
+        },
       });
     }
 

@@ -7,53 +7,82 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { dump, entries, shelfItems, profile, moreIdeas, entryCount: rawEntryCount } = await request.json();
     if (!profile) return NextResponse.json({ error: "Profile is required" }, { status: 400 });
-    const entryCount = rawEntryCount || (entries?.length || 0);
+    const entryCount = rawEntryCount || entries?.length || 0;
     const maxPosts = entryCount < 3 ? 3 : entryCount <= 5 ? 5 : 7;
-    if (typeof dump === "string" && dump.length > 50000) return NextResponse.json({ error: "Input too long" }, { status: 400 });
+    if (typeof dump === "string" && dump.length > 50000)
+      return NextResponse.json({ error: "Input too long" }, { status: 400 });
 
     // Support both: single dump string or array of tagged entries
     // Fetch OG titles for link entries
     async function getOgTitle(url: string): Promise<string | null> {
       try {
-        const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; AccentBot/1.0)" }, signal: AbortSignal.timeout(3000) });
+        const res = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; AccentBot/1.0)" },
+          signal: AbortSignal.timeout(3000),
+        });
         if (!res.ok) return null;
-        const html = await res.text().then(t => t.slice(0, 20000));
-        const ogMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']*)["']/i)
-          || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*property=["']og:title["']/i);
+        const html = await res.text().then((t) => t.slice(0, 20000));
+        const ogMatch =
+          html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']*)["']/i) ||
+          html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*property=["']og:title["']/i);
         if (ogMatch?.[1]) return ogMatch[1];
         const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
         return titleMatch?.[1]?.trim() || null;
-      } catch { return null; }
+      } catch {
+        return null;
+      }
     }
 
     let dumpText: string;
     if (entries && Array.isArray(entries) && entries.length > 0) {
       // Fetch OG titles for link entries in parallel
-      const linkUrls = entries.filter((e: { type?: string; url?: string }) => e.type === "link" && e.url).map((e: { url?: string }) => e.url as string);
+      const linkUrls = entries
+        .filter((e: { type?: string; url?: string }) => e.type === "link" && e.url)
+        .map((e: { url?: string }) => e.url as string);
       const ogTitles: Record<string, string> = {};
       if (linkUrls.length > 0) {
-        const results = await Promise.all(linkUrls.slice(0, 5).map(async (url) => ({ url, title: await getOgTitle(url) })));
-        for (const r of results) { if (r.title) ogTitles[r.url] = r.title; }
+        const results = await Promise.all(
+          linkUrls.slice(0, 5).map(async (url) => ({ url, title: await getOgTitle(url) }))
+        );
+        for (const r of results) {
+          if (r.title) ogTitles[r.url] = r.title;
+        }
       }
 
-      dumpText = "This week's notes:\n" + entries.map((e: { content: string; tags?: string[]; image_url?: string; link_url?: string; url?: string; type?: string; source?: string }) => {
-        const parts: string[] = [];
-        parts.push(`[${(e.tags || []).join(", ")}]`);
-        if (e.type === "quote") parts.push(`(saved quote${e.source ? ` from: ${e.source}` : ""})`);
-        if (e.type === "link" && e.url) {
-          const title = ogTitles[e.url];
-          parts.push(title ? `[link: "${title}" — ${e.url}]` : `[link: ${e.url}]`);
-        }
-        if (e.content) parts.push(e.content);
-        if (e.image_url) parts.push("[image attached: user uploaded a photo]");
-        if (e.link_url && e.type !== "link") parts.push(`[link: ${e.link_url}]`);
-        return `- ${parts.join(" ")}`;
-      }).join("\n");
+      dumpText =
+        "This week's notes:\n" +
+        entries
+          .map(
+            (e: {
+              content: string;
+              tags?: string[];
+              image_url?: string;
+              link_url?: string;
+              url?: string;
+              type?: string;
+              source?: string;
+            }) => {
+              const parts: string[] = [];
+              parts.push(`[${(e.tags || []).join(", ")}]`);
+              if (e.type === "quote") parts.push(`(saved quote${e.source ? ` from: ${e.source}` : ""})`);
+              if (e.type === "link" && e.url) {
+                const title = ogTitles[e.url];
+                parts.push(title ? `[link: "${title}" — ${e.url}]` : `[link: ${e.url}]`);
+              }
+              if (e.content) parts.push(e.content);
+              if (e.image_url) parts.push("[image attached: user uploaded a photo]");
+              if (e.link_url && e.type !== "link") parts.push(`[link: ${e.link_url}]`);
+              return `- ${parts.join(" ")}`;
+            }
+          )
+          .join("\n");
     } else if (dump?.trim()) {
       dumpText = dump.trim();
     } else {
@@ -76,11 +105,16 @@ export async function POST(request: NextRequest) {
     // Build shelf/inspiration context
     let shelfContext = "";
     if (shelfItems && Array.isArray(shelfItems) && shelfItems.length > 0) {
-      shelfContext = `\nThe founder has saved these items for inspiration recently:\n${shelfItems.map((item: { content?: string; url?: string; source?: string; type?: string }) => {
-        if (item.type === "link") return `- [link] ${item.url || ""} ${item.content || ""}`;
-        if (item.type === "quote") return `- [quote${item.source ? ` from ${item.source}` : ""}] "${item.content || ""}"`;
-        return `- ${item.content || ""}`;
-      }).join("\n")}\n\nWhen relevant, suggest post ideas that riff on or respond to these saved items. Don't force it — only reference them if they naturally connect to the founder's current situation and goals.\n`;
+      shelfContext = `\nThe founder has saved these items for inspiration recently:\n${shelfItems
+        .map((item: { content?: string; url?: string; source?: string; type?: string }) => {
+          if (item.type === "link") return `- [link] ${item.url || ""} ${item.content || ""}`;
+          if (item.type === "quote")
+            return `- [quote${item.source ? ` from ${item.source}` : ""}] "${item.content || ""}"`;
+          return `- ${item.content || ""}`;
+        })
+        .join(
+          "\n"
+        )}\n\nWhen relevant, suggest post ideas that riff on or respond to these saved items. Don't force it — only reference them if they naturally connect to the founder's current situation and goals.\n`;
     }
 
     const prompt = `You are a smart friend who reads a founder's weekly notes and tells them what to post about. Not a content strategist. A friend with good taste.

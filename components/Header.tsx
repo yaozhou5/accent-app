@@ -13,10 +13,7 @@ export function Header({ activeTab, onTabChange, tabLabels }: HeaderProps) {
     <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-ink/10">
       <h1 className="font-serif font-bold text-xl tracking-tight text-teal inline-flex items-start">
         <span>accent</span>
-        <span
-          className="bg-coral rounded-full shrink-0"
-          style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6 }}
-        />
+        <span className="bg-coral rounded-full shrink-0" style={{ width: 7, height: 7, marginLeft: 2, marginTop: 6 }} />
       </h1>
       <div className="flex items-center gap-2 md:gap-5">
         <AuthButton />
@@ -28,9 +25,7 @@ export function Header({ activeTab, onTabChange, tabLabels }: HeaderProps) {
               aria-selected={activeTab === tab}
               onClick={() => onTabChange(tab)}
               className={`px-3.5 py-2 min-h-[44px] rounded-[8px] text-sm font-sans font-medium transition-colors ${
-                activeTab === tab
-                  ? "bg-ink text-paper"
-                  : "text-ink/50 hover:text-ink/70"
+                activeTab === tab ? "bg-ink text-paper" : "text-ink/50 hover:text-ink/70"
               }`}
             >
               {tabLabels[tab]}

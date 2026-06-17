@@ -8,10 +8,22 @@ const DIM = "#6B6860";
 const FAINT = "#A8A49C";
 
 const TONE_COLORS: Record<string, string> = {
-  sharper: "#C0392B", softer: "#7DCEA0", formal: "#5B7DB1", casual: "#E8A838",
-  poetic: "#A569BD", direct: "#2C3E50", warm: "#E67E22", clinical: "#7F8C8D",
-  urgent: "#E74C3C", playful: "#3498DB", darker: "#4A235A", lighter: "#58D68D",
-  blunt: "#C0392B", tender: "#EC7063", precise: "#2980B9", bold: "#D35400",
+  sharper: "#C0392B",
+  softer: "#7DCEA0",
+  formal: "#5B7DB1",
+  casual: "#E8A838",
+  poetic: "#A569BD",
+  direct: "#2C3E50",
+  warm: "#E67E22",
+  clinical: "#7F8C8D",
+  urgent: "#E74C3C",
+  playful: "#3498DB",
+  darker: "#4A235A",
+  lighter: "#58D68D",
+  blunt: "#C0392B",
+  tender: "#EC7063",
+  precise: "#2980B9",
+  bold: "#D35400",
 };
 
 type Suggestion = { word: string; tone: string; reason: string };
@@ -223,17 +235,11 @@ export default function DraftPage() {
                       border: "none",
                       background: "transparent",
                       cursor: "pointer",
-                      borderBottom:
-                        i < suggestions.length - 1
-                          ? "1px solid rgba(0,0,0,0.04)"
-                          : "none",
+                      borderBottom: i < suggestions.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none",
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span
-                        className="font-sans text-[15px] font-semibold"
-                        style={{ color: INK }}
-                      >
+                      <span className="font-sans text-[15px] font-semibold" style={{ color: INK }}>
                         {s.word}
                       </span>
                       <span className="flex items-center gap-1">
@@ -254,10 +260,7 @@ export default function DraftPage() {
                         </span>
                       </span>
                     </div>
-                    <span
-                      className="font-sans text-[12px]"
-                      style={{ color: DIM, lineHeight: 1.4 }}
-                    >
+                    <span className="font-sans text-[12px]" style={{ color: DIM, lineHeight: 1.4 }}>
                       {s.reason}
                     </span>
                   </button>

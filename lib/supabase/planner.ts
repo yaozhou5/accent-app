@@ -68,7 +68,9 @@ function getWeekStart(): string {
 
 export async function createWeeklyDump(content: string): Promise<WeeklyDump | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -86,7 +88,9 @@ export async function createWeeklyDump(content: string): Promise<WeeklyDump | nu
 
 export async function getCurrentWeekDump(): Promise<WeeklyDump | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -107,7 +111,9 @@ export async function getCurrentWeekDump(): Promise<WeeklyDump | null> {
 
 export async function savePlan(dumpId: string, plan: ContentPlanData): Promise<ContentPlan | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -125,12 +131,7 @@ export async function savePlan(dumpId: string, plan: ContentPlanData): Promise<C
 
 export async function updatePlanPosts(planId: string, plan: ContentPlanData): Promise<ContentPlan | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("content_plans")
-    .update({ plan })
-    .eq("id", planId)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("content_plans").update({ plan }).eq("id", planId).select().single();
 
   if (error) {
     console.error("Failed to update plan:", error);
@@ -141,7 +142,9 @@ export async function updatePlanPosts(planId: string, plan: ContentPlanData): Pr
 
 export async function getCurrentPlan(): Promise<ContentPlan | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -162,7 +165,9 @@ export async function getCurrentPlan(): Promise<ContentPlan | null> {
 
 export async function getAllDumps(): Promise<WeeklyDump[]> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -171,13 +176,18 @@ export async function getAllDumps(): Promise<WeeklyDump[]> {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) { console.error("Failed to fetch dumps:", error); return []; }
+  if (error) {
+    console.error("Failed to fetch dumps:", error);
+    return [];
+  }
   return data as WeeklyDump[];
 }
 
 export async function getAllPlans(): Promise<ContentPlan[]> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -186,13 +196,18 @@ export async function getAllPlans(): Promise<ContentPlan[]> {
     .eq("user_id", user.id)
     .order("week_start", { ascending: false });
 
-  if (error) { console.error("Failed to fetch plans:", error); return []; }
+  if (error) {
+    console.error("Failed to fetch plans:", error);
+    return [];
+  }
   return data as ContentPlan[];
 }
 
 export async function getPlanByWeek(weekStart: string): Promise<ContentPlan | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -204,7 +219,10 @@ export async function getPlanByWeek(weekStart: string): Promise<ContentPlan | nu
     .limit(1)
     .maybeSingle();
 
-  if (error) { console.error("Failed to fetch plan by week:", error); return null; }
+  if (error) {
+    console.error("Failed to fetch plan by week:", error);
+    return null;
+  }
   return data as ContentPlan | null;
 }
 

@@ -35,14 +35,12 @@ export interface UserProfile {
 
 export async function getProfile(): Promise<UserProfile | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
   if (error || !data) return null;
   return data as UserProfile;
@@ -50,7 +48,9 @@ export async function getProfile(): Promise<UserProfile | null> {
 
 export async function upsertProfile(fields: Partial<Omit<UserProfile, "id" | "created_at">>): Promise<boolean> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   const { error } = await supabase

@@ -13,17 +13,47 @@ const BORDER = "#e5e7eb";
 const PLATFORMS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
 const FREQUENCIES = ["1-2", "3-4", "5+"];
 const EXPERIENCE_OPTIONS = ["Yes regularly", "A little", "Not really"];
-const POST_TYPE_CHIPS = ["Personal stories", "Product updates", "Industry opinions", "Behind the scenes", "Lessons learned", "Engagement posts", "Not sure yet"];
+const POST_TYPE_CHIPS = [
+  "Personal stories",
+  "Product updates",
+  "Industry opinions",
+  "Behind the scenes",
+  "Lessons learned",
+  "Engagement posts",
+  "Not sure yet",
+];
 const TONE_CHIPS = ["Casual and honest", "Professional", "Funny", "Inspirational", "Still figuring it out"];
 
-function ChipSelect({ options, selected, onToggle, multi = true }: { options: string[]; selected: string[]; onToggle: (v: string) => void; multi?: boolean }) {
+function ChipSelect({
+  options,
+  selected,
+  onToggle,
+  multi = true,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  multi?: boolean;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
-      {options.map(o => {
+      {options.map((o) => {
         const active = selected.includes(o);
         return (
-          <button key={o} onClick={() => onToggle(o)} className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] sm:text-[13px] font-mono"
-            style={{ background: active ? BLUE : "#fff", color: active ? "#fff" : DIM, border: `1px solid ${active ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
+          <button
+            key={o}
+            onClick={() => onToggle(o)}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] sm:text-[13px] font-mono"
+            style={{
+              background: active ? BLUE : "#fff",
+              color: active ? "#fff" : DIM,
+              border: `1px solid ${active ? BLUE : BORDER}`,
+              cursor: "pointer",
+              transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease",
+              WebkitTapHighlightColor: "transparent",
+              outline: "none",
+            }}
+          >
             {o}
           </button>
         );
@@ -48,7 +78,7 @@ export default function Onboard3() {
   const router = useRouter();
 
   useEffect(() => {
-    getProfile().then(p => {
+    getProfile().then((p) => {
       if (p?.platforms && p.platforms.length > 0) setPlatforms(p.platforms);
       if (p?.posting_frequency) setFrequency(p.posting_frequency);
       if (p?.posting_challenges) setChallenges(p.posting_challenges);
@@ -56,7 +86,7 @@ export default function Onboard3() {
   }, []);
 
   const toggleMulti = (arr: string[], setArr: (v: string[]) => void) => (v: string) => {
-    setArr(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
+    setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
   };
 
   const showHistory = experience === "Yes regularly" || experience === "A little";
@@ -71,18 +101,29 @@ export default function Onboard3() {
       posting_challenges: challenges.trim() || null,
       onboarding_completed: true,
     });
-    if (!ok) { setSaving(false); return; }
+    if (!ok) {
+      setSaving(false);
+      return;
+    }
     // Save optional fields as best-effort (columns may not exist yet)
     await upsertProfile({
       profile_url: profileUrl.trim() || null,
-      past_posts: [pastPost1, pastPost2, pastPost3].map(p => p.trim()).filter(Boolean).join("\n\n---\n\n") || null,
+      past_posts:
+        [pastPost1, pastPost2, pastPost3]
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .join("\n\n---\n\n") || null,
       posting_experience: experience,
       posts_that_work: showHistory ? postsThatWork : [],
       posts_that_flop: showHistory ? postsThatFlop : [],
       voice_tone: showHistory && voiceTones.length > 0 ? voiceTones.join(", ") : null,
     }).catch(() => {});
-    posthog.capture("onboarding_completed", { platforms, posting_frequency: frequency, has_past_posts: !!(pastPost1.trim() || pastPost2.trim() || pastPost3.trim()) });
-    await new Promise(r => setTimeout(r, 500));
+    posthog.capture("onboarding_completed", {
+      platforms,
+      posting_frequency: frequency,
+      has_past_posts: !!(pastPost1.trim() || pastPost2.trim() || pastPost3.trim()),
+    });
+    await new Promise((r) => setTimeout(r, 500));
     window.location.href = "/dashboard";
   };
 
@@ -90,28 +131,60 @@ export default function Onboard3() {
     <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#fff" }}>
       <div className="max-w-[480px] w-full py-16">
         <div className="flex gap-2 mb-10">
-          {[1, 2, 3].map(s => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className="flex-1 h-[3px] rounded-full" style={{ background: INK }} />
           ))}
         </div>
 
-        <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>3 of 3</span>
-        <h1 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Where and how often?</h1>
-        <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>Pick the platforms you're on. Be honest about what you can sustain.</p>
+        <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>
+          3 of 3
+        </span>
+        <h1 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 600, color: INK }}>
+          Where and how often?
+        </h1>
+        <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>
+          Pick the platforms you're on. Be honest about what you can sustain.
+        </p>
 
         {/* Platforms */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Platforms</label>
-          <ChipSelect options={PLATFORMS} selected={platforms} onToggle={v => setPlatforms(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])} />
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+          >
+            Platforms
+          </label>
+          <ChipSelect
+            options={PLATFORMS}
+            selected={platforms}
+            onToggle={(v) => setPlatforms((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))}
+          />
         </div>
 
         {/* Frequency */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Posts per week you can actually do</label>
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+          >
+            Posts per week you can actually do
+          </label>
           <div className="flex gap-2">
-            {FREQUENCIES.map(f => (
-              <button key={f} onClick={() => setFrequency(f)} className="flex-1 px-3 py-2 rounded-full text-[13px] sm:text-[14px] font-mono"
-                style={{ background: frequency === f ? BLUE : "#fff", color: frequency === f ? "#fff" : DIM, border: `1px solid ${frequency === f ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
+            {FREQUENCIES.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFrequency(f)}
+                className="flex-1 px-3 py-2 rounded-full text-[13px] sm:text-[14px] font-mono"
+                style={{
+                  background: frequency === f ? BLUE : "#fff",
+                  color: frequency === f ? "#fff" : DIM,
+                  border: `1px solid ${frequency === f ? BLUE : BORDER}`,
+                  cursor: "pointer",
+                  transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease",
+                  WebkitTapHighlightColor: "transparent",
+                  outline: "none",
+                }}
+              >
                 {f}
               </button>
             ))}
@@ -120,11 +193,28 @@ export default function Onboard3() {
 
         {/* Content history toggle */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Have you posted before?</label>
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+          >
+            Have you posted before?
+          </label>
           <div className="flex gap-2 flex-wrap">
-            {EXPERIENCE_OPTIONS.map(o => (
-              <button key={o} onClick={() => setExperience(o)} className="px-4 py-2 rounded-full text-[13px] font-mono"
-                style={{ background: experience === o ? BLUE : "#fff", color: experience === o ? "#fff" : DIM, border: `1px solid ${experience === o ? BLUE : BORDER}`, cursor: "pointer", transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease", WebkitTapHighlightColor: "transparent", outline: "none" }}>
+            {EXPERIENCE_OPTIONS.map((o) => (
+              <button
+                key={o}
+                onClick={() => setExperience(o)}
+                className="px-4 py-2 rounded-full text-[13px] font-mono"
+                style={{
+                  background: experience === o ? BLUE : "#fff",
+                  color: experience === o ? "#fff" : DIM,
+                  border: `1px solid ${experience === o ? BLUE : BORDER}`,
+                  cursor: "pointer",
+                  transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease",
+                  WebkitTapHighlightColor: "transparent",
+                  outline: "none",
+                }}
+              >
                 {o}
               </button>
             ))}
@@ -133,90 +223,211 @@ export default function Onboard3() {
 
         {/* Conditional content history questions */}
         {showHistory && (
-          <div className="space-y-6 mb-6 p-5 rounded-[12px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+          <div
+            className="space-y-6 mb-6 p-5 rounded-[12px]"
+            style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+          >
             <div>
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What kind of posts have worked best?</label>
-              <ChipSelect options={POST_TYPE_CHIPS} selected={postsThatWork} onToggle={toggleMulti(postsThatWork, setPostsThatWork)} />
+              <label
+                className="font-mono uppercase block mb-2"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+              >
+                What kind of posts have worked best?
+              </label>
+              <ChipSelect
+                options={POST_TYPE_CHIPS}
+                selected={postsThatWork}
+                onToggle={toggleMulti(postsThatWork, setPostsThatWork)}
+              />
             </div>
             <div>
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What kind of posts haven't worked?</label>
-              <ChipSelect options={POST_TYPE_CHIPS} selected={postsThatFlop} onToggle={toggleMulti(postsThatFlop, setPostsThatFlop)} />
+              <label
+                className="font-mono uppercase block mb-2"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+              >
+                What kind of posts haven't worked?
+              </label>
+              <ChipSelect
+                options={POST_TYPE_CHIPS}
+                selected={postsThatFlop}
+                onToggle={toggleMulti(postsThatFlop, setPostsThatFlop)}
+              />
             </div>
             <div>
-              <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>How would you describe your tone?</label>
-              <ChipSelect options={TONE_CHIPS} selected={voiceTones} onToggle={v => {
-                const FIGURING = "Still figuring it out";
-                if (v === FIGURING) {
-                  setVoiceTones(voiceTones.includes(v) ? [] : [FIGURING]);
-                } else {
-                  const without = voiceTones.filter(t => t !== v && t !== FIGURING);
-                  if (voiceTones.includes(v)) { setVoiceTones(without); }
-                  else { setVoiceTones([...without, v]); }
-                }
-              }} />
+              <label
+                className="font-mono uppercase block mb-2"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+              >
+                How would you describe your tone?
+              </label>
+              <ChipSelect
+                options={TONE_CHIPS}
+                selected={voiceTones}
+                onToggle={(v) => {
+                  const FIGURING = "Still figuring it out";
+                  if (v === FIGURING) {
+                    setVoiceTones(voiceTones.includes(v) ? [] : [FIGURING]);
+                  } else {
+                    const without = voiceTones.filter((t) => t !== v && t !== FIGURING);
+                    if (voiceTones.includes(v)) {
+                      setVoiceTones(without);
+                    } else {
+                      setVoiceTones([...without, v]);
+                    }
+                  }
+                }}
+              />
             </div>
           </div>
         )}
 
         {/* Challenges */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>What's been hard about posting?</label>
-          <textarea value={challenges} onChange={e => setChallenges(e.target.value)}
-            placeholder="Been in builder mode. Not confident enough yet. Time to focus on content." rows={3}
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+          >
+            What's been hard about posting?
+          </label>
+          <textarea
+            value={challenges}
+            onChange={(e) => setChallenges(e.target.value)}
+            placeholder="Been in builder mode. Not confident enough yet. Time to focus on content."
+            rows={3}
             className="w-full outline-none resize-y font-sans"
-            style={{ fontSize: 16, color: INK, lineHeight: 1.7, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
+            style={{
+              fontSize: 16,
+              color: INK,
+              lineHeight: 1.7,
+              padding: "12px 16px",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+            }}
+          />
         </div>
 
         {/* Profile URL */}
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Your LinkedIn or Instagram profile URL (optional)</label>
-          <input type="url" value={profileUrl} onChange={e => setProfileUrl(e.target.value)}
-            placeholder="https://linkedin.com/in/yourname" className="w-full outline-none font-sans"
-            style={{ fontSize: 16, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+          >
+            Your LinkedIn or Instagram profile URL (optional)
+          </label>
+          <input
+            type="url"
+            value={profileUrl}
+            onChange={(e) => setProfileUrl(e.target.value)}
+            placeholder="https://linkedin.com/in/yourname"
+            className="w-full outline-none font-sans"
+            style={{ fontSize: 16, color: INK, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }}
+          />
         </div>
 
         {/* Past posts */}
         <div className="mb-8">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}>Paste posts you've written before (optional)</label>
-          <p className="font-sans text-[13px] mb-3" style={{ color: DIM }}>This helps us understand your voice. Good ones, bad ones, doesn't matter.</p>
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9ca3af", fontWeight: 500 }}
+          >
+            Paste posts you've written before (optional)
+          </label>
+          <p className="font-sans text-[13px] mb-3" style={{ color: DIM }}>
+            This helps us understand your voice. Good ones, bad ones, doesn't matter.
+          </p>
           <div className="space-y-3">
             <div>
-              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>Post 1</span>
-              <textarea value={pastPost1} onChange={e => setPastPost1(e.target.value)}
-                placeholder="Paste a post you've shared before" rows={3}
+              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>
+                Post 1
+              </span>
+              <textarea
+                value={pastPost1}
+                onChange={(e) => setPastPost1(e.target.value)}
+                placeholder="Paste a post you've shared before"
+                rows={3}
                 className="w-full outline-none resize-y font-sans"
-                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8 }} />
+                style={{
+                  fontSize: 15,
+                  color: INK,
+                  lineHeight: 1.6,
+                  padding: "10px 14px",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                }}
+              />
             </div>
             <div>
-              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>Post 2 (optional)</span>
-              <textarea value={pastPost2} onChange={e => setPastPost2(e.target.value)}
-                placeholder="Another one, if you have it" rows={3}
+              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>
+                Post 2 (optional)
+              </span>
+              <textarea
+                value={pastPost2}
+                onChange={(e) => setPastPost2(e.target.value)}
+                placeholder="Another one, if you have it"
+                rows={3}
                 className="w-full outline-none resize-y font-sans"
-                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8 }} />
+                style={{
+                  fontSize: 15,
+                  color: INK,
+                  lineHeight: 1.6,
+                  padding: "10px 14px",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                }}
+              />
             </div>
             <div>
-              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>Post 3 (optional)</span>
-              <textarea value={pastPost3} onChange={e => setPastPost3(e.target.value)}
-                placeholder="One more, if you want" rows={3}
+              <span className="font-mono text-[11px] block mb-1" style={{ color: "#9ca3af" }}>
+                Post 3 (optional)
+              </span>
+              <textarea
+                value={pastPost3}
+                onChange={(e) => setPastPost3(e.target.value)}
+                placeholder="One more, if you want"
+                rows={3}
                 className="w-full outline-none resize-y font-sans"
-                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8 }} />
+                style={{
+                  fontSize: 15,
+                  color: INK,
+                  lineHeight: 1.6,
+                  padding: "10px 14px",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                }}
+              />
             </div>
           </div>
-          <button onClick={handleDone} disabled={platforms.length === 0 || saving}
+          <button
+            onClick={handleDone}
+            disabled={platforms.length === 0 || saving}
             className="font-sans text-[13px] mt-3"
-            style={{ color: "#9ca3af", background: "none", border: "none", cursor: "pointer" }}>
+            style={{ color: "#9ca3af", background: "none", border: "none", cursor: "pointer" }}
+          >
             I don't have posts yet — skip
           </button>
         </div>
 
         <div className="flex gap-3">
-          <button onClick={handleDone} disabled={platforms.length === 0 || saving}
+          <button
+            onClick={handleDone}
+            disabled={platforms.length === 0 || saving}
             className="flex-1 rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "14px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            style={{
+              fontSize: 15,
+              padding: "14px 24px",
+              background: BLUE,
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
             {saving ? "Saving..." : "Done, start planning"}
           </button>
-          <button onClick={() => router.push("/onboard/2")} className="px-6 py-3 rounded-full font-sans text-[14px]"
-            style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}>
+          <button
+            onClick={() => router.push("/onboard/2")}
+            className="px-6 py-3 rounded-full font-sans text-[14px]"
+            style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}
+          >
             Back
           </button>
         </div>

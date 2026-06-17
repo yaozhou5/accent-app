@@ -13,12 +13,14 @@
 ### Task 1: Scaffold Next.js Project & Configure Theme
 
 **Files:**
+
 - Create: `package.json`, `tsconfig.json`, `next.config.ts`, `tailwind.config.ts`, `postcss.config.mjs`
 - Create: `app/layout.tsx`, `app/page.tsx`, `app/globals.css`
 
 - [ ] **Step 1: Create Next.js project**
 
 Run:
+
 ```bash
 cd /Users/yaozhou/accent-app
 npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias="@/*" --use-npm
@@ -27,6 +29,7 @@ npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=fa
 - [ ] **Step 2: Install Anthropic SDK**
 
 Run:
+
 ```bash
 npm install @anthropic-ai/sdk
 ```
@@ -34,6 +37,7 @@ npm install @anthropic-ai/sdk
 - [ ] **Step 3: Configure Tailwind with custom theme**
 
 Update `tailwind.config.ts`:
+
 ```ts
 import type { Config } from "tailwindcss";
 
@@ -70,6 +74,7 @@ export default config;
 - [ ] **Step 4: Configure fonts in root layout**
 
 Update `app/layout.tsx`:
+
 ```tsx
 import type { Metadata } from "next";
 import { Literata, JetBrains_Mono, DM_Sans } from "next/font/google";
@@ -98,19 +103,10 @@ export const metadata: Metadata = {
   description: "Writing improvement for second-language English writers",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${literata.variable} ${jetbrains.variable} ${dmSans.variable}`}
-    >
-      <body className="bg-paper text-ink font-sans min-h-screen">
-        {children}
-      </body>
+    <html lang="en" className={`${literata.variable} ${jetbrains.variable} ${dmSans.variable}`}>
+      <body className="bg-paper text-ink font-sans min-h-screen">{children}</body>
     </html>
   );
 }
@@ -119,6 +115,7 @@ export default function RootLayout({
 - [ ] **Step 5: Set up globals.css**
 
 Update `app/globals.css`:
+
 ```css
 @tailwind base;
 @tailwind components;
@@ -138,6 +135,7 @@ Update `app/globals.css`:
 - [ ] **Step 6: Create placeholder page**
 
 Update `app/page.tsx`:
+
 ```tsx
 export default function Home() {
   return (
@@ -165,11 +163,13 @@ git commit -m "feat: scaffold Next.js project with custom theme, fonts, and colo
 ### Task 2: Build i18n System
 
 **Files:**
+
 - Create: `lib/i18n.ts`
 
 - [ ] **Step 1: Create i18n translations file**
 
 Create `lib/i18n.ts`:
+
 ```ts
 export type Locale = "en" | "zh" | "nl";
 
@@ -289,6 +289,7 @@ git commit -m "feat: add i18n translations for English, Chinese, and Dutch"
 ### Task 3: Build App Shell with Header & Tabs
 
 **Files:**
+
 - Create: `components/Header.tsx`
 - Create: `components/TabBar.tsx`
 - Create: `components/AppShell.tsx`
@@ -297,6 +298,7 @@ git commit -m "feat: add i18n translations for English, Chinese, and Dutch"
 - [ ] **Step 1: Create Header component**
 
 Create `components/Header.tsx`:
+
 ```tsx
 "use client";
 
@@ -310,22 +312,18 @@ interface HeaderProps {
 export function Header({ locale, onLocaleChange }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-4 py-3">
-      <h1 className="font-serif text-xl font-semibold tracking-tight">
-        Accent
-      </h1>
+      <h1 className="font-serif text-xl font-semibold tracking-tight">Accent</h1>
       <select
         value={locale}
         onChange={(e) => onLocaleChange(e.target.value as Locale)}
         className="bg-warm border border-sand rounded-md px-2 py-1 text-sm font-sans text-ink cursor-pointer focus:outline-none focus:ring-2 focus:ring-coral/30"
         aria-label="Language"
       >
-        {(Object.entries(localeNames) as [Locale, string][]).map(
-          ([code, name]) => (
-            <option key={code} value={code}>
-              {name}
-            </option>
-          )
-        )}
+        {(Object.entries(localeNames) as [Locale, string][]).map(([code, name]) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
       </select>
     </header>
   );
@@ -335,6 +333,7 @@ export function Header({ locale, onLocaleChange }: HeaderProps) {
 - [ ] **Step 2: Create TabBar component**
 
 Create `components/TabBar.tsx`:
+
 ```tsx
 "use client";
 
@@ -354,15 +353,11 @@ export function TabBar({ activeTab, onTabChange, labels }: TabBarProps) {
           aria-selected={activeTab === tab}
           onClick={() => onTabChange(tab)}
           className={`px-4 py-2.5 text-sm font-sans font-medium transition-colors relative ${
-            activeTab === tab
-              ? "text-ink"
-              : "text-sand hover:text-ink/60"
+            activeTab === tab ? "text-ink" : "text-sand hover:text-ink/60"
           }`}
         >
           {labels[tab]}
-          {activeTab === tab && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-coral" />
-          )}
+          {activeTab === tab && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-coral" />}
         </button>
       ))}
     </nav>
@@ -373,6 +368,7 @@ export function TabBar({ activeTab, onTabChange, labels }: TabBarProps) {
 - [ ] **Step 3: Create AppShell component**
 
 Create `components/AppShell.tsx`:
+
 ```tsx
 "use client";
 
@@ -402,17 +398,9 @@ export function AppShell() {
   return (
     <div className="max-w-[480px] mx-auto min-h-screen flex flex-col">
       <Header locale={locale} onLocaleChange={handleLocaleChange} />
-      <TabBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        labels={{ write: t("write"), shelf: t("shelf") }}
-      />
+      <TabBar activeTab={activeTab} onTabChange={setActiveTab} labels={{ write: t("write"), shelf: t("shelf") }} />
       <main className="flex-1 px-4 py-4">
-        {activeTab === "write" ? (
-          <div>Write tab placeholder</div>
-        ) : (
-          <div>Shelf tab placeholder</div>
-        )}
+        {activeTab === "write" ? <div>Write tab placeholder</div> : <div>Shelf tab placeholder</div>}
       </main>
     </div>
   );
@@ -422,6 +410,7 @@ export function AppShell() {
 - [ ] **Step 4: Update page.tsx to use AppShell**
 
 Update `app/page.tsx`:
+
 ```tsx
 import { AppShell } from "@/components/AppShell";
 
@@ -447,11 +436,13 @@ git commit -m "feat: add app shell with header, tab bar, and locale switcher"
 ### Task 4: Build Voice Profile System
 
 **Files:**
+
 - Create: `lib/voice-profile.ts`
 
 - [ ] **Step 1: Create voice profile module**
 
 Create `lib/voice-profile.ts`:
+
 ```ts
 export interface VoiceSession {
   date: string;
@@ -512,11 +503,13 @@ git commit -m "feat: add localStorage voice profile system with progressive tier
 ### Task 5: Build API Types & Shared Types
 
 **Files:**
+
 - Create: `lib/types.ts`
 
 - [ ] **Step 1: Create shared types**
 
 Create `lib/types.ts`:
+
 ```ts
 export type Verdict = "great" | "mostly_good" | "needs_work";
 export type WriteMode = "quick" | "learn";
@@ -593,12 +586,14 @@ git commit -m "feat: add shared TypeScript types for API requests and responses"
 ### Task 6: Build `/api/check` Route
 
 **Files:**
+
 - Create: `app/api/check/route.ts`
 - Create: `lib/prompts.ts`
 
 - [ ] **Step 1: Create Claude prompt templates**
 
 Create `lib/prompts.ts`:
+
 ```ts
 import { Verdict } from "./types";
 
@@ -711,15 +706,12 @@ Return ONLY valid JSON:
 - [ ] **Step 2: Create /api/check route**
 
 Create `app/api/check/route.ts`:
+
 ```ts
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildQuickPrompt, buildLearnPrompt } from "@/lib/prompts";
-import {
-  CheckRequest,
-  QuickCheckResponse,
-  LearnCheckResponse,
-} from "@/lib/types";
+import { CheckRequest, QuickCheckResponse, LearnCheckResponse } from "@/lib/types";
 
 const anthropic = new Anthropic();
 
@@ -729,21 +721,13 @@ export async function POST(request: NextRequest) {
     const { text, mode, language, sessionCount } = body;
 
     if (!text || !text.trim()) {
-      return NextResponse.json(
-        { error: "Text is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
     const prompt =
       mode === "quick"
         ? buildQuickPrompt(text, language, sessionCount)
-        : buildLearnPrompt(
-            text,
-            language,
-            sessionCount,
-            "keptPhrases" in body ? body.keptPhrases || [] : []
-          );
+        : buildLearnPrompt(text, language, sessionCount, "keptPhrases" in body ? body.keptPhrases || [] : []);
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
@@ -753,22 +737,14 @@ export async function POST(request: NextRequest) {
 
     const content = message.content[0];
     if (content.type !== "text") {
-      return NextResponse.json(
-        { error: "Unexpected response format" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Unexpected response format" }, { status: 500 });
     }
 
-    const parsed = JSON.parse(content.text) as
-      | QuickCheckResponse
-      | LearnCheckResponse;
+    const parsed = JSON.parse(content.text) as QuickCheckResponse | LearnCheckResponse;
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Check API error:", error);
-    return NextResponse.json(
-      { error: "Failed to analyze writing" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to analyze writing" }, { status: 500 });
   }
 }
 ```
@@ -785,11 +761,13 @@ git commit -m "feat: add /api/check route with Claude prompts for quick and lear
 ### Task 7: Build `/api/practice-check` Route
 
 **Files:**
+
 - Create: `app/api/practice-check/route.ts`
 
 - [ ] **Step 1: Create practice-check route**
 
 Create `app/api/practice-check/route.ts`:
+
 ```ts
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
@@ -804,18 +782,10 @@ export async function POST(request: NextRequest) {
     const { original, userAttempt, context, language } = body;
 
     if (!userAttempt || !userAttempt.trim()) {
-      return NextResponse.json(
-        { error: "User attempt is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User attempt is required" }, { status: 400 });
     }
 
-    const prompt = buildPracticeCheckPrompt(
-      original,
-      userAttempt,
-      context,
-      language
-    );
+    const prompt = buildPracticeCheckPrompt(original, userAttempt, context, language);
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
@@ -825,20 +795,14 @@ export async function POST(request: NextRequest) {
 
     const content = message.content[0];
     if (content.type !== "text") {
-      return NextResponse.json(
-        { error: "Unexpected response format" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Unexpected response format" }, { status: 500 });
     }
 
     const parsed = JSON.parse(content.text) as PracticeCheckResponse;
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Practice check API error:", error);
-    return NextResponse.json(
-      { error: "Failed to check practice" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to check practice" }, { status: 500 });
   }
 }
 ```
@@ -855,6 +819,7 @@ git commit -m "feat: add /api/practice-check route for writing practice feedback
 ### Task 8: Build Write Tab — Quick Mode UI
 
 **Files:**
+
 - Create: `components/WriteTab.tsx`
 - Create: `components/QuickMode.tsx`
 - Create: `components/VerdictBanner.tsx`
@@ -864,6 +829,7 @@ git commit -m "feat: add /api/practice-check route for writing practice feedback
 - [ ] **Step 1: Create VerdictBanner component**
 
 Create `components/VerdictBanner.tsx`:
+
 ```tsx
 "use client";
 
@@ -889,6 +855,7 @@ export function VerdictBanner({ verdict, greatLabel }: VerdictBannerProps) {
 - [ ] **Step 2: Create BeforeAfter component**
 
 Create `components/BeforeAfter.tsx`:
+
 ```tsx
 "use client";
 
@@ -899,26 +866,17 @@ interface BeforeAfterProps {
   afterLabel: string;
 }
 
-export function BeforeAfter({
-  before,
-  after,
-  beforeLabel,
-  afterLabel,
-}: BeforeAfterProps) {
+export function BeforeAfter({ before, after, beforeLabel, afterLabel }: BeforeAfterProps) {
   return (
     <div className="space-y-3">
       <div>
-        <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">
-          {beforeLabel}
-        </span>
+        <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">{beforeLabel}</span>
         <div className="mt-1 bg-coral-light rounded-lg px-3 py-2.5 font-mono text-sm leading-relaxed text-ink/70 whitespace-pre-wrap">
           {before}
         </div>
       </div>
       <div>
-        <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">
-          {afterLabel}
-        </span>
+        <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">{afterLabel}</span>
         <div className="mt-1 bg-sage-light rounded-lg px-3 py-2.5 font-mono text-sm leading-relaxed text-ink whitespace-pre-wrap">
           {after}
         </div>
@@ -931,6 +889,7 @@ export function BeforeAfter({
 - [ ] **Step 3: Create QuickMode component**
 
 Create `components/QuickMode.tsx`:
+
 ```tsx
 "use client";
 
@@ -1018,9 +977,7 @@ export function QuickMode({ locale }: QuickModeProps) {
               <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">
                 {t("microLesson")}
               </span>
-              <p className="mt-1 font-serif text-sm leading-relaxed text-ink">
-                {result.microLesson}
-              </p>
+              <p className="mt-1 font-serif text-sm leading-relaxed text-ink">{result.microLesson}</p>
             </div>
           )}
         </div>
@@ -1035,6 +992,7 @@ Note: The import of `Locale` from `@/lib/types` is wrong — it should come from
 - [ ] **Step 4: Create WriteTab component**
 
 Create `components/WriteTab.tsx`:
+
 ```tsx
 "use client";
 
@@ -1059,9 +1017,7 @@ export function WriteTab({ locale }: WriteTabProps) {
             key={m}
             onClick={() => setMode(m)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-sans font-medium transition-colors ${
-              mode === m
-                ? "bg-ink text-paper"
-                : "bg-warm text-ink/60 hover:text-ink"
+              mode === m ? "bg-ink text-paper" : "bg-warm text-ink/60 hover:text-ink"
             }`}
           >
             <span>{m === "quick" ? "⚡" : "📖"}</span>
@@ -1083,16 +1039,15 @@ export function WriteTab({ locale }: WriteTabProps) {
 - [ ] **Step 5: Wire WriteTab into AppShell**
 
 Update `components/AppShell.tsx` — replace the Write tab placeholder:
+
 ```tsx
 // Add import at top:
 import { WriteTab } from "./WriteTab";
 
 // Replace {activeTab === "write" ? <div>Write tab placeholder</div> : ...} with:
-{activeTab === "write" ? (
-  <WriteTab locale={locale} />
-) : (
-  <div>Shelf tab placeholder</div>
-)}
+{
+  activeTab === "write" ? <WriteTab locale={locale} /> : <div>Shelf tab placeholder</div>;
+}
 ```
 
 - [ ] **Step 6: Verify Quick mode works end-to-end**
@@ -1112,6 +1067,7 @@ git commit -m "feat: add Write tab with Quick mode UI, verdict banner, and befor
 ### Task 9: Build Write Tab — Learn Mode UI
 
 **Files:**
+
 - Create: `components/LearnMode.tsx`
 - Create: `components/AnnotatedText.tsx`
 - Create: `components/PhraseCard.tsx`
@@ -1121,6 +1077,7 @@ git commit -m "feat: add Write tab with Quick mode UI, verdict banner, and befor
 - [ ] **Step 1: Create PracticeBox component**
 
 Create `components/PracticeBox.tsx`:
+
 ```tsx
 "use client";
 
@@ -1135,11 +1092,7 @@ interface PracticeBoxProps {
   locale: Locale;
 }
 
-export function PracticeBox({
-  originalPhrase,
-  context,
-  locale,
-}: PracticeBoxProps) {
+export function PracticeBox({ originalPhrase, context, locale }: PracticeBoxProps) {
   const t = useTranslations(locale);
   const [attempt, setAttempt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1171,9 +1124,7 @@ export function PracticeBox({
 
   return (
     <div className="mt-3 space-y-2">
-      <p className="text-xs font-sans font-medium text-ink/60">
-        {t("tryWritingIt")}
-      </p>
+      <p className="text-xs font-sans font-medium text-ink/60">{t("tryWritingIt")}</p>
       <textarea
         value={attempt}
         onChange={(e) => setAttempt(e.target.value)}
@@ -1191,9 +1142,7 @@ export function PracticeBox({
       {feedback && (
         <div
           className={`rounded-md px-3 py-2 text-sm font-sans ${
-            feedback.isImproved
-              ? "bg-sage-light text-sage"
-              : "bg-coral-light text-coral"
+            feedback.isImproved ? "bg-sage-light text-sage" : "bg-coral-light text-coral"
           }`}
         >
           <p>{feedback.feedback}</p>
@@ -1214,6 +1163,7 @@ export function PracticeBox({
 - [ ] **Step 2: Create PhraseCard component**
 
 Create `components/PhraseCard.tsx`:
+
 ```tsx
 "use client";
 
@@ -1230,45 +1180,26 @@ export function PhraseCard({ phrase, locale }: PhraseCardProps) {
   if (phrase.type === "voice") {
     return (
       <div className="bg-sage-light rounded-lg px-3 py-2.5">
-        <p className="font-mono text-sm text-sage font-medium">
-          &ldquo;{phrase.text}&rdquo;
-        </p>
-        {phrase.explanation && (
-          <p className="mt-1 font-sans text-xs text-sage/80">
-            {phrase.explanation}
-          </p>
-        )}
+        <p className="font-mono text-sm text-sage font-medium">&ldquo;{phrase.text}&rdquo;</p>
+        {phrase.explanation && <p className="mt-1 font-sans text-xs text-sage/80">{phrase.explanation}</p>}
       </div>
     );
   }
 
   return (
     <div className="bg-coral-light rounded-lg px-3 py-2.5">
-      <p className="font-mono text-sm text-coral font-medium">
-        &ldquo;{phrase.text}&rdquo;
-      </p>
-      {phrase.explanation && (
-        <p className="mt-1.5 font-sans text-xs text-ink/70">
-          {phrase.explanation}
-        </p>
-      )}
+      <p className="font-mono text-sm text-coral font-medium">&ldquo;{phrase.text}&rdquo;</p>
+      {phrase.explanation && <p className="mt-1.5 font-sans text-xs text-ink/70">{phrase.explanation}</p>}
       {phrase.rewrites && phrase.rewrites.length > 0 && (
         <div className="mt-2 space-y-1">
           {phrase.rewrites.map((rw, i) => (
-            <p
-              key={i}
-              className="font-mono text-xs text-ink/60 pl-2 border-l-2 border-coral/30"
-            >
+            <p key={i} className="font-mono text-xs text-ink/60 pl-2 border-l-2 border-coral/30">
               {rw}
             </p>
           ))}
         </div>
       )}
-      <PracticeBox
-        originalPhrase={phrase.text}
-        context={phrase.explanation || ""}
-        locale={locale}
-      />
+      <PracticeBox originalPhrase={phrase.text} context={phrase.explanation || ""} locale={locale} />
     </div>
   );
 }
@@ -1277,6 +1208,7 @@ export function PhraseCard({ phrase, locale }: PhraseCardProps) {
 - [ ] **Step 3: Create AnnotatedText component**
 
 Create `components/AnnotatedText.tsx`:
+
 ```tsx
 "use client";
 
@@ -1288,11 +1220,7 @@ interface AnnotatedTextProps {
   onPhraseClick: (phrase: AnnotatedPhrase) => void;
 }
 
-export function AnnotatedText({
-  text,
-  phrases,
-  onPhraseClick,
-}: AnnotatedTextProps) {
+export function AnnotatedText({ text, phrases, onPhraseClick }: AnnotatedTextProps) {
   const sorted = [...phrases].sort((a, b) => a.startIndex - b.startIndex);
 
   const segments: Array<{
@@ -1342,6 +1270,7 @@ export function AnnotatedText({
 - [ ] **Step 4: Create LearnMode component**
 
 Create `components/LearnMode.tsx`:
+
 ```tsx
 "use client";
 
@@ -1349,11 +1278,7 @@ import { useState } from "react";
 import { AnnotatedPhrase, LearnCheckResponse } from "@/lib/types";
 import { Locale } from "@/lib/i18n";
 import { useTranslations } from "@/lib/i18n";
-import {
-  getSessionCount,
-  getKeptPhrases,
-  saveSession,
-} from "@/lib/voice-profile";
+import { getSessionCount, getKeptPhrases, saveSession } from "@/lib/voice-profile";
 import { VerdictBanner } from "./VerdictBanner";
 import { AnnotatedText } from "./AnnotatedText";
 import { PhraseCard } from "./PhraseCard";
@@ -1367,8 +1292,7 @@ export function LearnMode({ locale }: LearnModeProps) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LearnCheckResponse | null>(null);
-  const [selectedPhrase, setSelectedPhrase] =
-    useState<AnnotatedPhrase | null>(null);
+  const [selectedPhrase, setSelectedPhrase] = useState<AnnotatedPhrase | null>(null);
 
   const handleCheck = async () => {
     if (!text.trim() || loading) return;
@@ -1391,12 +1315,8 @@ export function LearnMode({ locale }: LearnModeProps) {
       const data = (await res.json()) as LearnCheckResponse;
       setResult(data);
 
-      const voicePhrases = data.annotatedPhrases
-        .filter((p) => p.type === "voice")
-        .map((p) => p.text);
-      const improvedPhrases = data.annotatedPhrases
-        .filter((p) => p.type === "improve")
-        .map((p) => p.text);
+      const voicePhrases = data.annotatedPhrases.filter((p) => p.type === "voice").map((p) => p.text);
+      const improvedPhrases = data.annotatedPhrases.filter((p) => p.type === "improve").map((p) => p.text);
 
       saveSession({
         date: new Date().toISOString(),
@@ -1430,29 +1350,18 @@ export function LearnMode({ locale }: LearnModeProps) {
 
       {result && (
         <div className="space-y-4 pt-2">
-          <VerdictBanner
-            verdict={result.verdict}
-            greatLabel={t("greatWriting")}
-          />
+          <VerdictBanner verdict={result.verdict} greatLabel={t("greatWriting")} />
 
-          <AnnotatedText
-            text={result.original}
-            phrases={result.annotatedPhrases}
-            onPhraseClick={setSelectedPhrase}
-          />
+          <AnnotatedText text={result.original} phrases={result.annotatedPhrases} onPhraseClick={setSelectedPhrase} />
 
-          {selectedPhrase && (
-            <PhraseCard phrase={selectedPhrase} locale={locale} />
-          )}
+          {selectedPhrase && <PhraseCard phrase={selectedPhrase} locale={locale} />}
 
           {result.teachingNotes && (
             <div className="bg-warm rounded-lg px-3 py-2.5">
               <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">
                 {t("teachingNotes")}
               </span>
-              <p className="mt-1 font-serif text-sm leading-relaxed text-ink">
-                {result.teachingNotes}
-              </p>
+              <p className="mt-1 font-serif text-sm leading-relaxed text-ink">{result.teachingNotes}</p>
             </div>
           )}
 
@@ -1463,10 +1372,7 @@ export function LearnMode({ locale }: LearnModeProps) {
               </span>
               <ul className="mt-1.5 space-y-1">
                 {result.practicePrompts.map((prompt, i) => (
-                  <li
-                    key={i}
-                    className="font-serif text-sm leading-relaxed text-ink"
-                  >
+                  <li key={i} className="font-serif text-sm leading-relaxed text-ink">
                     {prompt}
                   </li>
                 ))}
@@ -1483,16 +1389,15 @@ export function LearnMode({ locale }: LearnModeProps) {
 - [ ] **Step 5: Wire LearnMode into WriteTab**
 
 Update `components/WriteTab.tsx` — add import and replace placeholder:
+
 ```tsx
 // Add import:
 import { LearnMode } from "./LearnMode";
 
 // Replace the learn mode placeholder with:
-{mode === "quick" ? (
-  <QuickMode locale={locale} />
-) : (
-  <LearnMode locale={locale} />
-)}
+{
+  mode === "quick" ? <QuickMode locale={locale} /> : <LearnMode locale={locale} />;
+}
 ```
 
 - [ ] **Step 6: Commit**
@@ -1507,6 +1412,7 @@ git commit -m "feat: add Learn mode with annotated text, phrase cards, and pract
 ### Task 10: Build Writer's Shelf Tab
 
 **Files:**
+
 - Create: `lib/shelf-data.ts`
 - Create: `components/ShelfTab.tsx`
 - Create: `components/PassageCard.tsx`
@@ -1515,6 +1421,7 @@ git commit -m "feat: add Learn mode with annotated text, phrase cards, and pract
 - [ ] **Step 1: Create shelf data**
 
 Create `lib/shelf-data.ts`:
+
 ```ts
 export type ShelfCategory = "precision" | "rhythm" | "voice" | "structure";
 
@@ -1543,13 +1450,11 @@ export const shelfPassages: ShelfPassage[] = [
   {
     id: "hemingway-2",
     author: "Ernest Hemingway",
-    excerpt:
-      "The world breaks everyone and afterward many are strong at the broken places.",
+    excerpt: "The world breaks everyone and afterward many are strong at the broken places.",
     category: "precision",
     craftLesson:
       "Precision isn't just about physical details. Here Hemingway states a large truth in plain, exact language. 'Breaks' and 'broken places' do double duty as literal and metaphorical.",
-    writingPrompt:
-      "Write one sentence that captures a big truth using only plain, concrete words. No abstractions.",
+    writingPrompt: "Write one sentence that captures a big truth using only plain, concrete words. No abstractions.",
   },
   {
     id: "pg-1",
@@ -1588,8 +1493,7 @@ export const shelfPassages: ShelfPassage[] = [
   {
     id: "vonnegut-1",
     author: "Kurt Vonnegut",
-    excerpt:
-      "And so it goes.",
+    excerpt: "And so it goes.",
     category: "rhythm",
     craftLesson:
       "Three words that carry the weight of every death in Slaughterhouse-Five. A refrain works by accumulation — the first time it's nothing, but after fifty repetitions it contains everything. Rhythm can be a structural tool, not just a sentence-level one.",
@@ -1670,6 +1574,7 @@ export const shelfPassages: ShelfPassage[] = [
 - [ ] **Step 2: Create PassageCard component**
 
 Create `components/PassageCard.tsx`:
+
 ```tsx
 "use client";
 
@@ -1693,17 +1598,11 @@ export function PassageCard({ passage, locale }: PassageCardProps) {
       <blockquote className="font-serif text-sm leading-relaxed text-ink italic">
         &ldquo;{passage.excerpt}&rdquo;
       </blockquote>
-      <p className="font-sans text-xs text-sand font-medium">
-        — {passage.author}
-      </p>
+      <p className="font-sans text-xs text-sand font-medium">— {passage.author}</p>
 
       <div>
-        <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">
-          {t("craftLesson")}
-        </span>
-        <p className="mt-1 font-sans text-xs leading-relaxed text-ink/80">
-          {passage.craftLesson}
-        </p>
+        <span className="text-xs font-sans font-medium text-sand uppercase tracking-wide">{t("craftLesson")}</span>
+        <p className="mt-1 font-sans text-xs leading-relaxed text-ink/80">{passage.craftLesson}</p>
       </div>
 
       <button
@@ -1715,9 +1614,7 @@ export function PassageCard({ passage, locale }: PassageCardProps) {
 
       {showPrompt && (
         <div className="space-y-2 pt-1">
-          <p className="font-sans text-xs text-ink/70 leading-relaxed">
-            {passage.writingPrompt}
-          </p>
+          <p className="font-sans text-xs text-ink/70 leading-relaxed">{passage.writingPrompt}</p>
           <PracticeBox
             originalPhrase={passage.excerpt}
             context={`Writing prompt: ${passage.writingPrompt}. Inspired by ${passage.author}'s style.`}
@@ -1733,6 +1630,7 @@ export function PassageCard({ passage, locale }: PassageCardProps) {
 - [ ] **Step 3: Create ShelfTab component**
 
 Create `components/ShelfTab.tsx`:
+
 ```tsx
 "use client";
 
@@ -1746,21 +1644,13 @@ interface ShelfTabProps {
   locale: Locale;
 }
 
-const categories: ShelfCategory[] = [
-  "precision",
-  "rhythm",
-  "voice",
-  "structure",
-];
+const categories: ShelfCategory[] = ["precision", "rhythm", "voice", "structure"];
 
 export function ShelfTab({ locale }: ShelfTabProps) {
   const t = useTranslations(locale);
-  const [activeCategory, setActiveCategory] =
-    useState<ShelfCategory>("precision");
+  const [activeCategory, setActiveCategory] = useState<ShelfCategory>("precision");
 
-  const filtered = shelfPassages.filter(
-    (p) => p.category === activeCategory
-  );
+  const filtered = shelfPassages.filter((p) => p.category === activeCategory);
 
   return (
     <div className="space-y-4">
@@ -1770,9 +1660,7 @@ export function ShelfTab({ locale }: ShelfTabProps) {
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={`px-3 py-1.5 rounded-full text-xs font-sans font-medium whitespace-nowrap transition-colors ${
-              activeCategory === cat
-                ? "bg-ink text-paper"
-                : "bg-warm text-ink/60 hover:text-ink"
+              activeCategory === cat ? "bg-ink text-paper" : "bg-warm text-ink/60 hover:text-ink"
             }`}
           >
             {t(cat)}
@@ -1793,16 +1681,15 @@ export function ShelfTab({ locale }: ShelfTabProps) {
 - [ ] **Step 4: Wire ShelfTab into AppShell**
 
 Update `components/AppShell.tsx` — add import and replace Shelf placeholder:
+
 ```tsx
 // Add import:
 import { ShelfTab } from "./ShelfTab";
 
 // Replace the shelf placeholder:
-{activeTab === "write" ? (
-  <WriteTab locale={locale} />
-) : (
-  <ShelfTab locale={locale} />
-)}
+{
+  activeTab === "write" ? <WriteTab locale={locale} /> : <ShelfTab locale={locale} />;
+}
 ```
 
 - [ ] **Step 5: Commit**
@@ -1817,12 +1704,14 @@ git commit -m "feat: add Writer's Shelf tab with curated passages and practice p
 ### Task 11: Create .env.local Template and Vercel Config
 
 **Files:**
+
 - Create: `.env.example`
 - Create: `.gitignore` additions
 
 - [ ] **Step 1: Create .env.example**
 
 Create `.env.example`:
+
 ```
 ANTHROPIC_API_KEY=your-api-key-here
 ```
@@ -1843,6 +1732,7 @@ git commit -m "feat: add .env.example for API key configuration"
 ### Task 12: Final Integration & Polish
 
 **Files:**
+
 - Modify: Various components as needed
 
 - [ ] **Step 1: Run build to check for type errors**

@@ -5,10 +5,7 @@ import { useEffect, useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import type { Locale } from "@/lib/i18n";
 
-const ShelfTab = dynamic(
-  () => import("@/components/ShelfTab").then((m) => m.ShelfTab),
-  { ssr: false }
-);
+const ShelfTab = dynamic(() => import("@/components/ShelfTab").then((m) => m.ShelfTab), { ssr: false });
 
 export default function ShelfPage() {
   const [locale, setLocale] = useState<Locale>("en");

@@ -82,17 +82,12 @@ export function VoiceWaitlistCard({ sessionCount }: VoiceWaitlistCardProps) {
       </button>
 
       {submitted ? (
-        <p className="font-sans text-sm text-ink pr-6">
-          You&apos;re on the list. We&apos;ll be in touch.
-        </p>
+        <p className="font-sans text-sm text-ink pr-6">You&apos;re on the list. We&apos;ll be in touch.</p>
       ) : (
         <>
-          <p className="font-sans text-sm text-ink leading-relaxed pr-6">
-            Accent is getting to know how you write.
-          </p>
+          <p className="font-sans text-sm text-ink leading-relaxed pr-6">Accent is getting to know how you write.</p>
           <p className="font-sans text-sm text-ink/70 leading-relaxed mt-1 mb-3">
-            Drop your email and we&apos;ll tell you when your voice profile is
-            ready.
+            Drop your email and we&apos;ll tell you when your voice profile is ready.
           </p>
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input

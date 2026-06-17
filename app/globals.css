@@ -1,63 +1,78 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'Canela';
-  src: url('/fonts/Canela-Regular.otf') format('opentype');
+  font-family: "Canela";
+  src: url("/fonts/Canela-Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Canela';
-  src: url('/fonts/Canela-RegularItalic.otf') format('opentype');
+  font-family: "Canela";
+  src: url("/fonts/Canela-RegularItalic.otf") format("opentype");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Canela';
-  src: url('/fonts/Canela-Bold.otf') format('opentype');
+  font-family: "Canela";
+  src: url("/fonts/Canela-Bold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 @theme inline {
-  --color-paper: #FFFFFF;
-  --color-sand: #E5E5E5;
-  --color-coral: #2563EB;
-  --color-coral-light: #EFF6FF;
-  --color-teal: #1A1A18;
-  --color-teal-light: #F5F5F5;
-  --color-red: #1A1A18;
-  --color-red-light: #F5F5F5;
-  --color-warm: #FAFAFA;
-  --color-ink: #1A1A18;
-  --color-accent: #2563EB;
-  --color-dim: #6B6B6B;
-  --color-faint: #AAAAAA;
-  --color-rule: #E5E5E5;
+  --color-paper: #ffffff;
+  --color-sand: #e5e5e5;
+  --color-coral: #2563eb;
+  --color-coral-light: #eff6ff;
+  --color-teal: #1a1a18;
+  --color-teal-light: #f5f5f5;
+  --color-red: #1a1a18;
+  --color-red-light: #f5f5f5;
+  --color-warm: #fafafa;
+  --color-ink: #1a1a18;
+  --color-accent: #2563eb;
+  --color-dim: #6b6b6b;
+  --color-faint: #aaaaaa;
+  --color-rule: #e5e5e5;
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
-  --font-sans: 'Switzer', var(--font-dm-sans), system-ui, sans-serif;
+  --font-sans: "Switzer", var(--font-dm-sans), system-ui, sans-serif;
 
   --animate-pulse-subtle: pulse-subtle 1.2s ease-in-out infinite;
   --animate-blink: blink 1s step-end infinite;
 }
 
 @keyframes pulse-subtle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
-html { scroll-behavior: smooth; overflow-x: hidden; }
-button { -webkit-tap-highlight-color: transparent; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+button {
+  -webkit-tap-highlight-color: transparent;
+}
 body {
   background: var(--color-paper);
   color: var(--color-ink);
@@ -65,27 +80,28 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-::selection { background: rgba(37,99,235,0.15); }
-
+::selection {
+  background: rgba(37, 99, 235, 0.15);
+}
 
 @media (min-width: 768px) {
   body {
-    background: #FFFFFF;
+    background: #ffffff;
   }
 }
 
 /* Lesson body mark styling */
 mark {
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: #eff6ff;
+  color: #1d4ed8;
   border-radius: 3px;
   padding: 1px 4px;
   font-style: normal;
 }
 
 .lesson-body mark {
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: #eff6ff;
+  color: #1d4ed8;
   border-radius: 3px;
   padding: 1px 4px;
   font-style: normal;
@@ -102,10 +118,18 @@ mark {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
 }
-.privacy-policy h1 { font-size: 1.5rem; }
-.privacy-policy h2 { font-size: 1.25rem; }
-.privacy-policy h3 { font-size: 1.05rem; }
-.privacy-policy h4 { font-size: 1rem; }
+.privacy-policy h1 {
+  font-size: 1.5rem;
+}
+.privacy-policy h2 {
+  font-size: 1.25rem;
+}
+.privacy-policy h3 {
+  font-size: 1.05rem;
+}
+.privacy-policy h4 {
+  font-size: 1rem;
+}
 .privacy-policy p {
   margin-bottom: 1em;
 }
@@ -133,7 +157,11 @@ mark {
 /* Arrow hover animations */
 button:hover .arrow-right,
 a:hover .arrow-right,
-[role="button"]:hover .arrow-right { transform: translateX(4px); }
+[role="button"]:hover .arrow-right {
+  transform: translateX(4px);
+}
 button:hover .arrow-left,
 a:hover .arrow-left,
-[role="button"]:hover .arrow-left { transform: translateX(-4px); }
+[role="button"]:hover .arrow-left {
+  transform: translateX(-4px);
+}

@@ -82,12 +82,12 @@ instrumentation-client.ts      # Client-side PostHog initialization
 ### Client-side initialization (instrumentation-client.ts)
 
 ```typescript
-import posthog from "posthog-js"
+import posthog from "posthog-js";
 
 posthog.init(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!, {
   api_host: "/ingest",
   ui_host: "https://us.posthog.com",
-  defaults: '2026-01-30',
+  defaults: "2026-01-30",
   capture_exceptions: true,
   debug: process.env.NODE_ENV === "development",
 });
@@ -104,7 +104,7 @@ posthog.identify(username, {
 ### Event tracking (burrito/page.tsx)
 
 ```typescript
-posthog.capture('burrito_considered', {
+posthog.capture("burrito_considered", {
   total_considerations: count,
   username: username,
 });
@@ -168,13 +168,13 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ## instrumentation-client.ts
 
 ```ts
-import posthog from "posthog-js"
+import posthog from "posthog-js";
 
 posthog.init(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!, {
   api_host: "/ingest",
   ui_host: "https://us.posthog.com",
   // Include the defaults option as required by PostHog
-  defaults: '2026-01-30',
+  defaults: "2026-01-30",
   // Enables capturing unhandled exceptions via Error Tracking
   capture_exceptions: true,
   // Turn on debug in development mode
@@ -210,7 +210,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
 ```
 
 ---
@@ -218,8 +217,8 @@ export default nextConfig;
 ## src/app/api/auth/login/route.ts
 
 ```ts
-import { NextResponse } from 'next/server';
-import { getPostHogClient } from '@/lib/posthog-server';
+import { NextResponse } from "next/server";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const users = new Map<string, { username: string; burritoConsiderations: number }>();
 
@@ -227,12 +226,12 @@ export async function POST(request: Request) {
   const { username, password } = await request.json();
 
   if (!username || !password) {
-    return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
+    return NextResponse.json({ error: "Username and password required" }, { status: 400 });
   }
 
   let user = users.get(username);
   const isNewUser = !user;
-  
+
   if (!user) {
     user = { username, burritoConsiderations: 0 };
     users.set(username, user);
@@ -242,12 +241,12 @@ export async function POST(request: Request) {
   const posthog = getPostHogClient();
   posthog.capture({
     distinctId: username,
-    event: 'server_login',
+    event: "server_login",
     properties: {
       username: username,
       isNewUser: isNewUser,
-      source: 'api'
-    }
+      source: "api",
+    },
   });
 
   // Identify user on server side
@@ -255,8 +254,8 @@ export async function POST(request: Request) {
     distinctId: username,
     properties: {
       username: username,
-      createdAt: isNewUser ? new Date().toISOString() : undefined
-    }
+      createdAt: isNewUser ? new Date().toISOString() : undefined,
+    },
   });
 
   return NextResponse.json({ success: true, user });
@@ -268,12 +267,12 @@ export async function POST(request: Request) {
 ## src/app/burrito/page.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import posthog from 'posthog-js';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 
 export default function BurritoPage() {
   const { user, incrementBurritoConsiderations } = useAuth();
@@ -282,7 +281,7 @@ export default function BurritoPage() {
 
   // Redirect to home if not logged in
   if (!user) {
-    router.push('/');
+    router.push("/");
     return null;
   }
 
@@ -290,9 +289,9 @@ export default function BurritoPage() {
     incrementBurritoConsiderations();
     setHasConsidered(true);
     setTimeout(() => setHasConsidered(false), 2000);
-    
+
     // Capture burrito consideration event
-    posthog.capture('burrito_considered', {
+    posthog.capture("burrito_considered", {
       total_considerations: user.burritoConsiderations + 1,
       username: user.username,
     });
@@ -302,22 +301,17 @@ export default function BurritoPage() {
     <div className="container">
       <h1>Burrito consideration zone</h1>
       <p>Take a moment to truly consider the potential of burritos.</p>
-      
-      <div style={{ textAlign: 'center' }}>
-        <button 
-          onClick={handleConsideration}
-          className="btn-burrito"
-        >
+
+      <div style={{ textAlign: "center" }}>
+        <button onClick={handleConsideration} className="btn-burrito">
           I have considered the burrito potential
         </button>
-        
+
         {hasConsidered && (
-          <p className="success">
-            Thank you for your consideration! Count: {user.burritoConsiderations}
-          </p>
+          <p className="success">Thank you for your consideration! Count: {user.burritoConsiderations}</p>
         )}
       </div>
-      
+
       <div className="stats">
         <h3>Consideration stats</h3>
         <p>Total considerations: {user.burritoConsiderations}</p>
@@ -358,7 +352,6 @@ export default function RootLayout({
     </html>
   );
 }
-
 ```
 
 ---
@@ -366,32 +359,32 @@ export default function RootLayout({
 ## src/app/page.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const { user, login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
+    setError("");
+
     try {
       const success = await login(username, password);
       if (success) {
-        setUsername('');
-        setPassword('');
+        setUsername("");
+        setPassword("");
       } else {
-        setError('Please provide both username and password');
+        setError("Please provide both username and password");
       }
     } catch (err) {
-      console.error('Login failed:', err);
-      setError('An error occurred during login');
+      console.error("Login failed:", err);
+      setError("An error occurred during login");
     }
   };
 
@@ -412,7 +405,7 @@ export default function Home() {
     <div className="container">
       <h1>Welcome to Burrito Consideration App</h1>
       <p>Please sign in to begin your burrito journey</p>
-      
+
       <form onSubmit={handleSubmit} className="form">
         <div className="form-group">
           <label htmlFor="username">Username:</label>
@@ -424,7 +417,7 @@ export default function Home() {
             placeholder="Enter any username"
           />
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="password">Password:</label>
           <input
@@ -435,15 +428,15 @@ export default function Home() {
             placeholder="Enter any password"
           />
         </div>
-        
+
         {error && <p className="error">{error}</p>}
-        
-        <button type="submit" className="btn-primary">Sign In</button>
+
+        <button type="submit" className="btn-primary">
+          Sign In
+        </button>
       </form>
-      
-      <p className="note">
-        Note: This is a demo app. Use any username and password to sign in.
-      </p>
+
+      <p className="note">Note: This is a demo app. Use any username and password to sign in.</p>
     </div>
   );
 }
@@ -454,11 +447,11 @@ export default function Home() {
 ## src/app/profile/page.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import posthog from 'posthog-js';
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -466,37 +459,41 @@ export default function ProfilePage() {
 
   // Redirect to home if not logged in
   if (!user) {
-    router.push('/');
+    router.push("/");
     return null;
   }
 
   const triggerTestError = () => {
     try {
-      throw new Error('Test error for PostHog error tracking');
+      throw new Error("Test error for PostHog error tracking");
     } catch (err) {
       posthog.captureException(err);
-      console.error('Captured error:', err);
-      alert('Error captured and sent to PostHog!');
+      console.error("Captured error:", err);
+      alert("Error captured and sent to PostHog!");
     }
   };
 
   return (
     <div className="container">
       <h1>User Profile</h1>
-      
+
       <div className="stats">
         <h2>Your Information</h2>
-        <p><strong>Username:</strong> {user.username}</p>
-        <p><strong>Burrito Considerations:</strong> {user.burritoConsiderations}</p>
+        <p>
+          <strong>Username:</strong> {user.username}
+        </p>
+        <p>
+          <strong>Burrito Considerations:</strong> {user.burritoConsiderations}
+        </p>
       </div>
-      
-      <div style={{ marginTop: '2rem' }}>
-        <button onClick={triggerTestError} className="btn-primary" style={{ backgroundColor: '#dc3545' }}>
+
+      <div style={{ marginTop: "2rem" }}>
+        <button onClick={triggerTestError} className="btn-primary" style={{ backgroundColor: "#dc3545" }}>
           Trigger Test Error (for PostHog)
         </button>
       </div>
-      
-      <div style={{ marginTop: '2rem' }}>
+
+      <div style={{ marginTop: "2rem" }}>
         <h3>Your Burrito Journey</h3>
         {user.burritoConsiderations === 0 ? (
           <p>You haven&apos;t considered any burritos yet. Visit the Burrito Consideration page to start!</p>
@@ -520,10 +517,10 @@ export default function ProfilePage() {
 ## src/components/Header.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -563,10 +560,10 @@ export default function Header() {
 ## src/contexts/AuthContext.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import posthog from 'posthog-js';
+import { createContext, useContext, useState, ReactNode } from "react";
+import posthog from "posthog-js";
 
 interface User {
   username: string;
@@ -587,9 +584,9 @@ const users: Map<string, User> = new Map();
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Use lazy initializer to read from localStorage only once on mount
   const [user, setUser] = useState<User | null>(() => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
 
-    const storedUsername = localStorage.getItem('currentUser');
+    const storedUsername = localStorage.getItem("currentUser");
     if (storedUsername) {
       const existingUser = users.get(storedUsername);
       if (existingUser) {
@@ -601,9 +598,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
@@ -617,34 +614,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         setUser(localUser);
-        localStorage.setItem('currentUser', username);
-        
+        localStorage.setItem("currentUser", username);
+
         // Identify user in PostHog using username as distinct ID
         posthog.identify(username, {
           username: username,
         });
-        
+
         // Capture login event
-        posthog.capture('user_logged_in', {
+        posthog.capture("user_logged_in", {
           username: username,
         });
-        
+
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       return false;
     }
   };
 
   const logout = () => {
     // Capture logout event before resetting
-    posthog.capture('user_logged_out');
+    posthog.capture("user_logged_out");
     posthog.reset();
-    
+
     setUser(null);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("currentUser");
   };
 
   const incrementBurritoConsiderations = () => {
@@ -665,7 +662,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
@@ -676,20 +673,17 @@ export function useAuth() {
 ## src/lib/posthog-server.ts
 
 ```ts
-import { PostHog } from 'posthog-node';
+import { PostHog } from "posthog-node";
 
 let posthogClient: PostHog | null = null;
 
 export function getPostHogClient() {
   if (!posthogClient) {
-    posthogClient = new PostHog(
-      process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!,
-      { 
-        host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-        flushAt: 1,
-        flushInterval: 0
-      }
-    );
+    posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!, {
+      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      flushAt: 1,
+      flushInterval: 0,
+    });
     posthogClient.debug(true);
   }
   return posthogClient;
@@ -703,4 +697,3 @@ export async function shutdownPostHog() {
 ```
 
 ---
-

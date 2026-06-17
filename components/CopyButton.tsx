@@ -57,11 +57,7 @@ export function CopyButton({ text, onSave, className }: CopyButtonProps) {
             : "bg-[#2563EB] text-white hover:opacity-90"
       } ${className || "flex-1"}`}
     >
-      {state === "copied"
-        ? "Copied \u2713"
-        : state === "copying"
-          ? "Copying\u2026"
-          : label}
+      {state === "copied" ? "Copied \u2713" : state === "copying" ? "Copying\u2026" : label}
     </button>
   );
 }

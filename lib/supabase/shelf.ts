@@ -68,10 +68,7 @@ export async function getShelfEntries(): Promise<ShelfEntry[]> {
 
 export async function deleteShelfEntry(id: string): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase
-    .from("shelf_entries")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("shelf_entries").delete().eq("id", id);
 
   if (error) {
     console.error("Failed to delete shelf entry:", error);

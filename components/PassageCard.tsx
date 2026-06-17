@@ -20,17 +20,11 @@ export function PassageCard({ passage, locale }: PassageCardProps) {
       <blockquote className="font-serif font-bold text-sm leading-relaxed text-ink italic">
         &ldquo;{passage.excerpt}&rdquo;
       </blockquote>
-      <p className="font-sans text-xs text-ink/50 font-medium">
-        &mdash; {passage.author}
-      </p>
+      <p className="font-sans text-xs text-ink/50 font-medium">&mdash; {passage.author}</p>
 
       <div>
-        <span className="text-xs font-sans font-medium text-ink/50 uppercase tracking-wide">
-          {t("craftLesson")}
-        </span>
-        <p className="mt-1 font-sans text-xs leading-relaxed text-ink">
-          {passage.craftLesson}
-        </p>
+        <span className="text-xs font-sans font-medium text-ink/50 uppercase tracking-wide">{t("craftLesson")}</span>
+        <p className="mt-1 font-sans text-xs leading-relaxed text-ink">{passage.craftLesson}</p>
       </div>
 
       <button
@@ -42,9 +36,7 @@ export function PassageCard({ passage, locale }: PassageCardProps) {
 
       {showPrompt && (
         <div className="space-y-2 pt-1">
-          <p className="font-sans text-xs text-ink leading-relaxed">
-            {passage.writingPrompt}
-          </p>
+          <p className="font-sans text-xs text-ink leading-relaxed">{passage.writingPrompt}</p>
           <PracticeBox
             originalPhrase={passage.excerpt}
             context={`Writing prompt: ${passage.writingPrompt}. Inspired by ${passage.author}'s style.`}

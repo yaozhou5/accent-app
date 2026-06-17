@@ -23,7 +23,11 @@ const ROUNDS: Round[] = [
       { text: "He cut his steak carefully, like someone was watching.", score: 3, type: "editor" },
       { text: "He ate the way people eat when they've stopped expecting company.", score: 2, type: "safe" },
       { text: "There was a second chair. He'd pushed it to the other side of the table.", score: 4, type: "writer" },
-      { text: "He was reading something on his phone and chewing slowly. No one was waiting for him and he knew it.", score: 1, type: "polisher" },
+      {
+        text: "He was reading something on his phone and chewing slowly. No one was waiting for him and he knew it.",
+        score: 1,
+        type: "polisher",
+      },
     ],
     insights: [
       "The performance of care. 'Like someone was watching' plants doubt without explaining it.",
@@ -37,7 +41,11 @@ const ROUNDS: Round[] = [
     options: [
       { text: "She started sleeping on her side of the bed again.", score: 4, type: "writer" },
       { text: "He said something funny at dinner and she smiled, but only with her mouth.", score: 3, type: "editor" },
-      { text: "She noticed he'd stopped closing the bathroom door. She didn't know when that started.", score: 2, type: "safe" },
+      {
+        text: "She noticed he'd stopped closing the bathroom door. She didn't know when that started.",
+        score: 2,
+        type: "safe",
+      },
       { text: "They still said 'love you' before hanging up. It sounded like 'bye.'", score: 1, type: "polisher" },
     ],
     insights: [
@@ -95,10 +103,29 @@ const ROUNDS: Round[] = [
 ];
 
 function getResult(score: number) {
-  if (score >= 17) return { title: "The Writer", desc: "You go specific. You go visceral. You trust the reader to feel it without being told. Most people have lost this instinct. You haven't.", cta: "You already have voice. Imagine it sharper." };
-  if (score >= 13) return { title: "The Editor", desc: "You know what hits. You see the good option. But sometimes you pull back before committing. Choosing clever over honest. The instinct is there. It just needs permission.", cta: "You're one draft away from great." };
-  if (score >= 9) return { title: "The Safe Voice", desc: "You're warm and honest. People like what you write. But they don't remember it. You go for 'nice' when you could go for 'true.' The generic option feels comfortable because it's what everyone picks.", cta: "Comfortable isn't memorable. Train the muscle." };
-  return { title: "The Polisher", desc: "You reach for bigger words when smaller ones would hit harder. You decorate when you should delete. This isn't a talent problem. It's a habit. AI writes like this too. That should worry you.", cta: "Your voice is underneath all that polish. Let's find it." };
+  if (score >= 17)
+    return {
+      title: "The Writer",
+      desc: "You go specific. You go visceral. You trust the reader to feel it without being told. Most people have lost this instinct. You haven't.",
+      cta: "You already have voice. Imagine it sharper.",
+    };
+  if (score >= 13)
+    return {
+      title: "The Editor",
+      desc: "You know what hits. You see the good option. But sometimes you pull back before committing. Choosing clever over honest. The instinct is there. It just needs permission.",
+      cta: "You're one draft away from great.",
+    };
+  if (score >= 9)
+    return {
+      title: "The Safe Voice",
+      desc: "You're warm and honest. People like what you write. But they don't remember it. You go for 'nice' when you could go for 'true.' The generic option feels comfortable because it's what everyone picks.",
+      cta: "Comfortable isn't memorable. Train the muscle.",
+    };
+  return {
+    title: "The Polisher",
+    desc: "You reach for bigger words when smaller ones would hit harder. You decorate when you should delete. This isn't a talent problem. It's a habit. AI writes like this too. That should worry you.",
+    cta: "Your voice is underneath all that polish. Let's find it.",
+  };
 }
 
 /* ───── PLAY PAGE ───── */
@@ -119,10 +146,18 @@ export default function PlayPage() {
     setScores(newScores);
     setSelected(null);
     if (round < 4) setRound(round + 1);
-    else { setDone(true); posthog.capture("game_completed", { score: newScores.reduce((a, b) => a + b, 0), source: "play_page" }); }
+    else {
+      setDone(true);
+      posthog.capture("game_completed", { score: newScores.reduce((a, b) => a + b, 0), source: "play_page" });
+    }
   };
 
-  const handlePlayAgain = () => { setRound(0); setSelected(null); setScores([]); setDone(false); };
+  const handlePlayAgain = () => {
+    setRound(0);
+    setSelected(null);
+    setScores([]);
+    setDone(false);
+  };
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +167,9 @@ export default function PlayPage() {
     const resultType = getResult(score).title;
     try {
       const supabase = createClient();
-      await supabase.from("agent_waitlist").insert({ email: email.trim().toLowerCase(), source: "game_email", result_type: resultType, score });
+      await supabase
+        .from("agent_waitlist")
+        .insert({ email: email.trim().toLowerCase(), source: "game_email", result_type: resultType, score });
       setEmailSubmitted(true);
       posthog.capture("game_email_signup", { result_type: resultType, score, source: "play_page" });
     } catch {}
@@ -146,29 +183,48 @@ export default function PlayPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: CREAM, color: INK }}>
       {/* Nav */}
-      <nav className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid rgba(26,26,24,0.1)` }}>
+      <nav
+        className="px-6 py-4 flex items-center justify-between"
+        style={{ borderBottom: `1px solid rgba(26,26,24,0.1)` }}
+      >
         <Link href="/" className="font-serif text-[20px] no-underline" style={{ color: INK, fontWeight: 400 }}>
           accent<span style={{ color: ACCENT }}>.</span>
         </Link>
-        <Link href="/write" className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold" style={{ background: INK, color: CREAM }}>
+        <Link
+          href="/write"
+          className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold"
+          style={{ background: INK, color: CREAM }}
+        >
           Try the tool
         </Link>
       </nav>
 
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-[600px] w-full">
-
           {/* Game rounds */}
           {!done && (
             <div>
               <div className="flex justify-center gap-2 mb-6">
                 {ROUNDS.map((_, i) => (
-                  <div key={i} className="rounded-full" style={{ width: 8, height: 8, background: i <= round ? INK : "rgba(26,26,24,0.15)" }} />
+                  <div
+                    key={i}
+                    className="rounded-full"
+                    style={{ width: 8, height: 8, background: i <= round ? INK : "rgba(26,26,24,0.15)" }}
+                  />
                 ))}
               </div>
-              <p className="font-mono text-[11px] uppercase tracking-wider text-center mb-8" style={{ color: FAINT }}>Round {round + 1} of 5</p>
-              <p className="font-sans text-center mb-3" style={{ fontSize: 20, fontWeight: 600, color: INK }}>Make this hit harder</p>
-              <p className="font-serif italic text-center mb-10" style={{ fontSize: "clamp(18px, 3vw, 22px)", color: INK, lineHeight: 1.4 }}>&ldquo;{currentRound.flat}&rdquo;</p>
+              <p className="font-mono text-[11px] uppercase tracking-wider text-center mb-8" style={{ color: FAINT }}>
+                Round {round + 1} of 5
+              </p>
+              <p className="font-sans text-center mb-3" style={{ fontSize: 20, fontWeight: 600, color: INK }}>
+                Make this hit harder
+              </p>
+              <p
+                className="font-serif italic text-center mb-10"
+                style={{ fontSize: "clamp(18px, 3vw, 22px)", color: INK, lineHeight: 1.4 }}
+              >
+                &ldquo;{currentRound.flat}&rdquo;
+              </p>
 
               <div>
                 {currentRound.options.map((opt, i) => {
@@ -177,8 +233,18 @@ export default function PlayPage() {
                     <div key={i}>
                       <button
                         onClick={() => handleSelect(i)}
-                        onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = "rgba(26,26,24,0.04)"; e.currentTarget.style.borderLeftColor = ACCENT; } }}
-                        onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; } }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.background = "rgba(26,26,24,0.04)";
+                            e.currentTarget.style.borderLeftColor = ACCENT;
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderLeftColor = "transparent";
+                          }
+                        }}
                         className="w-full text-left py-4 px-5 flex items-start gap-4 transition-colors cursor-pointer"
                         style={{
                           background: isSelected ? "rgba(26,26,24,0.05)" : "transparent",
@@ -188,12 +254,29 @@ export default function PlayPage() {
                           borderRight: "none",
                         }}
                       >
-                        <span className="font-mono shrink-0" style={{ fontSize: 17, lineHeight: 1.5, color: isSelected ? ACCENT : "rgba(26,26,24,0.45)", fontWeight: 600 }}>{i + 1}.</span>
-                        <span className="font-sans flex-1" style={{ fontSize: 17, lineHeight: 1.5, color: INK }}>&ldquo;{opt.text}&rdquo;</span>
+                        <span
+                          className="font-mono shrink-0"
+                          style={{
+                            fontSize: 17,
+                            lineHeight: 1.5,
+                            color: isSelected ? ACCENT : "rgba(26,26,24,0.45)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {i + 1}.
+                        </span>
+                        <span className="font-sans flex-1" style={{ fontSize: 17, lineHeight: 1.5, color: INK }}>
+                          &ldquo;{opt.text}&rdquo;
+                        </span>
                       </button>
                       {isSelected && (
                         <div className="ml-12 mt-3 mb-3 pl-4" style={{ borderLeft: `2px solid ${ACCENT}` }}>
-                          <p className="font-sans" style={{ fontSize: 16, lineHeight: 1.55, color: DIM, fontStyle: "italic" }}>{currentRound.insights[i]}</p>
+                          <p
+                            className="font-sans"
+                            style={{ fontSize: 16, lineHeight: 1.55, color: DIM, fontStyle: "italic" }}
+                          >
+                            {currentRound.insights[i]}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -203,7 +286,11 @@ export default function PlayPage() {
 
               {selected !== null && (
                 <div className="text-center mt-8">
-                  <button onClick={handleNext} className="px-7 py-3 rounded-full font-sans font-bold text-[14px] transition-opacity hover:opacity-90" style={{ background: "#000000", color: "#FFFFFF" }}>
+                  <button
+                    onClick={handleNext}
+                    className="px-7 py-3 rounded-full font-sans font-bold text-[14px] transition-opacity hover:opacity-90"
+                    style={{ background: "#000000", color: "#FFFFFF" }}
+                  >
                     {round === 4 ? "See My Result \u2192" : "Lock it in \u2192"}
                   </button>
                 </div>
@@ -219,38 +306,81 @@ export default function PlayPage() {
                   <div key={i} className="rounded-full" style={{ width: 8, height: 8, background: INK }} />
                 ))}
               </div>
-              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>Your result</p>
-              <h2 className="font-serif mb-2" style={{ fontSize: "clamp(32px, 5vw, 40px)", fontWeight: 300 }}>{result.title}</h2>
-              <p className="font-mono mb-6" style={{ fontSize: 13, color: FAINT }}>{totalScore} / 20</p>
-              <p className="font-sans mb-6 max-w-[500px] mx-auto" style={{ fontSize: 16, color: DIM, lineHeight: 1.6 }}>{result.desc}</p>
-              <p className="font-serif italic mb-10" style={{ fontSize: 16, color: INK }}>{result.cta}</p>
+              <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>
+                Your result
+              </p>
+              <h2 className="font-serif mb-2" style={{ fontSize: "clamp(32px, 5vw, 40px)", fontWeight: 300 }}>
+                {result.title}
+              </h2>
+              <p className="font-mono mb-6" style={{ fontSize: 13, color: FAINT }}>
+                {totalScore} / 20
+              </p>
+              <p className="font-sans mb-6 max-w-[500px] mx-auto" style={{ fontSize: 16, color: DIM, lineHeight: 1.6 }}>
+                {result.desc}
+              </p>
+              <p className="font-serif italic mb-10" style={{ fontSize: 16, color: INK }}>
+                {result.cta}
+              </p>
 
               {!emailSubmitted ? (
                 <div className="max-w-[400px] mx-auto">
-                  <p className="font-sans mb-3" style={{ fontSize: 16, color: DIM }}>Your first writing challenge drops this week.</p>
+                  <p className="font-sans mb-3" style={{ fontSize: 16, color: DIM }}>
+                    Your first writing challenge drops this week.
+                  </p>
                   <form onSubmit={handleEmail} className="flex gap-2">
-                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[16px] outline-none" style={{ border: `1px solid rgba(26,26,24,0.15)`, background: "white", color: INK }} />
-                    <button type="submit" disabled={emailLoading} className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[16px] disabled:opacity-50" style={{ background: INK, color: CREAM }}>{emailLoading ? "..." : "I'm in"}</button>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[16px] outline-none"
+                      style={{ border: `1px solid rgba(26,26,24,0.15)`, background: "white", color: INK }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={emailLoading}
+                      className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[16px] disabled:opacity-50"
+                      style={{ background: INK, color: CREAM }}
+                    >
+                      {emailLoading ? "..." : "I'm in"}
+                    </button>
                   </form>
                 </div>
               ) : (
-                <p className="font-mono" style={{ fontSize: 14, letterSpacing: "0.04em", color: INK }}>&check; Watch your inbox.</p>
+                <p className="font-mono" style={{ fontSize: 14, letterSpacing: "0.04em", color: INK }}>
+                  &check; Watch your inbox.
+                </p>
               )}
 
-              <button onClick={handlePlayAgain} className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium" style={{ border: "1px solid rgba(26,26,24,0.15)", color: DIM, background: "transparent" }}>
+              <button
+                onClick={handlePlayAgain}
+                className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium"
+                style={{ border: "1px solid rgba(26,26,24,0.15)", color: DIM, background: "transparent" }}
+              >
                 Play Again
               </button>
 
               <div className="mt-16 pt-10" style={{ borderTop: "1px solid rgba(26,26,24,0.15)" }}>
-                <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>next</p>
+                <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>
+                  next
+                </p>
                 <p className="font-serif mb-5" style={{ fontSize: 22, fontWeight: 400, color: INK }}>
                   Want to work on your own writing?
                 </p>
                 <div className="flex justify-center gap-8 flex-wrap">
-                  <Link href="/write?mode=polish" className="no-underline font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ fontSize: 16, color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
+                  <Link
+                    href="/write?mode=polish"
+                    className="no-underline font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+                    style={{ fontSize: 16, color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}
+                  >
                     Polish it <span>&rarr;</span>
                   </Link>
-                  <Link href="/write?mode=coach" className="no-underline font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70" style={{ fontSize: 16, color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}>
+                  <Link
+                    href="/write?mode=coach"
+                    className="no-underline font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+                    style={{ fontSize: 16, color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}
+                  >
                     Coach me <span>&rarr;</span>
                   </Link>
                 </div>
@@ -261,11 +391,20 @@ export default function PlayPage() {
       </div>
 
       {/* Footer */}
-      <footer className="px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderTop: "1px solid rgba(26,26,24,0.1)" }}>
-        <span className="font-serif text-[16px]" style={{ color: INK }}>accent<span style={{ color: ACCENT }}>.</span></span>
+      <footer
+        className="px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4"
+        style={{ borderTop: "1px solid rgba(26,26,24,0.1)" }}
+      >
+        <span className="font-serif text-[16px]" style={{ color: INK }}>
+          accent<span style={{ color: ACCENT }}>.</span>
+        </span>
         <div className="flex gap-6 text-[12px] font-sans" style={{ color: FAINT }}>
-          <Link href="/privacy-contact" className="no-underline hover:underline" style={{ color: FAINT }}>Privacy</Link>
-          <a href="mailto:hello@myaccent.io" className="no-underline hover:underline" style={{ color: FAINT }}>Contact</a>
+          <Link href="/privacy-contact" className="no-underline hover:underline" style={{ color: FAINT }}>
+            Privacy
+          </Link>
+          <a href="mailto:hello@myaccent.io" className="no-underline hover:underline" style={{ color: FAINT }}>
+            Contact
+          </a>
         </div>
       </footer>
     </div>

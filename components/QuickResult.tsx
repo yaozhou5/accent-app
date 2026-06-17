@@ -56,13 +56,7 @@ function buildNumberedPhrases(
   }));
 }
 
-function InlineDiff({
-  original,
-  numbered,
-}: {
-  original: string;
-  numbered: NumberedPhrase[];
-}) {
+function InlineDiff({ original, numbered }: { original: string; numbered: NumberedPhrase[] }) {
   // Find positions of each original phrase and replace inline.
   const matches: Array<{
     start: number;
@@ -95,9 +89,7 @@ function InlineDiff({
   let cursor = 0;
   filtered.forEach((m, i) => {
     if (m.start > cursor) {
-      segments.push(
-        <span key={`t-${i}`}>{original.slice(cursor, m.start)}</span>
-      );
+      segments.push(<span key={`t-${i}`}>{original.slice(cursor, m.start)}</span>);
     }
     const ops = wordDiff(original.slice(m.start, m.end), m.fixed || "");
     segments.push(
@@ -114,10 +106,7 @@ function InlineDiff({
               </span>
             );
           return (
-            <span
-              key={k}
-              className="bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px font-medium"
-            >
+            <span key={k} className="bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px font-medium">
               {op.text}
             </span>
           );
@@ -130,32 +119,15 @@ function InlineDiff({
     segments.push(<span key="t-end">{original.slice(cursor)}</span>);
   }
 
-  return (
-    <p className="font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap">
-      {segments}
-    </p>
-  );
+  return <p className="font-sans text-sm leading-relaxed text-ink whitespace-pre-wrap">{segments}</p>;
 }
 
-const QUICK_MESSAGES = [
-  "Putting on my reading glasses\u2026",
-  "Marking up your draft\u2026",
-  "Almost done\u2026",
-];
+const QUICK_MESSAGES = ["Putting on my reading glasses\u2026", "Marking up your draft\u2026", "Almost done\u2026"];
 
-export function QuickResult({
-  original,
-  fixResult,
-  isFixing,
-  onNew,
-  sessionCount,
-}: QuickResultProps) {
+export function QuickResult({ original, fixResult, isFixing, onNew, sessionCount }: QuickResultProps) {
   const [view, setView] = useState<"changes" | "edit">("changes");
   const [editedText, setEditedText] = useState<string | null>(null);
-  const numbered = useMemo(
-    () => buildNumberedPhrases(fixResult?.phrases ?? [], original),
-    [fixResult, original]
-  );
+  const numbered = useMemo(() => buildNumberedPhrases(fixResult?.phrases ?? [], original), [fixResult, original]);
   const issueCount = numbered.length;
   const hasIssues = fixResult ? issueCount > 0 : true;
   const isDone = !!fixResult && !isFixing;
@@ -167,20 +139,13 @@ export function QuickResult({
     setEditedText(displayText);
   }
 
-  const issueLabel =
-    issueCount === 0
-      ? "No changes"
-      : issueCount === 1
-        ? "1 change"
-        : `${issueCount} changes`;
+  const issueLabel = issueCount === 0 ? "No changes" : issueCount === 1 ? "1 change" : `${issueCount} changes`;
 
   if (!isDone) {
     return (
       <div className="space-y-4">
         <div className="bg-white border border-ink/10 rounded-[12px] p-5">
-          <p className="font-sans text-sm leading-relaxed text-ink/70 whitespace-pre-wrap">
-            {original}
-          </p>
+          <p className="font-sans text-sm leading-relaxed text-ink/70 whitespace-pre-wrap">{original}</p>
         </div>
         <RotatingStatus messages={QUICK_MESSAGES} />
       </div>
@@ -192,9 +157,7 @@ export function QuickResult({
       <div className="bg-white border border-ink/10 rounded-[12px] overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-ink/10 bg-warm/40">
-          <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">
-            {issueLabel}
-          </span>
+          <span className="text-[11px] font-sans font-medium text-ink/60 tracking-wide">{issueLabel}</span>
           {hasIssues && (
             <div
               role="tablist"
@@ -208,9 +171,7 @@ export function QuickResult({
                   aria-selected={view === v}
                   onClick={() => setView(v)}
                   className={`px-2.5 py-1 rounded-[6px] text-[11px] font-sans font-medium transition-colors ${
-                    view === v
-                      ? "bg-ink text-paper"
-                      : "text-ink/50 hover:text-ink/70"
+                    view === v ? "bg-ink text-paper" : "text-ink/50 hover:text-ink/70"
                   }`}
                 >
                   {v === "changes" ? "Changes" : "Edit"}
@@ -223,9 +184,7 @@ export function QuickResult({
         {/* Body */}
         <div className="px-4 py-4">
           {!hasIssues ? (
-            <p className="font-sans text-sm text-ink font-medium">
-              This is good writing! No changes needed.
-            </p>
+            <p className="font-sans text-sm text-ink font-medium">This is good writing! No changes needed.</p>
           ) : view === "changes" ? (
             <InlineDiff original={original} numbered={numbered} />
           ) : (
@@ -246,12 +205,7 @@ export function QuickResult({
           text={finalText}
           onSave={() => {
             if (fixResult) {
-              saveToShelf(
-                original,
-                finalText,
-                getIssuesForShelf(fixResult),
-                "quick"
-              );
+              saveToShelf(original, finalText, getIssuesForShelf(fixResult), "quick");
             }
           }}
         />

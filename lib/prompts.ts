@@ -52,12 +52,7 @@ export function buildExplainPrompt(
   improved_full: string,
   phrases: Array<{ phrase: string; fixed_phrase: string }>
 ): string {
-  const numbered = phrases
-    .map(
-      (p, i) =>
-        `${i + 1}. "${p.phrase}" → "${p.fixed_phrase}"`
-    )
-    .join("\n");
+  const numbered = phrases.map((p, i) => `${i + 1}. "${p.phrase}" → "${p.fixed_phrase}"`).join("\n");
 
   return `A writing coach has already made these corrections to a second-language writer's text. Your job is to explain WHY each change was made — teach the underlying principle.
 

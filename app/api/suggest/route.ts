@@ -7,16 +7,15 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { fullText, selectedWord, sentence } = await request.json();
 
     if (!selectedWord?.trim() || !sentence?.trim()) {
-      return NextResponse.json(
-        { error: "selectedWord and sentence are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "selectedWord and sentence are required" }, { status: 400 });
     }
 
     const prompt = `You are a writing coach helping a writer find the perfect word.
@@ -52,33 +51,22 @@ Return ONLY valid JSON, no preamble:
 
     const content = message.content[0];
     if (content.type !== "text") {
-      return NextResponse.json(
-        { error: "Unexpected response format" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Unexpected response format" }, { status: 500 });
     }
 
     let jsonText = content.text.trim();
     if (jsonText.startsWith("```")) {
-      jsonText = jsonText
-        .replace(/^```(?:json)?\s*\n?/, "")
-        .replace(/\n?```\s*$/, "");
+      jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
     }
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json(
-        { error: "Failed to parse response" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to parse response" }, { status: 500 });
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Suggest API error:", error);
-    return NextResponse.json(
-      { error: "Failed to get suggestions" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get suggestions" }, { status: 500 });
   }
 }

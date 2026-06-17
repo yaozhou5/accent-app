@@ -10,7 +10,9 @@ const anthropic = new Anthropic({ maxRetries: 3 });
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const ip = getClientIp(request);
@@ -32,18 +34,10 @@ export async function POST(request: NextRequest) {
     const { original, userAttempt, context, language } = body;
 
     if (!userAttempt || !userAttempt.trim()) {
-      return NextResponse.json(
-        { error: "User attempt is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User attempt is required" }, { status: 400 });
     }
 
-    const prompt = buildPracticeCheckPrompt(
-      original,
-      userAttempt,
-      context,
-      language
-    );
+    const prompt = buildPracticeCheckPrompt(original, userAttempt, context, language);
 
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -53,10 +47,7 @@ export async function POST(request: NextRequest) {
 
     const content = message.content[0];
     if (content.type !== "text") {
-      return NextResponse.json(
-        { error: "Unexpected response format" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Unexpected response format" }, { status: 500 });
     }
 
     // Extract JSON from response — strip code fences and trailing text
@@ -66,19 +57,13 @@ export async function POST(request: NextRequest) {
     }
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json(
-        { error: "Failed to parse response" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to parse response" }, { status: 500 });
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as PracticeCheckResponse;
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Practice check API error:", error);
-    return NextResponse.json(
-      { error: "Failed to check practice" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to check practice" }, { status: 500 });
   }
 }

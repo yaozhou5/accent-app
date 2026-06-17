@@ -24,15 +24,25 @@ export async function uploadLogImage(file: File): Promise<string | null> {
   if (file.size > 5 * 1024 * 1024) return null;
 
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
+  const extMap: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
   const ext = extMap[file.type] || "jpg";
   const path = `${user.id}/${Date.now()}.${ext}`;
 
   const { error } = await supabase.storage.from("log-images").upload(path, file);
-  if (error) { console.error("Failed to upload image:", error); return null; }
+  if (error) {
+    console.error("Failed to upload image:", error);
+    return null;
+  }
 
   const { data: urlData } = supabase.storage.from("log-images").getPublicUrl(path);
   return urlData.publicUrl;
@@ -56,7 +66,9 @@ export async function createLogEntry(
   } = {}
 ): Promise<LogEntry | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const entryType = opts.type || "note";
@@ -74,11 +86,7 @@ export async function createLogEntry(
   if (opts.image_urls && opts.image_urls.length > 0) row.image_urls = opts.image_urls;
   if (opts.link_url) row.link_url = opts.link_url;
 
-  const { data, error } = await supabase
-    .from("log_entries")
-    .insert(row)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("log_entries").insert(row).select().single();
 
   if (error) {
     console.error("Failed to create log entry:", JSON.stringify(error));
@@ -90,20 +98,28 @@ export async function createLogEntry(
 export async function updateLogEntryTags(id: string, tags: string[]): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").update({ tags }).eq("id", id);
-  if (error) { console.error("Failed to update tags:", error); return false; }
+  if (error) {
+    console.error("Failed to update tags:", error);
+    return false;
+  }
   return true;
 }
 
 export async function toggleBookmark(id: string, bookmarked: boolean, _note?: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").update({ bookmarked }).eq("id", id);
-  if (error) { console.error("Failed to toggle bookmark:", error); return false; }
+  if (error) {
+    console.error("Failed to toggle bookmark:", error);
+    return false;
+  }
   return true;
 }
 
 export async function getLogEntries(): Promise<LogEntry[]> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -112,13 +128,18 @@ export async function getLogEntries(): Promise<LogEntry[]> {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) { console.error("Failed to fetch log entries:", error); return []; }
+  if (error) {
+    console.error("Failed to fetch log entries:", error);
+    return [];
+  }
   return data as LogEntry[];
 }
 
 export async function getThisWeekEntries(): Promise<LogEntry[]> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const now = new Date();
@@ -135,27 +156,38 @@ export async function getThisWeekEntries(): Promise<LogEntry[]> {
     .gte("created_at", monday.toISOString())
     .order("created_at", { ascending: false });
 
-  if (error) { console.error("Failed to fetch week entries:", error); return []; }
+  if (error) {
+    console.error("Failed to fetch week entries:", error);
+    return [];
+  }
   return data as LogEntry[];
 }
 
 export async function updateLogEntry(id: string, content: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").update({ content }).eq("id", id);
-  if (error) { return false; }
+  if (error) {
+    return false;
+  }
   return true;
 }
 
 export async function archiveLogEntries(ids: string[]): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").update({ archived: true }).in("id", ids);
-  if (error) { console.error("Failed to archive:", error); return false; }
+  if (error) {
+    console.error("Failed to archive:", error);
+    return false;
+  }
   return true;
 }
 
 export async function deleteLogEntry(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("log_entries").delete().eq("id", id);
-  if (error) { console.error("Failed to delete log entry:", error); return false; }
+  if (error) {
+    console.error("Failed to delete log entry:", error);
+    return false;
+  }
   return true;
 }

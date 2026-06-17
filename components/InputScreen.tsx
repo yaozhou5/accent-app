@@ -35,10 +35,7 @@ export function InputScreen({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const keyboardHeight = useKeyboardHeight();
 
-  const subtitle =
-    mode === "quick"
-      ? "Paste it. I\u2019ll fix it fast."
-      : "Paste it. I\u2019ll explain every choice.";
+  const subtitle = mode === "quick" ? "Paste it. I\u2019ll fix it fast." : "Paste it. I\u2019ll explain every choice.";
 
   const handleFocus = useCallback(() => {
     setTimeout(() => {
@@ -52,9 +49,7 @@ export function InputScreen({
   return (
     <div className="space-y-4 pb-20">
       <div>
-        <h2 className="font-serif font-bold text-2xl text-ink">
-          What are you writing?
-        </h2>
+        <h2 className="font-serif font-bold text-2xl text-ink">What are you writing?</h2>
         <p className="mt-1 font-sans text-sm text-ink/60">{subtitle}</p>
       </div>
 
@@ -77,11 +72,7 @@ export function InputScreen({
         </div>
       )}
 
-      {langError && (
-        <p className="text-[13px] font-sans text-ink/40 text-center">
-          {langError}
-        </p>
-      )}
+      {langError && <p className="text-[13px] font-sans text-ink/40 text-center">{langError}</p>}
 
       {/* CTA — fixed on mobile (keyboard-aware), sticky within column on desktop */}
       <div
@@ -96,20 +87,22 @@ export function InputScreen({
               className="bg-white border border-ink/10 rounded-[12px] px-3 py-3 text-sm font-sans text-ink cursor-pointer focus:outline-none focus:ring-2 focus:ring-coral/20"
               aria-label="Language"
             >
-              {(Object.entries(localeNames) as [Locale, string][]).map(
-                ([code, name]) => (
-                  <option key={code} value={code}>
-                    {name}
-                  </option>
-                )
-              )}
+              {(Object.entries(localeNames) as [Locale, string][]).map(([code, name]) => (
+                <option key={code} value={code}>
+                  {name}
+                </option>
+              ))}
             </select>
           )}
           <button
             onClick={onSubmit}
             disabled={!canSubmit}
             className="flex-1 font-sans font-semibold text-[15px] py-3 rounded-full transition-opacity flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90"
-            style={{ background: canSubmit ? "#2563EB" : "#E5E5E5", color: canSubmit ? "#fff" : "#AAAAAA", border: "none" }}
+            style={{
+              background: canSubmit ? "#2563EB" : "#E5E5E5",
+              color: canSubmit ? "#fff" : "#AAAAAA",
+              border: "none",
+            }}
           >
             {loading ? "Analyzing..." : "Fix it"}
           </button>

@@ -1,10 +1,7 @@
 // Word-level LCS diff. Splits on whitespace but preserves it as tokens
 // so rendered output keeps original spacing.
 
-export type DiffOp =
-  | { type: "equal"; text: string }
-  | { type: "del"; text: string }
-  | { type: "ins"; text: string };
+export type DiffOp = { type: "equal"; text: string } | { type: "del"; text: string } | { type: "ins"; text: string };
 
 function tokenize(s: string): string[] {
   // Keep whitespace runs as their own tokens so rendering stays faithful.
@@ -22,9 +19,7 @@ export function wordDiff(before: string, after: string): DiffOp[] {
   // LCS table on tokens
   const m = a.length;
   const n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    new Array(n + 1).fill(0)
-  );
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
   for (let i = m - 1; i >= 0; i--) {
     for (let j = n - 1; j >= 0; j--) {
       if (a[i] === b[j]) dp[i][j] = dp[i + 1][j + 1] + 1;

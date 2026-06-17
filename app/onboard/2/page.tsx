@@ -22,13 +22,13 @@ export default function Onboard2() {
   const router = useRouter();
 
   useEffect(() => {
-    getProfile().then(p => {
+    getProfile().then((p) => {
       if (p?.goals && p.goals.length > 0) setSelected(p.goals);
     });
   }, []);
 
   const toggle = (key: string) => {
-    setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+    setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
   const handleNext = async () => {
@@ -43,17 +43,23 @@ export default function Onboard2() {
     <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#fff" }}>
       <div className="max-w-[480px] w-full py-16">
         <div className="flex gap-2 mb-10">
-          {[1, 2, 3].map(s => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className="flex-1 h-[3px] rounded-full" style={{ background: s <= 2 ? INK : BORDER }} />
           ))}
         </div>
 
-        <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>2 of 3</span>
-        <h1 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Why are you posting?</h1>
-        <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>Pick your main goal. This shapes what kind of content we plan for you.</p>
+        <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: DIM, letterSpacing: "0.1em" }}>
+          2 of 3
+        </span>
+        <h1 className="font-serif mb-2" style={{ fontSize: 24, fontWeight: 600, color: INK }}>
+          Why are you posting?
+        </h1>
+        <p className="font-sans mb-8" style={{ fontSize: 15, color: DIM, lineHeight: 1.6 }}>
+          Pick your main goal. This shapes what kind of content we plan for you.
+        </p>
 
         <div className="space-y-3 mb-8">
-          {GOALS.map(g => (
+          {GOALS.map((g) => (
             <button
               key={g.key}
               onClick={() => toggle(g.key)}
@@ -67,8 +73,12 @@ export default function Onboard2() {
                 outline: "none",
               }}
             >
-              <span className="block font-sans text-[15px] font-medium" style={{ color: INK }}>{g.label}</span>
-              <span className="block font-sans text-[13px] mt-0.5" style={{ color: DIM }}>{g.desc}</span>
+              <span className="block font-sans text-[15px] font-medium" style={{ color: INK }}>
+                {g.label}
+              </span>
+              <span className="block font-sans text-[13px] mt-0.5" style={{ color: DIM }}>
+                {g.desc}
+              </span>
             </button>
           ))}
         </div>
@@ -78,7 +88,14 @@ export default function Onboard2() {
             onClick={handleNext}
             disabled={selected.length === 0 || saving}
             className="flex-1 rounded-full font-sans font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ fontSize: 15, padding: "14px 24px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+            style={{
+              fontSize: 15,
+              padding: "14px 24px",
+              background: BLUE,
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
             {saving ? "Saving..." : "Next"}
           </button>

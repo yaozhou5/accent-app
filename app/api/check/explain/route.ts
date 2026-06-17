@@ -11,7 +11,9 @@ const anthropic = new Anthropic({ maxRetries: 3 });
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const ip = getClientIp(request);
@@ -19,23 +21,16 @@ export async function POST(request: NextRequest) {
     const distinctId = request.headers.get("X-POSTHOG-DISTINCT-ID") || ip;
 
     if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests, please try again later." },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: "Too many requests, please try again later." }, { status: 429 });
     }
 
     const body = await request.json();
     const original: string = body.original;
     const improved_full: string = body.improved_full;
-    const phrases: Array<{ phrase: string; fixed_phrase: string }> =
-      body.phrases ?? [];
+    const phrases: Array<{ phrase: string; fixed_phrase: string }> = body.phrases ?? [];
 
     if (!original || !improved_full) {
-      return NextResponse.json(
-        { error: "Original and improved text are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Original and improved text are required" }, { status: 400 });
     }
 
     // No changes — no lessons to teach
@@ -53,24 +48,16 @@ export async function POST(request: NextRequest) {
 
     const content = message.content[0];
     if (content.type !== "text") {
-      return NextResponse.json(
-        { error: "Unexpected response format" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Unexpected response format" }, { status: 500 });
     }
 
     let jsonText = content.text.trim();
     if (jsonText.startsWith("```")) {
-      jsonText = jsonText
-        .replace(/^```(?:json)?\s*\n?/, "")
-        .replace(/\n?```\s*$/, "");
+      jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
     }
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json(
-        { error: "Failed to parse response" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to parse response" }, { status: 500 });
     }
 
     type Lesson = {
@@ -84,18 +71,12 @@ export async function POST(request: NextRequest) {
     try {
       parsed = JSON.parse(jsonMatch[0]);
     } catch {
-      const fixed = jsonMatch[0].replace(
-        /(?<=<mark>)(.*?)(?=<\/mark>)/g,
-        (match) => match.replace(/"/g, '\\"')
-      );
+      const fixed = jsonMatch[0].replace(/(?<=<mark>)(.*?)(?=<\/mark>)/g, (match) => match.replace(/"/g, '\\"'));
       try {
         parsed = JSON.parse(fixed);
       } catch {
         console.error("Explain JSON parse failed:", jsonMatch[0].slice(0, 300));
-        return NextResponse.json(
-          { error: "Failed to parse response. Please try again." },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to parse response. Please try again." }, { status: 500 });
       }
     }
 
@@ -128,8 +109,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ issues });
   } catch (error: unknown) {
     console.error("Explain API error:", error);
-    const isOverloaded =
-      error instanceof Anthropic.APIError && error.status === 529;
+    const isOverloaded = error instanceof Anthropic.APIError && error.status === 529;
     return NextResponse.json(
       {
         error: isOverloaded

@@ -52,7 +52,7 @@ export default function LogPage() {
 
   useEffect(() => {
     setLoading(true);
-    getLogs(filter).then(data => {
+    getLogs(filter).then((data) => {
       setLogs(data);
       setLoading(false);
     });
@@ -65,7 +65,7 @@ export default function LogPage() {
     try {
       const entry = await createLog(text.trim());
       if (entry) {
-        setLogs(prev => [entry, ...prev]);
+        setLogs((prev) => [entry, ...prev]);
         setNewId(entry.id);
         setTimeout(() => setNewId(null), 600);
         setText("");
@@ -96,14 +96,25 @@ export default function LogPage() {
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="no-underline flex items-center" style={{ color: DIM }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
             </Link>
-            <h1 className="font-serif" style={{ fontSize: 22, fontWeight: 600, color: INK }}>Log</h1>
+            <h1 className="font-serif" style={{ fontSize: 22, fontWeight: 600, color: INK }}>
+              Log
+            </h1>
           </div>
           <div className="flex rounded-full overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
-            {(["week", "all"] as const).map(f => (
+            {(["week", "all"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -129,7 +140,7 @@ export default function LogPage() {
             <textarea
               ref={textareaRef}
               value={text}
-              onChange={e => setText(e.target.value)}
+              onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="What happened today?"
               rows={4}
@@ -145,10 +156,7 @@ export default function LogPage() {
                 minHeight: 120,
               }}
             />
-            <span
-              className="absolute font-mono"
-              style={{ bottom: 12, right: 16, fontSize: 11, color: FAINT }}
-            >
+            <span className="absolute font-mono" style={{ bottom: 12, right: 16, fontSize: 11, color: FAINT }}>
               {charCount}
             </span>
           </div>
@@ -161,7 +169,9 @@ export default function LogPage() {
             {submitting ? "Logging..." : "Log"}
           </button>
           {error && (
-            <p className="mt-2 text-center font-sans text-[13px]" style={{ color: "#DC2626" }}>{error}</p>
+            <p className="mt-2 text-center font-sans text-[13px]" style={{ color: "#DC2626" }}>
+              {error}
+            </p>
           )}
           <p className="mt-2 text-center font-mono" style={{ fontSize: 11, color: FAINT }}>
             Cmd+Enter to submit
@@ -171,7 +181,7 @@ export default function LogPage() {
         {/* Log entries */}
         {loading ? (
           <div className="space-y-4 animate-pulse">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i}>
                 <div className="h-3 rounded w-20 mb-3" style={{ background: "#f0f0f0" }} />
                 <div className="h-16 rounded-[10px]" style={{ background: "#fafafa" }} />
@@ -195,7 +205,7 @@ export default function LogPage() {
                   {day}
                 </span>
                 <div className="space-y-3">
-                  {entries.map(entry => (
+                  {entries.map((entry) => (
                     <div
                       key={entry.id}
                       className="rounded-[10px]"
@@ -214,10 +224,7 @@ export default function LogPage() {
                       >
                         {entry.content}
                       </p>
-                      <span
-                        className="font-mono block mt-2"
-                        style={{ fontSize: 11, color: FAINT }}
-                      >
+                      <span className="font-mono block mt-2" style={{ fontSize: 11, color: FAINT }}>
                         {formatTime(entry.created_at)}
                       </span>
                     </div>

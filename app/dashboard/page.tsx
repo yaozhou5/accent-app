@@ -4,68 +4,134 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
-import { savePlan, updatePlanPosts, getCurrentPlan, getAllPlans, getWeekStart, getCurrentWeekMonday, type ContentPlan, type ContentPlanData, type ContentPlanPost } from "@/lib/supabase/planner";
-import { createLogEntry, updateLogEntryTags, updateLogEntry, getLogEntries, uploadLogImage, detectUrl, toggleBookmark, archiveLogEntries, deleteLogEntry, type LogEntry, type LogEntryType } from "@/lib/supabase/log-entries";
+import {
+  savePlan,
+  updatePlanPosts,
+  getCurrentPlan,
+  getAllPlans,
+  getWeekStart,
+  getCurrentWeekMonday,
+  type ContentPlan,
+  type ContentPlanData,
+  type ContentPlanPost,
+} from "@/lib/supabase/planner";
+import {
+  createLogEntry,
+  updateLogEntryTags,
+  updateLogEntry,
+  getLogEntries,
+  uploadLogImage,
+  detectUrl,
+  toggleBookmark,
+  archiveLogEntries,
+  deleteLogEntry,
+  type LogEntry,
+  type LogEntryType,
+} from "@/lib/supabase/log-entries";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import posthog from "posthog-js";
-import { getDraft, saveDraft, saveDraftById, createStandaloneDraft, getAllDrafts, markAsPublished, type Draft } from "@/lib/supabase/drafts";
+import {
+  getDraft,
+  saveDraft,
+  saveDraftById,
+  createStandaloneDraft,
+  getAllDrafts,
+  markAsPublished,
+  type Draft,
+} from "@/lib/supabase/drafts";
 import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
-import { getCoachingSession, saveCoachingSession, type CoachingMessage, type CoachingSuggestion } from "@/lib/supabase/coaching";
+import {
+  getCoachingSession,
+  saveCoachingSession,
+  type CoachingMessage,
+  type CoachingSuggestion,
+} from "@/lib/supabase/coaching";
 
 // Design tokens
-const INK = "#111827";      // gray-900
-const BODY = "#4b5563";     // gray-600 — body text, log entries
-const DIM = "#6b7280";      // gray-500 — inactive tabs
-const FAINT = "#9ca3af";    // gray-400 — labels, timestamps
-const BLUE = "#3B82F6";     // primary action
-const BORDER = "#e5e7eb";   // gray-200
+const INK = "#111827"; // gray-900
+const BODY = "#4b5563"; // gray-600 — body text, log entries
+const DIM = "#6b7280"; // gray-500 — inactive tabs
+const FAINT = "#9ca3af"; // gray-400 — labels, timestamps
+const BLUE = "#3B82F6"; // primary action
+const BORDER = "#e5e7eb"; // gray-200
 
-const PLATFORM_LABELS: Record<string, string> = { linkedin: "LinkedIn", x: "X", substack: "Substack", xiaohongshu: "小红书", threads: "Threads" };
+const PLATFORM_LABELS: Record<string, string> = {
+  linkedin: "LinkedIn",
+  x: "X",
+  substack: "Substack",
+  xiaohongshu: "小红书",
+  threads: "Threads",
+};
 const CONTENT_TYPE_COLORS: Record<string, string> = {
-  "personal-story": "#8b5cf6", "lesson": "#3b82f6", "behind-the-scenes": "#0d9488",
-  "listicle": "#f59e0b", "hot-take": "#ef4444", "social-proof": "#22c55e",
+  "personal-story": "#8b5cf6",
+  lesson: "#3b82f6",
+  "behind-the-scenes": "#0d9488",
+  listicle: "#f59e0b",
+  "hot-take": "#ef4444",
+  "social-proof": "#22c55e",
 };
 const TAG_COLORS: Record<string, string> = {
   "build log": "#64748b",
   "founder diary": "#a8926a",
   "market signal": "#5eaaa8",
-  "milestone": "#6ab07c",
-  "inspiration": "#9b8ec4",
+  milestone: "#6ab07c",
+  inspiration: "#9b8ec4",
 };
 
 function weekLabel(ws: string): string {
   const m = new Date(ws + "T12:00:00");
-  const f = new Date(m); f.setDate(m.getDate() + 4);
+  const f = new Date(m);
+  f.setDate(m.getDate() + 4);
   const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   return `${fmt(m)}-${fmt(f)}`;
 }
 function getDayLabel(ds: string): string {
-  const d = new Date(ds), now = new Date();
+  const d = new Date(ds),
+    now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const entry = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diff = Math.round((today.getTime() - entry.getTime()) / 86400000);
-  if (diff === 0) return "Today"; if (diff === 1) return "Yesterday";
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
   if (diff < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
-function formatTime(ds: string): string { return new Date(ds).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
-function getDomain(url: string): string { try { return new URL(url).hostname; } catch { return url; } }
+function formatTime(ds: string): string {
+  return new Date(ds).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
 function getReadableTitle(url: string): string {
   try {
     const u = new URL(url);
     const path = u.pathname.replace(/\/$/, "").split("/").pop() || "";
     if (path && path !== "") {
-      return path.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      return path.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     }
     return u.hostname;
-  } catch { return url; }
+  } catch {
+    return url;
+  }
 }
 
 type Tab = "log" | "ideas" | "drafts";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
-function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartDraft, onDevelopNote, onDevelopNotes }: {
+function LogTab({
+  logEntries,
+  setLogEntries,
+  allPlans,
+  onSwitchToIdeas,
+  onStartDraft,
+  onDevelopNote,
+  onDevelopNotes,
+}: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
@@ -78,12 +144,18 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
     return "";
   });
-  const setInput = (val: string) => { setInputRaw(val); if (typeof window !== "undefined") localStorage.setItem("accent-log-draft", val); };
+  const setInput = (val: string) => {
+    setInputRaw(val);
+    if (typeof window !== "undefined") localStorage.setItem("accent-log-draft", val);
+  };
   const [entryType, setEntryType] = useState<LogEntryType>(() => {
     if (typeof window !== "undefined") return (localStorage.getItem("accent-log-type") as LogEntryType) || "note";
     return "note";
   });
-  const setEntryTypeWithSave = (t: LogEntryType) => { setEntryType(t); if (typeof window !== "undefined") localStorage.setItem("accent-log-type", t); };
+  const setEntryTypeWithSave = (t: LogEntryType) => {
+    setEntryType(t);
+    if (typeof window !== "undefined") localStorage.setItem("accent-log-type", t);
+  };
   const [source, setSource] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +168,9 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<LogFilter>("all");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
-  const [ogCache, setOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
+  const [ogCache, setOgCache] = useState<
+    Record<string, { title: string | null; description: string | null; image: string | null }>
+  >({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -113,37 +187,49 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   const addImageFiles = (files: File[]) => {
     const valid: File[] = [];
     for (const f of files) {
-      if (!ALLOWED_IMAGE_TYPES.includes(f.type)) { setAttachError("Only JPG, PNG, WebP, and GIF allowed."); continue; }
-      if (f.size > MAX_IMAGE_SIZE) { setAttachError("Max 5MB per image."); continue; }
+      if (!ALLOWED_IMAGE_TYPES.includes(f.type)) {
+        setAttachError("Only JPG, PNG, WebP, and GIF allowed.");
+        continue;
+      }
+      if (f.size > MAX_IMAGE_SIZE) {
+        setAttachError("Max 5MB per image.");
+        continue;
+      }
       valid.push(f);
     }
     if (valid.length > 0) {
       setAttachError(null);
-      setPendingImages(prev => [...prev, ...valid].slice(0, 5));
-      setPendingPreviews(prev => [...prev, ...valid.map(f => URL.createObjectURL(f))].slice(0, 5));
+      setPendingImages((prev) => [...prev, ...valid].slice(0, 5));
+      setPendingPreviews((prev) => [...prev, ...valid.map((f) => URL.createObjectURL(f))].slice(0, 5));
     }
   };
 
   // Prevent browser from opening dropped files globally
   useEffect(() => {
-    const prevent = (e: DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const prevent = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
     window.addEventListener("dragover", prevent);
     window.addEventListener("drop", prevent);
-    return () => { window.removeEventListener("dragover", prevent); window.removeEventListener("drop", prevent); };
+    return () => {
+      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("drop", prevent);
+    };
   }, []);
 
   // Compute which entries were used in plans (match source_snippet to content)
   const usedContents = new Set<string>();
   for (const p of allPlans) {
     const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
-    for (const post of (pd?.posts || [])) {
+    for (const post of pd?.posts || []) {
       if (post.source_snippet) usedContents.add(post.source_snippet.toLowerCase().trim());
     }
   }
   const isUsedInPlan = (e: LogEntry) => e.content && usedContents.has(e.content.toLowerCase().trim());
 
   // Filter + search
-  const visibleEntries = logEntries.filter(e => {
+  const visibleEntries = logEntries.filter((e) => {
     if (e.archived) return false;
     if (filter === "notes" && e.type !== "note") return false;
     if (filter === "links" && e.type !== "link") return false;
@@ -153,14 +239,17 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
     if (search.trim()) {
       const q = search.toLowerCase();
-      if (!(e.content || "").toLowerCase().includes(q) && !(e.tags || []).some(t => t.includes(q))) return false;
+      if (!(e.content || "").toLowerCase().includes(q) && !(e.tags || []).some((t) => t.includes(q))) return false;
     }
     return true;
   });
 
   // Unused nudge
-  const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-  const unusedOldCount = logEntries.filter(e => !e.archived && !isUsedInPlan(e) && !e.bookmarked && new Date(e.created_at) < twoWeeksAgo).length;
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const unusedOldCount = logEntries.filter(
+    (e) => !e.archived && !isUsedInPlan(e) && !e.bookmarked && new Date(e.created_at) < twoWeeksAgo
+  ).length;
 
   // Group by day for simple chronological feed
   const dayGroups = (() => {
@@ -168,7 +257,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     const map = new Map<string, LogEntry[]>();
     for (const e of visibleEntries) {
       const label = getDayLabel(e.created_at);
-      if (!map.has(label)) { map.set(label, []); groups.push({ label, entries: map.get(label)! }); }
+      if (!map.has(label)) {
+        map.set(label, []);
+        groups.push({ label, entries: map.get(label)! });
+      }
       map.get(label)!.push(e);
     }
     return groups;
@@ -177,87 +269,155 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
   // Fetch OG metadata for link entries
   useEffect(() => {
     const urls = logEntries
-      .filter(e => (e.type === "link" || e.url || e.link_url) && !ogCache[e.url || e.link_url || ""])
-      .map(e => e.url || e.link_url)
+      .filter((e) => (e.type === "link" || e.url || e.link_url) && !ogCache[e.url || e.link_url || ""])
+      .map((e) => e.url || e.link_url)
       .filter((u): u is string => !!u);
     const unique = [...new Set(urls)].slice(0, 10); // limit to 10 fetches
     for (const url of unique) {
-      fetch("/api/og-meta", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) })
-        .then(r => r.json())
-        .then(data => setOgCache(prev => ({ ...prev, [url]: data })))
+      fetch("/api/og-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      })
+        .then((r) => r.json())
+        .then((data) => setOgCache((prev) => ({ ...prev, [url]: data })))
         .catch(() => {});
     }
   }, [logEntries.length]);
 
-
   const tagEntryAsync = (entry: LogEntry) => {
-    fetch("/api/tag-entry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: entry.content || "", entryType: entry.type }) })
-      .then(r => r.json()).then(({ tags }) => { if (tags?.length) { updateLogEntryTags(entry.id, tags); setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === entry.id ? { ...e, tags } : e)); } }).catch(() => {});
+    fetch("/api/tag-entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: entry.content || "", entryType: entry.type }),
+    })
+      .then((r) => r.json())
+      .then(({ tags }) => {
+        if (tags?.length) {
+          updateLogEntryTags(entry.id, tags);
+          setLogEntries((prev: LogEntry[]) => prev.map((e) => (e.id === entry.id ? { ...e, tags } : e)));
+        }
+      })
+      .catch(() => {});
   };
 
   const handleSubmit = async () => {
     if ((!input.trim() && pendingImages.length === 0) || submitting) return;
-    setSubmitting(true); setError(null);
+    setSubmitting(true);
+    setError(null);
     try {
       let imageUrls: string[] = [];
       if (pendingImages.length > 0) {
-        const uploads = await Promise.all(pendingImages.map(f => uploadLogImage(f)));
+        const uploads = await Promise.all(pendingImages.map((f) => uploadLogImage(f)));
         imageUrls = uploads.filter((u): u is string => u !== null);
-        setPendingImages([]); setPendingPreviews([]);
+        setPendingImages([]);
+        setPendingPreviews([]);
       }
       const detectedUrl = detectUrl(input.trim());
       const isLinkOnly = detectedUrl && input.trim() === detectedUrl;
       const autoType: LogEntryType = isLinkOnly ? "link" : "note";
-      const entry = await createLogEntry(input.trim(), { image_url: imageUrls[0] || null, image_urls: imageUrls, link_url: detectedUrl, type: autoType, url: isLinkOnly ? detectedUrl : null });
+      const entry = await createLogEntry(input.trim(), {
+        image_url: imageUrls[0] || null,
+        image_urls: imageUrls,
+        link_url: detectedUrl,
+        type: autoType,
+        url: isLinkOnly ? detectedUrl : null,
+      });
       if (entry) {
         setLogEntries((prev: LogEntry[]) => [entry, ...prev]);
-        setInput(""); setSource("");
+        setInput("");
+        setSource("");
         tagEntryAsync(entry);
-        try { posthog.capture("note_logged", { type: entry.type, has_images: imageUrls.length > 0, has_url: !!detectedUrl }); } catch {}
-      }
-      else setError("Failed to save.");
-    } catch (e: unknown) { setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`); }
+        try {
+          posthog.capture("note_logged", {
+            type: entry.type,
+            has_images: imageUrls.length > 0,
+            has_url: !!detectedUrl,
+          });
+        } catch {}
+      } else setError("Failed to save.");
+    } catch (e: unknown) {
+      setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`);
+    }
     setSubmitting(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); } };
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     addImageFiles(Array.from(e.target.files || []));
     e.target.value = "";
   };
   const removePendingImage = (idx: number) => {
-    setPendingImages(prev => prev.filter((_, i) => i !== idx));
-    setPendingPreviews(prev => prev.filter((_, i) => i !== idx));
+    setPendingImages((prev) => prev.filter((_, i) => i !== idx));
+    setPendingPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleToggleBookmark = async (id: string, current: boolean) => {
-    if (!current) { setBookmarkNoteId(id); setBookmarkNote(""); return; }
+    if (!current) {
+      setBookmarkNoteId(id);
+      setBookmarkNote("");
+      return;
+    }
     const ok = await toggleBookmark(id, false);
-    if (ok) { setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === id ? { ...e, bookmarked: false } : e)); setToast("Removed from Shelf"); setTimeout(() => setToast(null), 1500); }
+    if (ok) {
+      setLogEntries((prev: LogEntry[]) => prev.map((e) => (e.id === id ? { ...e, bookmarked: false } : e)));
+      setToast("Removed from Shelf");
+      setTimeout(() => setToast(null), 1500);
+    }
   };
   const handleConfirmBookmark = async () => {
     if (!bookmarkNoteId) return;
     const ok = await toggleBookmark(bookmarkNoteId, true, bookmarkNote.trim() || undefined);
-    if (ok) { setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === bookmarkNoteId ? { ...e, bookmarked: true } : e)); setToast("Saved to Shelf"); setTimeout(() => setToast(null), 1500); }
-    setBookmarkNoteId(null); setBookmarkNote("");
+    if (ok) {
+      setLogEntries((prev: LogEntry[]) => prev.map((e) => (e.id === bookmarkNoteId ? { ...e, bookmarked: true } : e)));
+      setToast("Saved to Shelf");
+      setTimeout(() => setToast(null), 1500);
+    }
+    setBookmarkNoteId(null);
+    setBookmarkNote("");
   };
 
-  const toggleSelect = (id: string) => { const s = new Set(selected); if (s.has(id)) s.delete(id); else s.add(id); setSelected(s); };
+  const toggleSelect = (id: string) => {
+    const s = new Set(selected);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    setSelected(s);
+  };
   const handleBulkBookmark = async () => {
-    for (const id of selected) { await toggleBookmark(id, true); }
-    setLogEntries((prev: LogEntry[]) => prev.map(e => selected.has(e.id) ? { ...e, bookmarked: true } : e));
-    setSelected(new Set()); setSelectMode(false); setToast(`${selected.size} bookmarked`); setTimeout(() => setToast(null), 1500);
+    for (const id of selected) {
+      await toggleBookmark(id, true);
+    }
+    setLogEntries((prev: LogEntry[]) => prev.map((e) => (selected.has(e.id) ? { ...e, bookmarked: true } : e)));
+    setSelected(new Set());
+    setSelectMode(false);
+    setToast(`${selected.size} bookmarked`);
+    setTimeout(() => setToast(null), 1500);
   };
   const handleBulkArchive = async () => {
     const ids = Array.from(selected);
     const ok = await archiveLogEntries(ids);
-    if (ok) { setLogEntries((prev: LogEntry[]) => prev.map(e => selected.has(e.id) ? { ...e, archived: true } : e)); }
-    setSelected(new Set()); setSelectMode(false); setToast(`${ids.length} archived`); setTimeout(() => setToast(null), 1500);
+    if (ok) {
+      setLogEntries((prev: LogEntry[]) => prev.map((e) => (selected.has(e.id) ? { ...e, archived: true } : e)));
+    }
+    setSelected(new Set());
+    setSelectMode(false);
+    setToast(`${ids.length} archived`);
+    setTimeout(() => setToast(null), 1500);
   };
   const handleBulkDelete = async () => {
-    for (const id of selected) { await deleteLogEntry(id); }
-    setLogEntries((prev: LogEntry[]) => prev.filter(e => !selected.has(e.id)));
-    setSelected(new Set()); setSelectMode(false); setToast(`Deleted`); setTimeout(() => setToast(null), 1500);
+    for (const id of selected) {
+      await deleteLogEntry(id);
+    }
+    setLogEntries((prev: LogEntry[]) => prev.filter((e) => !selected.has(e.id)));
+    setSelected(new Set());
+    setSelectMode(false);
+    setToast(`Deleted`);
+    setTimeout(() => setToast(null), 1500);
   };
 
   const [editText, setEditText] = useState("");
@@ -271,17 +431,24 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     setSubmitting(true);
     const ok = await updateLogEntry(editingId, editText.trim());
     if (ok) {
-      setLogEntries((prev: LogEntry[]) => prev.map(e => e.id === editingId ? { ...e, content: editText.trim() } : e));
-      setEditingId(null); setEditText("");
+      setLogEntries((prev: LogEntry[]) =>
+        prev.map((e) => (e.id === editingId ? { ...e, content: editText.trim() } : e))
+      );
+      setEditingId(null);
+      setEditText("");
     }
     setSubmitting(false);
   };
-  const handleCancelEdit = () => { setEditingId(null); setEditText(""); };
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditText("");
+  };
   const handleDeleteEntry = async (id: string) => {
     await deleteLogEntry(id);
-    setLogEntries((prev: LogEntry[]) => prev.filter(e => e.id !== id));
+    setLogEntries((prev: LogEntry[]) => prev.filter((e) => e.id !== id));
     setDeleteConfirmId(null);
-    setToast("Deleted"); setTimeout(() => setToast(null), 1500);
+    setToast("Deleted");
+    setTimeout(() => setToast(null), 1500);
   };
 
   const placeholders: Record<LogEntryType, string> = {
@@ -290,26 +457,65 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
     quote: "A quote or snippet you want to remember...",
   };
   const FILTERS: { key: LogFilter; label: string }[] = [
-    { key: "all", label: "All" }, { key: "notes", label: "Notes" }, { key: "links", label: "Links" },
-    { key: "quotes", label: "Quotes" }, { key: "bookmarked", label: "Saved" }, { key: "unused", label: "Unused" },
+    { key: "all", label: "All" },
+    { key: "notes", label: "Notes" },
+    { key: "links", label: "Links" },
+    { key: "quotes", label: "Quotes" },
+    { key: "bookmarked", label: "Saved" },
+    { key: "unused", label: "Unused" },
   ];
-  const availableTags = Array.from(new Set(logEntries.filter(e => !e.archived).flatMap(e => e.tags || []))).filter(Boolean).sort();
+  const availableTags = Array.from(new Set(logEntries.filter((e) => !e.archived).flatMap((e) => e.tags || [])))
+    .filter(Boolean)
+    .sort();
 
   return (
-    <div onClick={() => { if (menuOpen) setMenuOpen(null); }}>
+    <div
+      onClick={() => {
+        if (menuOpen) setMenuOpen(null);
+      }}
+    >
       {/* Compose — single text field with paste/drop/attach */}
-      <div id="compose-card" className="mb-6 rounded-[12px] overflow-hidden transition-colors"
-        style={{ border: dragOver ? `2px solid ${BLUE}` : `1px solid ${BORDER}`, background: dragOver ? `${BLUE}04` : "#fff" }}
-        onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
-        onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
-        onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); addImageFiles(Array.from(e.dataTransfer.files)); }}>
+      <div
+        id="compose-card"
+        className="mb-6 rounded-[12px] overflow-hidden transition-colors"
+        style={{
+          border: dragOver ? `2px solid ${BLUE}` : `1px solid ${BORDER}`,
+          background: dragOver ? `${BLUE}04` : "#fff",
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(false);
+          addImageFiles(Array.from(e.dataTransfer.files));
+        }}
+      >
         {pendingPreviews.length > 0 && (
           <div className="px-5 pt-3 flex gap-2 flex-wrap">
             {pendingPreviews.map((preview, idx) => (
               <div key={idx} className="relative inline-block">
-                <img src={preview} alt="" className="rounded-[8px]" style={{ width: 72, height: 72, objectFit: "cover", border: `1px solid ${BORDER}` }} />
-                <button onClick={() => removePendingImage(idx)} className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}>×</button>
+                <img
+                  src={preview}
+                  alt=""
+                  className="rounded-[8px]"
+                  style={{ width: 72, height: 72, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                />
+                <button
+                  onClick={() => removePendingImage(idx)}
+                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
@@ -323,77 +529,203 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
               { label: "A frustration", stem: "I got frustrated when " },
               { label: "Something I read", stem: "I read something that stuck with me: " },
               { label: "A decision I made", stem: "I decided to " },
-            ].map(chip => (
-              <button key={chip.label} onClick={() => {
-                setInput(input.trim() ? input + "\n" + chip.stem : chip.stem);
-                setTimeout(() => { composeRef.current?.focus(); }, 0);
-              }}
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                onClick={() => {
+                  setInput(input.trim() ? input + "\n" + chip.stem : chip.stem);
+                  setTimeout(() => {
+                    composeRef.current?.focus();
+                  }, 0);
+                }}
                 className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors hover:bg-gray-50"
-                style={{ color: DIM, border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}>
+                style={{ color: DIM, border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}
+              >
                 {chip.label}
               </button>
             ))}
           </div>
         )}
-        <textarea ref={el => { composeRef.current = el; if (el) { el.style.height = "auto"; el.style.height = Math.max(56, el.scrollHeight) + "px"; } }}
-          value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-          onPaste={e => {
+        <textarea
+          ref={(el) => {
+            composeRef.current = el;
+            if (el) {
+              el.style.height = "auto";
+              el.style.height = Math.max(56, el.scrollHeight) + "px";
+            }
+          }}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onPaste={(e) => {
             const items = Array.from(e.clipboardData.items);
-            const imageFiles = items.filter(it => it.type.startsWith("image/")).map(it => it.getAsFile()).filter((f): f is File => f !== null);
-            if (imageFiles.length > 0) { e.preventDefault(); addImageFiles(imageFiles); }
+            const imageFiles = items
+              .filter((it) => it.type.startsWith("image/"))
+              .map((it) => it.getAsFile())
+              .filter((f): f is File => f !== null);
+            if (imageFiles.length > 0) {
+              e.preventDefault();
+              addImageFiles(imageFiles);
+            }
           }}
           placeholder="A call, a win, a frustration, something you read..."
-          className="w-full outline-none resize-none font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "14px 16px 8px", border: "none", background: "transparent", minHeight: 56, overflow: "hidden" }} />
-        {attachError && <p className="font-sans text-[12px] px-4 pb-1" style={{ color: "#DC2626" }}>{attachError}</p>}
+          className="w-full outline-none resize-none font-sans"
+          style={{
+            fontSize: 15,
+            color: INK,
+            lineHeight: 1.6,
+            padding: "14px 16px 8px",
+            border: "none",
+            background: "transparent",
+            minHeight: 56,
+            overflow: "hidden",
+          }}
+        />
+        {attachError && (
+          <p className="font-sans text-[12px] px-4 pb-1" style={{ color: "#DC2626" }}>
+            {attachError}
+          </p>
+        )}
         <div className="flex items-center justify-between px-3 pb-3">
           <div className="flex items-center gap-2">
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handleImageSelect} className="hidden" />
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-gray-50"
-              style={{ border: "none", background: "transparent", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pendingImages.length > 0 ? BLUE : FAINT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 rounded-full hover:bg-gray-50"
+              style={{
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                minWidth: 44,
+                minHeight: 44,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={pendingImages.length > 0 ? BLUE : FAINT}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
             </button>
           </div>
-          <button onClick={handleSubmit} disabled={(!input.trim() && pendingImages.length === 0) || submitting} className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+          <button
+            onClick={handleSubmit}
+            disabled={(!input.trim() && pendingImages.length === 0) || submitting}
+            className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+          >
             {submitting ? "Saving..." : "Log"}
           </button>
         </div>
       </div>
 
-      {error && <p className="font-sans text-[13px] mb-4" style={{ color: "#DC2626" }}>{error}</p>}
+      {error && (
+        <p className="font-sans text-[13px] mb-4" style={{ color: "#DC2626" }}>
+          {error}
+        </p>
+      )}
 
       {/* Unused nudge */}
       {unusedOldCount >= 5 && filter !== "unused" && (
-        <div className="mb-6 p-4 rounded-[12px] flex items-center justify-between" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-          <p className="font-sans text-[14px]" style={{ color: INK }}>You have <strong>{unusedOldCount}</strong> unused notes — ready to turn them into content?</p>
-          <button onClick={onSwitchToIdeas} className="font-sans text-[13px] font-semibold shrink-0 ml-3" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Go to Ideas <ArrowRight size={12} /></button>
+        <div
+          className="mb-6 p-4 rounded-[12px] flex items-center justify-between"
+          style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}
+        >
+          <p className="font-sans text-[14px]" style={{ color: INK }}>
+            You have <strong>{unusedOldCount}</strong> unused notes — ready to turn them into content?
+          </p>
+          <button
+            onClick={onSwitchToIdeas}
+            className="font-sans text-[13px] font-semibold shrink-0 ml-3"
+            style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+          >
+            Go to Ideas <ArrowRight size={12} />
+          </button>
         </div>
       )}
 
       {/* Search + filters */}
       {logEntries.length > 0 && (
         <div className="mb-6 space-y-3">
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..."
-            className="w-full outline-none font-sans" style={{ fontSize: 14, color: INK, padding: "10px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search notes..."
+            className="w-full outline-none font-sans"
+            style={{
+              fontSize: 14,
+              color: INK,
+              padding: "10px 14px",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              background: "#fff",
+            }}
+          />
           <div className="flex items-center gap-2 flex-wrap">
-            {FILTERS.map(f => (
-              <button key={f.key} onClick={() => { setFilter(f.key); }} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
-                style={{ background: filter === f.key ? `${BLUE}10` : "transparent", color: filter === f.key ? BLUE : FAINT, border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`, cursor: "pointer" }}>
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => {
+                  setFilter(f.key);
+                }}
+                className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+                style={{
+                  background: filter === f.key ? `${BLUE}10` : "transparent",
+                  color: filter === f.key ? BLUE : FAINT,
+                  border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`,
+                  cursor: "pointer",
+                }}
+              >
                 {f.label}
               </button>
             ))}
           </div>
           {availableTags.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>Tags:</span>
-              {availableTags.map(tag => (
-                <button key={tag} onClick={() => setTagFilter(tagFilter === tag ? null : tag)} className="font-mono text-[11px] px-2.5 py-1 rounded-full transition-all"
-                  style={{ background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent", color: TAG_COLORS[tag] || DIM, border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`, cursor: "pointer" }}>
+              <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>
+                Tags:
+              </span>
+              {availableTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+                  className="font-mono text-[11px] px-2.5 py-1 rounded-full transition-all"
+                  style={{
+                    background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent",
+                    color: TAG_COLORS[tag] || DIM,
+                    border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`,
+                    cursor: "pointer",
+                  }}
+                >
                   {tag}
                 </button>
               ))}
               {tagFilter && (
-                <button onClick={() => setTagFilter(null)} className="font-sans text-[11px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Clear</button>
+                <button
+                  onClick={() => setTagFilter(null)}
+                  className="font-sans text-[11px]"
+                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                >
+                  Clear
+                </button>
               )}
             </div>
           )}
@@ -402,178 +734,513 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 
       {/* Bulk actions bar */}
       {selectMode && (
-        <div className="mb-4 flex items-center gap-2 p-3 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <span className="font-sans text-[13px]" style={{ color: DIM }}>{selected.size} selected</span>
+        <div
+          className="mb-4 flex items-center gap-2 p-3 rounded-[10px]"
+          style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+        >
+          <span className="font-sans text-[13px]" style={{ color: DIM }}>
+            {selected.size} selected
+          </span>
           <div className="ml-auto flex gap-2">
             {selected.size > 0 && (
               <>
-                <button onClick={handleBulkBookmark} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Bookmark</button>
-                <button onClick={handleBulkDelete} className="font-sans text-[12px] px-3 py-1.5 rounded-full" style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}>Delete</button>
+                <button
+                  onClick={handleBulkBookmark}
+                  className="font-sans text-[12px] px-3 py-1.5 rounded-full"
+                  style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}
+                >
+                  Bookmark
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="font-sans text-[12px] px-3 py-1.5 rounded-full"
+                  style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}
+                >
+                  Delete
+                </button>
               </>
             )}
-            <button onClick={() => { setSelectMode(false); setSelected(new Set()); }} className="font-sans text-[13px]"
-              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+            <button
+              onClick={() => {
+                setSelectMode(false);
+                setSelected(new Set());
+              }}
+              className="font-sans text-[13px]"
+              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {/* Feed */}
       {visibleEntries.length === 0 ? (
-        <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>{search || filter !== "all" ? "No matching notes." : "No notes yet. What happened today?"}</p></div>
+        <div className="text-center py-12">
+          <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
+            {search || filter !== "all" ? "No matching notes." : "No notes yet. What happened today?"}
+          </p>
+        </div>
       ) : (
         <div className="space-y-6">
           {dayGroups.map(({ label, entries: dayEntries }) => (
-              <div key={label}>
-                <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>{label}</span>
-                  <div className="space-y-3">
-                    {dayEntries.map(entry => {
-                      const isQuote = entry.type === "quote";
-                      const isLink = entry.type === "link";
-                      const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
-                      const used = isUsedInPlan(entry);
-                      const isSelected = selected.has(entry.id);
-                      return (
-                        <div key={entry.id} onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
-                          className="rounded-[12px] transition-all relative" style={{
-                          padding: "20px 44px 20px 20px", border: `1px solid ${isSelected ? BLUE : BORDER}`, background: isSelected ? `${BLUE}04` : "#fff",
-                          borderLeft: isQuote ? `3px solid ${BLUE}` : isLink ? `3px solid #0d9488` : isSelected ? `3px solid ${BLUE}` : `1px solid ${BORDER}`,
-                          cursor: selectMode ? "pointer" : "default",
-                        }}>
-                          {/* Menu */}
-                          {!selectMode && editingId !== entry.id && (
-                            <div className="absolute" style={{ top: 8, right: 4 }}>
-                              <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(menuOpen === entry.id ? null : entry.id); }}
-                                className="rounded hover:bg-gray-100 flex items-center justify-center" style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="#6B7280"><circle cx="8" cy="3" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg>
+            <div key={label}>
+              <span
+                className="font-mono uppercase block mb-3"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+              >
+                {label}
+              </span>
+              <div className="space-y-3">
+                {dayEntries.map((entry) => {
+                  const isQuote = entry.type === "quote";
+                  const isLink = entry.type === "link";
+                  const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
+                  const used = isUsedInPlan(entry);
+                  const isSelected = selected.has(entry.id);
+                  return (
+                    <div
+                      key={entry.id}
+                      onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
+                      className="rounded-[12px] transition-all relative"
+                      style={{
+                        padding: "20px 44px 20px 20px",
+                        border: `1px solid ${isSelected ? BLUE : BORDER}`,
+                        background: isSelected ? `${BLUE}04` : "#fff",
+                        borderLeft: isQuote
+                          ? `3px solid ${BLUE}`
+                          : isLink
+                            ? `3px solid #0d9488`
+                            : isSelected
+                              ? `3px solid ${BLUE}`
+                              : `1px solid ${BORDER}`,
+                        cursor: selectMode ? "pointer" : "default",
+                      }}
+                    >
+                      {/* Menu */}
+                      {!selectMode && editingId !== entry.id && (
+                        <div className="absolute" style={{ top: 8, right: 4 }}>
+                          <button
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              setMenuOpen(menuOpen === entry.id ? null : entry.id);
+                            }}
+                            className="rounded hover:bg-gray-100 flex items-center justify-center"
+                            style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="#6B7280">
+                              <circle cx="8" cy="3" r="1.5" />
+                              <circle cx="8" cy="8" r="1.5" />
+                              <circle cx="8" cy="13" r="1.5" />
+                            </svg>
+                          </button>
+                          {menuOpen === entry.id && (
+                            <div
+                              className="absolute right-0 sm:right-0 mt-1 rounded-[8px] overflow-hidden"
+                              style={{
+                                background: "#fff",
+                                border: `1px solid ${BORDER}`,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                                zIndex: 10,
+                                minWidth: 130,
+                                right: 0,
+                              }}
+                            >
+                              <button
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  handleStartEdit(entry);
+                                }}
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
+                              >
+                                Edit
                               </button>
-                              {menuOpen === entry.id && (
-                                <div className="absolute right-0 sm:right-0 mt-1 rounded-[8px] overflow-hidden" style={{ background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, minWidth: 130, right: 0 }}>
-                                  <button onClick={(ev) => { ev.stopPropagation(); handleStartEdit(entry); }}
-                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}>Edit</button>
-                                  <button onClick={(ev) => { ev.stopPropagation(); setDeleteConfirmId(entry.id); setMenuOpen(null); }}
-                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: "#DC2626", border: "none", background: "transparent", cursor: "pointer" }}>Delete</button>
-                                  <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); setSelectMode(true); setSelected(new Set([entry.id])); }}
-                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer", borderTop: `1px solid ${BORDER}` }}>Select multiple</button>
-                                  <button onClick={(ev) => { ev.stopPropagation(); setMenuOpen(null); onDevelopNote(entry); }}
-                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Develop <ArrowRight size={12} /></button>
-                                  <button onClick={async (ev) => { ev.stopPropagation(); setMenuOpen(null); const imgs = (entry.image_urls?.length ? entry.image_urls : entry.image_url ? [entry.image_url] : []); const d = await createStandaloneDraft("", entry.content || "", entry.id); if (d) onStartDraft({ draft: d, images: imgs }); }}
-                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50" style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}>Start draft</button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {/* Delete confirmation */}
-                          {deleteConfirmId === entry.id && (
-                            <div className="absolute inset-0 rounded-[12px] flex items-center justify-center" style={{ background: "rgba(255,255,255,0.95)", zIndex: 5 }} onClick={ev => ev.stopPropagation()}>
-                              <div className="text-center">
-                                <p className="font-sans text-[14px] mb-3" style={{ color: INK }}>Delete this note?</p>
-                                <div className="flex gap-2 justify-center">
-                                  <button onClick={() => setDeleteConfirmId(null)} className="font-sans text-[13px] px-4 py-2 rounded-full"
-                                    style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}>Cancel</button>
-                                  <button onClick={() => handleDeleteEntry(entry.id)} className="font-sans text-[13px] px-4 py-2 rounded-full"
-                                    style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer" }}>Delete</button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {editingId === entry.id ? (
-                            <div onClick={ev => ev.stopPropagation()}>
-                              <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(60, el.scrollHeight) + "px"; } }}
-                                value={editText} onChange={ev => setEditText(ev.target.value)}
-                                className="w-full outline-none resize-none font-sans"
-                                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "8px 10px", border: `1px solid ${BLUE}`, borderRadius: 8, background: "#fafafa", overflow: "hidden" }}
-                                autoFocus />
-                              <div className="flex gap-2 mt-2 justify-end">
-                                <button onClick={handleCancelEdit} className="font-sans text-[13px]"
-                                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
-                                <button onClick={handleSaveEdit} disabled={submitting}
-                                  className="font-sans font-semibold rounded-full disabled:opacity-30"
-                                  style={{ fontSize: 13, padding: "6px 16px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                                  {submitting ? "..." : "Save"}
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
-                              {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
-                                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, whiteSpace: "pre-wrap", fontStyle: isQuote ? "italic" : "normal" }}>{entry.content}</p>
-                              )}
-                            </>
-                          )}
-                          {isQuote && entry.source && <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>— {entry.source}</p>}
-                          {(() => {
-                            const images = (entry.image_urls && entry.image_urls.length > 0) ? entry.image_urls : (entry.image_url ? [entry.image_url] : []);
-                            if (images.length === 0) return null;
-                            return (
-                              <div className={entry.content ? "mt-3" : ""}>
-                                {images.length === 1 ? (
-                                  <img src={images[0]} alt="" className="w-full rounded-[10px] cursor-pointer hover:opacity-95" style={{ maxHeight: 360, objectFit: "cover", border: `1px solid ${BORDER}` }}
-                                    onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)} />
-                                ) : (
-                                  <div className="grid gap-2 grid-cols-2">
-                                    {images.map((url, idx) => (
-                                      <img key={idx} src={url} alt="" className="w-full rounded-[8px] cursor-pointer hover:opacity-95"
-                                        style={{ height: 140, objectFit: "cover", border: `1px solid ${BORDER}` }}
-                                        onClick={() => setExpandedImage(expandedImage === url ? null : url)} />
-                                    ))}
-                                  </div>
-                                )}
-                                {expandedImage === entry.id && images.length === 1 && (
-                                  <img src={images[0]} alt="" className="w-full rounded-[10px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
-                                )}
-                                {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
-                                  <img src={expandedImage} alt="" className="w-full rounded-[8px] mt-2" style={{ border: `1px solid ${BORDER}` }} />
-                                )}
-                              </div>
-                            );
-                          })()}
-                          {(isLink || entryUrl) && entryUrl && (() => {
-                            const og = ogCache[entryUrl];
-                            return (
-                              <a href={entryUrl} target="_blank" rel="noopener noreferrer" className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity" style={{ border: `1px solid ${BORDER}` }}>
-                                {og?.image && <img src={og.image} alt="" className="w-full" style={{ maxHeight: 160, objectFit: "cover" }} />}
-                                <div style={{ padding: "12px 14px" }}>
-                                  <p className="font-sans font-semibold" style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}>{og?.title || getReadableTitle(entryUrl)}</p>
-                                  {og?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{og.description}</p>}
-                                  <span className="font-mono block mt-1.5" style={{ fontSize: 11, color: FAINT }}>{getDomain(entryUrl)}</span>
-                                </div>
-                              </a>
-                            );
-                          })()}
-                          <div className="flex items-center gap-2 mt-3 flex-wrap">
-                            <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{getDayLabel(entry.created_at)} {formatTime(entry.created_at)}</span>
-                            {entry.tags.map(tag => (
-                              <span key={tag} className="font-mono text-[12px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}>{tag}</span>
-                            ))}
-                            {used && <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}10`, color: BLUE }}>Used in Ideas</span>}
-                            {entry.bookmarked && <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f59e0b15", color: "#f59e0b" }}>Saved</span>}
-                            {!selectMode && (
-                              <button onClick={(ev) => { ev.stopPropagation(); handleToggleBookmark(entry.id, entry.bookmarked || false); }}
-                                className="ml-auto p-2" style={{ background: "none", border: "none", cursor: "pointer", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill={entry.bookmarked ? BLUE : "none"} stroke={entry.bookmarked ? BLUE : FAINT}
-                                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "fill 0.2s, stroke 0.2s" }}>
-                                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                                </svg>
+                              <button
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  setDeleteConfirmId(entry.id);
+                                  setMenuOpen(null);
+                                }}
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                style={{
+                                  color: "#DC2626",
+                                  border: "none",
+                                  background: "transparent",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete
                               </button>
-                            )}
-                          </div>
-                          {bookmarkNoteId === entry.id && (
-                            <div className="mt-2 flex gap-2 items-center" onClick={ev => ev.stopPropagation()}>
-                              <input value={bookmarkNote} onChange={ev => setBookmarkNote(ev.target.value)} onKeyDown={ev => { if (ev.key === "Enter") handleConfirmBookmark(); }}
-                                placeholder="Why I saved this (optional)" className="flex-1 outline-none font-sans text-[13px]"
-                                style={{ color: INK, padding: "6px 10px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fafafa" }} autoFocus />
-                              <button onClick={handleConfirmBookmark} className="font-sans font-semibold rounded-full shrink-0"
-                                style={{ fontSize: 14, padding: "8px 18px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Save</button>
-                              <button onClick={() => setBookmarkNoteId(null)} className="font-sans text-[12px] px-2 py-1.5 shrink-0"
-                                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+                              <button
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  setMenuOpen(null);
+                                  setSelectMode(true);
+                                  setSelected(new Set([entry.id]));
+                                }}
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                style={{
+                                  color: DIM,
+                                  border: "none",
+                                  background: "transparent",
+                                  cursor: "pointer",
+                                  borderTop: `1px solid ${BORDER}`,
+                                }}
+                              >
+                                Select multiple
+                              </button>
+                              <button
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  setMenuOpen(null);
+                                  onDevelopNote(entry);
+                                }}
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}
+                              >
+                                Develop <ArrowRight size={12} />
+                              </button>
+                              <button
+                                onClick={async (ev) => {
+                                  ev.stopPropagation();
+                                  setMenuOpen(null);
+                                  const imgs = entry.image_urls?.length
+                                    ? entry.image_urls
+                                    : entry.image_url
+                                      ? [entry.image_url]
+                                      : [];
+                                  const d = await createStandaloneDraft("", entry.content || "", entry.id);
+                                  if (d) onStartDraft({ draft: d, images: imgs });
+                                }}
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}
+                              >
+                                Start draft
+                              </button>
                             </div>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
+                      )}
+                      {/* Delete confirmation */}
+                      {deleteConfirmId === entry.id && (
+                        <div
+                          className="absolute inset-0 rounded-[12px] flex items-center justify-center"
+                          style={{ background: "rgba(255,255,255,0.95)", zIndex: 5 }}
+                          onClick={(ev) => ev.stopPropagation()}
+                        >
+                          <div className="text-center">
+                            <p className="font-sans text-[14px] mb-3" style={{ color: INK }}>
+                              Delete this note?
+                            </p>
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="font-sans text-[13px] px-4 py-2 rounded-full"
+                                style={{
+                                  border: `1px solid ${BORDER}`,
+                                  color: DIM,
+                                  background: "#fff",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                className="font-sans text-[13px] px-4 py-2 rounded-full"
+                                style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer" }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {editingId === entry.id ? (
+                        <div onClick={(ev) => ev.stopPropagation()}>
+                          <textarea
+                            ref={(el) => {
+                              if (el) {
+                                el.style.height = "auto";
+                                el.style.height = Math.max(60, el.scrollHeight) + "px";
+                              }
+                            }}
+                            value={editText}
+                            onChange={(ev) => setEditText(ev.target.value)}
+                            className="w-full outline-none resize-none font-sans"
+                            style={{
+                              fontSize: 15,
+                              color: INK,
+                              lineHeight: 1.6,
+                              padding: "8px 10px",
+                              border: `1px solid ${BLUE}`,
+                              borderRadius: 8,
+                              background: "#fafafa",
+                              overflow: "hidden",
+                            }}
+                            autoFocus
+                          />
+                          <div className="flex gap-2 mt-2 justify-end">
+                            <button
+                              onClick={handleCancelEdit}
+                              className="font-sans text-[13px]"
+                              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleSaveEdit}
+                              disabled={submitting}
+                              className="font-sans font-semibold rounded-full disabled:opacity-30"
+                              style={{
+                                fontSize: 13,
+                                padding: "6px 16px",
+                                background: BLUE,
+                                color: "#fff",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {submitting ? "..." : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
+                          {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
+                            <p
+                              className="font-sans"
+                              style={{
+                                fontSize: 15,
+                                color: BODY,
+                                lineHeight: 1.6,
+                                whiteSpace: "pre-wrap",
+                                fontStyle: isQuote ? "italic" : "normal",
+                              }}
+                            >
+                              {entry.content}
+                            </p>
+                          )}
+                        </>
+                      )}
+                      {isQuote && entry.source && (
+                        <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>
+                          — {entry.source}
+                        </p>
+                      )}
+                      {(() => {
+                        const images =
+                          entry.image_urls && entry.image_urls.length > 0
+                            ? entry.image_urls
+                            : entry.image_url
+                              ? [entry.image_url]
+                              : [];
+                        if (images.length === 0) return null;
+                        return (
+                          <div className={entry.content ? "mt-3" : ""}>
+                            {images.length === 1 ? (
+                              <img
+                                src={images[0]}
+                                alt=""
+                                className="w-full rounded-[10px] cursor-pointer hover:opacity-95"
+                                style={{ maxHeight: 360, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)}
+                              />
+                            ) : (
+                              <div className="grid gap-2 grid-cols-2">
+                                {images.map((url, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={url}
+                                    alt=""
+                                    className="w-full rounded-[8px] cursor-pointer hover:opacity-95"
+                                    style={{ height: 140, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                    onClick={() => setExpandedImage(expandedImage === url ? null : url)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {expandedImage === entry.id && images.length === 1 && (
+                              <img
+                                src={images[0]}
+                                alt=""
+                                className="w-full rounded-[10px] mt-2"
+                                style={{ border: `1px solid ${BORDER}` }}
+                              />
+                            )}
+                            {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
+                              <img
+                                src={expandedImage}
+                                alt=""
+                                className="w-full rounded-[8px] mt-2"
+                                style={{ border: `1px solid ${BORDER}` }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })()}
+                      {(isLink || entryUrl) &&
+                        entryUrl &&
+                        (() => {
+                          const og = ogCache[entryUrl];
+                          return (
+                            <a
+                              href={entryUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity"
+                              style={{ border: `1px solid ${BORDER}` }}
+                            >
+                              {og?.image && (
+                                <img
+                                  src={og.image}
+                                  alt=""
+                                  className="w-full"
+                                  style={{ maxHeight: 160, objectFit: "cover" }}
+                                />
+                              )}
+                              <div style={{ padding: "12px 14px" }}>
+                                <p
+                                  className="font-sans font-semibold"
+                                  style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}
+                                >
+                                  {og?.title || getReadableTitle(entryUrl)}
+                                </p>
+                                {og?.description && (
+                                  <p
+                                    className="font-sans mt-1"
+                                    style={{
+                                      fontSize: 13,
+                                      color: BODY,
+                                      lineHeight: 1.4,
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: "vertical",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {og.description}
+                                  </p>
+                                )}
+                                <span className="font-mono block mt-1.5" style={{ fontSize: 11, color: FAINT }}>
+                                  {getDomain(entryUrl)}
+                                </span>
+                              </div>
+                            </a>
+                          );
+                        })()}
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>
+                          {getDayLabel(entry.created_at)} {formatTime(entry.created_at)}
+                        </span>
+                        {entry.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="font-mono text-[12px] font-semibold px-2 py-0.5 rounded-full"
+                            style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {used && (
+                          <span
+                            className="font-mono text-[11px] px-2 py-0.5 rounded-full"
+                            style={{ background: `${BLUE}10`, color: BLUE }}
+                          >
+                            Used in Ideas
+                          </span>
+                        )}
+                        {entry.bookmarked && (
+                          <span
+                            className="font-mono text-[11px] px-2 py-0.5 rounded-full"
+                            style={{ background: "#f59e0b15", color: "#f59e0b" }}
+                          >
+                            Saved
+                          </span>
+                        )}
+                        {!selectMode && (
+                          <button
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              handleToggleBookmark(entry.id, entry.bookmarked || false);
+                            }}
+                            className="ml-auto p-2"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              minWidth: 44,
+                              minHeight: 44,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill={entry.bookmarked ? BLUE : "none"}
+                              stroke={entry.bookmarked ? BLUE : FAINT}
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ transition: "fill 0.2s, stroke 0.2s" }}
+                            >
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      {bookmarkNoteId === entry.id && (
+                        <div className="mt-2 flex gap-2 items-center" onClick={(ev) => ev.stopPropagation()}>
+                          <input
+                            value={bookmarkNote}
+                            onChange={(ev) => setBookmarkNote(ev.target.value)}
+                            onKeyDown={(ev) => {
+                              if (ev.key === "Enter") handleConfirmBookmark();
+                            }}
+                            placeholder="Why I saved this (optional)"
+                            className="flex-1 outline-none font-sans text-[13px]"
+                            style={{
+                              color: INK,
+                              padding: "6px 10px",
+                              border: `1px solid ${BORDER}`,
+                              borderRadius: 8,
+                              background: "#fafafa",
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            onClick={handleConfirmBookmark}
+                            className="font-sans font-semibold rounded-full shrink-0"
+                            style={{
+                              fontSize: 14,
+                              padding: "8px 18px",
+                              background: BLUE,
+                              color: "#fff",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setBookmarkNoteId(null)}
+                            className="font-sans text-[12px] px-2 py-1.5 shrink-0"
+                            style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+            </div>
           ))}
         </div>
       )}
@@ -581,9 +1248,16 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
       {/* Develop selected floating button */}
       {selectMode && selected.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-          <button onClick={() => { const entries = logEntries.filter(e => selected.has(e.id)); setSelectMode(false); setSelected(new Set()); onDevelopNotes(entries); }}
+          <button
+            onClick={() => {
+              const entries = logEntries.filter((e) => selected.has(e.id));
+              setSelectMode(false);
+              setSelected(new Set());
+              onDevelopNotes(entries);
+            }}
             className="px-6 py-3.5 rounded-full font-sans font-semibold text-[15px] shadow-lg"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+          >
             Develop {selected.size} note{selected.size === 1 ? "" : "s"} <ArrowRight size={14} color="#fff" />
           </button>
         </div>
@@ -591,8 +1265,10 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
-          style={{ background: INK, color: "#fff", animation: "fadeIn 0.2s ease" }}>
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
+          style={{ background: INK, color: "#fff", animation: "fadeIn 0.2s ease" }}
+        >
           {toast}
         </div>
       )}
@@ -601,11 +1277,31 @@ function LogTab({ logEntries, setLogEntries, allPlans, onSwitchToIdeas, onStartD
 }
 
 /* ══════════════ IDEAS TAB ══════════════ */
-function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, initialDevelopEntries, onPlanGenerated, onPlanUpdated, onSwitchToLog, onWritePost, onStartDraft, onProfileUpdated, onQuickLog }: {
-  profile: UserProfile; allPlans: ContentPlan[]; weekEntries: LogEntry[]; allEntries: LogEntry[]; initialDevelopEntries?: LogEntry[] | null;
-  initialWeek?: string; onPlanGenerated: (plan: ContentPlan) => void;
+function IdeasTab({
+  profile,
+  allPlans,
+  weekEntries,
+  allEntries,
+  initialWeek,
+  initialDevelopEntries,
+  onPlanGenerated,
+  onPlanUpdated,
+  onSwitchToLog,
+  onWritePost,
+  onStartDraft,
+  onProfileUpdated,
+  onQuickLog,
+}: {
+  profile: UserProfile;
+  allPlans: ContentPlan[];
+  weekEntries: LogEntry[];
+  allEntries: LogEntry[];
+  initialDevelopEntries?: LogEntry[] | null;
+  initialWeek?: string;
+  onPlanGenerated: (plan: ContentPlan) => void;
   onPlanUpdated: (plan: ContentPlan) => void;
-  onSwitchToLog: () => void; onWritePost: (planId: string, postIndex: number) => void;
+  onSwitchToLog: () => void;
+  onWritePost: (planId: string, postIndex: number) => void;
   onStartDraft: (data: { draft: Draft }) => void;
   onProfileUpdated: (fields: Partial<UserProfile>) => void;
   onQuickLog: (text: string) => Promise<void>;
@@ -616,13 +1312,19 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const nextMonday = new Date(now);
   nextMonday.setDate(now.getDate() + (nowDay === 0 ? 1 : 8 - nowDay));
   const nextMondayStr = nextMonday.toISOString().split("T")[0];
-  const weeks = Array.from(new Set(allPlans.map(p => p.week_start))).filter(w => w < nextMondayStr).sort().reverse();
+  const weeks = Array.from(new Set(allPlans.map((p) => p.week_start)))
+    .filter((w) => w < nextMondayStr)
+    .sort()
+    .reverse();
   const targetWeek = getCurrentWeekMonday(); // display: always this week
   const planTargetWeek = getWeekStart(); // generation: may target next week Thu+
-  const hasCurrentPlan = allPlans.some(p => p.week_start === targetWeek || p.week_start === planTargetWeek);
+  const hasCurrentPlan = allPlans.some((p) => p.week_start === targetWeek || p.week_start === planTargetWeek);
 
   const [weekIdx, setWeekIdx] = useState(() => {
-    if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) return i; }
+    if (initialWeek) {
+      const i = weeks.indexOf(initialWeek);
+      if (i >= 0) return i;
+    }
     // Default to the week containing today
     const todayIdx = weeks.indexOf(targetWeek);
     if (todayIdx >= 0) return todayIdx;
@@ -636,19 +1338,27 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const [coachReply, setCoachReply] = useState("");
   const [coachSuggestions, setCoachSuggestions] = useState<CoachingSuggestion[]>([]);
   const [coachLoading, setCoachLoading] = useState(false);
-  const handleQuickLog = async () => { if (!quickLog.trim()) return; await onQuickLog(quickLog.trim()); setQuickLog(""); };
+  const handleQuickLog = async () => {
+    if (!quickLog.trim()) return;
+    await onQuickLog(quickLog.trim());
+    setQuickLog("");
+  };
 
   // Persist coaching session to DB (fire-and-forget)
   const persistSession = (entries: LogEntry[], messages: CoachingMessage[], suggestions: CoachingSuggestion[]) => {
     if (entries.length === 0) return;
-    saveCoachingSession(entries.map(e => e.id), messages, suggestions).catch(() => {});
+    saveCoachingSession(
+      entries.map((e) => e.id),
+      messages,
+      suggestions
+    ).catch(() => {});
   };
 
   // Auto-start coaching if navigated from Log tab
   const autoStartRef = useRef<string | null>(null);
   useEffect(() => {
     if (initialDevelopEntries?.length) {
-      const key = initialDevelopEntries.map(e => e.id).join(",");
+      const key = initialDevelopEntries.map((e) => e.id).join(",");
       if (autoStartRef.current !== key) {
         autoStartRef.current = key;
         startCoaching(initialDevelopEntries);
@@ -657,9 +1367,16 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   }, [initialDevelopEntries]);
 
   const coachApiPayload = (entries: LogEntry[]) => {
-    const combinedNote = entries.map(e => e.content || "").filter(Boolean).join("\n\n---\n\n");
-    const notesList = entries.map(e => e.content || "").filter(Boolean);
-    const recentNotes = allEntries.filter(e => !entries.some(n => n.id === e.id)).map(e => e.content || "").filter(Boolean).slice(0, 5);
+    const combinedNote = entries
+      .map((e) => e.content || "")
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+    const notesList = entries.map((e) => e.content || "").filter(Boolean);
+    const recentNotes = allEntries
+      .filter((e) => !entries.some((n) => n.id === e.id))
+      .map((e) => e.content || "")
+      .filter(Boolean)
+      .slice(0, 5);
     return { note: combinedNote, notes: notesList, recentNotes, profile };
   };
 
@@ -669,7 +1386,7 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     setCoachLoading(true);
     // Check for existing session first
     try {
-      const existing = await getCoachingSession(entries.map(e => e.id));
+      const existing = await getCoachingSession(entries.map((e) => e.id));
       if (existing && existing.messages.length > 0) {
         setCoachMessages(existing.messages);
         setCoachSuggestions(existing.suggestions);
@@ -682,7 +1399,8 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     setCoachSuggestions([]);
     try {
       const res = await fetch("/api/coach-note", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...coachApiPayload(entries), step: "question" }),
       });
       const data = await res.json();
@@ -693,12 +1411,22 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         persistSession(entries, msgs, []);
       } else {
         // API failed — show fallback question so the conversation isn't dead
-        const fallback: CoachingMessage[] = [{ role: "ai", text: "What happened here that made you want to share it? What was the moment that stuck with you?" }];
+        const fallback: CoachingMessage[] = [
+          {
+            role: "ai",
+            text: "What happened here that made you want to share it? What was the moment that stuck with you?",
+          },
+        ];
         setCoachMessages(fallback);
       }
     } catch (err) {
       console.error("coach-note question error:", err);
-      const fallback: CoachingMessage[] = [{ role: "ai", text: "What happened here that made you want to share it? What was the moment that stuck with you?" }];
+      const fallback: CoachingMessage[] = [
+        {
+          role: "ai",
+          text: "What happened here that made you want to share it? What was the moment that stuck with you?",
+        },
+      ];
       setCoachMessages(fallback);
     }
     setCoachLoading(false);
@@ -712,12 +1440,17 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     setCoachReply("");
     setCoachLoading(true);
     // Count user replies — force suggest on 3rd reply
-    const userReplyCount = updatedMessages.filter(m => m.role === "user").length;
+    const userReplyCount = updatedMessages.filter((m) => m.role === "user").length;
     const forceAngles = userReplyCount >= 3;
     try {
       const res = await fetch("/api/coach-note", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...coachApiPayload(coachNotes), step: forceAngles ? "suggest" : "respond", conversation: updatedMessages }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...coachApiPayload(coachNotes),
+          step: forceAngles ? "suggest" : "respond",
+          conversation: updatedMessages,
+        }),
       });
       const data = await res.json();
       console.log("coach-note respond:", res.status, data);
@@ -731,12 +1464,21 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         persistSession(coachNotes, updatedMessages, newSuggestions);
       } else {
         // API failed — add fallback so conversation isn't dead
-        const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: "I couldn't process that — try telling me more about what happened and what surprised you." }];
+        const newMsgs: CoachingMessage[] = [
+          ...updatedMessages,
+          {
+            role: "ai",
+            text: "I couldn't process that — try telling me more about what happened and what surprised you.",
+          },
+        ];
         setCoachMessages(newMsgs);
       }
     } catch (err) {
       console.error("coach-note respond error:", err);
-      const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: "Something went wrong on my end. Try replying again." }];
+      const newMsgs: CoachingMessage[] = [
+        ...updatedMessages,
+        { role: "ai", text: "Something went wrong on my end. Try replying again." },
+      ];
       setCoachMessages(newMsgs);
     }
     setCoachLoading(false);
@@ -747,8 +1489,14 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     setCoachLoading(true);
     try {
       const res = await fetch("/api/coach-note", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...coachApiPayload(coachNotes), step: "suggest", conversation: coachMessages, previousAngles: coachSuggestions.map(s => s.hook) }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...coachApiPayload(coachNotes),
+          step: "suggest",
+          conversation: coachMessages,
+          previousAngles: coachSuggestions.map((s) => s.hook),
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -761,38 +1509,60 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     } catch {}
     setCoachLoading(false);
   };
-  const [ideasOgCache, setIdeasOgCache] = useState<Record<string, { title: string | null; description: string | null; image: string | null }>>({});
+  const [ideasOgCache, setIdeasOgCache] = useState<
+    Record<string, { title: string | null; description: string | null; image: string | null }>
+  >({});
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenerate, setShowGenerate] = useState(!hasCurrentPlan);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  useEffect(() => { if (initialWeek) { const i = weeks.indexOf(initialWeek); if (i >= 0) { setWeekIdx(i); setShowGenerate(false); } } }, [initialWeek]);
+  useEffect(() => {
+    if (initialWeek) {
+      const i = weeks.indexOf(initialWeek);
+      if (i >= 0) {
+        setWeekIdx(i);
+        setShowGenerate(false);
+      }
+    }
+  }, [initialWeek]);
 
   // Fetch OG metadata for URLs in plan source_snippets
   useEffect(() => {
     const urls = new Set<string>();
     for (const p of allPlans) {
       const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
-      for (const post of (pd?.posts || [])) {
+      for (const post of pd?.posts || []) {
         const match = (post.source_snippet || "").match(/(https?:\/\/[^\s"]+)/);
         if (match && !ideasOgCache[match[1]]) urls.add(match[1]);
       }
     }
-    Array.from(urls).slice(0, 10).forEach(url => {
-      fetch("/api/og-meta", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) })
-        .then(r => r.json()).then(data => setIdeasOgCache(prev => ({ ...prev, [url]: data }))).catch(() => {});
-    });
+    Array.from(urls)
+      .slice(0, 10)
+      .forEach((url) => {
+        fetch("/api/og-meta", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        })
+          .then((r) => r.json())
+          .then((data) => setIdeasOgCache((prev) => ({ ...prev, [url]: data })))
+          .catch(() => {});
+      });
   }, [allPlans.length]);
 
   // Surface unwritten past ideas
   const pastIdeas = allPlans
-    .filter(p => p.week_start !== targetWeek)
-    .flatMap(p => {
+    .filter((p) => p.week_start !== targetWeek)
+    .flatMap((p) => {
       const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
-      return (pd?.posts || []).map((post: ContentPlanPost) => ({ prompt: post.prompt || post.key_takeaway || post.hook || "", type: post.type || "", weekLabel: weekLabel(p.week_start) }));
+      return (pd?.posts || []).map((post: ContentPlanPost) => ({
+        prompt: post.prompt || post.key_takeaway || post.hook || "",
+        type: post.type || "",
+        weekLabel: weekLabel(p.week_start),
+      }));
     })
-    .filter(p => p.prompt)
+    .filter((p) => p.prompt)
     .slice(0, 3);
 
   const [editing, setEditing] = useState(false);
@@ -804,8 +1574,8 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   const [editSaving, setEditSaving] = useState(false);
 
   const totalEntries = weekEntries.length;
-  const linkCount = weekEntries.filter(e => e.type === "link").length;
-  const quoteCount = weekEntries.filter(e => e.type === "quote").length;
+  const linkCount = weekEntries.filter((e) => e.type === "link").length;
+  const quoteCount = weekEntries.filter((e) => e.type === "quote").length;
 
   const WHY_OPTIONS = ["Get customers", "Build authority", "Find collaborators", "Document the journey"];
   const PLATFORM_OPTIONS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
@@ -834,43 +1604,100 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
 
   const handleGenerate = async () => {
     if (generating) return;
-    setGenerating(true); setError(null);
+    setGenerating(true);
+    setError(null);
     try {
-      const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, image_url: e.image_url, link_url: e.link_url, url: e.url, type: e.type, source: e.source }));
-      const shelfItems = weekEntries.filter(e => (e.type === "link" || e.type === "quote" || e.bookmarked));
-      const combined = weekEntries.map(e => e.content || "").join("\n");
+      const entriesPayload = weekEntries.map((e) => ({
+        content: e.content || "",
+        tags: e.tags,
+        image_url: e.image_url,
+        link_url: e.link_url,
+        url: e.url,
+        type: e.type,
+        source: e.source,
+      }));
+      const shelfItems = weekEntries.filter((e) => e.type === "link" || e.type === "quote" || e.bookmarked);
+      const combined = weekEntries.map((e) => e.content || "").join("\n");
       const dumpContent = extraContext.trim() ? `${combined}\n\nAdditional context: ${extraContext.trim()}` : combined;
       const savedDump = await createWeeklyDump(dumpContent || extraContext.trim() || "No notes this week");
-      if (!savedDump) { setError("Failed to save."); setGenerating(false); return; }
+      if (!savedDump) {
+        setError("Failed to save.");
+        setGenerating(false);
+        return;
+      }
       const entryCount = entriesPayload.length;
-      const body = { entries: entriesPayload.length > 0 ? entriesPayload : undefined, dump: extraContext.trim() || (entriesPayload.length === 0 ? "Generate a plan based on my profile" : undefined), shelfItems: shelfItems.length > 0 ? shelfItems : undefined, profile, entryCount };
-      const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) { setError("Failed to generate plan."); setGenerating(false); return; }
+      const body = {
+        entries: entriesPayload.length > 0 ? entriesPayload : undefined,
+        dump: extraContext.trim() || (entriesPayload.length === 0 ? "Generate a plan based on my profile" : undefined),
+        shelfItems: shelfItems.length > 0 ? shelfItems : undefined,
+        profile,
+        entryCount,
+      };
+      const res = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        setError("Failed to generate plan.");
+        setGenerating(false);
+        return;
+      }
       const planData: ContentPlanData = await res.json();
       const saved = await savePlan(savedDump.id, planData);
-      if (!saved) { setError("Plan generated but failed to save."); setGenerating(false); return; }
-      onPlanGenerated(saved); setShowGenerate(false); setWeekIdx(0);
-      try { posthog.capture("plan_generated", { number_of_ideas: planData.posts?.length || 0, entry_count: entryCount }); } catch {}
-    } catch { setError("Something went wrong."); }
+      if (!saved) {
+        setError("Plan generated but failed to save.");
+        setGenerating(false);
+        return;
+      }
+      onPlanGenerated(saved);
+      setShowGenerate(false);
+      setWeekIdx(0);
+      try {
+        posthog.capture("plan_generated", { number_of_ideas: planData.posts?.length || 0, entry_count: entryCount });
+      } catch {}
+    } catch {
+      setError("Something went wrong.");
+    }
     setGenerating(false);
   };
 
   const handleMoreIdeas = async (currentPlan: ContentPlan, currentPlanData: ContentPlanData) => {
     if (loadingMore || currentPlanData.posts.length >= 15) return;
-    setLoadingMore(true); setError(null);
+    setLoadingMore(true);
+    setError(null);
     try {
-      const existingPrompts = currentPlanData.posts.map(p => p.prompt || p.key_takeaway || p.hook || "").filter(Boolean);
-      const entriesPayload = weekEntries.map(e => ({ content: e.content || "", tags: e.tags, url: e.url, type: e.type, source: e.source }));
+      const existingPrompts = currentPlanData.posts
+        .map((p) => p.prompt || p.key_takeaway || p.hook || "")
+        .filter(Boolean);
+      const entriesPayload = weekEntries.map((e) => ({
+        content: e.content || "",
+        tags: e.tags,
+        url: e.url,
+        type: e.type,
+        source: e.source,
+      }));
       const body = {
         entries: entriesPayload.length > 0 ? entriesPayload : undefined,
         dump: entriesPayload.length === 0 ? "Generate more ideas based on my profile" : undefined,
         profile,
         moreIdeas: { count: 2, exclude: existingPrompts },
       };
-      const res = await fetch("/api/generate-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) { setError("Failed to generate more ideas."); setLoadingMore(false); return; }
+      const res = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        setError("Failed to generate more ideas.");
+        setLoadingMore(false);
+        return;
+      }
       const newData: ContentPlanData = await res.json();
-      const merged: ContentPlanData = { strategy_note: currentPlanData.strategy_note, posts: [...currentPlanData.posts, ...newData.posts].slice(0, 15) };
+      const merged: ContentPlanData = {
+        strategy_note: currentPlanData.strategy_note,
+        posts: [...currentPlanData.posts, ...newData.posts].slice(0, 15),
+      };
       const updated = await updatePlanPosts(currentPlan.id, merged);
       if (updated) {
         onPlanUpdated(updated);
@@ -890,18 +1717,33 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
     const waitingForReply = lastMessage?.role === "ai" && coachSuggestions.length === 0;
     return (
       <div>
-        <button onClick={() => { setCoachNotes([]); setCoachMessages([]); setCoachSuggestions([]); setCoachReply(""); }}
-          className="font-mono text-[12px] mb-6" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back to Ideas</button>
+        <button
+          onClick={() => {
+            setCoachNotes([]);
+            setCoachMessages([]);
+            setCoachSuggestions([]);
+            setCoachReply("");
+          }}
+          className="font-mono text-[12px] mb-6"
+          style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+        >
+          <ArrowLeft size={12} /> Back to Ideas
+        </button>
 
         {/* Source notes */}
         <div className="p-4 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
+          <span
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+          >
             {coachNotes.length === 1 ? "Your note" : `Your ${coachNotes.length} notes`}
           </span>
           {coachNotes.map((n, i) => (
             <div key={n.id}>
               {i > 0 && <hr className="my-3" style={{ border: "none", borderTop: `1px solid ${BORDER}` }} />}
-              <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.content}</p>
+              <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                {n.content}
+              </p>
             </div>
           ))}
         </div>
@@ -911,16 +1753,36 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           <div key={i} className="flex items-start gap-3 mb-6">
             {msg.role === "ai" ? (
               <>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
-                <div className="p-4 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-                  <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{msg.text}</p>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
+                >
+                  A
+                </div>
+                <div
+                  className="p-4 rounded-[12px] flex-1"
+                  style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}
+                >
+                  <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>
+                    {msg.text}
+                  </p>
                 </div>
               </>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
-                <div className="p-4 rounded-[12px] flex-1" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
-                  <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>{msg.text}</p>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}
+                >
+                  Y
+                </div>
+                <div
+                  className="p-4 rounded-[12px] flex-1"
+                  style={{ background: "#fff", border: `1px solid ${BORDER}` }}
+                >
+                  <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>
+                    {msg.text}
+                  </p>
                 </div>
               </>
             )}
@@ -930,26 +1792,58 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         {/* Loading indicator */}
         {coachLoading && coachSuggestions.length === 0 && (
           <div className="flex items-start gap-3 mb-6">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
-            <div className="p-3 rounded-[10px] animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
+            >
+              A
+            </div>
+            <div
+              className="p-3 rounded-[10px] animate-pulse"
+              style={{ background: "#f0f0f0", width: 200, height: 20 }}
+            />
           </div>
         )}
 
         {/* Reply input */}
         {waitingForReply && !coachLoading && (
           <div className="flex items-start gap-3 mb-6">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}>Y</div>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}
+            >
+              Y
+            </div>
             <div className="flex-1">
-              <textarea value={coachReply} onChange={e => setCoachReply(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && coachReply.trim()) { e.preventDefault(); submitCoachReply(); } }}
+              <textarea
+                value={coachReply}
+                onChange={(e) => setCoachReply(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && coachReply.trim()) {
+                    e.preventDefault();
+                    submitCoachReply();
+                  }
+                }}
                 placeholder="Your answer..."
                 className="w-full outline-none resize-none font-sans rounded-[12px]"
-                style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, background: "#fff", minHeight: 80 }}
-                autoFocus />
+                style={{
+                  fontSize: 15,
+                  color: INK,
+                  lineHeight: 1.6,
+                  padding: "12px 16px",
+                  border: `1px solid ${BORDER}`,
+                  background: "#fff",
+                  minHeight: 80,
+                }}
+                autoFocus
+              />
               <div className="flex justify-end mt-2">
-                <button onClick={submitCoachReply} disabled={!coachReply.trim() || coachLoading}
+                <button
+                  onClick={submitCoachReply}
+                  disabled={!coachReply.trim() || coachLoading}
                   className="px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] disabled:opacity-30"
-                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+                >
                   Reply
                 </button>
               </div>
@@ -962,27 +1856,58 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           <>
             {coachSuggestions.map((suggestion, i) => (
               <div key={i} className="flex items-start gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
-                <div className="p-5 rounded-[12px] flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-                  <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
+                >
+                  A
+                </div>
+                <div
+                  className="p-5 rounded-[12px] flex-1"
+                  style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}
+                >
+                  <span
+                    className="font-mono uppercase block mb-2"
+                    style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                  >
                     Story angle{coachSuggestions.length > 1 ? ` ${i + 1}` : ""}
                   </span>
-                  <p className="font-serif mb-3" style={{ fontSize: 17, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{suggestion.hook}</p>
+                  <p className="font-serif mb-3" style={{ fontSize: 17, color: INK, lineHeight: 1.5, fontWeight: 500 }}>
+                    {suggestion.hook}
+                  </p>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="font-mono text-[11px] px-2 py-0.5 rounded capitalize" style={{ background: `${BLUE}10`, color: BLUE }}>{suggestion.type}</span>
-                    <span className="font-sans text-[13px]" style={{ color: FAINT }}>{suggestion.platform}</span>
+                    <span
+                      className="font-mono text-[11px] px-2 py-0.5 rounded capitalize"
+                      style={{ background: `${BLUE}10`, color: BLUE }}
+                    >
+                      {suggestion.type}
+                    </span>
+                    <span className="font-sans text-[13px]" style={{ color: FAINT }}>
+                      {suggestion.platform}
+                    </span>
                   </div>
-                  <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>{suggestion.why}</p>
-                  <button onClick={async () => {
+                  <p className="font-sans" style={{ fontSize: 14, color: BODY, lineHeight: 1.5 }}>
+                    {suggestion.why}
+                  </p>
+                  <button
+                    onClick={async () => {
                       // Persist session before navigating away
-                      await saveCoachingSession(coachNotes.map(n => n.id), coachMessages, coachSuggestions);
-                      const sourceNote = coachNotes.map(n => n.content || "").filter(Boolean).join("\n\n");
+                      await saveCoachingSession(
+                        coachNotes.map((n) => n.id),
+                        coachMessages,
+                        coachSuggestions
+                      );
+                      const sourceNote = coachNotes
+                        .map((n) => n.content || "")
+                        .filter(Boolean)
+                        .join("\n\n");
                       const content = suggestion.hook + "\n\n";
                       const d = await createStandaloneDraft(content, sourceNote, coachNotes[0]?.id || "");
                       if (d) onStartDraft({ draft: d });
                     }}
                     className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
-                    style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                    style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+                  >
                     Write this <ArrowRight size={12} color="#fff" />
                   </button>
                 </div>
@@ -992,15 +1917,27 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
             {/* Show another angle */}
             {coachSuggestions.length < 3 && !coachLoading && (
               <div className="flex justify-center mb-4">
-                <button onClick={getAnotherAngle} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>
+                <button
+                  onClick={getAnotherAngle}
+                  className="font-sans text-[14px] font-semibold"
+                  style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+                >
                   Show another angle
                 </button>
               </div>
             )}
             {coachLoading && coachSuggestions.length > 0 && (
               <div className="flex items-start gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}>A</div>
-                <div className="p-3 rounded-[10px] animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
+                >
+                  A
+                </div>
+                <div
+                  className="p-3 rounded-[10px] animate-pulse"
+                  style={{ background: "#f0f0f0", width: 200, height: 20 }}
+                />
               </div>
             )}
           </>
@@ -1012,39 +1949,98 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
   if (showGenerate) {
     return (
       <div>
-        <h2 className="font-serif mb-6" style={{ fontSize: 24, fontWeight: 600, color: INK }}>Ready to plan your week?</h2>
+        <h2 className="font-serif mb-6" style={{ fontSize: 24, fontWeight: 600, color: INK }}>
+          Ready to plan your week?
+        </h2>
         <div className="rounded-[12px] p-5 mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
           <div className="flex items-center justify-between mb-3">
-            <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>📋 Your week at a glance</span>
-            <button onClick={() => setEditing(!editing)} className="font-mono text-[11px]" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>
+            <span
+              className="font-mono uppercase"
+              style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+            >
+              📋 Your week at a glance
+            </span>
+            <button
+              onClick={() => setEditing(!editing)}
+              className="font-mono text-[11px]"
+              style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+            >
               {editing ? "Cancel" : "Edit"}
             </button>
           </div>
 
           {!editing ? (
             <div className="space-y-2">
-              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Notes this week:</span> <strong>{totalEntries}</strong></p>
+              <p className="font-sans text-[14px]" style={{ color: INK }}>
+                <span style={{ color: FAINT }}>Notes this week:</span> <strong>{totalEntries}</strong>
+              </p>
               {(linkCount > 0 || quoteCount > 0) && (
                 <p className="font-sans text-[14px]" style={{ color: INK }}>
-                  <span style={{ color: FAINT }}>Inspiration:</span> {linkCount > 0 && <strong>{linkCount} link{linkCount !== 1 ? "s" : ""}</strong>}{linkCount > 0 && quoteCount > 0 && ", "}{quoteCount > 0 && <strong>{quoteCount} quote{quoteCount !== 1 ? "s" : ""}</strong>}
+                  <span style={{ color: FAINT }}>Inspiration:</span>{" "}
+                  {linkCount > 0 && (
+                    <strong>
+                      {linkCount} link{linkCount !== 1 ? "s" : ""}
+                    </strong>
+                  )}
+                  {linkCount > 0 && quoteCount > 0 && ", "}
+                  {quoteCount > 0 && (
+                    <strong>
+                      {quoteCount} quote{quoteCount !== 1 ? "s" : ""}
+                    </strong>
+                  )}
                 </p>
               )}
-              {profile.what_you_do && <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>You:</span> {profile.what_you_do}</p>}
-              {profile.what_you_build && <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Building:</span> {profile.what_you_build}</p>}
-              {profile.why_you_post && <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Why:</span> {profile.why_you_post}</p>}
-              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Platforms:</span> {(profile.platforms || []).join(", ") || "not set"}</p>
-              <p className="font-sans text-[14px]" style={{ color: INK }}><span style={{ color: FAINT }}>Frequency:</span> {profile.posting_frequency || "not set"}</p>
+              {profile.what_you_do && (
+                <p className="font-sans text-[14px]" style={{ color: INK }}>
+                  <span style={{ color: FAINT }}>You:</span> {profile.what_you_do}
+                </p>
+              )}
+              {profile.what_you_build && (
+                <p className="font-sans text-[14px]" style={{ color: INK }}>
+                  <span style={{ color: FAINT }}>Building:</span> {profile.what_you_build}
+                </p>
+              )}
+              {profile.why_you_post && (
+                <p className="font-sans text-[14px]" style={{ color: INK }}>
+                  <span style={{ color: FAINT }}>Why:</span> {profile.why_you_post}
+                </p>
+              )}
+              <p className="font-sans text-[14px]" style={{ color: INK }}>
+                <span style={{ color: FAINT }}>Platforms:</span> {(profile.platforms || []).join(", ") || "not set"}
+              </p>
+              <p className="font-sans text-[14px]" style={{ color: INK }}>
+                <span style={{ color: FAINT }}>Frequency:</span> {profile.posting_frequency || "not set"}
+              </p>
               {totalEntries < 3 && (
                 <div className="pt-3 space-y-3">
-                  <p className="font-sans text-[13px]" style={{ color: "#f59e0b" }}>Your best content comes from your real week. Drop a few more notes and I'll find the stories.</p>
+                  <p className="font-sans text-[13px]" style={{ color: "#f59e0b" }}>
+                    Your best content comes from your real week. Drop a few more notes and I'll find the stories.
+                  </p>
                   <div className="flex gap-2">
-                    <input value={quickLog} onChange={e => setQuickLog(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && quickLog.trim()) handleQuickLog(); }}
-                      placeholder="Quick note..." className="flex-1 outline-none font-sans text-[14px]"
-                      style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
-                    <button onClick={handleQuickLog} disabled={!quickLog.trim()}
+                    <input
+                      value={quickLog}
+                      onChange={(e) => setQuickLog(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && quickLog.trim()) handleQuickLog();
+                      }}
+                      placeholder="Quick note..."
+                      className="flex-1 outline-none font-sans text-[14px]"
+                      style={{
+                        color: INK,
+                        padding: "8px 12px",
+                        border: `1px solid ${BORDER}`,
+                        borderRadius: 8,
+                        background: "#fff",
+                      }}
+                    />
+                    <button
+                      onClick={handleQuickLog}
+                      disabled={!quickLog.trim()}
                       className="px-4 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30"
-                      style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Log</button>
+                      style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+                    >
+                      Log
+                    </button>
                   </div>
                 </div>
               )}
@@ -1052,246 +2048,553 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>What do you do?</label>
-                <input value={editWhatYouDo} onChange={e => setEditWhatYouDo(e.target.value)}
+                <label
+                  className="font-mono uppercase block mb-1"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  What do you do?
+                </label>
+                <input
+                  value={editWhatYouDo}
+                  onChange={(e) => setEditWhatYouDo(e.target.value)}
                   placeholder="I'm building a content planning tool for founders"
-                  className="w-full outline-none font-sans text-[14px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+                  className="w-full outline-none font-sans text-[14px]"
+                  style={{
+                    color: INK,
+                    padding: "8px 12px",
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 8,
+                    background: "#fff",
+                  }}
+                />
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>What are you building?</label>
-                <input value={editWhatYouBuild} onChange={e => setEditWhatYouBuild(e.target.value)}
+                <label
+                  className="font-mono uppercase block mb-1"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  What are you building?
+                </label>
+                <input
+                  value={editWhatYouBuild}
+                  onChange={(e) => setEditWhatYouBuild(e.target.value)}
                   placeholder="Accent — helps founders post consistently"
-                  className="w-full outline-none font-sans text-[14px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+                  className="w-full outline-none font-sans text-[14px]"
+                  style={{
+                    color: INK,
+                    padding: "8px 12px",
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 8,
+                    background: "#fff",
+                  }}
+                />
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Why do you post?</label>
+                <label
+                  className="font-mono uppercase block mb-1"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  Why do you post?
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {WHY_OPTIONS.map(w => (
-                    <button key={w} onClick={() => setEditWhyYouPost(editWhyYouPost === w ? "" : w)}
+                  {WHY_OPTIONS.map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => setEditWhyYouPost(editWhyYouPost === w ? "" : w)}
                       className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
-                      style={{ minHeight: 36, background: editWhyYouPost === w ? `${BLUE}12` : "#fff", color: editWhyYouPost === w ? BLUE : DIM, border: `1px solid ${editWhyYouPost === w ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      style={{
+                        minHeight: 36,
+                        background: editWhyYouPost === w ? `${BLUE}12` : "#fff",
+                        color: editWhyYouPost === w ? BLUE : DIM,
+                        border: `1px solid ${editWhyYouPost === w ? BLUE + "30" : BORDER}`,
+                        cursor: "pointer",
+                      }}
+                    >
                       {w}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Platforms</label>
+                <label
+                  className="font-mono uppercase block mb-1"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  Platforms
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {PLATFORM_OPTIONS.map(p => (
-                    <button key={p} onClick={() => setEditPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
+                  {PLATFORM_OPTIONS.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() =>
+                        setEditPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
+                      }
                       className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
-                      style={{ minHeight: 36, background: editPlatforms.includes(p) ? `${BLUE}12` : "#fff", color: editPlatforms.includes(p) ? BLUE : DIM, border: `1px solid ${editPlatforms.includes(p) ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      style={{
+                        minHeight: 36,
+                        background: editPlatforms.includes(p) ? `${BLUE}12` : "#fff",
+                        color: editPlatforms.includes(p) ? BLUE : DIM,
+                        border: `1px solid ${editPlatforms.includes(p) ? BLUE + "30" : BORDER}`,
+                        cursor: "pointer",
+                      }}
+                    >
                       {p}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="font-mono uppercase block mb-1" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>How often?</label>
+                <label
+                  className="font-mono uppercase block mb-1"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  How often?
+                </label>
                 <div className="flex gap-2">
-                  {FREQ_OPTIONS.map(f => (
-                    <button key={f} onClick={() => setEditFrequency(f)}
+                  {FREQ_OPTIONS.map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setEditFrequency(f)}
                       className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
-                      style={{ minHeight: 36, background: editFrequency === f ? `${BLUE}12` : "#fff", color: editFrequency === f ? BLUE : DIM, border: `1px solid ${editFrequency === f ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      style={{
+                        minHeight: 36,
+                        background: editFrequency === f ? `${BLUE}12` : "#fff",
+                        color: editFrequency === f ? BLUE : DIM,
+                        border: `1px solid ${editFrequency === f ? BLUE + "30" : BORDER}`,
+                        cursor: "pointer",
+                      }}
+                    >
                       {f}
                     </button>
                   ))}
                 </div>
               </div>
-              <button onClick={handleSaveProfile} disabled={editSaving}
+              <button
+                onClick={handleSaveProfile}
+                disabled={editSaving}
                 className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+              >
                 {editSaving ? "Saving..." : "Save"}
               </button>
             </div>
           )}
         </div>
         <div className="mb-6">
-          <label className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Anything else on your mind this week? (optional)</label>
-          <textarea value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Launching a new feature, meeting an investor..." rows={3}
-            className="w-full outline-none resize-y font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6, padding: "12px 16px", border: `1px solid ${BORDER}`, borderRadius: 10 }} />
+          <label
+            className="font-mono uppercase block mb-2"
+            style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+          >
+            Anything else on your mind this week? (optional)
+          </label>
+          <textarea
+            value={extraContext}
+            onChange={(e) => setExtraContext(e.target.value)}
+            placeholder="Launching a new feature, meeting an investor..."
+            rows={3}
+            className="w-full outline-none resize-y font-sans"
+            style={{
+              fontSize: 15,
+              color: INK,
+              lineHeight: 1.6,
+              padding: "12px 16px",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+            }}
+          />
         </div>
         {/* Unwritten past ideas */}
         {pastIdeas.length > 0 && (
           <div className="mb-6">
-            <span className="font-mono uppercase block mb-3" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Still relevant? You never wrote these</span>
+            <span
+              className="font-mono uppercase block mb-3"
+              style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+            >
+              Still relevant? You never wrote these
+            </span>
             <div className="space-y-2">
               {pastIdeas.map((idea, i) => (
-                <div key={i} className="p-3 rounded-[10px]" style={{ border: `1px solid ${BORDER}`, background: "#fafafa" }}>
-                  <p className="font-sans text-[14px]" style={{ color: BODY, lineHeight: 1.5 }}>{idea.prompt}</p>
-                  <span className="font-mono text-[11px] mt-1 block" style={{ color: FAINT }}>{idea.weekLabel} · {idea.type}</span>
+                <div
+                  key={i}
+                  className="p-3 rounded-[10px]"
+                  style={{ border: `1px solid ${BORDER}`, background: "#fafafa" }}
+                >
+                  <p className="font-sans text-[14px]" style={{ color: BODY, lineHeight: 1.5 }}>
+                    {idea.prompt}
+                  </p>
+                  <span className="font-mono text-[11px] mt-1 block" style={{ color: FAINT }}>
+                    {idea.weekLabel} · {idea.type}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {error && <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>{error}</p>}
+        {error && (
+          <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>
+            {error}
+          </p>
+        )}
 
         {totalEntries === 0 ? (
           <div className="text-center py-6">
-            <p className="font-sans mb-4" style={{ fontSize: 15, color: FAINT }}>Nothing to work with yet. Your ideas come from your week — start logging.</p>
+            <p className="font-sans mb-4" style={{ fontSize: 15, color: FAINT }}>
+              Nothing to work with yet. Your ideas come from your week — start logging.
+            </p>
             <div className="flex gap-2 max-w-sm mx-auto">
-              <input value={quickLog} onChange={e => setQuickLog(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && quickLog.trim()) handleQuickLog(); }}
-                placeholder="What happened today?" className="flex-1 outline-none font-sans text-[14px]"
-                style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
-              <button onClick={handleQuickLog} disabled={!quickLog.trim()}
+              <input
+                value={quickLog}
+                onChange={(e) => setQuickLog(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && quickLog.trim()) handleQuickLog();
+                }}
+                placeholder="What happened today?"
+                className="flex-1 outline-none font-sans text-[14px]"
+                style={{
+                  color: INK,
+                  padding: "8px 12px",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                  background: "#fff",
+                }}
+              />
+              <button
+                onClick={handleQuickLog}
+                disabled={!quickLog.trim()}
                 className="px-4 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Log</button>
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+              >
+                Log
+              </button>
             </div>
           </div>
         ) : (
-          <button onClick={handleGenerate} disabled={generating} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+          >
             {generating ? "Generating your plan..." : "Generate my plan"}
           </button>
         )}
-        {generating && <div className="mt-6 space-y-3 animate-pulse">{[1, 2, 3].map(i => <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}><div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} /><div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} /><div className="h-12 rounded" style={{ background: "#f0f0f0" }} /></div>)}</div>}
+        {generating && (
+          <div className="mt-6 space-y-3 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
+                <div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} />
+                <div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} />
+                <div className="h-12 rounded" style={{ background: "#f0f0f0" }} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
   const currentWeek = weeks.length > 0 ? weeks[weekIdx] : null;
-  const plan = currentWeek ? allPlans.find(p => p.week_start === currentWeek) : null;
+  const plan = currentWeek ? allPlans.find((p) => p.week_start === currentWeek) : null;
   const raw = plan?.plan;
   const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
 
   return (
     <div>
       {/* Weekly plan */}
-      <span className="font-mono uppercase block mb-4" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Weekly plan</span>
+      <span
+        className="font-mono uppercase block mb-4"
+        style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+      >
+        Weekly plan
+      </span>
       {!currentWeek ? (
         <div className="mb-6 p-4 rounded-[12px] text-center" style={{ border: `1px solid ${BORDER}` }}>
-          <p className="font-sans mb-3" style={{ fontSize: 14, color: FAINT }}>No batch plan yet.</p>
-          <button onClick={() => setShowGenerate(true)} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Generate a weekly plan <ArrowRight size={12} /></button>
-        </div>
-      ) : (<>
-      <div className="flex items-center justify-between mb-6 gap-3">
-        {weekIdx < weeks.length - 1 ? (
-          <button onClick={() => setWeekIdx(weekIdx + 1)}
-            className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
-            style={{ minHeight: 44, padding: "8px 14px", border: `1.5px solid ${DIM}40`, background: "#fff", cursor: "pointer" }}>
-            <ArrowLeft size={14} color={INK} />
-            <span className="font-sans text-[12px]" style={{ color: DIM }}>{weekLabel(weeks[weekIdx + 1])}</span>
+          <p className="font-sans mb-3" style={{ fontSize: 14, color: FAINT }}>
+            No batch plan yet.
+          </p>
+          <button
+            onClick={() => setShowGenerate(true)}
+            className="font-sans text-[14px] font-semibold"
+            style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+          >
+            Generate a weekly plan <ArrowRight size={12} />
           </button>
-        ) : <div style={{ minWidth: 44 }} />}
-        <div className="text-center shrink-0">
-          <span className="font-serif block" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{weekLabel(currentWeek)}</span>
-          <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>{planData ? `${planData.posts.length} post${planData.posts.length === 1 ? "" : "s"}` : "No plan"}</span>
         </div>
-        {weekIdx > 0 ? (
-          <button onClick={() => setWeekIdx(weekIdx - 1)}
-            className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
-            style={{ minHeight: 44, padding: "8px 14px", border: `1.5px solid ${DIM}40`, background: "#fff", cursor: "pointer" }}>
-            <span className="font-sans text-[12px]" style={{ color: DIM }}>{weekLabel(weeks[weekIdx - 1])}</span>
-            <ArrowRight size={14} color={INK} />
-          </button>
-        ) : <div style={{ minWidth: 44 }} />}
-      </div>
-      {!planData ? (
-        <div className="text-center py-12"><p className="font-sans" style={{ fontSize: 15, color: FAINT }}>No plan for this week.</p></div>
       ) : (
-        <div>
-          {planData.strategy_note && (
-            <div className="mb-5 p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{planData.strategy_note}</p>
+        <>
+          <div className="flex items-center justify-between mb-6 gap-3">
+            {weekIdx < weeks.length - 1 ? (
+              <button
+                onClick={() => setWeekIdx(weekIdx + 1)}
+                className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
+                style={{
+                  minHeight: 44,
+                  padding: "8px 14px",
+                  border: `1.5px solid ${DIM}40`,
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <ArrowLeft size={14} color={INK} />
+                <span className="font-sans text-[12px]" style={{ color: DIM }}>
+                  {weekLabel(weeks[weekIdx + 1])}
+                </span>
+              </button>
+            ) : (
+              <div style={{ minWidth: 44 }} />
+            )}
+            <div className="text-center shrink-0">
+              <span className="font-serif block" style={{ fontSize: 16, fontWeight: 600, color: INK }}>
+                {weekLabel(currentWeek)}
+              </span>
+              <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>
+                {planData ? `${planData.posts.length} post${planData.posts.length === 1 ? "" : "s"}` : "No plan"}
+              </span>
             </div>
-          )}
-          <div className="space-y-6">
-            {(() => {
-              // Group ideas by source log entry
-              type PostWithIndex = ContentPlanPost & { idx: number };
-              const groups: { source: string; isUrl: boolean; ogData?: { title: string | null; description: string | null }; posts: PostWithIndex[] }[] = [];
-              const groupMap = new Map<string, typeof groups[0]>();
-
-              planData.posts.forEach((post, i) => {
-                const raw = post.source_snippet || "";
-                const snippet = raw.length > 5 && !/^[\s\-\[\]]*$/.test(raw) ? raw : "";
-                const key = snippet.toLowerCase().trim() || `orphan-${i}`;
-                if (!groupMap.has(key)) {
-                  const urlMatch = snippet.match(/(https?:\/\/[^\s"]+)/);
-                  const isUrl = !!urlMatch;
-                  const url = urlMatch?.[1];
-                  const og = url ? ideasOgCache[url] : undefined;
-                  groupMap.set(key, { source: snippet, isUrl, ogData: og ? { title: og.title, description: og.description } : undefined, posts: [] });
-                  groups.push(groupMap.get(key)!);
-                }
-                groupMap.get(key)!.posts.push({ ...post, idx: i });
-              });
-
-              return groups.map((group, gi) => {
-                const domain = group.isUrl ? (() => { const m = group.source.match(/(https?:\/\/[^\s"]+)/); if (m) try { return new URL(m[1]).hostname.replace("www.", ""); } catch {} return ""; })() : "";
-                const displayTitle = group.isUrl ? (group.ogData?.title || getReadableTitle(group.source.match(/(https?:\/\/[^\s"]+)/)?.[1] || "")) : group.source;
-
-                return (
-                  <div key={gi} className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: "#fff" }}>
-                    {/* Source log entry header */}
-                    {group.source && (
-                      <div style={{ padding: "16px 20px", background: "#fafafa", borderBottom: `1px solid ${BORDER}` }}>
-                        {group.isUrl ? (
-                          <div>
-                            <p className="font-sans font-semibold" style={{ fontSize: 15, color: INK, lineHeight: 1.4 }}>🔗 {displayTitle}</p>
-                            {group.ogData?.description && <p className="font-sans mt-1" style={{ fontSize: 13, color: BODY, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{group.ogData.description}</p>}
-                            {domain && <span className="font-mono block mt-1" style={{ fontSize: 11, color: FAINT }}>{domain}</span>}
-                          </div>
-                        ) : (
-                          <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>📝 "{displayTitle}"</p>
-                        )}
-                      </div>
-                    )}
-                    {/* Child ideas */}
-                    <div>
-                      {group.posts.map((post, pi) => {
-                        const typeColor = CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
-                        const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
-                        const nudge = post.prompt || post.key_takeaway || post.hook || "";
-                        return (
-                          <div key={pi} style={{ padding: "16px 20px", borderTop: pi > 0 ? `1px solid ${BORDER}` : "none" }}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded capitalize" style={{ background: `${typeColor}10`, color: typeColor }}>{typeLabel}</span>
-                              <span className="font-sans text-[13px]" style={{ color: FAINT }}>{post.day} · {PLATFORM_LABELS[post.platform] || post.platform}</span>
-                            </div>
-                            <p className="font-serif" style={{ fontSize: 16, color: INK, lineHeight: 1.5, fontWeight: 500 }}>{nudge}</p>
-                            <button onClick={() => { if (plan) { onWritePost(plan.id, post.idx); posthog.capture("write_from_idea_clicked", { content_type: post.type || "", platform: post.platform || "" }); } }}
-                              className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-                              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                              Write this <ArrowRight size={12} color="#fff" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              });
-            })()}
+            {weekIdx > 0 ? (
+              <button
+                onClick={() => setWeekIdx(weekIdx - 1)}
+                className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
+                style={{
+                  minHeight: 44,
+                  padding: "8px 14px",
+                  border: `1.5px solid ${DIM}40`,
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <span className="font-sans text-[12px]" style={{ color: DIM }}>
+                  {weekLabel(weeks[weekIdx - 1])}
+                </span>
+                <ArrowRight size={14} color={INK} />
+              </button>
+            ) : (
+              <div style={{ minWidth: 44 }} />
+            )}
           </div>
-          {weekEntries.length >= 3 && planData.posts.length < 15 ? (
-            <button onClick={() => handleMoreIdeas(plan!, planData)} disabled={loadingMore}
-              className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-              {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
-            </button>
-          ) : weekEntries.length < 3 ? (
-            <div className="mt-6 p-4 rounded-[12px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <p className="font-sans text-[14px] mb-3" style={{ color: BODY }}>Your best content comes from your real week. Drop a few more notes and I'll find the stories.</p>
-              <button onClick={onSwitchToLog} className="font-sans text-[14px] font-semibold" style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}>Add more notes <ArrowRight size={12} /></button>
+          {!planData ? (
+            <div className="text-center py-12">
+              <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
+                No plan for this week.
+              </p>
             </div>
           ) : (
-            <p className="mt-6 text-center font-sans font-medium" style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}>
-              ✓ All set for this week
-            </p>
-          )}
-          <button onClick={onSwitchToLog} className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-            style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>Add more notes <ArrowRight size={12} /></button>
-          <button onClick={() => { setShowGenerate(true); }} className="mt-3 w-full font-sans text-[14px]"
-            style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>Regenerate plan</button>
+            <div>
+              {planData.strategy_note && (
+                <div
+                  className="mb-5 p-4 rounded-[10px]"
+                  style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+                >
+                  <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>
+                    {planData.strategy_note}
+                  </p>
+                </div>
+              )}
+              <div className="space-y-6">
+                {(() => {
+                  // Group ideas by source log entry
+                  type PostWithIndex = ContentPlanPost & { idx: number };
+                  const groups: {
+                    source: string;
+                    isUrl: boolean;
+                    ogData?: { title: string | null; description: string | null };
+                    posts: PostWithIndex[];
+                  }[] = [];
+                  const groupMap = new Map<string, (typeof groups)[0]>();
 
-        </div>
+                  planData.posts.forEach((post, i) => {
+                    const raw = post.source_snippet || "";
+                    const snippet = raw.length > 5 && !/^[\s\-\[\]]*$/.test(raw) ? raw : "";
+                    const key = snippet.toLowerCase().trim() || `orphan-${i}`;
+                    if (!groupMap.has(key)) {
+                      const urlMatch = snippet.match(/(https?:\/\/[^\s"]+)/);
+                      const isUrl = !!urlMatch;
+                      const url = urlMatch?.[1];
+                      const og = url ? ideasOgCache[url] : undefined;
+                      groupMap.set(key, {
+                        source: snippet,
+                        isUrl,
+                        ogData: og ? { title: og.title, description: og.description } : undefined,
+                        posts: [],
+                      });
+                      groups.push(groupMap.get(key)!);
+                    }
+                    groupMap.get(key)!.posts.push({ ...post, idx: i });
+                  });
+
+                  return groups.map((group, gi) => {
+                    const domain = group.isUrl
+                      ? (() => {
+                          const m = group.source.match(/(https?:\/\/[^\s"]+)/);
+                          if (m)
+                            try {
+                              return new URL(m[1]).hostname.replace("www.", "");
+                            } catch {}
+                          return "";
+                        })()
+                      : "";
+                    const displayTitle = group.isUrl
+                      ? group.ogData?.title || getReadableTitle(group.source.match(/(https?:\/\/[^\s"]+)/)?.[1] || "")
+                      : group.source;
+
+                    return (
+                      <div
+                        key={gi}
+                        className="rounded-[14px] overflow-hidden"
+                        style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
+                      >
+                        {/* Source log entry header */}
+                        {group.source && (
+                          <div
+                            style={{ padding: "16px 20px", background: "#fafafa", borderBottom: `1px solid ${BORDER}` }}
+                          >
+                            {group.isUrl ? (
+                              <div>
+                                <p
+                                  className="font-sans font-semibold"
+                                  style={{ fontSize: 15, color: INK, lineHeight: 1.4 }}
+                                >
+                                  🔗 {displayTitle}
+                                </p>
+                                {group.ogData?.description && (
+                                  <p
+                                    className="font-sans mt-1"
+                                    style={{
+                                      fontSize: 13,
+                                      color: BODY,
+                                      lineHeight: 1.4,
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: "vertical",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {group.ogData.description}
+                                  </p>
+                                )}
+                                {domain && (
+                                  <span className="font-mono block mt-1" style={{ fontSize: 11, color: FAINT }}>
+                                    {domain}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <p
+                                className="font-sans"
+                                style={{ fontSize: 15, color: INK, lineHeight: 1.5, whiteSpace: "pre-wrap" }}
+                              >
+                                📝 "{displayTitle}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {/* Child ideas */}
+                        <div>
+                          {group.posts.map((post, pi) => {
+                            const typeColor =
+                              CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
+                            const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
+                            const nudge = post.prompt || post.key_takeaway || post.hook || "";
+                            return (
+                              <div
+                                key={pi}
+                                style={{ padding: "16px 20px", borderTop: pi > 0 ? `1px solid ${BORDER}` : "none" }}
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span
+                                    className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded capitalize"
+                                    style={{ background: `${typeColor}10`, color: typeColor }}
+                                  >
+                                    {typeLabel}
+                                  </span>
+                                  <span className="font-sans text-[13px]" style={{ color: FAINT }}>
+                                    {post.day} · {PLATFORM_LABELS[post.platform] || post.platform}
+                                  </span>
+                                </div>
+                                <p
+                                  className="font-serif"
+                                  style={{ fontSize: 16, color: INK, lineHeight: 1.5, fontWeight: 500 }}
+                                >
+                                  {nudge}
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    if (plan) {
+                                      onWritePost(plan.id, post.idx);
+                                      posthog.capture("write_from_idea_clicked", {
+                                        content_type: post.type || "",
+                                        platform: post.platform || "",
+                                      });
+                                    }
+                                  }}
+                                  className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
+                                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+                                >
+                                  Write this <ArrowRight size={12} color="#fff" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+              {weekEntries.length >= 3 && planData.posts.length < 15 ? (
+                <button
+                  onClick={() => handleMoreIdeas(plan!, planData)}
+                  disabled={loadingMore}
+                  className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+                >
+                  {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
+                </button>
+              ) : weekEntries.length < 3 ? (
+                <div
+                  className="mt-6 p-4 rounded-[12px]"
+                  style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+                >
+                  <p className="font-sans text-[14px] mb-3" style={{ color: BODY }}>
+                    Your best content comes from your real week. Drop a few more notes and I'll find the stories.
+                  </p>
+                  <button
+                    onClick={onSwitchToLog}
+                    className="font-sans text-[14px] font-semibold"
+                    style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    Add more notes <ArrowRight size={12} />
+                  </button>
+                </div>
+              ) : (
+                <p
+                  className="mt-6 text-center font-sans font-medium"
+                  style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}
+                >
+                  ✓ All set for this week
+                </p>
+              )}
+              <button
+                onClick={onSwitchToLog}
+                className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+                style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
+              >
+                Add more notes <ArrowRight size={12} />
+              </button>
+              <button
+                onClick={() => {
+                  setShowGenerate(true);
+                }}
+                className="mt-3 w-full font-sans text-[14px]"
+                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}
+              >
+                Regenerate plan
+              </button>
+            </div>
+          )}
+        </>
       )}
-      </>)}
     </div>
   );
 }
@@ -1299,29 +2602,47 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
 /* ══════════════ DRAFTS TAB ══════════════ */
 const PUBLISH_PLATFORMS = ["LinkedIn", "X", "Threads", "Substack", "Other"];
 
-function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDraftsUpdated }: { drafts: Draft[]; allPlans: ContentPlan[]; onOpenDraft: (planId: string, postIndex: number) => void; onOpenStandaloneDraft: (draft: Draft) => void; onDraftsUpdated: () => void }) {
+function DraftsTab({
+  drafts,
+  allPlans,
+  onOpenDraft,
+  onOpenStandaloneDraft,
+  onDraftsUpdated,
+}: {
+  drafts: Draft[];
+  allPlans: ContentPlan[];
+  onOpenDraft: (planId: string, postIndex: number) => void;
+  onOpenStandaloneDraft: (draft: Draft) => void;
+  onDraftsUpdated: () => void;
+}) {
   const [filter, setFilter] = useState<"all" | "drafts" | "published">("all");
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [pubPlatform, setPubPlatform] = useState("LinkedIn");
   const [pubUrl, setPubUrl] = useState("");
 
-  const draftsWithContext = drafts.filter(d => d.content.trim()).map(d => {
-    let prompt = "";
-    let platform = "";
-    if (d.plan_id) {
-      const plan = allPlans.find(p => p.id === d.plan_id);
-      const planData = plan ? (typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan) as ContentPlanData : null;
-      const post = planData?.posts?.[d.post_index ?? 0];
-      prompt = post?.prompt || post?.key_takeaway || post?.hook || "";
-      platform = post?.platform || "";
-    } else {
-      prompt = d.source_note ? `From your note: "${d.source_note.slice(0, 80)}${d.source_note.length > 80 ? "..." : ""}"` : "Standalone draft";
-    }
-    const wordCount = d.content.trim().split(/\s+/).length;
-    return { ...d, prompt, platform, wordCount };
-  });
+  const draftsWithContext = drafts
+    .filter((d) => d.content.trim())
+    .map((d) => {
+      let prompt = "";
+      let platform = "";
+      if (d.plan_id) {
+        const plan = allPlans.find((p) => p.id === d.plan_id);
+        const planData = plan
+          ? ((typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan) as ContentPlanData)
+          : null;
+        const post = planData?.posts?.[d.post_index ?? 0];
+        prompt = post?.prompt || post?.key_takeaway || post?.hook || "";
+        platform = post?.platform || "";
+      } else {
+        prompt = d.source_note
+          ? `From your note: "${d.source_note.slice(0, 80)}${d.source_note.length > 80 ? "..." : ""}"`
+          : "Standalone draft";
+      }
+      const wordCount = d.content.trim().split(/\s+/).length;
+      return { ...d, prompt, platform, wordCount };
+    });
 
-  const filtered = draftsWithContext.filter(d => {
+  const filtered = draftsWithContext.filter((d) => {
     if (filter === "drafts") return !d.published;
     if (filter === "published") return d.published;
     return true;
@@ -1329,20 +2650,36 @@ function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDra
 
   const handlePublish = async (draftId: string) => {
     const result = await markAsPublished(draftId, pubPlatform, pubUrl.trim() || undefined);
-    if (result) { posthog.capture("marked_published", { platform: pubPlatform, has_url: !!pubUrl.trim() }); onDraftsUpdated(); }
-    setPublishingId(null); setPubPlatform("LinkedIn"); setPubUrl("");
+    if (result) {
+      posthog.capture("marked_published", { platform: pubPlatform, has_url: !!pubUrl.trim() });
+      onDraftsUpdated();
+    }
+    setPublishingId(null);
+    setPubPlatform("LinkedIn");
+    setPubUrl("");
   };
 
   const FILTERS: { key: typeof filter; label: string }[] = [
-    { key: "all", label: "All" }, { key: "drafts", label: "Drafts" }, { key: "published", label: "Published" },
+    { key: "all", label: "All" },
+    { key: "drafts", label: "Drafts" },
+    { key: "published", label: "Published" },
   ];
 
   return (
     <div>
       <div className="flex gap-2 mb-6 flex-wrap">
-        {FILTERS.map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
-            style={{ background: filter === f.key ? `${BLUE}10` : "transparent", color: filter === f.key ? BLUE : FAINT, border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`, cursor: "pointer" }}>
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+            style={{
+              background: filter === f.key ? `${BLUE}10` : "transparent",
+              color: filter === f.key ? BLUE : FAINT,
+              border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`,
+              cursor: "pointer",
+            }}
+          >
             {f.label}
           </button>
         ))}
@@ -1350,60 +2687,167 @@ function DraftsTab({ drafts, allPlans, onOpenDraft, onOpenStandaloneDraft, onDra
       {filtered.length === 0 ? (
         <div className="text-center py-16">
           <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
-            {filter === "all" ? "No drafts yet. Tap \"Write this\" on any idea to start." : `No ${filter} yet.`}
+            {filter === "all" ? 'No drafts yet. Tap "Write this" on any idea to start.' : `No ${filter} yet.`}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map(d => (
-            <div key={d.id} className="rounded-[12px]" style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}>
-              <div className="cursor-pointer" onClick={() => d.plan_id ? onOpenDraft(d.plan_id, d.post_index ?? 0) : onOpenStandaloneDraft(d)}>
-                {d.prompt && <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>{d.prompt}</p>}
-                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.content}</p>
+          {filtered.map((d) => (
+            <div
+              key={d.id}
+              className="rounded-[12px]"
+              style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}
+            >
+              <div
+                className="cursor-pointer"
+                onClick={() => (d.plan_id ? onOpenDraft(d.plan_id, d.post_index ?? 0) : onOpenStandaloneDraft(d))}
+              >
+                {d.prompt && (
+                  <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>
+                    {d.prompt}
+                  </p>
+                )}
+                <p
+                  className="font-sans"
+                  style={{
+                    fontSize: 15,
+                    color: BODY,
+                    lineHeight: 1.6,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {d.content}
+                </p>
               </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {d.platform && <span className="font-sans text-[12px] px-2 py-0.5 rounded-full" style={{ background: "#f0f0f0", color: DIM }}>{PLATFORM_LABELS[d.platform] || d.platform}</span>}
-                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>{d.wordCount} words · {getDayLabel(d.updated_at)}</span>
+                {d.platform && (
+                  <span
+                    className="font-sans text-[12px] px-2 py-0.5 rounded-full"
+                    style={{ background: "#f0f0f0", color: DIM }}
+                  >
+                    {PLATFORM_LABELS[d.platform] || d.platform}
+                  </span>
+                )}
+                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>
+                  {d.wordCount} words · {getDayLabel(d.updated_at)}
+                </span>
                 {d.published ? (
                   <>
-                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#22c55e15", color: "#16a34a" }}>Published</span>
-                    {d.published_platform && <span className="font-mono text-[11px]" style={{ color: FAINT }}>on {d.published_platform}</span>}
+                    <span
+                      className="font-mono text-[11px] px-2 py-0.5 rounded-full"
+                      style={{ background: "#22c55e15", color: "#16a34a" }}
+                    >
+                      Published
+                    </span>
+                    {d.published_platform && (
+                      <span className="font-mono text-[11px]" style={{ color: FAINT }}>
+                        on {d.published_platform}
+                      </span>
+                    )}
                     {d.published_url && (
-                      <a href={d.published_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                        className="no-underline font-mono text-[11px]" style={{ color: BLUE }}>View post <ArrowRight size={10} /></a>
+                      <a
+                        href={d.published_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="no-underline font-mono text-[11px]"
+                        style={{ color: BLUE }}
+                      >
+                        View post <ArrowRight size={10} />
+                      </a>
                     )}
                   </>
                 ) : (
-                  <span className="font-mono text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f59e0b15", color: "#f59e0b" }}>Draft</span>
+                  <span
+                    className="font-mono text-[11px] px-2 py-0.5 rounded-full"
+                    style={{ background: "#f59e0b15", color: "#f59e0b" }}
+                  >
+                    Draft
+                  </span>
                 )}
               </div>
               {/* Publish action */}
               {!d.published && publishingId !== d.id && (
-                <button onClick={(e) => { e.stopPropagation(); setPublishingId(d.id); }}
-                  className="mt-3 font-sans text-[13px]" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPublishingId(d.id);
+                  }}
+                  className="mt-3 font-sans text-[13px]"
+                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                >
                   Mark as published
                 </button>
               )}
               {publishingId === d.id && (
-                <div className="mt-3 p-4 rounded-[10px] space-y-3" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }} onClick={e => e.stopPropagation()}>
+                <div
+                  className="mt-3 p-4 rounded-[10px] space-y-3"
+                  style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div>
-                    <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Where did you post this?</span>
+                    <span
+                      className="font-mono uppercase block mb-2"
+                      style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                    >
+                      Where did you post this?
+                    </span>
                     <div className="flex gap-2 flex-wrap">
-                      {PUBLISH_PLATFORMS.map(p => (
-                        <button key={p} onClick={() => setPubPlatform(p)} className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
-                          style={{ background: pubPlatform === p ? `${BLUE}10` : "#fff", color: pubPlatform === p ? BLUE : DIM, border: `1px solid ${pubPlatform === p ? BLUE + "30" : BORDER}`, cursor: "pointer" }}>
+                      {PUBLISH_PLATFORMS.map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPubPlatform(p)}
+                          className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
+                          style={{
+                            background: pubPlatform === p ? `${BLUE}10` : "#fff",
+                            color: pubPlatform === p ? BLUE : DIM,
+                            border: `1px solid ${pubPlatform === p ? BLUE + "30" : BORDER}`,
+                            cursor: "pointer",
+                          }}
+                        >
                           {p}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <input value={pubUrl} onChange={e => setPubUrl(e.target.value)} placeholder="Paste link (optional)"
-                    className="w-full outline-none font-sans text-[13px]" style={{ color: INK, padding: "8px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff" }} />
+                  <input
+                    value={pubUrl}
+                    onChange={(e) => setPubUrl(e.target.value)}
+                    placeholder="Paste link (optional)"
+                    className="w-full outline-none font-sans text-[13px]"
+                    style={{
+                      color: INK,
+                      padding: "8px 12px",
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 8,
+                      background: "#fff",
+                    }}
+                  />
                   <div className="flex gap-2">
-                    <button onClick={() => handlePublish(d.id)} className="font-sans font-semibold rounded-full"
-                      style={{ fontSize: 13, padding: "8px 18px", background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>Mark as published</button>
-                    <button onClick={() => setPublishingId(null)} className="font-sans text-[13px]"
-                      style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+                    <button
+                      onClick={() => handlePublish(d.id)}
+                      className="font-sans font-semibold rounded-full"
+                      style={{
+                        fontSize: 13,
+                        padding: "8px 18px",
+                        background: BLUE,
+                        color: "#fff",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Mark as published
+                    </button>
+                    <button
+                      onClick={() => setPublishingId(null)}
+                      className="font-sans text-[13px]"
+                      style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}
@@ -1423,7 +2867,19 @@ interface CoachFeedback {
   micro_lesson: { title: string; explanation: string };
 }
 
-function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: string; postIndex: number; post: ContentPlanPost; onBack: () => void; onSaveDone: () => void }) {
+function WriteMode({
+  planId,
+  postIndex,
+  post,
+  onBack,
+  onSaveDone,
+}: {
+  planId: string;
+  postIndex: number;
+  post: ContentPlanPost;
+  onBack: () => void;
+  onSaveDone: () => void;
+}) {
   const [content, setContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1438,7 +2894,13 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
   const lastSavedRef = useRef("");
 
   useEffect(() => {
-    getDraft(planId, postIndex).then(d => { if (d) { setContent(d.content); lastSavedRef.current = d.content; } setLoaded(true); });
+    getDraft(planId, postIndex).then((d) => {
+      if (d) {
+        setContent(d.content);
+        lastSavedRef.current = d.content;
+      }
+      setLoaded(true);
+    });
   }, [planId, postIndex]);
 
   // Auto-save every 30 seconds
@@ -1451,7 +2913,9 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
         setSaving(false);
       }
     }, 30000);
-    return () => { if (autoSaveInterval.current) clearInterval(autoSaveInterval.current); };
+    return () => {
+      if (autoSaveInterval.current) clearInterval(autoSaveInterval.current);
+    };
   }, [content, planId, postIndex]);
 
   const handleChange = (val: string) => {
@@ -1469,7 +2933,8 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleExplicitSave = async () => {
-    setSaving(true); setSaveError(null);
+    setSaving(true);
+    setSaveError(null);
     const result = await saveDraft(planId, postIndex, content);
     lastSavedRef.current = content;
     setSaving(false);
@@ -1486,10 +2951,20 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     setCoachLoading(true);
     try {
       const res = await fetch("/api/coach-draft", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft: content.trim(), key_takeaway: post.prompt || post.key_takeaway || post.hook, structure: post.structure, platform: post.platform }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          draft: content.trim(),
+          key_takeaway: post.prompt || post.key_takeaway || post.hook,
+          structure: post.structure,
+          platform: post.platform,
+        }),
       });
-      if (res.ok) { const data = await res.json(); setCoaching(data); setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100); }
+      if (res.ok) {
+        const data = await res.json();
+        setCoaching(data);
+        setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
     } catch {}
     setCoachLoading(false);
   };
@@ -1517,7 +2992,14 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     onSaveDone();
   };
 
-  if (!loaded) return <div className="py-12 text-center"><span className="font-sans text-[14px]" style={{ color: FAINT }}>Loading...</span></div>;
+  if (!loaded)
+    return (
+      <div className="py-12 text-center">
+        <span className="font-sans text-[14px]" style={{ color: FAINT }}>
+          Loading...
+        </span>
+      </div>
+    );
 
   const hasStructure = post.structure && post.structure.length > 0;
   const displayText = post.prompt || post.key_takeaway || post.hook || "";
@@ -1528,20 +3010,52 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back to plan</button>
-          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>{saving ? "Saving..." : saveError ? "Save failed" : "Saved"}</span>
+          <button
+            onClick={onBack}
+            className="font-mono text-[12px]"
+            style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+          >
+            <ArrowLeft size={12} /> Back to plan
+          </button>
+          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
+            {saving ? "Saving..." : saveError ? "Save failed" : "Saved"}
+          </span>
         </div>
 
-        <p className="font-serif font-semibold mb-4" style={{ fontSize: 18, color: INK }}>{displayText}</p>
+        <p className="font-serif font-semibold mb-4" style={{ fontSize: 18, color: INK }}>
+          {displayText}
+        </p>
 
         {sourceNote && (
           <div className="mb-6">
-            <button onClick={() => setShowNote(!showNote)} className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em", fontWeight: 500 }}>
-              Your note <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showNote ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
+            <button
+              onClick={() => setShowNote(!showNote)}
+              className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1"
+              style={{
+                color: FAINT,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
+              }}
+            >
+              Your note{" "}
+              <span
+                style={{
+                  fontSize: 10,
+                  transition: "transform 0.2s",
+                  transform: showNote ? "rotate(0)" : "rotate(-90deg)",
+                }}
+              >
+                ▼
+              </span>
             </button>
             {showNote && (
               <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
-                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic" }}>{sourceNote}</p>
+                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic" }}>
+                  {sourceNote}
+                </p>
               </div>
             )}
           </div>
@@ -1549,14 +3063,40 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 
         {hasStructure && (
           <div className="mb-6">
-            <button onClick={() => setShowStructure(!showStructure)} className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em", fontWeight: 500 }}>
-              Structure <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showStructure ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
+            <button
+              onClick={() => setShowStructure(!showStructure)}
+              className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1"
+              style={{
+                color: FAINT,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
+              }}
+            >
+              Structure{" "}
+              <span
+                style={{
+                  fontSize: 10,
+                  transition: "transform 0.2s",
+                  transform: showStructure ? "rotate(0)" : "rotate(-90deg)",
+                }}
+              >
+                ▼
+              </span>
             </button>
             {showStructure && (
-              <div className="p-4 rounded-[10px] space-y-2" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+              <div
+                className="p-4 rounded-[10px] space-y-2"
+                style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}
+              >
                 {(post.structure || []).map((step: string, j: number) => (
                   <p key={j} className="font-sans text-[13px]" style={{ color: DIM, lineHeight: 1.5 }}>
-                    <span className="font-mono text-[11px] mr-2" style={{ color: BLUE }}>{j + 1}.</span>{step}
+                    <span className="font-mono text-[11px] mr-2" style={{ color: BLUE }}>
+                      {j + 1}.
+                    </span>
+                    {step}
                   </p>
                 ))}
               </div>
@@ -1564,25 +3104,46 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
           </div>
         )}
 
-        <textarea value={content} onChange={e => handleChange(e.target.value)} placeholder="Start writing..."
+        <textarea
+          value={content}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Start writing..."
           className="w-full outline-none resize-y font-sans"
-          style={{ fontSize: 16, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh" }}
-          autoFocus />
+          style={{
+            fontSize: 16,
+            color: INK,
+            lineHeight: 1.8,
+            padding: 0,
+            border: "none",
+            background: "transparent",
+            minHeight: "40vh",
+          }}
+          autoFocus
+        />
 
         {/* Action buttons */}
         {content.trim().length > 20 && !coaching && (
           <div className="mt-6 space-y-3">
-            <button onClick={handleCheckWriting} disabled={coachLoading}
+            <button
+              onClick={handleCheckWriting}
+              disabled={coachLoading}
               className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+            >
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
-            <button onClick={handleExplicitSave}
+            <button
+              onClick={handleExplicitSave}
               className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>
+              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
+            >
               Save draft
             </button>
-            {saveError && <p className="font-sans text-[13px] mt-2" style={{ color: "#DC2626" }}>{saveError}</p>}
+            {saveError && (
+              <p className="font-sans text-[13px] mt-2" style={{ color: "#DC2626" }}>
+                {saveError}
+              </p>
+            )}
           </div>
         )}
 
@@ -1590,36 +3151,89 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
         {coaching && (
           <div ref={feedbackRef} className="mt-8 space-y-5">
             <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Overall</span>
-              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
+              <span
+                className="font-mono uppercase block mb-2"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+              >
+                Overall
+              </span>
+              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>
+                {coaching.overall}
+              </p>
             </div>
 
             {coaching.structure_feedback && (
               <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-                <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Structure</span>
-                <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.structure_feedback}</p>
+                <span
+                  className="font-mono uppercase block mb-2"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  Structure
+                </span>
+                <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>
+                  {coaching.structure_feedback}
+                </p>
               </div>
             )}
 
             {coaching.phrases_to_improve.length > 0 && (
               <div className="space-y-3">
-                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Suggestions</span>
+                <span
+                  className="font-mono uppercase block"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  Suggestions
+                </span>
                 {coaching.phrases_to_improve.map((p, i) => {
                   const isAccepted = accepted.has(i);
                   return (
-                    <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${isAccepted ? BLUE : BORDER}`, background: isAccepted ? `${BLUE}04` : "#fff" }}>
-                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
-                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>Original: {p.original}</p>
-                      <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>{p.reason}</p>
+                    <div
+                      key={i}
+                      className="p-4 rounded-[10px]"
+                      style={{
+                        border: `1px solid ${isAccepted ? BLUE : BORDER}`,
+                        background: isAccepted ? `${BLUE}04` : "#fff",
+                      }}
+                    >
+                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>
+                        {p.suggestion}
+                      </p>
+                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>
+                        Original: {p.original}
+                      </p>
+                      <p className="font-mono text-[11px] mt-1" style={{ color: FAINT }}>
+                        {p.reason}
+                      </p>
                       <div className="flex gap-2 mt-3">
-                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.add(i); return s; })}
+                        <button
+                          onClick={() =>
+                            setAccepted((prev) => {
+                              const s = new Set(prev);
+                              s.add(i);
+                              return s;
+                            })
+                          }
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
-                          style={{ background: isAccepted ? BLUE : "#fff", color: isAccepted ? "#fff" : DIM, border: `1px solid ${isAccepted ? BLUE : BORDER}`, cursor: "pointer" }}>
+                          style={{
+                            background: isAccepted ? BLUE : "#fff",
+                            color: isAccepted ? "#fff" : DIM,
+                            border: `1px solid ${isAccepted ? BLUE : BORDER}`,
+                            cursor: "pointer",
+                          }}
+                        >
                           ✓ Accept
                         </button>
-                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.delete(i); return s; })}
+                        <button
+                          onClick={() =>
+                            setAccepted((prev) => {
+                              const s = new Set(prev);
+                              s.delete(i);
+                              return s;
+                            })
+                          }
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
-                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
+                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}
+                        >
                           ✕ Skip
                         </button>
                       </div>
@@ -1631,22 +3245,37 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 
             {coaching.micro_lesson && (
               <div className="p-4 rounded-[10px]" style={{ borderLeft: `3px solid ${BLUE}`, background: `${BLUE}04` }}>
-                <span className="font-mono uppercase block mb-1" style={{ fontSize: 10, letterSpacing: "0.06em", color: BLUE }}>Lesson</span>
-                <p className="font-serif mb-2" style={{ fontSize: 16, fontWeight: 600, color: INK }}>{coaching.micro_lesson.title}</p>
-                <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.6 }}>{coaching.micro_lesson.explanation}</p>
+                <span
+                  className="font-mono uppercase block mb-1"
+                  style={{ fontSize: 10, letterSpacing: "0.06em", color: BLUE }}
+                >
+                  Lesson
+                </span>
+                <p className="font-serif mb-2" style={{ fontSize: 16, fontWeight: 600, color: INK }}>
+                  {coaching.micro_lesson.title}
+                </p>
+                <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.6 }}>
+                  {coaching.micro_lesson.explanation}
+                </p>
               </div>
             )}
 
             {/* Post-feedback actions */}
             <div className="space-y-3 pt-2 pb-8">
-              <button onClick={handleSaveWithSuggestions}
+              <button
+                onClick={handleSaveWithSuggestions}
                 className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                {accepted.size > 0 ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}` : "Save as-is"}
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+              >
+                {accepted.size > 0
+                  ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}`
+                  : "Save as-is"}
               </button>
-              <button onClick={handleKeepOriginal}
+              <button
+                onClick={handleKeepOriginal}
                 className="w-full font-sans text-[14px]"
-                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>
+                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}
+              >
                 Dismiss feedback
               </button>
             </div>
@@ -1658,7 +3287,17 @@ function WriteMode({ planId, postIndex, post, onBack, onSaveDone }: { planId: st
 }
 
 /* ══════════════ STANDALONE WRITE MODE ══════════════ */
-function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draft: Draft; sourceImages?: string[]; onBack: () => void; onSaveDone: () => void }) {
+function StandaloneWriteMode({
+  draft,
+  sourceImages,
+  onBack,
+  onSaveDone,
+}: {
+  draft: Draft;
+  sourceImages?: string[];
+  onBack: () => void;
+  onSaveDone: () => void;
+}) {
   const [content, setContent] = useState(draft.content);
   const [saving, setSaving] = useState(false);
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
@@ -1694,20 +3333,31 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
   };
 
   const handleExplicitSave = async () => {
-    setSaving(true); setSaveError(null);
+    setSaving(true);
+    setSaveError(null);
     const result = await saveDraftById(draft.id, content);
     lastSavedRef.current = content;
     setSaving(false);
-    if (result) { posthog.capture("draft_saved", { source: "standalone", word_count: content.trim().split(/\s+/).length }); onSaveDone(); }
-    else setSaveError("Failed to save.");
+    if (result) {
+      posthog.capture("draft_saved", { source: "standalone", word_count: content.trim().split(/\s+/).length });
+      onSaveDone();
+    } else setSaveError("Failed to save.");
   };
 
   const handleCheckWriting = async () => {
     if (!content.trim() || coachLoading) return;
     setCoachLoading(true);
     try {
-      const res = await fetch("/api/coach-draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draft: content.trim() }) });
-      if (res.ok) { const data = await res.json(); setCoaching(data); setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100); }
+      const res = await fetch("/api/coach-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft: content.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoaching(data);
+        setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
     } catch {}
     setCoachLoading(false);
   };
@@ -1723,25 +3373,66 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
     await saveDraftById(draft.id, updated);
     lastSavedRef.current = updated;
     setSaving(false);
-    setCoaching(null); setAccepted(new Set());
+    setCoaching(null);
+    setAccepted(new Set());
   };
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} className="font-mono text-[12px]" style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={12} /> Back</button>
-          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>{saving ? "Saving..." : saveError ? "Save failed" : "Saved"}</span>
+          <button
+            onClick={onBack}
+            className="font-mono text-[12px]"
+            style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+          >
+            <ArrowLeft size={12} /> Back
+          </button>
+          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
+            {saving ? "Saving..." : saveError ? "Save failed" : "Saved"}
+          </span>
         </div>
 
         {draft.source_note && (
           <div className="mb-6">
-            <button onClick={() => setShowNote(!showNote)} className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1" style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em", fontWeight: 500 }}>
-              Your note <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showNote ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
+            <button
+              onClick={() => setShowNote(!showNote)}
+              className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1"
+              style={{
+                color: FAINT,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
+              }}
+            >
+              Your note{" "}
+              <span
+                style={{
+                  fontSize: 10,
+                  transition: "transform 0.2s",
+                  transform: showNote ? "rotate(0)" : "rotate(-90deg)",
+                }}
+              >
+                ▼
+              </span>
             </button>
             {showNote && (
               <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
-                <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{draft.source_note}</p>
+                <p
+                  className="font-sans"
+                  style={{
+                    fontSize: 15,
+                    color: BODY,
+                    lineHeight: 1.6,
+                    fontStyle: "italic",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {draft.source_note}
+                </p>
               </div>
             )}
           </div>
@@ -1749,61 +3440,150 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
 
         {sourceImages && sourceImages.length > 0 && (
           <div className="mb-6">
-            <span className="font-mono text-[11px] uppercase block mb-2" style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}>Reference images</span>
-            <div className={sourceImages.length === 1 ? "" : "grid gap-2"} style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}>
+            <span
+              className="font-mono text-[11px] uppercase block mb-2"
+              style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
+            >
+              Reference images
+            </span>
+            <div
+              className={sourceImages.length === 1 ? "" : "grid gap-2"}
+              style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}
+            >
               {sourceImages.map((url, i) => (
-                <img key={i} src={url} alt="" className="w-full rounded-[10px]" style={{ maxHeight: sourceImages.length === 1 ? 300 : 180, objectFit: "cover", border: `1px solid ${BORDER}` }} />
+                <img
+                  key={i}
+                  src={url}
+                  alt=""
+                  className="w-full rounded-[10px]"
+                  style={{
+                    maxHeight: sourceImages.length === 1 ? 300 : 180,
+                    objectFit: "cover",
+                    border: `1px solid ${BORDER}`,
+                  }}
+                />
               ))}
             </div>
           </div>
         )}
 
-        <textarea ref={el => { if (el) { el.style.height = "auto"; el.style.height = Math.max(200, el.scrollHeight) + "px"; } }}
-          value={content} onChange={e => handleChange(e.target.value)} placeholder="Start writing..."
+        <textarea
+          ref={(el) => {
+            if (el) {
+              el.style.height = "auto";
+              el.style.height = Math.max(200, el.scrollHeight) + "px";
+            }
+          }}
+          value={content}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Start writing..."
           className="w-full outline-none resize-none font-sans"
-          style={{ fontSize: 16, color: INK, lineHeight: 1.8, padding: 0, border: "none", background: "transparent", minHeight: "40vh", overflow: "hidden" }}
-          autoFocus />
+          style={{
+            fontSize: 16,
+            color: INK,
+            lineHeight: 1.8,
+            padding: 0,
+            border: "none",
+            background: "transparent",
+            minHeight: "40vh",
+            overflow: "hidden",
+          }}
+          autoFocus
+        />
 
         {content.trim().length > 20 && !coaching && (
           <div className="mt-6 space-y-3">
-            <button onClick={handleCheckWriting} disabled={coachLoading}
+            <button
+              onClick={handleCheckWriting}
+              disabled={coachLoading}
               className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
+              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+            >
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
-            <button onClick={handleExplicitSave}
+            <button
+              onClick={handleExplicitSave}
               className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>
+              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
+            >
               Save draft
             </button>
-            {saveError && <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>{saveError}</p>}
+            {saveError && (
+              <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
+                {saveError}
+              </p>
+            )}
           </div>
         )}
 
         {coaching && (
           <div ref={feedbackRef} className="mt-8 space-y-5">
             <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <span className="font-mono uppercase block mb-2" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Overall</span>
-              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>{coaching.overall}</p>
+              <span
+                className="font-mono uppercase block mb-2"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+              >
+                Overall
+              </span>
+              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>
+                {coaching.overall}
+              </p>
             </div>
             {coaching.phrases_to_improve.length > 0 && (
               <div className="space-y-3">
-                <span className="font-mono uppercase block" style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}>Suggestions</span>
+                <span
+                  className="font-mono uppercase block"
+                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+                >
+                  Suggestions
+                </span>
                 {coaching.phrases_to_improve.map((p, i) => {
                   const isAccepted = accepted.has(i);
                   return (
-                    <div key={i} className="p-4 rounded-[10px]" style={{ border: `1px solid ${isAccepted ? BLUE : BORDER}`, background: isAccepted ? `${BLUE}04` : "#fff" }}>
-                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>{p.suggestion}</p>
-                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>Original: {p.original}</p>
+                    <div
+                      key={i}
+                      className="p-4 rounded-[10px]"
+                      style={{
+                        border: `1px solid ${isAccepted ? BLUE : BORDER}`,
+                        background: isAccepted ? `${BLUE}04` : "#fff",
+                      }}
+                    >
+                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>
+                        {p.suggestion}
+                      </p>
+                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>
+                        Original: {p.original}
+                      </p>
                       <div className="flex gap-2 mt-3">
-                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.add(i); return s; })}
+                        <button
+                          onClick={() =>
+                            setAccepted((prev) => {
+                              const s = new Set(prev);
+                              s.add(i);
+                              return s;
+                            })
+                          }
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
-                          style={{ background: isAccepted ? BLUE : "#fff", color: isAccepted ? "#fff" : DIM, border: `1px solid ${isAccepted ? BLUE : BORDER}`, cursor: "pointer" }}>
+                          style={{
+                            background: isAccepted ? BLUE : "#fff",
+                            color: isAccepted ? "#fff" : DIM,
+                            border: `1px solid ${isAccepted ? BLUE : BORDER}`,
+                            cursor: "pointer",
+                          }}
+                        >
                           ✓ Accept
                         </button>
-                        <button onClick={() => setAccepted(prev => { const s = new Set(prev); s.delete(i); return s; })}
+                        <button
+                          onClick={() =>
+                            setAccepted((prev) => {
+                              const s = new Set(prev);
+                              s.delete(i);
+                              return s;
+                            })
+                          }
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
-                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
+                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}
+                        >
                           ✕ Skip
                         </button>
                       </div>
@@ -1813,12 +3593,23 @@ function StandaloneWriteMode({ draft, sourceImages, onBack, onSaveDone }: { draf
               </div>
             )}
             <div className="space-y-3 pt-2 pb-8">
-              <button onClick={handleApplySuggestions} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}>
-                {accepted.size > 0 ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}` : "Save as-is"}
+              <button
+                onClick={handleApplySuggestions}
+                className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+              >
+                {accepted.size > 0
+                  ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}`
+                  : "Save as-is"}
               </button>
-              <button onClick={() => { setCoaching(null); setAccepted(new Set()); }} className="w-full font-sans text-[14px]"
-                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}>
+              <button
+                onClick={() => {
+                  setCoaching(null);
+                  setAccepted(new Set());
+                }}
+                className="w-full font-sans text-[14px]"
+                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}
+              >
                 Dismiss feedback
               </button>
             </div>
@@ -1870,14 +3661,26 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const [p, plan, dumps, plans, entries, draftsList] = await Promise.all([getProfile(), getCurrentPlan(), getAllDumps(), getAllPlans(), getLogEntries(), getAllDrafts()]);
+      const [p, plan, dumps, plans, entries, draftsList] = await Promise.all([
+        getProfile(),
+        getCurrentPlan(),
+        getAllDumps(),
+        getAllPlans(),
+        getLogEntries(),
+        getAllDrafts(),
+      ]);
       // If entries are empty but profile exists, retry once (auth session may not be ready)
       let finalEntries = entries;
       if (finalEntries.length === 0 && p) {
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 500));
         finalEntries = await getLogEntries();
       }
-      setProfile(p); setCurrentPlan(plan); setAllDumps(dumps); setAllPlans(plans); setLogEntries(finalEntries); setDrafts(draftsList);
+      setProfile(p);
+      setCurrentPlan(plan);
+      setAllDumps(dumps);
+      setAllPlans(plans);
+      setLogEntries(finalEntries);
+      setDrafts(draftsList);
       if (plan) setTab("ideas");
       if (p && !p.tooltip_seen && finalEntries.length === 0 && !plan) setTooltipStep(1);
 
@@ -1886,16 +3689,16 @@ export default function DashboardPage() {
         const params = new URLSearchParams(window.location.search);
         const developId = params.get("develop");
         if (developId) {
-          let entry = finalEntries.find(e => e.id === developId);
+          let entry = finalEntries.find((e) => e.id === developId);
           // Entry may not be available yet — retry once
           if (!entry) {
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise((r) => setTimeout(r, 1000));
             const retried = await getLogEntries();
             if (retried.length > finalEntries.length) {
               finalEntries = retried;
               setLogEntries(retried);
             }
-            entry = retried.find(e => e.id === developId);
+            entry = retried.find((e) => e.id === developId);
           }
           if (entry) {
             setDevelopEntries([entry]);
@@ -1911,81 +3714,228 @@ export default function DashboardPage() {
 
     // Refetch when auth session changes (login, token refresh)
     const supabase = createSupabaseClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) load();
     });
-    return () => { subscription.unsubscribe(); };
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const nowDate = new Date(); const nowDay = nowDate.getDay(); const nowDiff = nowDay === 0 ? 6 : nowDay - 1;
-  const mondayDate = new Date(nowDate); mondayDate.setDate(nowDate.getDate() - nowDiff); mondayDate.setHours(0, 0, 0, 0);
-  const weekEntries = logEntriesState.filter(e => new Date(e.created_at) >= mondayDate);
+  const nowDate = new Date();
+  const nowDay = nowDate.getDay();
+  const nowDiff = nowDay === 0 ? 6 : nowDay - 1;
+  const mondayDate = new Date(nowDate);
+  mondayDate.setDate(nowDate.getDate() - nowDiff);
+  mondayDate.setHours(0, 0, 0, 0);
+  const weekEntries = logEntriesState.filter((e) => new Date(e.created_at) >= mondayDate);
 
-  const handlePlanGenerated = (plan: ContentPlan) => { setCurrentPlan(plan); setAllPlans(prev => [plan, ...prev]); setTab("ideas"); };
-  const switchToIdeas = (ws?: string) => { setIdeasWeek(ws); setTab("ideas"); };
+  const handlePlanGenerated = (plan: ContentPlan) => {
+    setCurrentPlan(plan);
+    setAllPlans((prev) => [plan, ...prev]);
+    setTab("ideas");
+  };
+  const switchToIdeas = (ws?: string) => {
+    setIdeasWeek(ws);
+    setTab("ideas");
+  };
 
   // Standalone write mode (from note → draft)
   if (standaloneDraft) {
-    return <StandaloneWriteMode draft={standaloneDraft.draft} sourceImages={standaloneDraft.images} onBack={() => setStandaloneDraft(null)} onSaveDone={() => { setStandaloneDraft(null); setTab("drafts"); getAllDrafts().then(setDrafts); }} />;
+    return (
+      <StandaloneWriteMode
+        draft={standaloneDraft.draft}
+        sourceImages={standaloneDraft.images}
+        onBack={() => setStandaloneDraft(null)}
+        onSaveDone={() => {
+          setStandaloneDraft(null);
+          setTab("drafts");
+          getAllDrafts().then(setDrafts);
+        }}
+      />
+    );
   }
 
   // Write mode (from plan idea)
   if (writeMode) {
-    const plan = allPlans.find(p => p.id === writeMode.planId);
+    const plan = allPlans.find((p) => p.id === writeMode.planId);
     if (plan) {
       const planData: ContentPlanData = typeof plan.plan === "string" ? JSON.parse(plan.plan) : plan.plan;
       const post = planData.posts[writeMode.postIndex];
-      if (post) return <WriteMode planId={writeMode.planId} postIndex={writeMode.postIndex} post={post} onBack={() => setWriteMode(null)} onSaveDone={() => { setWriteMode(null); setTab("drafts"); getAllDrafts().then(setDrafts); }} />;
+      if (post)
+        return (
+          <WriteMode
+            planId={writeMode.planId}
+            postIndex={writeMode.postIndex}
+            post={post}
+            onBack={() => setWriteMode(null)}
+            onSaveDone={() => {
+              setWriteMode(null);
+              setTab("drafts");
+              getAllDrafts().then(setDrafts);
+            }}
+          />
+        );
     }
     setWriteMode(null);
   }
 
-  if (loading) return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
-      <header style={{ borderBottom: `1px solid ${BORDER}` }}><div className="max-w-[640px] mx-auto px-5 py-4"><span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</span></div></header>
-      <div className="max-w-[640px] mx-auto px-5 py-8 animate-pulse"><div className="h-7 rounded w-48 mb-4" style={{ background: "#f0f0f0" }} /><div className="h-44 rounded-[12px]" style={{ background: "#fafafa" }} /></div>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen" style={{ background: "#fff" }}>
+        <header style={{ borderBottom: `1px solid ${BORDER}` }}>
+          <div className="max-w-[640px] mx-auto px-5 py-4">
+            <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>
+              accent
+            </span>
+          </div>
+        </header>
+        <div className="max-w-[640px] mx-auto px-5 py-8 animate-pulse">
+          <div className="h-7 rounded w-48 mb-4" style={{ background: "#f0f0f0" }} />
+          <div className="h-44 rounded-[12px]" style={{ background: "#fafafa" }} />
+        </div>
+      </div>
+    );
 
-  const TABS: { key: Tab; label: string }[] = [{ key: "log", label: "Log" }, { key: "ideas", label: "Ideas" }, { key: "drafts", label: "Drafts" }];
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "log", label: "Log" },
+    { key: "ideas", label: "Ideas" },
+    { key: "drafts", label: "Drafts" },
+  ];
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
       <header style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>accent</Link>
+          <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>
+            accent
+          </Link>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link href="/dashboard/write" className="no-underline flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full font-sans text-[12px] sm:text-[13px] font-semibold transition-transform hover:scale-[1.02]" style={{ background: BLUE, color: "#fff" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            <Link
+              href="/dashboard/write"
+              className="no-underline flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full font-sans text-[12px] sm:text-[13px] font-semibold transition-transform hover:scale-[1.02]"
+              style={{ background: BLUE, color: "#fff" }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
               Write
             </Link>
-            <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>Settings</Link>
+            <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>
+              Settings
+            </Link>
           </div>
         </div>
       </header>
       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 flex gap-4 sm:gap-6">
-          {TABS.map(t => (
-            <button key={t.key} id={`tab-${t.key}`} onClick={() => { setTab(t.key); if (t.key !== "ideas") setIdeasWeek(undefined); }}
-              className="font-sans py-3.5 relative" style={{ fontSize: 16, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? INK : DIM, background: "none", border: "none", borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`, cursor: "pointer" }}>
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              id={`tab-${t.key}`}
+              onClick={() => {
+                setTab(t.key);
+                if (t.key !== "ideas") setIdeasWeek(undefined);
+              }}
+              className="font-sans py-3.5 relative"
+              style={{
+                fontSize: 16,
+                fontWeight: tab === t.key ? 700 : 500,
+                color: tab === t.key ? INK : DIM,
+                background: "none",
+                border: "none",
+                borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`,
+                cursor: "pointer",
+              }}
+            >
               {t.label}
             </button>
           ))}
         </div>
       </div>
       <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
-        {tab === "log" && <LogTab logEntries={logEntriesState} setLogEntries={setLogEntries} allPlans={allPlans} onSwitchToIdeas={() => setTab("ideas")} onStartDraft={data => setStandaloneDraft(data)} onDevelopNote={(entry) => { setDevelopEntries([entry]); setTab("ideas"); }} onDevelopNotes={(entries) => { setDevelopEntries(entries); setTab("ideas"); }} />}
-        {tab === "ideas" && <IdeasTab profile={profile!} allPlans={allPlans} weekEntries={weekEntries} allEntries={logEntriesState} initialWeek={ideasWeek} initialDevelopEntries={developEntries} onPlanGenerated={handlePlanGenerated} onPlanUpdated={(updated) => setAllPlans(prev => prev.map(p => p.id === updated.id ? updated : p))} onSwitchToLog={() => setTab("log")} onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onStartDraft={data => setStandaloneDraft(data)} onProfileUpdated={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)} onQuickLog={async (text) => { const detectedUrl = detectUrl(text); const entry = await createLogEntry(text, { link_url: detectedUrl, type: detectedUrl && text === detectedUrl ? "link" : "note", url: detectedUrl && text === detectedUrl ? detectedUrl : null }); if (entry) setLogEntries(prev => [entry, ...prev]); }} />}
-        {tab === "drafts" && <DraftsTab drafts={draftsState} allPlans={allPlans} onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })} onOpenStandaloneDraft={d => setStandaloneDraft({ draft: d })} onDraftsUpdated={() => getAllDrafts().then(setDrafts)} />}
+        {tab === "log" && (
+          <LogTab
+            logEntries={logEntriesState}
+            setLogEntries={setLogEntries}
+            allPlans={allPlans}
+            onSwitchToIdeas={() => setTab("ideas")}
+            onStartDraft={(data) => setStandaloneDraft(data)}
+            onDevelopNote={(entry) => {
+              setDevelopEntries([entry]);
+              setTab("ideas");
+            }}
+            onDevelopNotes={(entries) => {
+              setDevelopEntries(entries);
+              setTab("ideas");
+            }}
+          />
+        )}
+        {tab === "ideas" && (
+          <IdeasTab
+            profile={profile!}
+            allPlans={allPlans}
+            weekEntries={weekEntries}
+            allEntries={logEntriesState}
+            initialWeek={ideasWeek}
+            initialDevelopEntries={developEntries}
+            onPlanGenerated={handlePlanGenerated}
+            onPlanUpdated={(updated) => setAllPlans((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
+            onSwitchToLog={() => setTab("log")}
+            onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })}
+            onStartDraft={(data) => setStandaloneDraft(data)}
+            onProfileUpdated={(fields) => setProfile((prev) => (prev ? { ...prev, ...fields } : prev))}
+            onQuickLog={async (text) => {
+              const detectedUrl = detectUrl(text);
+              const entry = await createLogEntry(text, {
+                link_url: detectedUrl,
+                type: detectedUrl && text === detectedUrl ? "link" : "note",
+                url: detectedUrl && text === detectedUrl ? detectedUrl : null,
+              });
+              if (entry) setLogEntries((prev) => [entry, ...prev]);
+            }}
+          />
+        )}
+        {tab === "drafts" && (
+          <DraftsTab
+            drafts={draftsState}
+            allPlans={allPlans}
+            onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })}
+            onOpenStandaloneDraft={(d) => setStandaloneDraft({ draft: d })}
+            onDraftsUpdated={() => getAllDrafts().then(setDrafts)}
+          />
+        )}
       </div>
 
       {/* Onboarding tooltip */}
-      {tooltipStep !== null && <OnboardingTooltip step={tooltipStep} onNext={() => {
-        if (tooltipStep < 3) setTooltipStep(tooltipStep + 1);
-        else { setTooltipStep(null); upsertProfile({ tooltip_seen: true }); }
-      }} onDismiss={() => { setTooltipStep(null); upsertProfile({ tooltip_seen: true }); }} />}
+      {tooltipStep !== null && (
+        <OnboardingTooltip
+          step={tooltipStep}
+          onNext={() => {
+            if (tooltipStep < 3) setTooltipStep(tooltipStep + 1);
+            else {
+              setTooltipStep(null);
+              upsertProfile({ tooltip_seen: true });
+            }
+          }}
+          onDismiss={() => {
+            setTooltipStep(null);
+            upsertProfile({ tooltip_seen: true });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -2011,7 +3961,10 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
     update();
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
-    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, [step, current.target]);
 
   if (!pos) return null;
@@ -2019,15 +3972,44 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
   return (
     <>
       <div onClick={onDismiss} className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.15)" }} />
-      <div className="fixed z-50" style={{ top: pos.top, left: Math.min(Math.max(pos.left, 160), window.innerWidth - 160), transform: "translateX(-50%)" }}>
-        <div style={{ width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderBottom: "8px solid #111827", margin: "0 auto" }} />
+      <div
+        className="fixed z-50"
+        style={{
+          top: pos.top,
+          left: Math.min(Math.max(pos.left, 160), window.innerWidth - 160),
+          transform: "translateX(-50%)",
+        }}
+      >
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: "8px solid transparent",
+            borderRight: "8px solid transparent",
+            borderBottom: "8px solid #111827",
+            margin: "0 auto",
+          }}
+        />
         <div className="rounded-[10px] px-4 py-3" style={{ background: "#111827", minWidth: 240, maxWidth: 300 }}>
-          <p className="font-sans text-[14px] mb-3" style={{ color: "#fff", lineHeight: 1.5 }}>{current.text}</p>
+          <p className="font-sans text-[14px] mb-3" style={{ color: "#fff", lineHeight: 1.5 }}>
+            {current.text}
+          </p>
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[11px]" style={{ color: "#6b7280" }}>{step}/3</span>
-            <button onClick={onNext} className="font-sans text-[13px] font-semibold px-3 py-1 rounded-full"
-              style={{ background: "#3B82F6", color: "#fff", border: "none", cursor: "pointer" }}>
-              {step < 3 ? <>Next <ArrowRight size={11} color="#fff" /></> : "Got it"}
+            <span className="font-mono text-[11px]" style={{ color: "#6b7280" }}>
+              {step}/3
+            </span>
+            <button
+              onClick={onNext}
+              className="font-sans text-[13px] font-semibold px-3 py-1 rounded-full"
+              style={{ background: "#3B82F6", color: "#fff", border: "none", cursor: "pointer" }}
+            >
+              {step < 3 ? (
+                <>
+                  Next <ArrowRight size={11} color="#fff" />
+                </>
+              ) : (
+                "Got it"
+              )}
             </button>
           </div>
         </div>

@@ -24,7 +24,9 @@ export interface CoachingSession {
 
 export async function getCoachingSession(entryIds: string[]): Promise<CoachingSession | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   // Find a session matching these exact entry IDs
@@ -40,7 +42,7 @@ export async function getCoachingSession(entryIds: string[]): Promise<CoachingSe
   if (error || !data) return null;
 
   // Find exact match (same IDs, same count)
-  const match = data.find(s => {
+  const match = data.find((s) => {
     const sSorted = [...s.entry_ids].sort();
     return sSorted.length === sorted.length && sSorted.every((id: string, i: number) => id === sorted[i]);
   });
@@ -54,7 +56,9 @@ export async function saveCoachingSession(
   suggestions: CoachingSuggestion[]
 ): Promise<CoachingSession | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const sorted = [...entryIds].sort();
@@ -69,7 +73,10 @@ export async function saveCoachingSession(
       .eq("id", existing.id)
       .select()
       .single();
-    if (error) { console.error("Failed to update coaching session:", error); return null; }
+    if (error) {
+      console.error("Failed to update coaching session:", error);
+      return null;
+    }
     return data as CoachingSession;
   }
 
@@ -78,6 +85,9 @@ export async function saveCoachingSession(
     .insert({ user_id: user.id, entry_ids: sorted, messages, suggestions })
     .select()
     .single();
-  if (error) { console.error("Failed to create coaching session:", error); return null; }
+  if (error) {
+    console.error("Failed to create coaching session:", error);
+    return null;
+  }
   return data as CoachingSession;
 }

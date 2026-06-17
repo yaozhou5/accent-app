@@ -5,17 +5,23 @@ import { createClient } from "@/lib/supabase/server";
 const anthropic = new Anthropic({ maxRetries: 2 });
 
 const CHANNEL_GUIDANCE: Record<string, string> = {
-  linkedin: "LinkedIn: professional but human, story-driven, line breaks for readability, hook in first line, 150-300 words",
-  cold_dm: "Cold DM: short, personal, specific value prop, conversational, under 100 words, feels like a real message not a template",
-  tweet: "Tweet: punchy, fragmented lines, reads like a thread if longer, under 280 chars per tweet or break into thread format",
-  newsletter: "Newsletter: longer form, personal voice, storytelling arc, 200-400 words, feels like a letter to a friend",
+  linkedin:
+    "LinkedIn: professional but human, story-driven, line breaks for readability, hook in first line, 150-300 words",
+  cold_dm:
+    "Cold DM: short, personal, specific value prop, conversational, under 100 words, feels like a real message not a template",
+  tweet:
+    "Tweet: punchy, fragmented lines, reads like a thread if longer, under 280 chars per tweet or break into thread format",
+  newsletter:
+    "Newsletter: longer form, personal voice, storytelling arc, 200-400 words, feels like a letter to a friend",
   community_post: "Community Post: casual, authentic, asking for engagement, feels like talking to peers",
 };
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { draft, channels } = await request.json();
@@ -25,12 +31,11 @@ export async function POST(request: NextRequest) {
     }
     if (draft.length > 50000) return NextResponse.json({ error: "Input too long" }, { status: 400 });
 
-    const selectedChannels = (channels || ["linkedin", "cold_dm", "tweet", "newsletter", "community_post"])
-      .filter((c: string) => CHANNEL_GUIDANCE[c]);
+    const selectedChannels = (channels || ["linkedin", "cold_dm", "tweet", "newsletter", "community_post"]).filter(
+      (c: string) => CHANNEL_GUIDANCE[c]
+    );
 
-    const channelInstructions = selectedChannels
-      .map((c: string) => `- ${CHANNEL_GUIDANCE[c]}`)
-      .join("\n");
+    const channelInstructions = selectedChannels.map((c: string) => `- ${CHANNEL_GUIDANCE[c]}`).join("\n");
 
     const prompt = `You are a writing coach for solo founders. The user will give you a draft they wrote. It could be a community update, a rough idea, an email, anything.
 
@@ -68,7 +73,9 @@ ${draft}
 
 Return ONLY valid JSON. Each channel key maps to an object with "text", "choices", and "stand_out":
 {
-  ${selectedChannels.map((c: string) => `"${c}": {
+  ${selectedChannels
+    .map(
+      (c: string) => `"${c}": {
     "text": "the full rewritten text for ${c}",
     "choices": [
       {
@@ -83,7 +90,9 @@ Return ONLY valid JSON. Each channel key maps to an object with "text", "choices
       "unique_angle": "what's genuinely different about this user's take",
       "bold_move": "one specific concrete change to make it unforgettable"
     }
-  }`).join(",\n  ")}
+  }`
+    )
+    .join(",\n  ")}
 }`;
 
     const message = await anthropic.messages.create({
@@ -109,7 +118,14 @@ Return ONLY valid JSON. Each channel key maps to an object with "text", "choices
     const parsed = JSON.parse(jsonMatch[0]);
 
     // Normalize: handle both old format (string) and new format (object with text+choices+stand_out)
-    const results: Record<string, { text: string; choices: Array<{ original: string; alternatives: Array<{ word: string; reason: string }> }>; stand_out?: { common_take: string; unique_angle: string; bold_move: string } }> = {};
+    const results: Record<
+      string,
+      {
+        text: string;
+        choices: Array<{ original: string; alternatives: Array<{ word: string; reason: string }> }>;
+        stand_out?: { common_take: string; unique_angle: string; bold_move: string };
+      }
+    > = {};
     for (const key of selectedChannels) {
       const val = parsed[key];
       if (typeof val === "string") {

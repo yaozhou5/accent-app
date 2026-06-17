@@ -83,13 +83,7 @@ function extractSentence(text: string, phrase: string): string {
   return text.slice(start, end).trim();
 }
 
-function DiffedPhrase({
-  phrase,
-  fixedPhrase,
-}: {
-  phrase: string;
-  fixedPhrase: string;
-}) {
+function DiffedPhrase({ phrase, fixedPhrase }: { phrase: string; fixedPhrase: string }) {
   const ops = wordDiff(phrase, fixedPhrase);
   return (
     <>
@@ -105,10 +99,7 @@ function DiffedPhrase({
             </span>
           );
         return (
-          <span
-            key={k}
-            className="bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px font-medium"
-          >
+          <span key={k} className="bg-[#F5F5F5] text-[#111] rounded-[3px] px-1 py-px font-medium">
             {op.text}
           </span>
         );
@@ -117,19 +108,10 @@ function DiffedPhrase({
   );
 }
 
-function ExcerptDiff({
-  original,
-  phrase,
-  fixedPhrase,
-}: {
-  original: string;
-  phrase: string;
-  fixedPhrase: string;
-}) {
+function ExcerptDiff({ original, phrase, fixedPhrase }: { original: string; phrase: string; fixedPhrase: string }) {
   const sentence = extractSentence(original, phrase);
   const idx = sentence.indexOf(phrase);
-  const baseClass =
-    "font-sans text-[15px] leading-relaxed text-ink whitespace-pre-wrap";
+  const baseClass = "font-sans text-[15px] leading-relaxed text-ink whitespace-pre-wrap";
 
   if (idx === -1) {
     return (
@@ -148,14 +130,7 @@ function ExcerptDiff({
   );
 }
 
-export function TeachResult({
-  original,
-  fixResult,
-  issues,
-  isFixing,
-  isExplaining,
-  onNew,
-}: TeachResultProps) {
+export function TeachResult({ original, fixResult, issues, isFixing, isExplaining, onNew }: TeachResultProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [rewrite, setRewrite] = useState("");
   const keyboardHeight = useKeyboardHeight();
@@ -163,16 +138,8 @@ export function TeachResult({
   // Loading: still fixing OR fix done but explain hasn't completed
   if (isFixing || !fixResult || issues === null || isExplaining) {
     const messages = isFixing
-      ? [
-          "Reading carefully\u2026",
-          "Marking up your draft\u2026",
-          "Almost done\u2026",
-        ]
-      : [
-          "Preparing your lesson\u2026",
-          "Finding the patterns\u2026",
-          "Almost done\u2026",
-        ];
+      ? ["Reading carefully\u2026", "Marking up your draft\u2026", "Almost done\u2026"]
+      : ["Preparing your lesson\u2026", "Finding the patterns\u2026", "Almost done\u2026"];
     return (
       <div className="space-y-4">
         <RotatingStatus messages={messages} />
@@ -206,9 +173,7 @@ export function TeachResult({
 
   // Drop issues where the explain model didn't return a real lesson —
   // we'd otherwise render an empty "Improvement" placeholder card.
-  const usableIssues = issues.filter(
-    (i) => i.lesson_body && i.lesson_body.trim().length > 0
-  );
+  const usableIssues = issues.filter((i) => i.lesson_body && i.lesson_body.trim().length > 0);
   const cards = buildCards(usableIssues);
   const card = cards[currentIndex];
   const totalIssues = usableIssues.length;
@@ -222,16 +187,13 @@ export function TeachResult({
   };
 
   // Pips — one per issue + one for summary
-  const activePipIndex =
-    card.type === "summary" ? totalIssues : card.issueIndex;
+  const activePipIndex = card.type === "summary" ? totalIssues : card.issueIndex;
   const pips = (
     <div className="flex items-center justify-center gap-1.5">
       {Array.from({ length: totalIssues + 1 }).map((_, i) => (
         <span
           key={i}
-          className={`w-1.5 h-1.5 rounded-full transition-colors ${
-            i <= activePipIndex ? "bg-coral" : "bg-[#D4D0C8]"
-          }`}
+          className={`w-1.5 h-1.5 rounded-full transition-colors ${i <= activePipIndex ? "bg-coral" : "bg-[#D4D0C8]"}`}
         />
       ))}
     </div>
@@ -244,15 +206,9 @@ export function TeachResult({
       <div className="space-y-4">
         {pips}
         <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-3">
-          <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">
-            Your turn
-          </span>
-          <h3 className="font-serif font-bold text-lg text-ink">
-            Rewrite it in your words
-          </h3>
-          <p className="font-sans text-sm text-ink/50">
-            Apply what you learned. Edit the text below to make it yours.
-          </p>
+          <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">Your turn</span>
+          <h3 className="font-serif font-bold text-lg text-ink">Rewrite it in your words</h3>
+          <p className="font-sans text-sm text-ink/50">Apply what you learned. Edit the text below to make it yours.</p>
           <div className="relative">
             {!rewrite && (
               <div
@@ -295,9 +251,7 @@ export function TeachResult({
         {pips}
         <div className="bg-white border border-ink/10 rounded-[12px] px-5 py-5 space-y-4">
           <div>
-            <span className="text-xs font-sans font-semibold text-teal tracking-wide">
-              All done
-            </span>
+            <span className="text-xs font-sans font-semibold text-teal tracking-wide">All done</span>
             <h3 className="mt-1 font-serif font-bold text-xl text-ink">
               {totalIssues} lesson{totalIssues > 1 ? "s" : ""} learned
             </h3>
@@ -305,13 +259,8 @@ export function TeachResult({
 
           <ul className="space-y-2">
             {issues.map((issue, i) => (
-              <li
-                key={i}
-                className="flex gap-2 text-sm font-sans text-ink"
-              >
-                <span className="text-teal font-medium shrink-0">
-                  {i + 1}.
-                </span>
+              <li key={i} className="flex gap-2 text-sm font-sans text-ink">
+                <span className="text-teal font-medium shrink-0">{i + 1}.</span>
                 <span>{issue.lesson_title || issue.title}</span>
               </li>
             ))}
@@ -364,11 +313,7 @@ export function TeachResult({
               <h3 className="font-serif font-bold text-lg text-ink">{issue.title}</h3>
 
               <div className="bg-warm/60 rounded-[8px] px-3.5 py-3 border border-ink/5">
-                <ExcerptDiff
-                  original={original}
-                  phrase={issue.phrase}
-                  fixedPhrase={issue.fixed_phrase || ""}
-                />
+                <ExcerptDiff original={original} phrase={issue.phrase} fixedPhrase={issue.fixed_phrase || ""} />
               </div>
             </>
           )}
@@ -376,12 +321,8 @@ export function TeachResult({
           {/* Lesson card */}
           {card.type === "lesson" && (
             <>
-              <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">
-                The lesson
-              </span>
-              <h3 className="font-serif font-bold text-lg text-ink">
-                {issue.lesson_title || issue.title}
-              </h3>
+              <span className="text-xs font-sans font-semibold text-ink/40 tracking-wide">The lesson</span>
+              <h3 className="font-serif font-bold text-lg text-ink">{issue.lesson_title || issue.title}</h3>
               <LessonBody html={issue.lesson_body} />
             </>
           )}
@@ -389,9 +330,7 @@ export function TeachResult({
           {/* Example card */}
           {card.type === "example" && (
             <>
-              <h3 className="font-sans text-[18px] font-medium text-ink">
-                Spot the pattern
-              </h3>
+              <h3 className="font-sans text-[18px] font-medium text-ink">Spot the pattern</h3>
               <div className="space-y-6 mt-1">
                 {issue.examples.map((ex, i) => (
                   <div key={i} className="space-y-4">
@@ -408,9 +347,7 @@ export function TeachResult({
                     <div className="flex gap-2.5 items-start">
                       <span className="text-teal text-sm mt-1 shrink-0">&#10003;</span>
                       <div className="flex-1 bg-[#F5F5F5] rounded-[8px] px-3.5 py-2.5">
-                        <p className="font-sans text-[16px] leading-[1.6] font-medium text-[#111]">
-                          {ex.good}
-                        </p>
+                        <p className="font-sans text-[16px] leading-[1.6] font-medium text-[#111]">{ex.good}</p>
                       </div>
                     </div>
                   </div>

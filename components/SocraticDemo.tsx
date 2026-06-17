@@ -76,9 +76,7 @@ export function SocraticDemo() {
         {STEPS.map((_, i) => (
           <span
             key={i}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              i <= step ? "bg-[#111]" : "bg-[#D4D0C8]"
-            }`}
+            className={`w-2 h-2 rounded-full transition-colors ${i <= step ? "bg-[#111]" : "bg-[#D4D0C8]"}`}
           />
         ))}
       </div>
@@ -92,9 +90,7 @@ export function SocraticDemo() {
       {step === 0 && (
         <div className="space-y-4">
           <div className="bg-white border border-[#111]/10 rounded-[12px] p-5">
-            <p className="text-[15px] leading-relaxed text-[#1C1917]">
-              {ORIGINAL}
-            </p>
+            <p className="text-[15px] leading-relaxed text-[#1C1917]">{ORIGINAL}</p>
           </div>
           <button
             onClick={() => advance(1)}
@@ -114,21 +110,14 @@ export function SocraticDemo() {
 
           <div className="bg-[#F5F5F5] border border-[#111]/40 rounded-[12px] p-5 space-y-3">
             <div className="inline-flex items-start gap-1.5">
-              <span className="font-serif font-bold text-[15px] text-[#111] leading-none">
-                accent
-              </span>
-              <span
-                className="bg-[#111] rounded-full shrink-0"
-                style={{ width: 5, height: 5, marginTop: 3 }}
-              />
+              <span className="font-serif font-bold text-[15px] text-[#111] leading-none">accent</span>
+              <span className="bg-[#111] rounded-full shrink-0" style={{ width: 5, height: 5, marginTop: 3 }} />
             </div>
             <p className="text-[14px] text-[#1C1917] leading-relaxed">
-              You started with &ldquo;The rise of AI tools&rdquo; — that&apos;s
-              a topic, not a point of view. Every sentence here could be written
-              by anyone about anything.{" "}
+              You started with &ldquo;The rise of AI tools&rdquo; — that&apos;s a topic, not a point of view. Every
+              sentence here could be written by anyone about anything.{" "}
               <span className="font-semibold">
-                What do you actually think is happening? What have you seen that
-                made you want to write this?
+                What do you actually think is happening? What have you seen that made you want to write this?
               </span>
             </p>
           </div>
@@ -150,13 +139,10 @@ export function SocraticDemo() {
           </div>
 
           <div className="bg-[#FAFAFA] border border-[#111]/10 rounded-[12px] p-5">
-            <p className="text-[11px] font-sans font-medium text-[#8A8579] uppercase tracking-wide mb-2">
-              You
-            </p>
+            <p className="text-[11px] font-sans font-medium text-[#8A8579] uppercase tracking-wide mb-2">You</p>
             <p className="text-[15px] leading-relaxed text-[#1C1917]">
-              I keep seeing people ship apps they don&apos;t understand. They
-              paste code from ChatGPT, it works, but they can&apos;t explain
-              what it does. That scares me.
+              I keep seeing people ship apps they don&apos;t understand. They paste code from ChatGPT, it works, but
+              they can&apos;t explain what it does. That scares me.
             </p>
           </div>
 
@@ -173,12 +159,8 @@ export function SocraticDemo() {
       {step === 3 && (
         <div className="space-y-4">
           <div className="bg-white border-2 border-[#111] rounded-[12px] p-5">
-            <p className="text-[11px] font-sans font-medium text-[#111] uppercase tracking-wide mb-2">
-              Your version
-            </p>
-            <p className="text-[15px] leading-relaxed text-[#1C1917] font-medium">
-              {REVISED}
-            </p>
+            <p className="text-[11px] font-sans font-medium text-[#111] uppercase tracking-wide mb-2">Your version</p>
+            <p className="text-[15px] leading-relaxed text-[#1C1917] font-medium">{REVISED}</p>
           </div>
 
           <div className="bg-[#FAFAFA] rounded-[12px] p-5 space-y-4">
@@ -187,12 +169,10 @@ export function SocraticDemo() {
                 The pattern
               </p>
               <p className="text-[14px] text-[#1C1917] leading-relaxed">
-                AI loves to &ldquo;set the scene&rdquo; with big abstract
-                claims (&ldquo;fundamentally transformed,&rdquo; &ldquo;purely
-                human endeavor,&rdquo; &ldquo;navigate this new
-                landscape&rdquo;). These phrases sound important but say
-                nothing your reader doesn&apos;t already know. They&apos;re
-                filler disguised as insight.
+                AI loves to &ldquo;set the scene&rdquo; with big abstract claims (&ldquo;fundamentally
+                transformed,&rdquo; &ldquo;purely human endeavor,&rdquo; &ldquo;navigate this new landscape&rdquo;).
+                These phrases sound important but say nothing your reader doesn&apos;t already know. They&apos;re filler
+                disguised as insight.
               </p>
             </div>
             <div>
@@ -200,18 +180,11 @@ export function SocraticDemo() {
                 The principle
               </p>
               <p className="text-[14px] text-[#1C1917] leading-relaxed">
-                Start with what you&apos;ve actually noticed, not with what
-                everyone already agrees on.{" "}
-                <span className="font-medium">
-                  &ldquo;People are shipping apps they can&apos;t
-                  explain&rdquo;
-                </span>{" "}
-                is an observation.{" "}
-                <span className="font-medium">
-                  &ldquo;AI has fundamentally transformed creative work&rdquo;
-                </span>{" "}
-                is a headline from 2023. Your reader stays for your
-                observations, not your summaries.
+                Start with what you&apos;ve actually noticed, not with what everyone already agrees on.{" "}
+                <span className="font-medium">&ldquo;People are shipping apps they can&apos;t explain&rdquo;</span> is
+                an observation.{" "}
+                <span className="font-medium">&ldquo;AI has fundamentally transformed creative work&rdquo;</span> is a
+                headline from 2023. Your reader stays for your observations, not your summaries.
               </p>
             </div>
           </div>

@@ -18,7 +18,9 @@ export interface Draft {
 
 export async function getDraft(planId: string, postIndex: number): Promise<Draft | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -29,13 +31,18 @@ export async function getDraft(planId: string, postIndex: number): Promise<Draft
     .eq("post_index", postIndex)
     .maybeSingle();
 
-  if (error) { console.error("Failed to fetch draft:", error); return null; }
+  if (error) {
+    console.error("Failed to fetch draft:", error);
+    return null;
+  }
   return data as Draft | null;
 }
 
 export async function getAllDrafts(): Promise<Draft[]> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -44,7 +51,10 @@ export async function getAllDrafts(): Promise<Draft[]> {
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
-  if (error) { console.error("Failed to fetch drafts:", error); return []; }
+  if (error) {
+    console.error("Failed to fetch drafts:", error);
+    return [];
+  }
   return data as Draft[];
 }
 
@@ -52,18 +62,32 @@ export async function markAsPublished(draftId: string, platform: string, url?: s
   const supabase = createClient();
   const { data, error } = await supabase
     .from("drafts")
-    .update({ published: true, published_platform: platform, published_url: url || null, published_at: new Date().toISOString() })
+    .update({
+      published: true,
+      published_platform: platform,
+      published_url: url || null,
+      published_at: new Date().toISOString(),
+    })
     .eq("id", draftId)
     .select()
     .single();
 
-  if (error) { console.error("Failed to mark as published:", JSON.stringify(error)); return null; }
+  if (error) {
+    console.error("Failed to mark as published:", JSON.stringify(error));
+    return null;
+  }
   return data as Draft;
 }
 
-export async function createStandaloneDraft(content: string, sourceNote: string, sourceEntryId: string): Promise<Draft | null> {
+export async function createStandaloneDraft(
+  content: string,
+  sourceNote: string,
+  sourceEntryId: string
+): Promise<Draft | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -72,7 +96,10 @@ export async function createStandaloneDraft(content: string, sourceNote: string,
     .select()
     .single();
 
-  if (error) { console.error("Failed to create standalone draft:", JSON.stringify(error)); return null; }
+  if (error) {
+    console.error("Failed to create standalone draft:", JSON.stringify(error));
+    return null;
+  }
   return data as Draft;
 }
 
@@ -85,13 +112,18 @@ export async function saveDraftById(draftId: string, content: string): Promise<D
     .select()
     .single();
 
-  if (error) { console.error("Failed to save draft by id:", JSON.stringify(error)); return null; }
+  if (error) {
+    console.error("Failed to save draft by id:", JSON.stringify(error));
+    return null;
+  }
   return data as Draft;
 }
 
 export async function saveDraft(planId: string, postIndex: number, content: string): Promise<Draft | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const existing = await getDraft(planId, postIndex);
@@ -102,7 +134,10 @@ export async function saveDraft(planId: string, postIndex: number, content: stri
       .eq("id", existing.id)
       .select()
       .single();
-    if (error) { console.error("Failed to update draft:", JSON.stringify(error)); return null; }
+    if (error) {
+      console.error("Failed to update draft:", JSON.stringify(error));
+      return null;
+    }
     return data as Draft;
   }
 
@@ -112,6 +147,9 @@ export async function saveDraft(planId: string, postIndex: number, content: stri
     .select()
     .single();
 
-  if (error) { console.error("Failed to insert draft:", JSON.stringify(error)); return null; }
+  if (error) {
+    console.error("Failed to insert draft:", JSON.stringify(error));
+    return null;
+  }
   return data as Draft;
 }

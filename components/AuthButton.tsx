@@ -132,10 +132,7 @@ export function AuthButton() {
 
   if (user) {
     return (
-      <button
-        onClick={handleSignOut}
-        className="text-xs font-sans text-ink/40 hover:text-ink/60 transition-colors"
-      >
+      <button onClick={handleSignOut} className="text-xs font-sans text-ink/40 hover:text-ink/60 transition-colors">
         Sign out
       </button>
     );
@@ -146,13 +143,9 @@ export function AuthButton() {
       <div className="fixed inset-0 bg-ink/20 z-50 flex items-center justify-center px-4">
         <div className="bg-paper rounded-[12px] border border-ink/10 px-5 py-6 w-full max-w-[360px] space-y-4">
           <div>
-            <h2 className="font-serif font-bold text-xl text-ink">
-              Sign in to Accent
-            </h2>
+            <h2 className="font-serif font-bold text-xl text-ink">Sign in to Accent</h2>
             <p className="mt-1 font-sans text-sm text-ink/60">
-              {step === "email"
-                ? "We\u2019ll email you a 6-digit code."
-                : `We sent a code to ${email}.`}
+              {step === "email" ? "We\u2019ll email you a 6-digit code." : `We sent a code to ${email}.`}
             </p>
           </div>
 
@@ -170,11 +163,7 @@ export function AuthButton() {
                   className="w-full px-3 py-2.5 rounded-[8px] border border-ink/10 bg-white font-sans text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-teal/20"
                   required
                 />
-                {emailError && (
-                  <p className="mt-1.5 text-xs font-sans text-coral">
-                    {emailError}
-                  </p>
-                )}
+                {emailError && <p className="mt-1.5 text-xs font-sans text-coral">{emailError}</p>}
               </div>
               <button
                 type="submit"
@@ -202,11 +191,7 @@ export function AuthButton() {
                   required
                   autoFocus
                 />
-                {codeError && (
-                  <p className="mt-1.5 text-xs font-sans text-coral text-center">
-                    {codeError}
-                  </p>
-                )}
+                {codeError && <p className="mt-1.5 text-xs font-sans text-coral text-center">{codeError}</p>}
               </div>
               <button
                 type="submit"

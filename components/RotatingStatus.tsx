@@ -7,10 +7,7 @@ interface RotatingStatusProps {
   interval?: number;
 }
 
-export function RotatingStatus({
-  messages,
-  interval = 1500,
-}: RotatingStatusProps) {
+export function RotatingStatus({ messages, interval = 1500 }: RotatingStatusProps) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 

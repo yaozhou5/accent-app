@@ -25,10 +25,7 @@ export function CookieBanner() {
       <div className="max-w-[480px] md:max-w-[600px] mx-auto bg-paper border border-ink/15 rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] px-4 py-3.5 flex items-center gap-3">
         <p className="flex-1 text-xs md:text-sm font-sans text-ink/70 leading-snug">
           We use analytics cookies to improve Accent.{" "}
-          <Link
-            href="/privacy-contact"
-            className="text-teal underline underline-offset-2 hover:no-underline"
-          >
+          <Link href="/privacy-contact" className="text-teal underline underline-offset-2 hover:no-underline">
             Learn more
           </Link>
           .

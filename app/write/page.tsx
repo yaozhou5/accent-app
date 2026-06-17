@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 export default function WritePage() {
   const router = useRouter();
-  useEffect(() => { router.replace("/dashboard/write"); }, [router]);
+  useEffect(() => {
+    router.replace("/dashboard/write");
+  }, [router]);
   return null;
 }

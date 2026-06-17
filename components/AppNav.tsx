@@ -9,9 +9,7 @@ export function AppNav() {
   const pathname = usePathname();
   const linkClass = (href: string) =>
     `text-[14px] font-sans font-medium transition-colors ${
-      pathname === href
-        ? "text-[#111]"
-        : "text-[#999] hover:text-[#111]"
+      pathname === href ? "text-[#111]" : "text-[#999] hover:text-[#111]"
     }`;
 
   return (

@@ -9,17 +9,15 @@ export interface LogEntry {
 
 export async function createLog(content: string): Promise<LogEntry | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     console.error("createLog: no authenticated user");
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("logs")
-    .insert({ user_id: user.id, content })
-    .select()
-    .single();
+  const { data, error } = await supabase.from("logs").insert({ user_id: user.id, content }).select().single();
 
   if (error) {
     console.error("Failed to create log:", error);
@@ -30,14 +28,12 @@ export async function createLog(content: string): Promise<LogEntry | null> {
 
 export async function getLogs(filter: "week" | "all" = "all"): Promise<LogEntry[]> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
-  let query = supabase
-    .from("logs")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  let query = supabase.from("logs").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
 
   if (filter === "week") {
     const now = new Date();

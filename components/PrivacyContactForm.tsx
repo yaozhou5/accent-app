@@ -43,16 +43,10 @@ export function PrivacyContactForm() {
   if (submitted) {
     return (
       <div className="bg-teal-light border border-teal/20 rounded-[12px] px-5 py-6">
-        <h3 className="font-serif font-bold text-lg text-ink">
-          Request received
-        </h3>
+        <h3 className="font-serif font-bold text-lg text-ink">Request received</h3>
         <p className="mt-2 font-sans text-sm text-ink/70 leading-relaxed">
-          We&apos;ll respond within 30 days, usually much sooner. If
-          you don&apos;t hear back, email us directly at{" "}
-          <a
-            href="mailto:hello@yaozhou.me"
-            className="text-teal underline hover:no-underline"
-          >
+          We&apos;ll respond within 30 days, usually much sooner. If you don&apos;t hear back, email us directly at{" "}
+          <a href="mailto:hello@yaozhou.me" className="text-teal underline hover:no-underline">
             hello@yaozhou.me
           </a>
           .
@@ -64,10 +58,7 @@ export function PrivacyContactForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label
-          htmlFor="name"
-          className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide"
-        >
+        <label htmlFor="name" className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide">
           Name
         </label>
         <input
@@ -81,10 +72,7 @@ export function PrivacyContactForm() {
       </div>
 
       <div>
-        <label
-          htmlFor="email"
-          className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide"
-        >
+        <label htmlFor="email" className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide">
           Email
         </label>
         <input
@@ -99,10 +87,7 @@ export function PrivacyContactForm() {
       </div>
 
       <div>
-        <label
-          htmlFor="type"
-          className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide"
-        >
+        <label htmlFor="type" className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide">
           Request type
         </label>
         <select
@@ -120,10 +105,7 @@ export function PrivacyContactForm() {
       </div>
 
       <div>
-        <label
-          htmlFor="message"
-          className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide"
-        >
+        <label htmlFor="message" className="block text-[11px] font-sans font-medium text-ink/60 mb-1.5 tracking-wide">
           Message
         </label>
         <textarea
@@ -137,9 +119,7 @@ export function PrivacyContactForm() {
         />
       </div>
 
-      {error && (
-        <p className="text-sm font-sans text-coral">{error}</p>
-      )}
+      {error && <p className="text-sm font-sans text-coral">{error}</p>}
 
       <button
         type="submit"

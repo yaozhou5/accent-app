@@ -11,11 +11,7 @@ interface PracticeBoxProps {
   locale: Locale;
 }
 
-export function PracticeBox({
-  originalPhrase,
-  context,
-  locale,
-}: PracticeBoxProps) {
+export function PracticeBox({ originalPhrase, context, locale }: PracticeBoxProps) {
   const t = useTranslations(locale);
   const [attempt, setAttempt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,9 +43,7 @@ export function PracticeBox({
 
   return (
     <div className="mt-3 space-y-2">
-      <p className="text-xs font-sans font-medium text-ink/60">
-        {t("tryWritingIt")}
-      </p>
+      <p className="text-xs font-sans font-medium text-ink/60">{t("tryWritingIt")}</p>
       <textarea
         aria-label="Your rewrite attempt"
         value={attempt}
@@ -68,9 +62,7 @@ export function PracticeBox({
       {feedback && (
         <div
           className={`rounded-md px-3 py-2 text-sm font-sans ${
-            feedback.isImproved
-              ? "bg-sage-light text-sage"
-              : "bg-[#FEE2E2] text-[#C4553A]"
+            feedback.isImproved ? "bg-sage-light text-sage" : "bg-[#FEE2E2] text-[#C4553A]"
           }`}
         >
           <p>{feedback.feedback}</p>

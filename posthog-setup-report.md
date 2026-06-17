@@ -15,21 +15,21 @@ The wizard has completed a deep integration of PostHog analytics into accent. Th
 - **`components/ShelfTab.tsx`** (updated): Captures `shelf_entry_opened` and `shelf_entry_deleted`.
 - **`app/api/check/route.ts`** (updated): Server-side capture of `api_check_completed` (with `issues_count`, `had_changes`, `language`) and `api_check_rate_limited`, both correlated to the client's PostHog distinct ID.
 
-| Event | Description | File |
-|-------|-------------|------|
-| `writing_submitted` | User clicks "Fix it" to analyse their text | `components/WriteTab.tsx` |
-| `writing_result_completed` | Analysis finished and result is displayed | `components/WriteTab.tsx` |
-| `result_copied` | User copies the improved text (optionally saving to Shelf) | `components/CopyButton.tsx` |
-| `mode_switched` | User switches between Quick fix and Teach me modes | `components/WriteTab.tsx` |
-| `tab_switched` | User switches between the Write and Shelf tabs | `components/AppShell.tsx` |
-| `sign_in_initiated` | User opens the sign-in modal | `components/AuthButton.tsx` |
-| `magic_link_requested` | User submits sign-in form to receive a magic link | `components/AuthButton.tsx` |
-| `voice_waitlist_joined` | User submits email to join the voice profile waitlist | `components/VoiceWaitlistCard.tsx` |
-| `voice_waitlist_dismissed` | User dismisses the voice waitlist prompt | `components/VoiceWaitlistCard.tsx` |
-| `shelf_entry_opened` | User opens a saved shelf entry | `components/ShelfTab.tsx` |
-| `shelf_entry_deleted` | User deletes a saved shelf entry | `components/ShelfTab.tsx` |
-| `api_check_completed` | Server: writing analysis succeeded | `app/api/check/route.ts` |
-| `api_check_rate_limited` | Server: request blocked by rate limiter | `app/api/check/route.ts` |
+| Event                      | Description                                                | File                               |
+| -------------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `writing_submitted`        | User clicks "Fix it" to analyse their text                 | `components/WriteTab.tsx`          |
+| `writing_result_completed` | Analysis finished and result is displayed                  | `components/WriteTab.tsx`          |
+| `result_copied`            | User copies the improved text (optionally saving to Shelf) | `components/CopyButton.tsx`        |
+| `mode_switched`            | User switches between Quick fix and Teach me modes         | `components/WriteTab.tsx`          |
+| `tab_switched`             | User switches between the Write and Shelf tabs             | `components/AppShell.tsx`          |
+| `sign_in_initiated`        | User opens the sign-in modal                               | `components/AuthButton.tsx`        |
+| `magic_link_requested`     | User submits sign-in form to receive a magic link          | `components/AuthButton.tsx`        |
+| `voice_waitlist_joined`    | User submits email to join the voice profile waitlist      | `components/VoiceWaitlistCard.tsx` |
+| `voice_waitlist_dismissed` | User dismisses the voice waitlist prompt                   | `components/VoiceWaitlistCard.tsx` |
+| `shelf_entry_opened`       | User opens a saved shelf entry                             | `components/ShelfTab.tsx`          |
+| `shelf_entry_deleted`      | User deletes a saved shelf entry                           | `components/ShelfTab.tsx`          |
+| `api_check_completed`      | Server: writing analysis succeeded                         | `app/api/check/route.ts`           |
+| `api_check_rate_limited`   | Server: request blocked by rate limiter                    | `app/api/check/route.ts`           |
 
 ## Next steps
 

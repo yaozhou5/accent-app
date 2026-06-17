@@ -20,16 +20,7 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
   const [mode, setMode] = useState<WriteMode>("quick");
   const [text, setText] = useState("");
   const [langError, setLangError] = useState<string | null>(null);
-  const {
-    fixState,
-    explainState,
-    fixResult,
-    issues,
-    error,
-    submitFix,
-    requestExplain,
-    reset,
-  } = useStreamingCheck();
+  const { fixState, explainState, fixResult, issues, error, submitFix, requestExplain, reset } = useStreamingCheck();
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
@@ -42,9 +33,7 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
     const nonLatinPattern =
       /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\uac00-\ud7af\u0600-\u06ff\u0590-\u05ff\u0400-\u04ff\u0e00-\u0e7f\u0900-\u097f]/;
     if (nonLatinPattern.test(text)) {
-      setLangError(
-        "Accent currently supports English only. More languages coming soon."
-      );
+      setLangError("Accent currently supports English only. More languages coming soon.");
       return;
     }
 
@@ -55,9 +44,7 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
       const detected = franc(text, { minLength: 10 });
       const englishLike = ["eng", "und", "sco", "lat", "nno", "nob", "dan", "nld", "afr", "fry"];
       if (!englishLike.includes(detected)) {
-        setLangError(
-          "Accent currently supports English only. More languages coming soon."
-        );
+        setLangError("Accent currently supports English only. More languages coming soon.");
         return;
       }
     }
@@ -95,12 +82,7 @@ export function WriteTab({ locale, onLocaleChange }: WriteTabProps) {
 
   // If user switches to Teach mode after fix is done, lazily request explain
   useEffect(() => {
-    if (
-      mode === "teach" &&
-      fixResult &&
-      explainState === "idle" &&
-      issues === null
-    ) {
+    if (mode === "teach" && fixResult && explainState === "idle" && issues === null) {
       requestExplain(text, fixResult);
     }
   }, [mode, fixResult, explainState, issues, text, requestExplain]);

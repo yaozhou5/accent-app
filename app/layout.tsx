@@ -36,9 +36,7 @@ export const metadata: Metadata = {
     description: "Content planning for solo founders. Drop in your week, get your content plan.",
     url: "https://myaccent.io",
     siteName: "accent.",
-    images: [
-      { url: "https://myaccent.io/api/og", width: 1200, height: 630 },
-    ],
+    images: [{ url: "https://myaccent.io/api/og", width: 1200, height: 630 }],
     type: "website",
   },
   twitter: {
@@ -62,7 +60,10 @@ export default function RootLayout({
     >
       <head>
         <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,700,800,900&display=swap" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&display=swap" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&display=swap"
+        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1A1A18" />
         <meta name="mobile-web-app-capable" content="yes" />

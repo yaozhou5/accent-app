@@ -25,13 +25,11 @@ export const shelfPassages: ShelfPassage[] = [
   {
     id: "hemingway-2",
     author: "Ernest Hemingway",
-    excerpt:
-      "The world breaks everyone and afterward many are strong at the broken places.",
+    excerpt: "The world breaks everyone and afterward many are strong at the broken places.",
     category: "precision",
     craftLesson:
       "Precision isn\u2019t just about physical details. Here Hemingway states a large truth in plain, exact language. \u2018Breaks\u2019 and \u2018broken places\u2019 do double duty as literal and metaphorical.",
-    writingPrompt:
-      "Write one sentence that captures a big truth using only plain, concrete words. No abstractions.",
+    writingPrompt: "Write one sentence that captures a big truth using only plain, concrete words. No abstractions.",
   },
   {
     id: "pg-1",

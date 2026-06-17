@@ -22,10 +22,14 @@ function LoginForm() {
     if (!email.trim() || loading) return;
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: false } });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { shouldCreateUser: false },
+    });
     setLoading(false);
-    if (error) { setError(error.message.includes("Signups not allowed") ? "No account found. Sign up first." : error.message); }
-    else setStep("code");
+    if (error) {
+      setError(error.message.includes("Signups not allowed") ? "No account found. Sign up first." : error.message);
+    } else setStep("code");
   };
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -42,37 +46,90 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#fff" }}>
       <div className="max-w-[380px] w-full">
-        <Link href="/" className="no-underline font-serif block mb-10" style={{ fontSize: 24, color: "#1A1A18" }}>accent</Link>
-        <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18" }}>Welcome back</h1>
-        <p className="font-sans mb-8" style={{ fontSize: 15, color: "#6B6B6B" }}>Sign in with your email.</p>
+        <Link href="/" className="no-underline font-serif block mb-10" style={{ fontSize: 24, color: "#1A1A18" }}>
+          accent
+        </Link>
+        <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18" }}>
+          Welcome back
+        </h1>
+        <p className="font-sans mb-8" style={{ fontSize: 15, color: "#6B6B6B" }}>
+          Sign in with your email.
+        </p>
 
         {step === "email" ? (
           <form onSubmit={handleSendCode} className="space-y-4">
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com"
-              className="w-full px-4 py-3 rounded-[10px] font-sans text-[16px] outline-none" style={{ border: "1px solid #E5E5E5", color: "#1A1A18" }} />
-            {error && <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>{error}</p>}
-            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50" style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@email.com"
+              className="w-full px-4 py-3 rounded-[10px] font-sans text-[16px] outline-none"
+              style={{ border: "1px solid #E5E5E5", color: "#1A1A18" }}
+            />
+            {error && (
+              <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
+              style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}
+            >
               {loading ? "Sending code..." : "Send login code"}
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4">
-            <p className="font-sans text-[14px]" style={{ color: "#6B6B6B" }}>We sent a code to {email}</p>
-            <input type="text" inputMode="numeric" maxLength={6} required value={code}
-              onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000"
-              className="w-full px-4 py-3 rounded-[10px] font-mono text-[20px] text-center outline-none tracking-[0.3em]" style={{ border: "1px solid #E5E5E5", color: "#1A1A18" }} />
-            {error && <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>{error}</p>}
-            <button type="submit" disabled={loading || code.length !== 6} className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50" style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}>
+            <p className="font-sans text-[14px]" style={{ color: "#6B6B6B" }}>
+              We sent a code to {email}
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000"
+              className="w-full px-4 py-3 rounded-[10px] font-mono text-[20px] text-center outline-none tracking-[0.3em]"
+              style={{ border: "1px solid #E5E5E5", color: "#1A1A18" }}
+            />
+            {error && (
+              <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={loading || code.length !== 6}
+              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
+              style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}
+            >
               {loading ? "Verifying..." : "Verify code"}
             </button>
-            <button type="button" onClick={() => { setStep("email"); setCode(""); setError(null); }} className="w-full text-[13px] font-sans" style={{ color: "#6B6B6B", background: "none", border: "none", cursor: "pointer" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("email");
+                setCode("");
+                setError(null);
+              }}
+              className="w-full text-[13px] font-sans"
+              style={{ color: "#6B6B6B", background: "none", border: "none", cursor: "pointer" }}
+            >
               Use a different email
             </button>
           </form>
         )}
 
         <p className="mt-8 text-center text-[14px] font-sans" style={{ color: "#6B6B6B" }}>
-          Don't have an account? <Link href="/signup" className="no-underline font-medium" style={{ color: "#2563EB" }}>Sign up</Link>
+          Don't have an account?{" "}
+          <Link href="/signup" className="no-underline font-medium" style={{ color: "#2563EB" }}>
+            Sign up
+          </Link>
         </p>
       </div>
     </div>
@@ -80,5 +137,9 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return <Suspense><LoginForm /></Suspense>;
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
 }
