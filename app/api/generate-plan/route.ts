@@ -144,7 +144,7 @@ Respond ONLY with valid JSON, no other text:
 }`;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6-20250620",
+      model: "claude-sonnet-4-6",
       max_tokens: 2500,
       messages: [{ role: "user", content: prompt }],
     });

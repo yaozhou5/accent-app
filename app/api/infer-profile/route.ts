@@ -64,7 +64,7 @@ BANNED clichés: "vanity metrics," "the journey from X to Y," "the harsh reality
 Warm and curious in tone, like a smart editor who sees the post hiding in there and wants to draw it out. 2-3 sentences total.`;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6-20250620",
+      model: "claude-sonnet-4-6",
       max_tokens: 300,
       messages: [{ role: "user", content: prompt }],
     });

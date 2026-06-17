@@ -70,7 +70,7 @@ TONE: You are a thoughtful editor, not an excited friend. Never start with "Wait
 Return ONLY the question. One or two sentences max. Calm, direct tone.`;
 
       const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-6-20250620",
+        model: "claude-sonnet-4-6",
         max_tokens: 150,
         messages: [{ role: "user", content: questionPrompt }],
       });
@@ -128,7 +128,7 @@ TYPE: [personal-story, lesson, behind-the-scenes, or hot-take]
 WHY: [one sentence on why this angle works]`;
 
       const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-6-20250620",
+        model: "claude-sonnet-4-6",
         max_tokens: 300,
         messages: [{ role: "user", content: respondPrompt }],
       });
@@ -194,7 +194,7 @@ WHY: [one sentence on why this angle works for their audience]
 Be specific to their situation. No generic advice.${avoidAngles}`;
 
       const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-6-20250620",
+        model: "claude-sonnet-4-6",
         max_tokens: 250,
         messages: [{ role: "user", content: suggestPrompt }],
       });
