@@ -685,15 +685,22 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...coachApiPayload(entries), step: "question" }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.response) {
-          const msgs: CoachingMessage[] = [{ role: "ai", text: data.response }];
-          setCoachMessages(msgs);
-          persistSession(entries, msgs, []);
-        }
+      const data = await res.json();
+      console.log("coach-note question response:", res.status, data);
+      if (res.ok && data.response) {
+        const msgs: CoachingMessage[] = [{ role: "ai", text: data.response }];
+        setCoachMessages(msgs);
+        persistSession(entries, msgs, []);
+      } else {
+        // API failed — show fallback question so the conversation isn't dead
+        const fallback: CoachingMessage[] = [{ role: "ai", text: "What happened here that made you want to share it? What was the moment that stuck with you?" }];
+        setCoachMessages(fallback);
       }
-    } catch {}
+    } catch (err) {
+      console.error("coach-note question error:", err);
+      const fallback: CoachingMessage[] = [{ role: "ai", text: "What happened here that made you want to share it? What was the moment that stuck with you?" }];
+      setCoachMessages(fallback);
+    }
     setCoachLoading(false);
   };
 
@@ -712,19 +719,26 @@ function IdeasTab({ profile, allPlans, weekEntries, allEntries, initialWeek, ini
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...coachApiPayload(coachNotes), step: forceAngles ? "suggest" : "respond", conversation: updatedMessages }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.type === "followup" && data.response) {
-          const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: data.response }];
-          setCoachMessages(newMsgs);
-          persistSession(coachNotes, newMsgs, coachSuggestions);
-        } else if ((data.type === "suggest" || forceAngles) && data.structured) {
-          const newSuggestions = [...coachSuggestions, data.structured];
-          setCoachSuggestions(newSuggestions);
-          persistSession(coachNotes, updatedMessages, newSuggestions);
-        }
+      const data = await res.json();
+      console.log("coach-note respond:", res.status, data);
+      if (res.ok && data.type === "followup" && data.response) {
+        const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: data.response }];
+        setCoachMessages(newMsgs);
+        persistSession(coachNotes, newMsgs, coachSuggestions);
+      } else if (res.ok && (data.type === "suggest" || forceAngles) && data.structured) {
+        const newSuggestions = [...coachSuggestions, data.structured];
+        setCoachSuggestions(newSuggestions);
+        persistSession(coachNotes, updatedMessages, newSuggestions);
+      } else {
+        // API failed — add fallback so conversation isn't dead
+        const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: "I couldn't process that — try telling me more about what happened and what surprised you." }];
+        setCoachMessages(newMsgs);
       }
-    } catch {}
+    } catch (err) {
+      console.error("coach-note respond error:", err);
+      const newMsgs: CoachingMessage[] = [...updatedMessages, { role: "ai", text: "Something went wrong on my end. Try replying again." }];
+      setCoachMessages(newMsgs);
+    }
     setCoachLoading(false);
   };
 
