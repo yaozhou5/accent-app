@@ -87,7 +87,7 @@ Return ONLY valid JSON. Each channel key maps to an object with "text", "choices
 }`;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6-20250620",
       max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
