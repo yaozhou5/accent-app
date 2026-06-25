@@ -309,82 +309,44 @@ export default function PlayPage() {
               <p className="font-mono text-[11px] uppercase tracking-wider mb-4" style={{ color: FAINT }}>
                 Your result
               </p>
-              <h2 className="font-serif mb-2" style={{ fontSize: "clamp(32px, 5vw, 40px)", fontWeight: 300 }}>
+              <h2 className="font-serif mb-2" style={{ fontSize: "clamp(28px, 5vw, 36px)", fontWeight: 300 }}>
                 {result.title}
               </h2>
-              <p className="font-mono mb-6" style={{ fontSize: 13, color: FAINT }}>
+              <p className="font-mono mb-8" style={{ fontSize: 13, color: FAINT }}>
                 {totalScore} / 20
               </p>
-              <p className="font-sans mb-6 max-w-[500px] mx-auto" style={{ fontSize: 16, color: DIM, lineHeight: 1.6 }}>
-                {result.desc}
-              </p>
-              <p className="font-serif italic mb-10" style={{ fontSize: 16, color: INK }}>
-                {result.cta}
+              <p
+                className="font-sans mb-10 max-w-[480px] mx-auto"
+                style={{ fontSize: 17, color: INK, lineHeight: 1.65 }}
+              >
+                You can tell the difference between writing that sounds human and writing that sounds like AI. The real
+                question is whether your own writing passes the same test.
               </p>
 
-              {!emailSubmitted ? (
-                <div className="max-w-[400px] mx-auto">
-                  <p className="font-sans mb-3" style={{ fontSize: 16, color: DIM }}>
-                    Your first writing challenge drops this week.
-                  </p>
-                  <form onSubmit={handleEmail} className="flex gap-2">
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      className="flex-1 px-4 py-3 rounded-[8px] font-sans text-[16px] outline-none"
-                      style={{ border: `1px solid rgba(26,26,24,0.15)`, background: "white", color: INK }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={emailLoading}
-                      className="px-6 py-3 rounded-[8px] font-sans font-semibold text-[16px] disabled:opacity-50"
-                      style={{ background: INK, color: CREAM }}
-                    >
-                      {emailLoading ? "..." : "I'm in"}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <p className="font-mono" style={{ fontSize: 14, letterSpacing: "0.04em", color: INK }}>
-                  &check; Watch your inbox.
-                </p>
-              )}
+              <div className="flex flex-col sm:flex-row justify-center gap-3 max-w-[400px] mx-auto mb-6">
+                <Link
+                  href="/check"
+                  className="no-underline flex-1 py-3.5 rounded-full font-sans font-semibold text-[15px] text-center"
+                  style={{ background: INK, color: CREAM }}
+                >
+                  Check your writing &rarr;
+                </Link>
+                <Link
+                  href="/"
+                  className="no-underline flex-1 py-3.5 rounded-full font-sans font-semibold text-[15px] text-center"
+                  style={{ border: `1px solid rgba(26,26,24,0.2)`, color: INK, background: "transparent" }}
+                >
+                  Start your workspace &rarr;
+                </Link>
+              </div>
 
               <button
                 onClick={handlePlayAgain}
-                className="mt-6 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium"
+                className="mt-4 px-6 py-2.5 rounded-full font-sans text-[13px] font-medium"
                 style={{ border: "1px solid rgba(26,26,24,0.15)", color: DIM, background: "transparent" }}
               >
                 Play Again
               </button>
-
-              <div className="mt-16 pt-10" style={{ borderTop: "1px solid rgba(26,26,24,0.15)" }}>
-                <p className="font-mono text-[11px] uppercase tracking-wider mb-3" style={{ color: FAINT }}>
-                  next
-                </p>
-                <p className="font-serif mb-5" style={{ fontSize: 22, fontWeight: 400, color: INK }}>
-                  Want to work on your own writing?
-                </p>
-                <div className="flex justify-center gap-8 flex-wrap">
-                  <Link
-                    href="/write?mode=polish"
-                    className="no-underline font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70"
-                    style={{ fontSize: 16, color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}
-                  >
-                    Polish it <span>&rarr;</span>
-                  </Link>
-                  <Link
-                    href="/write?mode=coach"
-                    className="no-underline font-sans font-medium inline-flex items-center gap-1 transition-opacity hover:opacity-70"
-                    style={{ fontSize: 16, color: INK, borderBottom: `1px solid ${INK}`, paddingBottom: 1 }}
-                  >
-                    Coach me <span>&rarr;</span>
-                  </Link>
-                </div>
-              </div>
             </div>
           )}
         </div>
