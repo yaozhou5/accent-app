@@ -130,6 +130,7 @@ function getResult(score: number) {
 
 /* ───── PLAY PAGE ───── */
 export default function PlayPage() {
+  const [started, setStarted] = useState(false);
   const [round, setRound] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [scores, setScores] = useState<number[]>([]);
@@ -153,6 +154,7 @@ export default function PlayPage() {
   };
 
   const handlePlayAgain = () => {
+    setStarted(true);
     setRound(0);
     setSelected(null);
     setScores([]);
@@ -201,8 +203,34 @@ export default function PlayPage() {
 
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-[600px] w-full">
+          {/* Intro */}
+          {!started && !done && (
+            <div className="text-center">
+              <h1
+                className="font-serif mb-4"
+                style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 300, lineHeight: 1.15 }}
+              >
+                Test your writing style.
+              </h1>
+              <p className="font-sans max-w-[440px] mx-auto mb-3" style={{ fontSize: 16, color: DIM, lineHeight: 1.6 }}>
+                Five sentences. Four rewrites each. Pick the one that hits hardest. No right answer, your choices say
+                something about how you write.
+              </p>
+              <p className="font-mono mb-8" style={{ fontSize: 12, color: FAINT }}>
+                2 minutes. No sign-up.
+              </p>
+              <button
+                onClick={() => setStarted(true)}
+                className="px-8 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-opacity hover:opacity-90"
+                style={{ background: INK, color: CREAM }}
+              >
+                Start &rarr;
+              </button>
+            </div>
+          )}
+
           {/* Game rounds */}
-          {!done && (
+          {started && !done && (
             <div>
               <div className="flex justify-center gap-2 mb-6">
                 {ROUNDS.map((_, i) => (
