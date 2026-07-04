@@ -153,44 +153,53 @@ export async function POST(request: NextRequest) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Use Supabase admin to generate a magic link for this email
-    // This creates the user if they don't exist
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      { cookies: { getAll: () => [], setAll: () => {} } }
-    );
+    // Use Supabase service role to generate a magic link
+    // This creates the user if they don't exist, and gives us the link token
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: { getAll: () => [], setAll: () => {} },
+    });
 
-    // Generate magic link OTP — this creates the user if needed
-    const { error: otpError } = await supabase.auth.signInWithOtp({
+    // Generate magic link — creates user if needed, returns the link
+    const siteUrl = process.env.NODE_ENV === "production" ? "https://myaccent.io" : "http://localhost:3000";
+
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
       email: cleanEmail,
       options: {
-        shouldCreateUser: true,
-        data: { voice_profile: voiceProfile },
+        redirectTo: `${siteUrl}/dashboard`,
       },
     });
 
-    if (otpError) {
-      console.error("OTP error:", otpError);
+    if (linkError || !linkData?.properties?.hashed_token) {
+      console.error("generateLink error:", linkError);
       return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
     }
 
-    // Save voice profile to the user's profile row
-    // The user may or may not exist yet — the magic link email from Supabase
-    // will handle account creation. We also send our own report email.
+    // Build the magic link URL that auto-authenticates on click
+    const token = linkData.properties.hashed_token;
+    const magicLink = `${siteUrl}/auth/confirm?token_hash=${token}&type=magiclink&redirect_to=${encodeURIComponent(`${siteUrl}/dashboard`)}`;
+
+    // Save voice profile to the user's profile row now (user exists after generateLink)
+    const userId = linkData.user?.id;
+    if (userId) {
+      await supabase.from("profiles").upsert({
+        id: userId,
+        voice_profile: voiceProfile,
+        onboarding_completed: true,
+      });
+    }
+
+    // Send ONE email via Resend with the magic link embedded
     const { error: emailError } = await resend.emails.send({
       from: "Accent <yao@myaccent.io>",
       to: cleanEmail,
       subject: `Your voice: ${voiceProfile.top_traits.join(". ")}.`,
-      html: buildEmailHtml(
-        voiceProfile,
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "https://myaccent.io" : "http://localhost:3000"}/dashboard`
-      ),
+      html: buildEmailHtml(voiceProfile, magicLink),
     });
 
     if (emailError) {
       console.error("Resend error:", emailError);
-      // Don't fail — Supabase magic link email was already sent
+      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
     }
 
     return NextResponse.json({ sent: true });
