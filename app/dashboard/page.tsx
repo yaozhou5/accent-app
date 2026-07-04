@@ -131,6 +131,8 @@ function LogTab({
   onStartDraft,
   onDevelopNote,
   onDevelopNotes,
+  onPostNote,
+  postingEntryId,
 }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
@@ -139,6 +141,8 @@ function LogTab({
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
   onDevelopNote: (entry: LogEntry) => void;
   onDevelopNotes: (entries: LogEntry[]) => void;
+  onPostNote: (entry: LogEntry) => void;
+  postingEntryId: string | null;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -891,13 +895,34 @@ function LogTab({
                                 Select multiple
                               </button>
                               <button
+                                onClick={async (ev) => {
+                                  ev.stopPropagation();
+                                  setMenuOpen(null);
+                                  onPostNote(entry);
+                                }}
+                                disabled={postingEntryId === entry.id}
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                style={{
+                                  color: "#fff",
+                                  background: BLUE,
+                                  border: "none",
+                                  cursor: postingEntryId === entry.id ? "wait" : "pointer",
+                                  borderRadius: 6,
+                                  margin: "4px 8px",
+                                  width: "calc(100% - 16px)",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {postingEntryId === entry.id ? "Generating..." : "Post"}
+                              </button>
+                              <button
                                 onClick={(ev) => {
                                   ev.stopPropagation();
                                   setMenuOpen(null);
                                   onDevelopNote(entry);
                                 }}
                                 className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}
+                                style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer" }}
                               >
                                 Develop <ArrowRight size={12} />
                               </button>
@@ -3658,6 +3683,7 @@ export default function DashboardPage() {
   const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
+  const [postingEntryId, setPostingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -3741,6 +3767,55 @@ export default function DashboardPage() {
     setIdeasWeek(ws);
     setTab("ideas");
   };
+
+  async function handlePostNote(entry: LogEntry) {
+    if (!profile?.voice_profile) {
+      // No voice profile — prompt user to complete exercise
+      if (confirm("Take 60 seconds to discover your voice first?")) {
+        window.location.href = "/onboard/2";
+      }
+      return;
+    }
+
+    // Set loading state
+    setPostingEntryId(entry.id);
+
+    const businessContext = [profile.business_description, profile.interview_q1, profile.interview_q3]
+      .filter(Boolean)
+      .join(" ");
+
+    try {
+      const res = await fetch("/api/generate-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entryContent: entry.content,
+          voiceProfile: profile.voice_profile,
+          businessContext,
+          platform: profile.platforms?.[0] || "linkedin",
+        }),
+      });
+
+      const text = await res.text();
+
+      const draft = await createStandaloneDraft(text, entry.content || "", entry.id);
+
+      if (draft) {
+        posthog.capture("note_posted", {
+          entry_id: entry.id,
+          platform: profile.platforms?.[0] || "linkedin",
+        });
+        // Refresh drafts and open draft editor
+        const allDrafts = await getAllDrafts();
+        setDrafts(allDrafts);
+        setStandaloneDraft({ draft });
+      }
+    } catch (err) {
+      console.error("Post failed:", err);
+    } finally {
+      setPostingEntryId(null);
+    }
+  }
 
   // Standalone write mode (from note → draft)
   if (standaloneDraft) {
@@ -3881,6 +3956,8 @@ export default function DashboardPage() {
               setDevelopEntries(entries);
               setTab("ideas");
             }}
+            onPostNote={handlePostNote}
+            postingEntryId={postingEntryId}
           />
         )}
         {tab === "ideas" && (
