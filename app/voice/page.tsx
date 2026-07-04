@@ -386,37 +386,18 @@ export default function VoiceDiscoveryPage() {
             })}
           </div>
 
-          <div style={{ marginBottom: 24 }}>
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: FAINT,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: 8,
-              }}
-            >
-              Your edge
-            </h3>
-            <p style={{ fontSize: 17, color: INK, lineHeight: 1.6 }}>{result.edge}</p>
-          </div>
-
-          <div style={{ marginBottom: 36 }}>
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: FAINT,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: 8,
-              }}
-            >
-              Watch out for
-            </h3>
-            <p style={{ fontSize: 17, color: INK, lineHeight: 1.6 }}>{result.gap}</p>
-          </div>
+          {/* Teaser — don't show full edge/gap here */}
+          <p
+            style={{
+              fontSize: 17,
+              color: DIM,
+              lineHeight: 1.6,
+              marginBottom: 32,
+              textAlign: "center",
+            }}
+          >
+            Your full report includes personalized writing tips, your edge, and what to watch out for.
+          </p>
 
           <button
             onClick={handleFinish}

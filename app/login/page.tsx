@@ -42,16 +42,23 @@ function LoginForm() {
     if (error) {
       setError("Invalid or expired code.");
     } else {
-      // Save pending voice profile from sessionStorage if it exists
+      // Save pending voice profile and send email report
       const pending = sessionStorage.getItem("pending_voice_profile");
       if (pending) {
         try {
+          const voiceProfile = JSON.parse(pending);
           const { upsertProfile } = await import("@/lib/supabase/profiles");
           await upsertProfile({
-            voice_profile: JSON.parse(pending),
+            voice_profile: voiceProfile,
             onboarding_completed: true,
           });
           sessionStorage.removeItem("pending_voice_profile");
+          // Send the full voice report email
+          await fetch("/api/send-voice-report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ voiceProfile }),
+          }).catch(() => {});
         } catch (e) {
           console.error("Failed to save voice profile:", e);
         }
