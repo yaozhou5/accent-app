@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -12,7 +12,12 @@ export default function SignupPage() {
   const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fromVoice, setFromVoice] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setFromVoice(!!sessionStorage.getItem("pending_voice_profile"));
+  }, []);
   const supabase = createClient();
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -74,10 +79,12 @@ export default function SignupPage() {
           accent
         </Link>
         <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18" }}>
-          Start writing like you
+          {fromVoice ? "Your voice report is ready" : "Start writing like you"}
         </h1>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: "#6B6B6B" }}>
-          Free account. No credit card.
+          {fromVoice
+            ? "Enter your email to save your profile and get the full report."
+            : "Free account. No credit card."}
         </p>
 
         {step === "email" ? (
@@ -102,7 +109,7 @@ export default function SignupPage() {
               className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
               style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}
             >
-              {loading ? "Sending code..." : "Create account"}
+              {loading ? "Sending code..." : fromVoice ? "Send my report" : "Create account"}
             </button>
             <p className="text-center text-[12px] font-sans" style={{ color: "#AAAAAA" }}>
               By signing up you agree to our{" "}
