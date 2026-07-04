@@ -72,14 +72,14 @@ export default function SettingsPage() {
             <button
               onClick={async () => {
                 setResetting(true);
-                await upsertProfile({ onboarding_completed: false });
-                window.location.href = "/onboard/1";
+                await upsertProfile({ voice_profile: null });
+                window.location.href = "/voice";
               }}
               disabled={resetting}
               className="w-full py-3 rounded-full font-sans text-[14px]"
               style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}
             >
-              {resetting ? "Redirecting..." : "Redo onboarding"}
+              {resetting ? "Redirecting..." : "Retake voice exercise"}
             </button>
             <button
               onClick={handleSignOut}

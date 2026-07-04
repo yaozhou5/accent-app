@@ -124,9 +124,9 @@ RULES:
 - Do not add a title, subject line, or meta-commentary. Just the post.
 - Do not explain what you did. Just write the post.`;
 
-    const userPrompt = `Business context: ${businessContext || "Not provided"}
+    const contextLine = businessContext?.trim() ? `\nContext about the author: ${businessContext}\n` : "";
 
-Raw note:
+    const userPrompt = `${contextLine}Raw note:
 ${entryContent}
 
 Write the post.`;

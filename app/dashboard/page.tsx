@@ -3422,9 +3422,7 @@ function StandaloneWriteMode({
                 onClick={async () => {
                   if (!draft.source_note) return;
                   setRegenerating(true);
-                  const businessContext = [profile.business_description, profile.interview_q1, profile.interview_q3]
-                    .filter(Boolean)
-                    .join(" ");
+                  const businessContext = [profile.business_description].filter(Boolean).join(" ");
                   try {
                     const res = await fetch("/api/generate-draft", {
                       method: "POST",
@@ -3823,7 +3821,7 @@ export default function DashboardPage() {
     if (!profile?.voice_profile) {
       // No voice profile — prompt user to complete exercise
       if (confirm("Take 60 seconds to discover your voice first?")) {
-        window.location.href = "/onboard/2";
+        window.location.href = "/voice";
       }
       return;
     }
@@ -3831,9 +3829,8 @@ export default function DashboardPage() {
     // Set loading state
     setPostingEntryId(entry.id);
 
-    const businessContext = [profile.business_description, profile.interview_q1, profile.interview_q3]
-      .filter(Boolean)
-      .join(" ");
+    // Business context is optional — voice profile alone is enough
+    const businessContext = [profile.business_description].filter(Boolean).join(" ");
 
     try {
       const res = await fetch("/api/generate-draft", {

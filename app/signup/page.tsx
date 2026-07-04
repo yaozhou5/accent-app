@@ -39,7 +39,24 @@ export default function SignupPage() {
     if (error) setError("Invalid or expired code.");
     else {
       posthog.capture("signup_completed", { email: email.trim().toLowerCase() });
-      window.location.href = "/onboard/1";
+      // Save pending voice profile from sessionStorage if it exists
+      const pending = sessionStorage.getItem("pending_voice_profile");
+      if (pending) {
+        try {
+          const { upsertProfile } = await import("@/lib/supabase/profiles");
+          await upsertProfile({
+            voice_profile: JSON.parse(pending),
+            onboarding_completed: true,
+          });
+          sessionStorage.removeItem("pending_voice_profile");
+        } catch (e) {
+          console.error("Failed to save voice profile:", e);
+        }
+        window.location.href = "/dashboard";
+      } else {
+        // No voice profile yet — send them to take the exercise
+        window.location.href = "/voice";
+      }
     }
   };
 

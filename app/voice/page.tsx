@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import { upsertProfile, getProfile } from "@/lib/supabase/profiles";
+import { useState, useEffect } from "react";
 import {
   VOICE_PAIRS,
   DIMENSION_LABELS,
@@ -11,6 +10,8 @@ import {
   type VoiceProfile,
   type VoiceDimensions,
 } from "@/lib/voice-dimensions";
+import { upsertProfile } from "@/lib/supabase/profiles";
+import { createClient } from "@/lib/supabase/client";
 import posthog from "posthog-js";
 
 const INK = "#1A1A18";
@@ -25,12 +26,21 @@ export default function VoiceDiscoveryPage() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentPair, setCurrentPair] = useState(0);
   const [choices, setChoices] = useState<("a" | "b")[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [result, setResult] = useState<{
     dimensions: VoiceDimensions;
     topTraits: string[];
     edge: string;
     gap: string;
   } | null>(null);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsLoggedIn(!!user);
+    });
+  }, []);
 
   async function handleChoice(choice: "a" | "b") {
     const newChoices = [...choices, choice];
@@ -39,33 +49,31 @@ export default function VoiceDiscoveryPage() {
     if (newChoices.length < VOICE_PAIRS.length) {
       setCurrentPair(currentPair + 1);
     } else {
-      // All 12 pairs answered — score and generate result
       setPhase("loading");
       const dimensions = scorePairs(newChoices);
       const topTraits = getTopTraits(dimensions);
 
-      // Get business context from profile
-      const profile = await getProfile();
-      const businessContext = [profile?.business_description, profile?.interview_q1, profile?.interview_q3]
-        .filter(Boolean)
-        .join(" ");
-
-      // Generate edge/gap
+      // Generate edge/gap (no auth required for this endpoint)
       let edge = "";
       let gap = "";
       try {
         const res = await fetch("/api/voice-result", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dimensions, businessContext }),
+          body: JSON.stringify({ dimensions, businessContext: "" }),
         });
-        const data = await res.json();
-        edge = data.edge || "";
-        gap = data.gap || "";
+        if (res.ok) {
+          const data = await res.json();
+          edge = data.edge || "";
+          gap = data.gap || "";
+        }
       } catch {
         edge = "Your voice has a distinctive combination of traits that sets you apart.";
         gap = "Keep experimenting with the edges of your style.";
       }
+
+      if (!edge) edge = "Your voice has a distinctive combination of traits that sets you apart.";
+      if (!gap) gap = "Keep experimenting with the edges of your style.";
 
       const voiceProfile: VoiceProfile = {
         dimensions,
@@ -75,11 +83,15 @@ export default function VoiceDiscoveryPage() {
         completed_at: new Date().toISOString(),
       };
 
-      // Save to profile
-      await upsertProfile({
-        voice_profile: voiceProfile,
-        onboarding_completed: true,
-      });
+      // If logged in, save directly. Otherwise, store in sessionStorage.
+      if (isLoggedIn) {
+        await upsertProfile({
+          voice_profile: voiceProfile,
+          onboarding_completed: true,
+        });
+      } else {
+        sessionStorage.setItem("pending_voice_profile", JSON.stringify(voiceProfile));
+      }
 
       posthog.capture("voice_discovery_completed", {
         top_traits: topTraits,
@@ -92,7 +104,11 @@ export default function VoiceDiscoveryPage() {
   }
 
   function handleFinish() {
-    window.location.href = "/dashboard";
+    if (isLoggedIn) {
+      window.location.href = "/dashboard";
+    } else {
+      window.location.href = "/signup";
+    }
   }
 
   // --- INTRO SCREEN ---
@@ -164,7 +180,6 @@ export default function VoiceDiscoveryPage() {
           padding: 24,
         }}
       >
-        {/* Progress bar */}
         <div
           style={{
             maxWidth: 600,
@@ -202,7 +217,6 @@ export default function VoiceDiscoveryPage() {
           </p>
         </div>
 
-        {/* Pair question */}
         <div
           style={{
             flex: 1,
@@ -247,12 +261,12 @@ export default function VoiceDiscoveryPage() {
                   transition: "border-color 0.15s, box-shadow 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.borderColor = BLUE;
-                  (e.target as HTMLElement).style.boxShadow = `0 0 0 1px ${BLUE}`;
+                  (e.currentTarget as HTMLElement).style.borderColor = BLUE;
+                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 1px ${BLUE}`;
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.borderColor = "#e5e5e5";
-                  (e.target as HTMLElement).style.boxShadow = "none";
+                  (e.currentTarget as HTMLElement).style.borderColor = "#e5e5e5";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "none";
                 }}
               >
                 {choice === "a" ? pair.optionA : pair.optionB}
@@ -309,7 +323,6 @@ export default function VoiceDiscoveryPage() {
         }}
       >
         <div style={{ maxWidth: 600, width: "100%" }}>
-          {/* Top traits headline */}
           <h1
             style={{
               fontSize: 36,
@@ -322,7 +335,6 @@ export default function VoiceDiscoveryPage() {
             {result.topTraits.join(". ")}.
           </h1>
 
-          {/* Spectrum bars */}
           <div
             style={{
               display: "flex",
@@ -334,7 +346,7 @@ export default function VoiceDiscoveryPage() {
             {(Object.entries(result.dimensions) as [DimensionKey, number][]).map(([key, raw]) => {
               const norm = normalizeScore(key, raw);
               const labels = DIMENSION_LABELS[key];
-              const pct = ((norm + 1) / 2) * 100; // -1..+1 → 0..100%
+              const pct = ((norm + 1) / 2) * 100;
               return (
                 <div key={key}>
                   <div
@@ -375,7 +387,6 @@ export default function VoiceDiscoveryPage() {
             })}
           </div>
 
-          {/* Edge */}
           <div style={{ marginBottom: 24 }}>
             <h3
               style={{
@@ -392,7 +403,6 @@ export default function VoiceDiscoveryPage() {
             <p style={{ fontSize: 17, color: INK, lineHeight: 1.6 }}>{result.edge}</p>
           </div>
 
-          {/* Gap */}
           <div style={{ marginBottom: 36 }}>
             <h3
               style={{
@@ -409,7 +419,6 @@ export default function VoiceDiscoveryPage() {
             <p style={{ fontSize: 17, color: INK, lineHeight: 1.6 }}>{result.gap}</p>
           </div>
 
-          {/* CTA */}
           <button
             onClick={handleFinish}
             style={{
@@ -424,7 +433,7 @@ export default function VoiceDiscoveryPage() {
               cursor: "pointer",
             }}
           >
-            Start logging
+            {isLoggedIn ? "Go to dashboard" : "Save your voice profile"}
           </button>
         </div>
       </div>

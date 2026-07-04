@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard", "/onboard"];
+const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
@@ -38,21 +38,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Onboarding redirect: dashboard -> onboard if not complete, onboard -> dashboard if complete
-    if (path.startsWith("/dashboard") || path.startsWith("/onboard")) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("id", user.id)
-        .maybeSingle();
+    // Voice profile gate: dashboard requires voice profile
+    if (path.startsWith("/dashboard")) {
+      const { data: profile } = await supabase.from("profiles").select("voice_profile").eq("id", user.id).maybeSingle();
 
-      const onboarded = profile?.onboarding_completed === true;
-
-      if (path.startsWith("/dashboard") && !onboarded) {
-        return NextResponse.redirect(new URL("/onboard/1", request.url));
-      }
-      if (path.startsWith("/onboard") && onboarded) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+      if (!profile?.voice_profile) {
+        return NextResponse.redirect(new URL("/voice", request.url));
       }
     }
   }

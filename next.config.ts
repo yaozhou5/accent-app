@@ -38,6 +38,11 @@ const nextConfig: NextConfig = {
         destination: "/",
         permanent: true,
       },
+      {
+        source: "/onboard/:path*",
+        destination: "/voice",
+        permanent: false,
+      },
     ];
   },
   // Required to support PostHog trailing slash API requests

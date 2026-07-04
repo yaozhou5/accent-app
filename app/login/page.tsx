@@ -39,8 +39,27 @@ function LoginForm() {
     setError(null);
     const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: "email" });
     setLoading(false);
-    if (error) setError("Invalid or expired code.");
-    else router.push(redirectTo);
+    if (error) {
+      setError("Invalid or expired code.");
+    } else {
+      // Save pending voice profile from sessionStorage if it exists
+      const pending = sessionStorage.getItem("pending_voice_profile");
+      if (pending) {
+        try {
+          const { upsertProfile } = await import("@/lib/supabase/profiles");
+          await upsertProfile({
+            voice_profile: JSON.parse(pending),
+            onboarding_completed: true,
+          });
+          sessionStorage.removeItem("pending_voice_profile");
+        } catch (e) {
+          console.error("Failed to save voice profile:", e);
+        }
+        window.location.href = "/dashboard";
+      } else {
+        router.push(redirectTo);
+      }
+    }
   };
 
   return (
