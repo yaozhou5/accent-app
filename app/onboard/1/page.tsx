@@ -87,10 +87,9 @@ export default function Onboard() {
   };
 
   const handleStart = async () => {
-    // Mark onboarding complete and go to dashboard → develop flow
-    await upsertProfile({ onboarding_completed: true });
+    // Go to voice exercise step
     posthog.capture("onboarding_completed", { account_type: result?.inferred_profile?.account_type || "unknown" });
-    window.location.href = seededEntryId ? `/dashboard?develop=${seededEntryId}` : "/dashboard";
+    window.location.href = "/onboard/2";
   };
 
   const canAdvance = () => {
