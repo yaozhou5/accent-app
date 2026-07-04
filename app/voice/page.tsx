@@ -125,11 +125,16 @@ export default function VoiceDiscoveryPage() {
     }
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
       const res = await fetch("/api/claim-voice-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), voiceProfile }),
+        signal: controller.signal,
+        cache: "no-store",
       });
+      clearTimeout(timeout);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to send");
