@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
+import type { VoiceProfile } from "@/lib/voice-dimensions";
 import { createWeeklyDump, getAllDumps, type WeeklyDump } from "@/lib/supabase/planner";
 import {
   savePlan,
@@ -861,40 +862,6 @@ function LogTab({
                                 Edit
                               </button>
                               <button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setDeleteConfirmId(entry.id);
-                                  setMenuOpen(null);
-                                }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{
-                                  color: "#DC2626",
-                                  border: "none",
-                                  background: "transparent",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Delete
-                              </button>
-                              <button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setMenuOpen(null);
-                                  setSelectMode(true);
-                                  setSelected(new Set([entry.id]));
-                                }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{
-                                  color: DIM,
-                                  border: "none",
-                                  background: "transparent",
-                                  cursor: "pointer",
-                                  borderTop: `1px solid ${BORDER}`,
-                                }}
-                              >
-                                Select multiple
-                              </button>
-                              <button
                                 onClick={async (ev) => {
                                   ev.stopPropagation();
                                   setMenuOpen(null);
@@ -913,35 +880,23 @@ function LogTab({
                                   fontWeight: 600,
                                 }}
                               >
-                                {postingEntryId === entry.id ? "Generating..." : "Post"}
+                                {postingEntryId === entry.id ? "Writing..." : "Write"}
                               </button>
                               <button
                                 onClick={(ev) => {
                                   ev.stopPropagation();
+                                  setDeleteConfirmId(entry.id);
                                   setMenuOpen(null);
-                                  onDevelopNote(entry);
                                 }}
                                 className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{ color: DIM, border: "none", background: "transparent", cursor: "pointer" }}
-                              >
-                                Develop <ArrowRight size={12} />
-                              </button>
-                              <button
-                                onClick={async (ev) => {
-                                  ev.stopPropagation();
-                                  setMenuOpen(null);
-                                  const imgs = entry.image_urls?.length
-                                    ? entry.image_urls
-                                    : entry.image_url
-                                      ? [entry.image_url]
-                                      : [];
-                                  const d = await createStandaloneDraft("", entry.content || "", entry.id);
-                                  if (d) onStartDraft({ draft: d, images: imgs });
+                                style={{
+                                  color: "#DC2626",
+                                  border: "none",
+                                  background: "transparent",
+                                  cursor: "pointer",
                                 }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{ color: BLUE, border: "none", background: "transparent", cursor: "pointer" }}
                               >
-                                Start draft
+                                Delete
                               </button>
                             </div>
                           )}
@@ -1267,24 +1222,6 @@ function LogTab({
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Develop selected floating button */}
-      {selectMode && selected.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-          <button
-            onClick={() => {
-              const entries = logEntries.filter((e) => selected.has(e.id));
-              setSelectMode(false);
-              setSelected(new Set());
-              onDevelopNotes(entries);
-            }}
-            className="px-6 py-3.5 rounded-full font-sans font-semibold text-[15px] shadow-lg"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-          >
-            Develop {selected.size} note{selected.size === 1 ? "" : "s"} <ArrowRight size={14} color="#fff" />
-          </button>
         </div>
       )}
 
@@ -3332,6 +3269,11 @@ function StandaloneWriteMode({
   const [regenerating, setRegenerating] = useState(false);
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
   const [showNote, setShowNote] = useState(true);
+  const [voiceNotes, setVoiceNotes] = useState<
+    { phrase: string; dimension: string; explanation: string; alternative: string }[]
+  >([]);
+  const [activeVoiceNote, setActiveVoiceNote] = useState<number | null>(null);
+  const [loadingNotes, setLoadingNotes] = useState(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const lastSavedRef = useRef(draft.content);
@@ -3348,6 +3290,29 @@ function StandaloneWriteMode({
     }, 30000);
     return () => clearInterval(interval);
   }, [content, draft.id]);
+
+  // Fetch voice notes for drafts generated with a voice profile
+  useEffect(() => {
+    if (
+      draft.source_entry_id &&
+      content.trim().length > 50 &&
+      profile?.voice_profile &&
+      voiceNotes.length === 0 &&
+      !loadingNotes
+    ) {
+      setLoadingNotes(true);
+      const vp = profile.voice_profile as VoiceProfile;
+      fetch("/api/voice-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft: content, dimensions: vp.dimensions }),
+      })
+        .then((r) => r.json())
+        .then((data) => setVoiceNotes(data.notes || []))
+        .catch(() => {})
+        .finally(() => setLoadingNotes(false));
+    }
+  }, []);
 
   const handleChange = (val: string) => {
     setContent(val);
@@ -3467,6 +3432,14 @@ function StandaloneWriteMode({
           </div>
         </div>
 
+        {/* Voice profile indicator */}
+        {draft.source_entry_id && profile?.voice_profile && (
+          <p className="font-mono text-[12px] mb-4" style={{ color: FAINT }}>
+            Written in your voice &middot;{" "}
+            <span style={{ color: DIM }}>{(profile.voice_profile as VoiceProfile).top_traits?.join(". ")}.</span>
+          </p>
+        )}
+
         {draft.source_note && (
           <div className="mb-6">
             <button
@@ -3565,6 +3538,60 @@ function StandaloneWriteMode({
           autoFocus
         />
 
+        {/* Voice notes */}
+        {voiceNotes.length > 0 && (
+          <div className="mt-6 mb-4">
+            <p
+              className="font-mono text-[11px] uppercase mb-3"
+              style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
+            >
+              Voice notes
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {voiceNotes.map((note, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveVoiceNote(activeVoiceNote === i ? null : i)}
+                  style={{
+                    textAlign: "left",
+                    background: activeVoiceNote === i ? "#f0f4ff" : "#f9fafb",
+                    border: `1px solid ${activeVoiceNote === i ? BLUE : BORDER}`,
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <p
+                    className="font-sans text-[14px]"
+                    style={{
+                      color: INK,
+                      borderBottom: `2px dotted ${BLUE}40`,
+                      display: "inline",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    &ldquo;{note.phrase}&rdquo;
+                  </p>
+                  {activeVoiceNote === i && (
+                    <div className="mt-3 space-y-2">
+                      <p className="font-mono text-[11px] uppercase" style={{ color: BLUE, fontWeight: 600 }}>
+                        {note.dimension}
+                      </p>
+                      <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.5 }}>
+                        {note.explanation}
+                      </p>
+                      <p className="font-sans text-[13px]" style={{ color: DIM, lineHeight: 1.5, fontStyle: "italic" }}>
+                        Alternative: {note.alternative}
+                      </p>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {content.trim().length > 20 && !coaching && (
           <div className="mt-6 space-y-3">
             <button
@@ -3582,6 +3609,22 @@ function StandaloneWriteMode({
             >
               Save draft
             </button>
+            {draft.source_entry_id && (
+              <button
+                onClick={() => {
+                  onBack();
+                  // Trigger develop mode for this entry after going back
+                  setTimeout(() => {
+                    const event = new CustomEvent("develop-entry", { detail: draft.source_entry_id });
+                    window.dispatchEvent(event);
+                  }, 100);
+                }}
+                className="w-full py-2 font-sans text-[13px]"
+                style={{ background: "none", border: "none", color: DIM, cursor: "pointer" }}
+              >
+                Explore other angles &rarr;
+              </button>
+            )}
             {saveError && (
               <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
                 {saveError}
@@ -3851,7 +3894,7 @@ export default function DashboardPage() {
       const draft = await createStandaloneDraft(text, entry.content || "", entry.id);
 
       if (draft) {
-        posthog.capture("note_posted", {
+        posthog.capture("note_written", {
           entry_id: entry.id,
           platform: profile.platforms?.[0] || "linkedin",
         });
