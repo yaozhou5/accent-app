@@ -15,6 +15,10 @@ import {
   type ContentPlan,
   type ContentPlanData,
   type ContentPlanPost,
+  type WeeklyThemes,
+  type Theme,
+  saveThemePlan,
+  updateThemePick,
 } from "@/lib/supabase/planner";
 import {
   createLogEntry,
@@ -1292,20 +1296,12 @@ function IdeasTab({
     if (todayIdx >= 0) return todayIdx;
     return 0;
   });
-  const [extraContext, setExtraContext] = useState("");
-  const [quickLog, setQuickLog] = useState("");
   // Coaching conversation state
   const [coachNotes, setCoachNotes] = useState<LogEntry[]>([]);
   const [coachMessages, setCoachMessages] = useState<CoachingMessage[]>([]);
   const [coachReply, setCoachReply] = useState("");
   const [coachSuggestions, setCoachSuggestions] = useState<CoachingSuggestion[]>([]);
   const [coachLoading, setCoachLoading] = useState(false);
-  const handleQuickLog = async () => {
-    if (!quickLog.trim()) return;
-    await onQuickLog(quickLog.trim());
-    setQuickLog("");
-  };
-
   // Persist coaching session to DB (fire-and-forget)
   const persistSession = (entries: LogEntry[], messages: CoachingMessage[], suggestions: CoachingSuggestion[]) => {
     if (entries.length === 0) return;
@@ -1471,206 +1467,79 @@ function IdeasTab({
     } catch {}
     setCoachLoading(false);
   };
-  const [ideasOgCache, setIdeasOgCache] = useState<
-    Record<string, { title: string | null; description: string | null; image: string | null }>
-  >({});
   const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showGenerate, setShowGenerate] = useState(!hasCurrentPlan);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [showQueued, setShowQueued] = useState(false);
 
   useEffect(() => {
     if (initialWeek) {
       const i = weeks.indexOf(initialWeek);
       if (i >= 0) {
         setWeekIdx(i);
-        setShowGenerate(false);
       }
     }
   }, [initialWeek]);
 
-  // Fetch OG metadata for URLs in plan source_snippets
-  useEffect(() => {
-    const urls = new Set<string>();
-    for (const p of allPlans) {
-      const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
-      for (const post of pd?.posts || []) {
-        const match = (post.source_snippet || "").match(/(https?:\/\/[^\s"]+)/);
-        if (match && !ideasOgCache[match[1]]) urls.add(match[1]);
-      }
-    }
-    Array.from(urls)
-      .slice(0, 10)
-      .forEach((url) => {
-        fetch("/api/og-meta", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        })
-          .then((r) => r.json())
-          .then((data) => setIdeasOgCache((prev) => ({ ...prev, [url]: data })))
-          .catch(() => {});
-      });
-  }, [allPlans.length]);
+  // Determine if current plan uses new theme format
+  const currentPlan = allPlans.find((p) => p.week_start === targetWeek || p.week_start === planTargetWeek);
+  const isThemePlan = currentPlan?.plan && "themes" in currentPlan.plan;
+  const themePlan = isThemePlan ? (currentPlan!.plan as unknown as WeeklyThemes) : null;
 
-  // Surface unwritten past ideas
-  const pastIdeas = allPlans
-    .filter((p) => p.week_start !== targetWeek)
-    .flatMap((p) => {
-      const pd = typeof p.plan === "string" ? JSON.parse(p.plan) : p.plan;
-      return (pd?.posts || []).map((post: ContentPlanPost) => ({
-        prompt: post.prompt || post.key_takeaway || post.hook || "",
-        type: post.type || "",
-        weekLabel: weekLabel(p.week_start),
-      }));
+  // Past picked themes for continuity
+  const pastPickedThemes = allPlans
+    .filter((p) => p.plan && "themes" in p.plan && (p.plan as unknown as WeeklyThemes).picked_theme_index !== null)
+    .map((p) => {
+      const wt = p.plan as unknown as WeeklyThemes;
+      return wt.themes[wt.picked_theme_index!]?.tension;
     })
-    .filter((p) => p.prompt)
-    .slice(0, 3);
+    .filter(Boolean);
 
-  const [editing, setEditing] = useState(false);
-  const [editWhatYouDo, setEditWhatYouDo] = useState(profile.what_you_do || "");
-  const [editWhatYouBuild, setEditWhatYouBuild] = useState(profile.what_you_build || "");
-  const [editWhyYouPost, setEditWhyYouPost] = useState(profile.why_you_post || "");
-  const [editPlatforms, setEditPlatforms] = useState<string[]>(profile.platforms || []);
-  const [editFrequency, setEditFrequency] = useState(profile.posting_frequency || "3-4");
-  const [editSaving, setEditSaving] = useState(false);
-
-  const totalEntries = weekEntries.length;
-  const linkCount = weekEntries.filter((e) => e.type === "link").length;
-  const quoteCount = weekEntries.filter((e) => e.type === "quote").length;
-
-  const WHY_OPTIONS = ["Get customers", "Build authority", "Find collaborators", "Document the journey"];
-  const PLATFORM_OPTIONS = ["LinkedIn", "X", "Substack", "小红书", "Threads"];
-  const FREQ_OPTIONS = ["1-2/week", "3-4/week", "Daily"];
-
-  const handleSaveProfile = async () => {
-    setEditSaving(true);
-    await upsertProfile({
-      what_you_do: editWhatYouDo.trim() || null,
-      what_you_build: editWhatYouBuild.trim() || null,
-      why_you_post: editWhyYouPost || null,
-      platforms: editPlatforms,
-      posting_frequency: editFrequency,
-    });
-    setEditSaving(false);
-    setEditing(false);
-    // Update parent profile
-    onProfileUpdated({
-      what_you_do: editWhatYouDo.trim() || null,
-      what_you_build: editWhatYouBuild.trim() || null,
-      why_you_post: editWhyYouPost || null,
-      platforms: editPlatforms,
-      posting_frequency: editFrequency,
-    });
+  const FORMAT_LABELS: Record<string, string> = {
+    story: "Story",
+    lesson: "Lesson",
+    framework: "Framework",
+    "contrarian-take": "Contrarian take",
   };
 
-  const handleGenerate = async () => {
-    if (generating) return;
+  const generateThemes = async () => {
     setGenerating(true);
-    setError(null);
     try {
-      const entriesPayload = weekEntries.map((e) => ({
-        content: e.content || "",
-        tags: e.tags,
-        image_url: e.image_url,
-        link_url: e.link_url,
-        url: e.url,
-        type: e.type,
-        source: e.source,
-      }));
-      const shelfItems = weekEntries.filter((e) => e.type === "link" || e.type === "quote" || e.bookmarked);
-      const combined = weekEntries.map((e) => e.content || "").join("\n");
-      const dumpContent = extraContext.trim() ? `${combined}\n\nAdditional context: ${extraContext.trim()}` : combined;
-      const savedDump = await createWeeklyDump(dumpContent || extraContext.trim() || "No notes this week");
-      if (!savedDump) {
-        setError("Failed to save.");
-        setGenerating(false);
-        return;
-      }
-      const entryCount = entriesPayload.length;
-      const body = {
-        entries: entriesPayload.length > 0 ? entriesPayload : undefined,
-        dump: extraContext.trim() || (entriesPayload.length === 0 ? "Generate a plan based on my profile" : undefined),
-        shelfItems: shelfItems.length > 0 ? shelfItems : undefined,
-        profile,
-        entryCount,
-      };
-      const res = await fetch("/api/generate-plan", {
+      const res = await fetch("/api/generate-themes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          profile,
+          entries: weekEntries,
+          pastThemes: pastPickedThemes,
+        }),
       });
-      if (!res.ok) {
-        setError("Failed to generate plan.");
-        setGenerating(false);
-        return;
+      const data = await res.json();
+      if (data.themes?.length) {
+        const themesData: WeeklyThemes = {
+          themes: data.themes,
+          picked_theme_index: null,
+          context: data.context || "",
+        };
+        if (currentPlan) {
+          // Replace existing plan
+          const updated = await updatePlanPosts(currentPlan.id, themesData as unknown as ContentPlanData);
+          if (updated) onPlanUpdated(updated);
+        } else {
+          // Create new plan
+          const dump = await createWeeklyDump("");
+          if (dump) {
+            const plan = await saveThemePlan(dump.id, themesData);
+            if (plan) onPlanGenerated(plan);
+          }
+        }
       }
-      const planData: ContentPlanData = await res.json();
-      const saved = await savePlan(savedDump.id, planData);
-      if (!saved) {
-        setError("Plan generated but failed to save.");
-        setGenerating(false);
-        return;
-      }
-      onPlanGenerated(saved);
-      setShowGenerate(false);
-      setWeekIdx(0);
-      try {
-        posthog.capture("plan_generated", { number_of_ideas: planData.posts?.length || 0, entry_count: entryCount });
-      } catch {}
-    } catch {
-      setError("Something went wrong.");
+    } catch (err) {
+      console.error("Theme generation failed:", err);
+    } finally {
+      setGenerating(false);
     }
-    setGenerating(false);
   };
 
-  const handleMoreIdeas = async (currentPlan: ContentPlan, currentPlanData: ContentPlanData) => {
-    if (loadingMore || currentPlanData.posts.length >= 15) return;
-    setLoadingMore(true);
-    setError(null);
-    try {
-      const existingPrompts = currentPlanData.posts
-        .map((p) => p.prompt || p.key_takeaway || p.hook || "")
-        .filter(Boolean);
-      const entriesPayload = weekEntries.map((e) => ({
-        content: e.content || "",
-        tags: e.tags,
-        url: e.url,
-        type: e.type,
-        source: e.source,
-      }));
-      const body = {
-        entries: entriesPayload.length > 0 ? entriesPayload : undefined,
-        dump: entriesPayload.length === 0 ? "Generate more ideas based on my profile" : undefined,
-        profile,
-        moreIdeas: { count: 2, exclude: existingPrompts },
-      };
-      const res = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        setError("Failed to generate more ideas.");
-        setLoadingMore(false);
-        return;
-      }
-      const newData: ContentPlanData = await res.json();
-      const merged: ContentPlanData = {
-        strategy_note: currentPlanData.strategy_note,
-        posts: [...currentPlanData.posts, ...newData.posts].slice(0, 15),
-      };
-      const updated = await updatePlanPosts(currentPlan.id, merged);
-      if (updated) {
-        onPlanUpdated(updated);
-      } else {
-        setError("Generated ideas but failed to save.");
-      }
-    } catch {
-      setError("Something went wrong.");
-    }
-    setLoadingMore(false);
-  };
+  // --- Theme-based rendering below ---
 
   // Generate view (either no plan exists, or user clicked Regenerate)
   // Coaching conversation view
@@ -1908,339 +1777,33 @@ function IdeasTab({
     );
   }
 
-  if (showGenerate) {
+  // State 1: No plan for this week
+  if (!hasCurrentPlan) {
+    const weekLogCount = weekEntries.length;
     return (
-      <div>
-        <h2 className="font-serif mb-6" style={{ fontSize: 24, fontWeight: 600, color: INK }}>
-          Ready to plan your week?
+      <div style={{ padding: "60px 24px", textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
+        <h2 className="font-serif" style={{ fontSize: 28, fontWeight: 600, color: INK, marginBottom: 12 }}>
+          What&apos;s your story this week?
         </h2>
-        <div className="rounded-[12px] p-5 mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="font-mono uppercase"
-              style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-            >
-              📋 Your week at a glance
-            </span>
-            <button
-              onClick={() => setEditing(!editing)}
-              className="font-mono text-[11px]"
-              style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
-            >
-              {editing ? "Cancel" : "Edit"}
-            </button>
-          </div>
-
-          {!editing ? (
-            <div className="space-y-2">
-              <p className="font-sans text-[14px]" style={{ color: INK }}>
-                <span style={{ color: FAINT }}>Notes this week:</span> <strong>{totalEntries}</strong>
-              </p>
-              {(linkCount > 0 || quoteCount > 0) && (
-                <p className="font-sans text-[14px]" style={{ color: INK }}>
-                  <span style={{ color: FAINT }}>Inspiration:</span>{" "}
-                  {linkCount > 0 && (
-                    <strong>
-                      {linkCount} link{linkCount !== 1 ? "s" : ""}
-                    </strong>
-                  )}
-                  {linkCount > 0 && quoteCount > 0 && ", "}
-                  {quoteCount > 0 && (
-                    <strong>
-                      {quoteCount} quote{quoteCount !== 1 ? "s" : ""}
-                    </strong>
-                  )}
-                </p>
-              )}
-              {profile.what_you_do && (
-                <p className="font-sans text-[14px]" style={{ color: INK }}>
-                  <span style={{ color: FAINT }}>You:</span> {profile.what_you_do}
-                </p>
-              )}
-              {profile.what_you_build && (
-                <p className="font-sans text-[14px]" style={{ color: INK }}>
-                  <span style={{ color: FAINT }}>Building:</span> {profile.what_you_build}
-                </p>
-              )}
-              {profile.why_you_post && (
-                <p className="font-sans text-[14px]" style={{ color: INK }}>
-                  <span style={{ color: FAINT }}>Why:</span> {profile.why_you_post}
-                </p>
-              )}
-              <p className="font-sans text-[14px]" style={{ color: INK }}>
-                <span style={{ color: FAINT }}>Platforms:</span> {(profile.platforms || []).join(", ") || "not set"}
-              </p>
-              <p className="font-sans text-[14px]" style={{ color: INK }}>
-                <span style={{ color: FAINT }}>Frequency:</span> {profile.posting_frequency || "not set"}
-              </p>
-              {totalEntries < 3 && (
-                <div className="pt-3 space-y-3">
-                  <p className="font-sans text-[13px]" style={{ color: "#f59e0b" }}>
-                    Your best content comes from your real week. Drop a few more notes and I'll find the stories.
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      value={quickLog}
-                      onChange={(e) => setQuickLog(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && quickLog.trim()) handleQuickLog();
-                      }}
-                      placeholder="Quick note..."
-                      className="flex-1 outline-none font-sans text-[14px]"
-                      style={{
-                        color: INK,
-                        padding: "8px 12px",
-                        border: `1px solid ${BORDER}`,
-                        borderRadius: 8,
-                        background: "#fff",
-                      }}
-                    />
-                    <button
-                      onClick={handleQuickLog}
-                      disabled={!quickLog.trim()}
-                      className="px-4 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30"
-                      style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-                    >
-                      Log
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label
-                  className="font-mono uppercase block mb-1"
-                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                >
-                  What do you do?
-                </label>
-                <input
-                  value={editWhatYouDo}
-                  onChange={(e) => setEditWhatYouDo(e.target.value)}
-                  placeholder="I'm building a content planning tool for founders"
-                  className="w-full outline-none font-sans text-[14px]"
-                  style={{
-                    color: INK,
-                    padding: "8px 12px",
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 8,
-                    background: "#fff",
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  className="font-mono uppercase block mb-1"
-                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                >
-                  What are you building?
-                </label>
-                <input
-                  value={editWhatYouBuild}
-                  onChange={(e) => setEditWhatYouBuild(e.target.value)}
-                  placeholder="Accent — helps founders post consistently"
-                  className="w-full outline-none font-sans text-[14px]"
-                  style={{
-                    color: INK,
-                    padding: "8px 12px",
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 8,
-                    background: "#fff",
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  className="font-mono uppercase block mb-1"
-                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                >
-                  Why do you post?
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {WHY_OPTIONS.map((w) => (
-                    <button
-                      key={w}
-                      onClick={() => setEditWhyYouPost(editWhyYouPost === w ? "" : w)}
-                      className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
-                      style={{
-                        minHeight: 36,
-                        background: editWhyYouPost === w ? `${BLUE}12` : "#fff",
-                        color: editWhyYouPost === w ? BLUE : DIM,
-                        border: `1px solid ${editWhyYouPost === w ? BLUE + "30" : BORDER}`,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {w}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label
-                  className="font-mono uppercase block mb-1"
-                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                >
-                  Platforms
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {PLATFORM_OPTIONS.map((p) => (
-                    <button
-                      key={p}
-                      onClick={() =>
-                        setEditPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
-                      }
-                      className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
-                      style={{
-                        minHeight: 36,
-                        background: editPlatforms.includes(p) ? `${BLUE}12` : "#fff",
-                        color: editPlatforms.includes(p) ? BLUE : DIM,
-                        border: `1px solid ${editPlatforms.includes(p) ? BLUE + "30" : BORDER}`,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label
-                  className="font-mono uppercase block mb-1"
-                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                >
-                  How often?
-                </label>
-                <div className="flex gap-2">
-                  {FREQ_OPTIONS.map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setEditFrequency(f)}
-                      className="font-sans text-[12px] px-3 py-2 rounded-full transition-all"
-                      style={{
-                        minHeight: 36,
-                        background: editFrequency === f ? `${BLUE}12` : "#fff",
-                        color: editFrequency === f ? BLUE : DIM,
-                        border: `1px solid ${editFrequency === f ? BLUE + "30" : BORDER}`,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={handleSaveProfile}
-                disabled={editSaving}
-                className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-              >
-                {editSaving ? "Saving..." : "Save"}
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="mb-6">
-          <label
-            className="font-mono uppercase block mb-2"
-            style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-          >
-            Anything else on your mind this week? (optional)
-          </label>
-          <textarea
-            value={extraContext}
-            onChange={(e) => setExtraContext(e.target.value)}
-            placeholder="Launching a new feature, meeting an investor..."
-            rows={3}
-            className="w-full outline-none resize-y font-sans"
-            style={{
-              fontSize: 15,
-              color: INK,
-              lineHeight: 1.6,
-              padding: "12px 16px",
-              border: `1px solid ${BORDER}`,
-              borderRadius: 10,
-            }}
-          />
-        </div>
-        {/* Unwritten past ideas */}
-        {pastIdeas.length > 0 && (
-          <div className="mb-6">
-            <span
-              className="font-mono uppercase block mb-3"
-              style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-            >
-              Still relevant? You never wrote these
-            </span>
-            <div className="space-y-2">
-              {pastIdeas.map((idea, i) => (
-                <div
-                  key={i}
-                  className="p-3 rounded-[10px]"
-                  style={{ border: `1px solid ${BORDER}`, background: "#fafafa" }}
-                >
-                  <p className="font-sans text-[14px]" style={{ color: BODY, lineHeight: 1.5 }}>
-                    {idea.prompt}
-                  </p>
-                  <span className="font-mono text-[11px] mt-1 block" style={{ color: FAINT }}>
-                    {idea.weekLabel} · {idea.type}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <p className="font-sans text-[13px] mb-3" style={{ color: "#DC2626" }}>
-            {error}
-          </p>
-        )}
-
-        {totalEntries === 0 ? (
-          <div className="text-center py-6">
-            <p className="font-sans mb-4" style={{ fontSize: 15, color: FAINT }}>
-              Nothing to work with yet. Your ideas come from your week — start logging.
-            </p>
-            <div className="flex gap-2 max-w-sm mx-auto">
-              <input
-                value={quickLog}
-                onChange={(e) => setQuickLog(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && quickLog.trim()) handleQuickLog();
-                }}
-                placeholder="What happened today?"
-                className="flex-1 outline-none font-sans text-[14px]"
-                style={{
-                  color: INK,
-                  padding: "8px 12px",
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 8,
-                  background: "#fff",
-                }}
-              />
-              <button
-                onClick={handleQuickLog}
-                disabled={!quickLog.trim()}
-                className="px-4 py-2 rounded-full font-sans font-semibold text-[13px] disabled:opacity-30"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-              >
-                Log
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-          >
-            {generating ? "Generating your plan..." : "Generate my plan"}
-          </button>
-        )}
+        <p className="font-sans" style={{ fontSize: 16, color: DIM, marginBottom: 32, lineHeight: 1.6 }}>
+          {weekLogCount > 0
+            ? `You logged ${weekLogCount} moment${weekLogCount === 1 ? "" : "s"} this week.`
+            : "No logs yet — that\u2019s fine. We\u2019ll work with what we know about your voice."}
+        </p>
+        <button
+          onClick={generateThemes}
+          disabled={generating}
+          className="px-8 py-4 rounded-full font-sans font-semibold text-[16px]"
+          style={{
+            background: BLUE,
+            color: "#fff",
+            border: "none",
+            cursor: generating ? "wait" : "pointer",
+            opacity: generating ? 0.6 : 1,
+          }}
+        >
+          {generating ? "Thinking..." : "Show me 3 themes"}
+        </button>
         {generating && (
           <div className="mt-6 space-y-3 animate-pulse">
             {[1, 2, 3].map((i) => (
@@ -2256,307 +1819,231 @@ function IdeasTab({
     );
   }
 
-  const currentWeek = weeks.length > 0 ? weeks[weekIdx] : null;
-  const plan = currentWeek ? allPlans.find((p) => p.week_start === currentWeek) : null;
-  const raw = plan?.plan;
-  const planData: ContentPlanData | null = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
+  // Old plan format — show read-only with upgrade option
+  if (hasCurrentPlan && !isThemePlan) {
+    return (
+      <div style={{ padding: "32px 24px", maxWidth: 640, margin: "0 auto" }}>
+        <p className="font-sans text-[15px]" style={{ color: DIM }}>
+          This week has a plan from an earlier version. Switch to the new format?
+        </p>
+        <button
+          onClick={generateThemes}
+          disabled={generating}
+          className="mt-4 px-6 py-3 rounded-full font-sans font-semibold text-[14px]"
+          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+        >
+          {generating ? "Generating..." : "Generate themes instead"}
+        </button>
+      </div>
+    );
+  }
 
-  return (
-    <div>
-      {/* Weekly plan */}
-      <span
-        className="font-mono uppercase block mb-4"
-        style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-      >
-        Weekly plan
-      </span>
-      {!currentWeek ? (
-        <div className="mb-6 p-4 rounded-[12px] text-center" style={{ border: `1px solid ${BORDER}` }}>
-          <p className="font-sans mb-3" style={{ fontSize: 14, color: FAINT }}>
-            No batch plan yet.
+  // State 2: Themes shown, none picked yet
+  if (isThemePlan && themePlan && themePlan.picked_theme_index === null) {
+    return (
+      <div style={{ padding: "32px 24px", maxWidth: 640, margin: "0 auto" }}>
+        {/* Context line */}
+        {themePlan.context && (
+          <p className="font-sans text-[14px] mb-6" style={{ color: DIM, lineHeight: 1.5 }}>
+            {themePlan.context}
           </p>
+        )}
+
+        {/* Theme cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {themePlan.themes.map((theme, i) => (
+            <div
+              key={i}
+              style={{
+                background: "#fff",
+                border: `1px solid ${BORDER}`,
+                borderRadius: 14,
+                padding: "24px 28px",
+              }}
+            >
+              <p
+                className="font-sans"
+                style={{ fontSize: 18, fontWeight: 700, color: INK, lineHeight: 1.4, marginBottom: 8 }}
+              >
+                {theme.tension}
+              </p>
+              <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.5, marginBottom: 16 }}>
+                {theme.why_now}
+              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span
+                  className="font-mono text-[11px] uppercase"
+                  style={{
+                    color: BLUE,
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                    background: `${BLUE}10`,
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                  }}
+                >
+                  {FORMAT_LABELS[theme.format] || theme.format}
+                </span>
+                <button
+                  onClick={async () => {
+                    const updated = await updateThemePick(currentPlan!.id, i);
+                    if (updated) onPlanUpdated(updated);
+                  }}
+                  className="font-sans text-[14px] font-semibold"
+                  style={{
+                    background: BLUE,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 20,
+                    padding: "8px 20px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Write about this
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Regenerate */}
+        <div style={{ textAlign: "center", marginTop: 24 }}>
           <button
-            onClick={() => setShowGenerate(true)}
-            className="font-sans text-[14px] font-semibold"
-            style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
+            onClick={generateThemes}
+            disabled={generating}
+            className="font-sans text-[13px]"
+            style={{ background: "none", border: "none", color: DIM, cursor: "pointer" }}
           >
-            Generate a weekly plan <ArrowRight size={12} />
+            {generating ? "Regenerating..." : "Regenerate themes"}
           </button>
         </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between mb-6 gap-3">
-            {weekIdx < weeks.length - 1 ? (
-              <button
-                onClick={() => setWeekIdx(weekIdx + 1)}
-                className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
+      </div>
+    );
+  }
+
+  // State 3: Theme picked
+  if (isThemePlan && themePlan && themePlan.picked_theme_index !== null) {
+    const picked = themePlan.themes[themePlan.picked_theme_index];
+    const queuedThemes = themePlan.themes.filter((_, i) => i !== themePlan.picked_theme_index);
+
+    return (
+      <div style={{ padding: "32px 24px", maxWidth: 640, margin: "0 auto" }}>
+        {/* Picked theme */}
+        <div
+          style={{
+            background: `${BLUE}08`,
+            border: `2px solid ${BLUE}30`,
+            borderRadius: 14,
+            padding: "24px 28px",
+            marginBottom: 24,
+          }}
+        >
+          <p
+            className="font-mono text-[11px] uppercase mb-2"
+            style={{ color: BLUE, fontWeight: 600, letterSpacing: "0.04em" }}
+          >
+            This week&apos;s theme
+          </p>
+          <p
+            className="font-sans"
+            style={{ fontSize: 20, fontWeight: 700, color: INK, lineHeight: 1.4, marginBottom: 8 }}
+          >
+            {picked.tension}
+          </p>
+          <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.5 }}>
+            {picked.why_now}
+          </p>
+        </div>
+
+        {/* Change theme link */}
+        <button
+          onClick={async () => {
+            const themesData: WeeklyThemes = {
+              ...themePlan,
+              picked_theme_index: null,
+              themes: themePlan.themes.map((t) => ({ ...t, queued: false })),
+            };
+            const updated = await updatePlanPosts(currentPlan!.id, themesData as unknown as ContentPlanData);
+            if (updated) onPlanUpdated(updated);
+          }}
+          className="font-sans text-[13px] mb-8 block"
+          style={{ background: "none", border: "none", color: DIM, cursor: "pointer" }}
+        >
+          &larr; Change theme
+        </button>
+
+        {/* Write CTA */}
+        <button
+          onClick={async () => {
+            const d = await createStandaloneDraft("", picked.tension, picked.source_entry_id || "");
+            if (d) onStartDraft({ draft: d });
+          }}
+          className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] mb-6"
+          style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+        >
+          Start writing
+        </button>
+
+        {/* Saved for later */}
+        {queuedThemes.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowQueued(!showQueued)}
+              className="font-mono text-[11px] uppercase flex items-center gap-1"
+              style={{
+                color: FAINT,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
+              }}
+            >
+              Saved for later ({queuedThemes.length}){" "}
+              <span
                 style={{
-                  minHeight: 44,
-                  padding: "8px 14px",
-                  border: `1.5px solid ${DIM}40`,
-                  background: "#fff",
-                  cursor: "pointer",
+                  fontSize: 10,
+                  transition: "transform 0.2s",
+                  transform: showQueued ? "rotate(0)" : "rotate(-90deg)",
                 }}
               >
-                <ArrowLeft size={14} color={INK} />
-                <span className="font-sans text-[12px]" style={{ color: DIM }}>
-                  {weekLabel(weeks[weekIdx + 1])}
-                </span>
-              </button>
-            ) : (
-              <div style={{ minWidth: 44 }} />
-            )}
-            <div className="text-center shrink-0">
-              <span className="font-serif block" style={{ fontSize: 16, fontWeight: 600, color: INK }}>
-                {weekLabel(currentWeek)}
+                &#9660;
               </span>
-              <span className="font-sans" style={{ fontSize: 14, color: FAINT }}>
-                {planData ? `${planData.posts.length} post${planData.posts.length === 1 ? "" : "s"}` : "No plan"}
-              </span>
-            </div>
-            {weekIdx > 0 ? (
-              <button
-                onClick={() => setWeekIdx(weekIdx - 1)}
-                className="flex items-center gap-1.5 rounded-full transition-colors hover:bg-gray-100"
-                style={{
-                  minHeight: 44,
-                  padding: "8px 14px",
-                  border: `1.5px solid ${DIM}40`,
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                <span className="font-sans text-[12px]" style={{ color: DIM }}>
-                  {weekLabel(weeks[weekIdx - 1])}
-                </span>
-                <ArrowRight size={14} color={INK} />
-              </button>
-            ) : (
-              <div style={{ minWidth: 44 }} />
+            </button>
+            {showQueued && (
+              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                {queuedThemes.map((theme, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "#f9fafb",
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 10,
+                      padding: "16px 20px",
+                    }}
+                  >
+                    <p className="font-sans text-[15px]" style={{ color: INK, fontWeight: 600, lineHeight: 1.4 }}>
+                      {theme.tension}
+                    </p>
+                    <p className="font-sans text-[13px] mt-1" style={{ color: FAINT }}>
+                      {FORMAT_LABELS[theme.format] || theme.format}
+                    </p>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          {!planData ? (
-            <div className="text-center py-12">
-              <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
-                No plan for this week.
-              </p>
-            </div>
-          ) : (
-            <div>
-              {planData.strategy_note && (
-                <div
-                  className="mb-5 p-4 rounded-[10px]"
-                  style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
-                >
-                  <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>
-                    {planData.strategy_note}
-                  </p>
-                </div>
-              )}
-              <div className="space-y-6">
-                {(() => {
-                  // Group ideas by source log entry
-                  type PostWithIndex = ContentPlanPost & { idx: number };
-                  const groups: {
-                    source: string;
-                    isUrl: boolean;
-                    ogData?: { title: string | null; description: string | null };
-                    posts: PostWithIndex[];
-                  }[] = [];
-                  const groupMap = new Map<string, (typeof groups)[0]>();
+        )}
+      </div>
+    );
+  }
 
-                  planData.posts.forEach((post, i) => {
-                    const raw = post.source_snippet || "";
-                    const snippet = raw.length > 5 && !/^[\s\-\[\]]*$/.test(raw) ? raw : "";
-                    const key = snippet.toLowerCase().trim() || `orphan-${i}`;
-                    if (!groupMap.has(key)) {
-                      const urlMatch = snippet.match(/(https?:\/\/[^\s"]+)/);
-                      const isUrl = !!urlMatch;
-                      const url = urlMatch?.[1];
-                      const og = url ? ideasOgCache[url] : undefined;
-                      groupMap.set(key, {
-                        source: snippet,
-                        isUrl,
-                        ogData: og ? { title: og.title, description: og.description } : undefined,
-                        posts: [],
-                      });
-                      groups.push(groupMap.get(key)!);
-                    }
-                    groupMap.get(key)!.posts.push({ ...post, idx: i });
-                  });
-
-                  return groups.map((group, gi) => {
-                    const domain = group.isUrl
-                      ? (() => {
-                          const m = group.source.match(/(https?:\/\/[^\s"]+)/);
-                          if (m)
-                            try {
-                              return new URL(m[1]).hostname.replace("www.", "");
-                            } catch {}
-                          return "";
-                        })()
-                      : "";
-                    const displayTitle = group.isUrl
-                      ? group.ogData?.title || getReadableTitle(group.source.match(/(https?:\/\/[^\s"]+)/)?.[1] || "")
-                      : group.source;
-
-                    return (
-                      <div
-                        key={gi}
-                        className="rounded-[14px] overflow-hidden"
-                        style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
-                      >
-                        {/* Source log entry header */}
-                        {group.source && (
-                          <div
-                            style={{ padding: "16px 20px", background: "#fafafa", borderBottom: `1px solid ${BORDER}` }}
-                          >
-                            {group.isUrl ? (
-                              <div>
-                                <p
-                                  className="font-sans font-semibold"
-                                  style={{ fontSize: 15, color: INK, lineHeight: 1.4 }}
-                                >
-                                  🔗 {displayTitle}
-                                </p>
-                                {group.ogData?.description && (
-                                  <p
-                                    className="font-sans mt-1"
-                                    style={{
-                                      fontSize: 13,
-                                      color: BODY,
-                                      lineHeight: 1.4,
-                                      display: "-webkit-box",
-                                      WebkitLineClamp: 2,
-                                      WebkitBoxOrient: "vertical",
-                                      overflow: "hidden",
-                                    }}
-                                  >
-                                    {group.ogData.description}
-                                  </p>
-                                )}
-                                {domain && (
-                                  <span className="font-mono block mt-1" style={{ fontSize: 11, color: FAINT }}>
-                                    {domain}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <p
-                                className="font-sans"
-                                style={{ fontSize: 15, color: INK, lineHeight: 1.5, whiteSpace: "pre-wrap" }}
-                              >
-                                📝 "{displayTitle}"
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {/* Child ideas */}
-                        <div>
-                          {group.posts.map((post, pi) => {
-                            const typeColor =
-                              CONTENT_TYPE_COLORS[post.type] || CONTENT_TYPE_COLORS[post.post_type || ""] || BLUE;
-                            const typeLabel = (post.type || post.post_type || "").replace(/-/g, " ");
-                            const nudge = post.prompt || post.key_takeaway || post.hook || "";
-                            return (
-                              <div
-                                key={pi}
-                                style={{ padding: "16px 20px", borderTop: pi > 0 ? `1px solid ${BORDER}` : "none" }}
-                              >
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span
-                                    className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded capitalize"
-                                    style={{ background: `${typeColor}10`, color: typeColor }}
-                                  >
-                                    {typeLabel}
-                                  </span>
-                                  <span className="font-sans text-[13px]" style={{ color: FAINT }}>
-                                    {post.day} · {PLATFORM_LABELS[post.platform] || post.platform}
-                                  </span>
-                                </div>
-                                <p
-                                  className="font-serif"
-                                  style={{ fontSize: 16, color: INK, lineHeight: 1.5, fontWeight: 500 }}
-                                >
-                                  {nudge}
-                                </p>
-                                <button
-                                  onClick={() => {
-                                    if (plan) {
-                                      onWritePost(plan.id, post.idx);
-                                      posthog.capture("write_from_idea_clicked", {
-                                        content_type: post.type || "",
-                                        platform: post.platform || "",
-                                      });
-                                    }
-                                  }}
-                                  className="mt-3 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-                                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-                                >
-                                  Write this <ArrowRight size={12} color="#fff" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-              {weekEntries.length >= 3 && planData.posts.length < 15 ? (
-                <button
-                  onClick={() => handleMoreIdeas(plan!, planData)}
-                  disabled={loadingMore}
-                  className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-                >
-                  {loadingMore ? "Finding more ideas..." : "Show me more ideas"}
-                </button>
-              ) : weekEntries.length < 3 ? (
-                <div
-                  className="mt-6 p-4 rounded-[12px]"
-                  style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
-                >
-                  <p className="font-sans text-[14px] mb-3" style={{ color: BODY }}>
-                    Your best content comes from your real week. Drop a few more notes and I'll find the stories.
-                  </p>
-                  <button
-                    onClick={onSwitchToLog}
-                    className="font-sans text-[14px] font-semibold"
-                    style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
-                  >
-                    Add more notes <ArrowRight size={12} />
-                  </button>
-                </div>
-              ) : (
-                <p
-                  className="mt-6 text-center font-sans font-medium"
-                  style={{ fontSize: 14, color: FAINT, padding: "8px 0" }}
-                >
-                  ✓ All set for this week
-                </p>
-              )}
-              <button
-                onClick={onSwitchToLog}
-                className="mt-3 w-full py-3 rounded-full font-sans font-semibold text-[14px]"
-                style={{ background: "transparent", color: DIM, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
-              >
-                Add more notes <ArrowRight size={12} />
-              </button>
-              <button
-                onClick={() => {
-                  setShowGenerate(true);
-                }}
-                className="mt-3 w-full font-sans text-[14px]"
-                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}
-              >
-                Regenerate plan
-              </button>
-            </div>
-          )}
-        </>
-      )}
+  // Fallback — should not normally reach here
+  return (
+    <div style={{ padding: "60px 24px", textAlign: "center" }}>
+      <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
+        Something went wrong loading your themes.
+      </p>
     </div>
   );
 }
