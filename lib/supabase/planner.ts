@@ -29,6 +29,21 @@ export interface ContentPlanData {
   posts: ContentPlanPost[];
 }
 
+export interface Theme {
+  tension: string;
+  why_now: string;
+  format: "story" | "lesson" | "framework" | "contrarian-take";
+  source: "log" | "profile" | "voice";
+  source_entry_id?: string;
+  queued: boolean;
+}
+
+export interface WeeklyThemes {
+  themes: Theme[];
+  picked_theme_index: number | null;
+  context: string;
+}
+
 export interface ContentPlan {
   id: string;
   user_id: string;
@@ -124,6 +139,63 @@ export async function savePlan(dumpId: string, plan: ContentPlanData): Promise<C
 
   if (error) {
     console.error("Failed to save plan:", error);
+    return null;
+  }
+  return data as ContentPlan;
+}
+
+export async function saveThemePlan(dumpId: string, themes: WeeklyThemes): Promise<ContentPlan | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("content_plans")
+    .insert({
+      user_id: user.id,
+      dump_id: dumpId,
+      week_start: getWeekStart(),
+      plan: themes,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to save theme plan:", error);
+    return null;
+  }
+  return data as ContentPlan;
+}
+
+export async function updateThemePick(planId: string, pickedIndex: number): Promise<ContentPlan | null> {
+  const supabase = createClient();
+
+  // First fetch the current plan
+  const { data: current, error: fetchError } = await supabase
+    .from("content_plans")
+    .select("plan")
+    .eq("id", planId)
+    .single();
+
+  if (fetchError || !current) return null;
+
+  const themes = current.plan as WeeklyThemes;
+  themes.picked_theme_index = pickedIndex;
+  themes.themes.forEach((t, i) => {
+    t.queued = i !== pickedIndex;
+  });
+
+  const { data, error } = await supabase
+    .from("content_plans")
+    .update({ plan: themes })
+    .eq("id", planId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to update theme pick:", error);
     return null;
   }
   return data as ContentPlan;
