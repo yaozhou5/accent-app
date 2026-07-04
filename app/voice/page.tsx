@@ -20,13 +20,16 @@ const DIM = "#6B6860";
 const FAINT = "#A8A49C";
 const CREAM = "#F7F4EF";
 
-type Phase = "intro" | "pairs" | "loading" | "result";
+type Phase = "intro" | "pairs" | "loading" | "result" | "sent";
 
 export default function VoiceDiscoveryPage() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentPair, setCurrentPair] = useState(0);
   const [choices, setChoices] = useState<("a" | "b")[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     dimensions: VoiceDimensions;
     topTraits: string[];
@@ -100,12 +103,43 @@ export default function VoiceDiscoveryPage() {
     }
   }
 
-  function handleFinish() {
+  async function handleSendReport(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || sending || !result) return;
+    setSending(true);
+    setSendError(null);
+
+    const voiceProfile: VoiceProfile = {
+      dimensions: result.dimensions,
+      top_traits: result.topTraits,
+      edge: result.edge,
+      gap: result.gap,
+      completed_at: new Date().toISOString(),
+    };
+
     if (isLoggedIn) {
+      // Already logged in — just save and go to report
+      await upsertProfile({ voice_profile: voiceProfile });
       window.location.href = "/voice/report";
-    } else {
-      // Voice profile is already in sessionStorage — signup will save it
-      window.location.href = "/signup";
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/claim-voice-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), voiceProfile }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send");
+      }
+      posthog.capture("voice_report_claimed", { email: email.trim() });
+      setPhase("sent");
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -386,35 +420,139 @@ export default function VoiceDiscoveryPage() {
             })}
           </div>
 
-          {/* Teaser — don't show full edge/gap here */}
+          {/* Email capture */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: "28px 32px",
+              border: "1px solid #e5e5e5",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: INK,
+                marginBottom: 4,
+              }}
+            >
+              Get your full voice report
+            </p>
+            <p
+              style={{
+                fontSize: 15,
+                color: DIM,
+                marginBottom: 20,
+                lineHeight: 1.5,
+              }}
+            >
+              Personalized writing tips, your edge, and what to watch out for — delivered to your inbox.
+            </p>
+            <form onSubmit={handleSendReport}>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+                style={{
+                  width: "100%",
+                  padding: "14px 16px",
+                  borderRadius: 10,
+                  border: "1px solid #e5e5e5",
+                  fontSize: 16,
+                  color: INK,
+                  outline: "none",
+                  marginBottom: 12,
+                  boxSizing: "border-box",
+                }}
+              />
+              {sendError && <p style={{ fontSize: 13, color: "#DC2626", marginBottom: 8 }}>{sendError}</p>}
+              <button
+                type="submit"
+                disabled={sending}
+                style={{
+                  width: "100%",
+                  background: BLUE,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "16px 0",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  cursor: sending ? "wait" : "pointer",
+                  opacity: sending ? 0.6 : 1,
+                }}
+              >
+                {sending ? "Sending..." : "Send my report"}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- SENT SCREEN ---
+  if (phase === "sent") {
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          background: CREAM,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div style={{ maxWidth: 480, textAlign: "center" }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              background: "#E8F5E0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 24px",
+              fontSize: 32,
+            }}
+          >
+            &#10003;
+          </div>
+          <h1
+            style={{
+              fontSize: 32,
+              fontWeight: 800,
+              color: INK,
+              marginBottom: 12,
+              lineHeight: 1.2,
+            }}
+          >
+            Check your inbox
+          </h1>
           <p
             style={{
-              fontSize: 17,
+              fontSize: 18,
               color: DIM,
               lineHeight: 1.6,
-              marginBottom: 32,
-              textAlign: "center",
+              marginBottom: 8,
             }}
           >
-            Your full report includes personalized writing tips, your edge, and what to watch out for.
+            Your full voice report is on its way to <strong style={{ color: INK }}>{email}</strong>.
           </p>
-
-          <button
-            onClick={handleFinish}
+          <p
             style={{
-              width: "100%",
-              background: BLUE,
-              color: "#fff",
-              border: "none",
-              borderRadius: 12,
-              padding: "16px 0",
-              fontSize: 18,
-              fontWeight: 700,
-              cursor: "pointer",
+              fontSize: 15,
+              color: FAINT,
+              lineHeight: 1.5,
             }}
           >
-            {isLoggedIn ? "See your full voice report" : "Get your full voice report"}
-          </button>
+            Click the link in the email to activate your account and start logging.
+          </p>
         </div>
       </div>
     );
