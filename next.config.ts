@@ -26,6 +26,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/play",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/game",
+        destination: "/",
+        permanent: true,
+      },
+    ];
+  },
   // Required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 };
