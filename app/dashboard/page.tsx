@@ -3315,11 +3315,13 @@ function WriteMode({
 function StandaloneWriteMode({
   draft,
   sourceImages,
+  profile,
   onBack,
   onSaveDone,
 }: {
   draft: Draft;
   sourceImages?: string[];
+  profile: UserProfile | null;
   onBack: () => void;
   onSaveDone: () => void;
 }) {
@@ -3327,6 +3329,7 @@ function StandaloneWriteMode({
   const [saving, setSaving] = useState(false);
   const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
   const [showNote, setShowNote] = useState(true);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -3413,9 +3416,57 @@ function StandaloneWriteMode({
           >
             <ArrowLeft size={12} /> Back
           </button>
-          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
-            {saving ? "Saving..." : saveError ? "Save failed" : "Saved"}
-          </span>
+          <div className="flex items-center gap-3">
+            {draft.source_entry_id && profile?.voice_profile && (
+              <button
+                onClick={async () => {
+                  if (!draft.source_note) return;
+                  setRegenerating(true);
+                  const businessContext = [profile.business_description, profile.interview_q1, profile.interview_q3]
+                    .filter(Boolean)
+                    .join(" ");
+                  try {
+                    const res = await fetch("/api/generate-draft", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        entryContent: draft.source_note,
+                        voiceProfile: profile.voice_profile,
+                        businessContext,
+                        platform: profile.platforms?.[0] || "linkedin",
+                      }),
+                    });
+                    if (!res.ok) throw new Error("Generate failed");
+                    const text = await res.text();
+                    await saveDraftById(draft.id, text);
+                    setContent(text);
+                    lastSavedRef.current = text;
+                    posthog.capture("draft_regenerated", { draft_id: draft.id });
+                  } catch (err) {
+                    console.error("Regenerate failed:", err);
+                  } finally {
+                    setRegenerating(false);
+                  }
+                }}
+                disabled={regenerating}
+                style={{
+                  background: "transparent",
+                  border: `1.5px solid ${FAINT}`,
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  color: DIM,
+                  cursor: regenerating ? "wait" : "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                {regenerating ? "Regenerating..." : "Regenerate"}
+              </button>
+            )}
+            <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
+              {saving ? "Saving..." : saveError ? "Save failed" : "Saved"}
+            </span>
+          </div>
         </div>
 
         {draft.source_note && (
@@ -3825,6 +3876,7 @@ export default function DashboardPage() {
       <StandaloneWriteMode
         draft={standaloneDraft.draft}
         sourceImages={standaloneDraft.images}
+        profile={profile}
         onBack={() => setStandaloneDraft(null)}
         onSaveDone={() => {
           setStandaloneDraft(null);
