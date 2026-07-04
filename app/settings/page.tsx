@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { upsertProfile } from "@/lib/supabase/profiles";
+import { getProfile, upsertProfile } from "@/lib/supabase/profiles";
 import { ArrowLeft } from "@/components/ArrowIcon";
+import { DIMENSION_LABELS, normalizeScore, type DimensionKey, type VoiceProfile } from "@/lib/voice-dimensions";
 
 const INK = "#111827";
+const BLUE = "#4A6CF7";
 const DIM = "#6b7280";
 const FAINT = "#9ca3af";
 const BORDER = "#e5e7eb";
@@ -15,6 +17,8 @@ const BORDER = "#e5e7eb";
 export default function SettingsPage() {
   const [email, setEmail] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [voiceProfile, setVoiceProfile] = useState<VoiceProfile | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -25,6 +29,10 @@ export default function SettingsPage() {
         return;
       }
       setEmail(user.email || "");
+    });
+    getProfile().then((p) => {
+      setVoiceProfile((p?.voice_profile as VoiceProfile) || null);
+      setProfileLoaded(true);
     });
   }, []);
 
@@ -68,19 +76,123 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          {/* Your Voice section */}
+          {profileLoaded && (
+            <div className="pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <label
+                className="font-mono uppercase block mb-4"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+              >
+                Your Voice
+              </label>
+
+              {voiceProfile ? (
+                <div>
+                  {/* Headline */}
+                  <p className="font-sans" style={{ fontSize: 20, fontWeight: 800, color: INK, marginBottom: 20 }}>
+                    {voiceProfile.top_traits.join(". ")}.
+                  </p>
+
+                  {/* Spectrum bars */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+                    {(Object.entries(voiceProfile.dimensions) as [DimensionKey, number][]).map(([key, raw]) => {
+                      const norm = normalizeScore(key, raw);
+                      const labels = DIMENSION_LABELS[key];
+                      const pct = ((norm + 1) / 2) * 100;
+                      return (
+                        <div key={key}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: 12,
+                              color: DIM,
+                              marginBottom: 4,
+                            }}
+                          >
+                            <span>{labels.low}</span>
+                            <span>{labels.high}</span>
+                          </div>
+                          <div style={{ height: 6, background: "#e5e5e5", borderRadius: 3, position: "relative" }}>
+                            <div
+                              style={{
+                                position: "absolute",
+                                left: `${pct}%`,
+                                top: "50%",
+                                transform: "translate(-50%, -50%)",
+                                width: 14,
+                                height: 14,
+                                borderRadius: "50%",
+                                background: BLUE,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Buttons */}
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <a
+                      href="/voice/report"
+                      className="font-sans text-[14px]"
+                      style={{
+                        flex: 1,
+                        display: "block",
+                        textAlign: "center",
+                        padding: "10px 0",
+                        borderRadius: 9999,
+                        background: BLUE,
+                        color: "#fff",
+                        textDecoration: "none",
+                        fontWeight: 600,
+                      }}
+                    >
+                      View full report
+                    </a>
+                    <button
+                      onClick={async () => {
+                        setResetting(true);
+                        await upsertProfile({ voice_profile: null });
+                        window.location.href = "/voice";
+                      }}
+                      disabled={resetting}
+                      className="font-sans text-[14px]"
+                      style={{
+                        flex: 1,
+                        padding: "10px 0",
+                        borderRadius: 9999,
+                        border: `1px solid ${BORDER}`,
+                        color: DIM,
+                        background: "transparent",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {resetting ? "Redirecting..." : "Retake test"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <a
+                  href="/voice"
+                  className="font-sans text-[14px] block text-center"
+                  style={{
+                    padding: "14px 0",
+                    borderRadius: 9999,
+                    background: BLUE,
+                    color: "#fff",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Discover your voice
+                </a>
+              )}
+            </div>
+          )}
+
           <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${BORDER}` }}>
-            <button
-              onClick={async () => {
-                setResetting(true);
-                await upsertProfile({ voice_profile: null });
-                window.location.href = "/voice";
-              }}
-              disabled={resetting}
-              className="w-full py-3 rounded-full font-sans text-[14px]"
-              style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}
-            >
-              {resetting ? "Redirecting..." : "Retake voice exercise"}
-            </button>
             <button
               onClick={handleSignOut}
               className="w-full py-3 rounded-full font-sans text-[14px]"
