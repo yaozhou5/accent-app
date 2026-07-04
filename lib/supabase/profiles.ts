@@ -1,4 +1,5 @@
 import { createClient } from "./client";
+import type { VoiceProfile } from "@/lib/voice-dimensions";
 
 export interface UserProfile {
   id: string;
@@ -30,6 +31,7 @@ export interface UserProfile {
   account_type: string | null;
   inferred_goal: string | null;
   account_type_confidence: string | null;
+  voice_profile: VoiceProfile | null;
   created_at: string;
 }
 
