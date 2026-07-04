@@ -62,18 +62,15 @@ export default function VoiceDiscoveryPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ dimensions, businessContext: "" }),
         });
-        if (res.ok) {
-          const data = await res.json();
-          edge = data.edge || "";
-          gap = data.gap || "";
-        }
-      } catch {
-        edge = "Your voice has a distinctive combination of traits that sets you apart.";
-        gap = "Keep experimenting with the edges of your style.";
+        const data = await res.json();
+        edge = data.edge || "";
+        gap = data.gap || "";
+      } catch (err) {
+        console.error("voice-result fetch error:", err);
       }
 
-      if (!edge) edge = "Your voice has a distinctive combination of traits that sets you apart.";
-      if (!gap) gap = "Keep experimenting with the edges of your style.";
+      if (!edge) edge = "Your combination of traits creates a voice that stands out. See the full report for details.";
+      if (!gap) gap = "Every voice has blind spots. Your full report includes personalized tips.";
 
       const voiceProfile: VoiceProfile = {
         dimensions,
@@ -105,8 +102,9 @@ export default function VoiceDiscoveryPage() {
 
   function handleFinish() {
     if (isLoggedIn) {
-      window.location.href = "/dashboard";
+      window.location.href = "/voice/report";
     } else {
+      // Voice profile is already in sessionStorage — signup will save it
       window.location.href = "/signup";
     }
   }
@@ -237,9 +235,10 @@ export default function VoiceDiscoveryPage() {
             <p
               style={{
                 textAlign: "center",
-                fontSize: 15,
-                color: FAINT,
-                marginBottom: 8,
+                fontSize: 22,
+                fontWeight: 700,
+                color: INK,
+                marginBottom: 16,
               }}
             >
               Which sounds more like you?
@@ -433,7 +432,7 @@ export default function VoiceDiscoveryPage() {
               cursor: "pointer",
             }}
           >
-            {isLoggedIn ? "Go to dashboard" : "Save your voice profile"}
+            {isLoggedIn ? "See your full voice report" : "Get your full voice report"}
           </button>
         </div>
       </div>

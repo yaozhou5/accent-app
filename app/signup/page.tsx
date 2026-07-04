@@ -52,7 +52,7 @@ export default function SignupPage() {
         } catch (e) {
           console.error("Failed to save voice profile:", e);
         }
-        window.location.href = "/dashboard";
+        window.location.href = "/voice/report";
       } else {
         // No voice profile yet — send them to take the exercise
         window.location.href = "/voice";

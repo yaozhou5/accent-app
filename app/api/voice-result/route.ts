@@ -47,8 +47,21 @@ Return ONLY valid JSON: {"edge": "...", "gap": "..."}`,
       ],
     });
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const parsed = JSON.parse(text);
+    let text = message.content[0].type === "text" ? message.content[0].text : "";
+    // Strip markdown code fences if present
+    text = text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // Try extracting JSON from the response
+      const match = text.match(/\{[\s\S]*\}/);
+      parsed = match ? JSON.parse(match[0]) : { edge: "", gap: "" };
+    }
 
     return NextResponse.json({
       edge: parsed.edge || "",

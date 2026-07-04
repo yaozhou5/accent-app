@@ -55,7 +55,7 @@ function LoginForm() {
         } catch (e) {
           console.error("Failed to save voice profile:", e);
         }
-        window.location.href = "/dashboard";
+        window.location.href = "/voice/report";
       } else {
         router.push(redirectTo);
       }
