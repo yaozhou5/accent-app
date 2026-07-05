@@ -38,11 +38,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Voice profile gate: dashboard requires voice profile
+    // Voice profile gate: only redirect NEW users (no profile row yet) to /voice
+    // Existing users without voice_profile can access dashboard normally
     if (path.startsWith("/dashboard")) {
-      const { data: profile } = await supabase.from("profiles").select("voice_profile").eq("id", user.id).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
 
-      if (!profile?.voice_profile) {
+      if (!profile) {
+        // No profile row at all — brand new user, send to voice exercise
         return NextResponse.redirect(new URL("/voice", request.url));
       }
     }
