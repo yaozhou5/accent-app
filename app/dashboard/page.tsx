@@ -3050,6 +3050,12 @@ function StandaloneWriteMode({
                   }}
                 >
                   <p
+                    className="font-mono text-[11px] uppercase"
+                    style={{ color: BLUE, fontWeight: 600, marginBottom: 6 }}
+                  >
+                    {note.dimension}
+                  </p>
+                  <p
                     className="font-sans text-[14px]"
                     style={{
                       color: INK,
@@ -3062,9 +3068,6 @@ function StandaloneWriteMode({
                   </p>
                   {activeVoiceNote === i && (
                     <div className="mt-3 space-y-2">
-                      <p className="font-mono text-[11px] uppercase" style={{ color: BLUE, fontWeight: 600 }}>
-                        {note.dimension}
-                      </p>
                       <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.5 }}>
                         {note.explanation}
                       </p>
