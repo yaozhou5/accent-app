@@ -4,15 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as "email" | "email_change" | null;
-  const nextParam = searchParams.get("next") ?? "/dashboard";
+  const type = searchParams.get("type") as "email" | "magiclink" | "email_change" | null;
+  const nextParam = searchParams.get("next") ?? searchParams.get("redirect_to") ?? "/dashboard";
   // Prevent open redirect: only allow same-origin relative paths
   const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
 
   if (token_hash && type) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({
-      type,
+      type: type === "magiclink" ? "magiclink" : type!,
       token_hash,
     });
 
