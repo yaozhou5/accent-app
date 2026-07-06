@@ -45,7 +45,7 @@ import {
   type Draft,
 } from "@/lib/supabase/drafts";
 import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
-import MultiplyPanel from "@/components/MultiplyPanel";
+// MultiplyPanel available at @/components/MultiplyPanel but not used in dashboard currently
 import {
   getCoachingSession,
   saveCoachingSession,
@@ -2727,21 +2727,17 @@ function StandaloneWriteMode({
 }) {
   const [content, setContent] = useState(draft.content);
   const [saving, setSaving] = useState(false);
-  const [coaching, setCoaching] = useState<CoachFeedback | null>(null);
-  const [coachLoading, setCoachLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [accepted, setAccepted] = useState<Set<number>>(new Set());
   const [showNote, setShowNote] = useState(true);
-  const [voiceNotes, setVoiceNotes] = useState<
+  const [showEdits, setShowEdits] = useState(false);
+  const [annotations, setAnnotations] = useState<
     { phrase: string; dimension: string; explanation: string; alternative: string }[]
   >([]);
-  const [activeVoiceNote, setActiveVoiceNote] = useState<number | null>(null);
-  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [activeAnnotation, setActiveAnnotation] = useState<number | null>(null);
+  const [loadingEdits, setLoadingEdits] = useState(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
-  const feedbackRef = useRef<HTMLDivElement>(null);
   const lastSavedRef = useRef(draft.content);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [showMultiply, setShowMultiply] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -2755,28 +2751,22 @@ function StandaloneWriteMode({
     return () => clearInterval(interval);
   }, [content, draft.id]);
 
-  // Fetch voice notes for drafts generated with a voice profile
-  useEffect(() => {
-    if (
-      draft.source_entry_id &&
-      content.trim().length > 50 &&
-      profile?.voice_profile &&
-      voiceNotes.length === 0 &&
-      !loadingNotes
-    ) {
-      setLoadingNotes(true);
-      const vp = profile.voice_profile as VoiceProfile;
-      fetch("/api/voice-notes", {
+  // Fetch inline annotations on demand when "Show edits" is toggled
+  async function fetchAnnotations() {
+    if (annotations.length > 0 || loadingEdits || !profile?.voice_profile) return;
+    setLoadingEdits(true);
+    const vp = profile.voice_profile as VoiceProfile;
+    try {
+      const res = await fetch("/api/voice-notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ draft: content, dimensions: vp.dimensions }),
-      })
-        .then((r) => r.json())
-        .then((data) => setVoiceNotes(data.notes || []))
-        .catch(() => {})
-        .finally(() => setLoadingNotes(false));
-    }
-  }, []);
+      });
+      const data = await res.json();
+      setAnnotations(data.notes || []);
+    } catch {}
+    setLoadingEdits(false);
+  }
 
   const handleChange = (val: string) => {
     setContent(val);
@@ -2801,38 +2791,17 @@ function StandaloneWriteMode({
     } else setSaveError("Failed to save.");
   };
 
-  const handleCheckWriting = async () => {
-    if (!content.trim() || coachLoading) return;
-    setCoachLoading(true);
-    try {
-      const res = await fetch("/api/coach-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft: content.trim() }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCoaching(data);
-        setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      }
-    } catch {}
-    setCoachLoading(false);
-  };
-
-  const handleApplySuggestions = async () => {
-    if (!coaching) return;
-    let updated = content;
-    coaching.phrases_to_improve.forEach((p, i) => {
-      if (accepted.has(i) && p.original && p.suggestion) updated = updated.replace(p.original, p.suggestion);
-    });
+  function applyAnnotation(index: number) {
+    const note = annotations[index];
+    if (!note) return;
+    const updated = content.replace(note.phrase, note.alternative);
     setContent(updated);
-    setSaving(true);
-    await saveDraftById(draft.id, updated);
+    setAnnotations((prev) => prev.filter((_, i) => i !== index));
+    setActiveAnnotation(null);
+    // Auto-save
+    saveDraftById(draft.id, updated);
     lastSavedRef.current = updated;
-    setSaving(false);
-    setCoaching(null);
-    setAccepted(new Set());
-  };
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
@@ -2892,19 +2861,25 @@ function StandaloneWriteMode({
             )}
             {draft.source_entry_id && profile?.voice_profile && (
               <button
-                onClick={() => setShowMultiply(!showMultiply)}
+                onClick={() => {
+                  const next = !showEdits;
+                  setShowEdits(next);
+                  if (next) fetchAnnotations();
+                  if (!next) setActiveAnnotation(null);
+                }}
+                disabled={loadingEdits}
                 style={{
-                  background: showMultiply ? `${BLUE}10` : "transparent",
-                  border: `1.5px solid ${showMultiply ? BLUE : FAINT}`,
+                  background: showEdits ? `${BLUE}10` : "transparent",
+                  border: `1.5px solid ${showEdits ? BLUE : FAINT}`,
                   borderRadius: 8,
                   padding: "8px 16px",
                   fontSize: 13,
-                  color: showMultiply ? BLUE : DIM,
-                  cursor: "pointer",
+                  color: showEdits ? BLUE : DIM,
+                  cursor: loadingEdits ? "wait" : "pointer",
                   fontWeight: 600,
                 }}
               >
-                Multiply
+                {loadingEdits ? "Loading..." : showEdits ? "Hide edits" : "Show edits"}
               </button>
             )}
             <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
@@ -2995,103 +2970,162 @@ function StandaloneWriteMode({
           </div>
         )}
 
-        <textarea
-          ref={(el) => {
-            if (el) {
-              el.style.height = "auto";
-              el.style.height = Math.max(200, el.scrollHeight) + "px";
-            }
-          }}
-          value={content}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder="Start writing..."
-          className="w-full outline-none resize-none font-sans"
-          style={{
-            fontSize: 16,
-            color: INK,
-            lineHeight: 1.8,
-            padding: 0,
-            border: "none",
-            background: "transparent",
-            minHeight: "40vh",
-            overflow: "hidden",
-          }}
-          autoFocus
-        />
+        {/* Draft content — textarea when edits off, annotated view when on */}
+        {showEdits && annotations.length > 0 ? (
+          <div
+            className="font-sans"
+            style={{
+              fontSize: 16,
+              color: INK,
+              lineHeight: 1.8,
+              minHeight: "40vh",
+              position: "relative",
+            }}
+          >
+            {(() => {
+              // Build segments: split content by annotation phrases
+              let remaining = content;
+              const segments: { text: string; annotationIndex?: number }[] = [];
+              const sortedAnnotations = annotations
+                .map((a, i) => ({ ...a, originalIndex: i }))
+                .filter((a) => remaining.includes(a.phrase))
+                .sort((a, b) => remaining.indexOf(a.phrase) - remaining.indexOf(b.phrase));
 
-        {/* Voice notes */}
-        {voiceNotes.length > 0 && (
-          <div className="mt-6 mb-4">
-            <p
-              className="font-mono text-[11px] uppercase mb-3"
-              style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
-            >
-              Voice notes
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {voiceNotes.map((note, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveVoiceNote(activeVoiceNote === i ? null : i)}
-                  style={{
-                    textAlign: "left",
-                    background: activeVoiceNote === i ? "#f0f4ff" : "#f9fafb",
-                    border: `1px solid ${activeVoiceNote === i ? BLUE : BORDER}`,
-                    borderRadius: 10,
-                    padding: "12px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <p
-                    className="font-mono text-[11px] uppercase"
-                    style={{ color: BLUE, fontWeight: 600, marginBottom: 6 }}
-                  >
-                    {note.dimension}
-                  </p>
-                  <p
-                    className="font-sans text-[14px]"
-                    style={{
-                      color: INK,
-                      borderBottom: `2px dotted ${BLUE}40`,
-                      display: "inline",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    &ldquo;{note.phrase}&rdquo;
-                  </p>
-                  {activeVoiceNote === i && (
-                    <div className="mt-3 space-y-2">
-                      <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.5 }}>
-                        {note.explanation}
-                      </p>
-                      <p className="font-sans text-[13px]" style={{ color: DIM, lineHeight: 1.5, fontStyle: "italic" }}>
-                        Alternative: {note.alternative}
-                      </p>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
+              for (const ann of sortedAnnotations) {
+                const idx = remaining.indexOf(ann.phrase);
+                if (idx === -1) continue;
+                if (idx > 0) segments.push({ text: remaining.slice(0, idx) });
+                segments.push({ text: ann.phrase, annotationIndex: ann.originalIndex });
+                remaining = remaining.slice(idx + ann.phrase.length);
+              }
+              if (remaining) segments.push({ text: remaining });
+
+              return segments.map((seg, i) =>
+                seg.annotationIndex !== undefined ? (
+                  <span key={i} style={{ position: "relative", display: "inline" }}>
+                    <span
+                      onClick={() =>
+                        setActiveAnnotation(activeAnnotation === seg.annotationIndex ? null : seg.annotationIndex!)
+                      }
+                      style={{
+                        background: activeAnnotation === seg.annotationIndex ? `${BLUE}20` : `${BLUE}10`,
+                        borderBottom: `2px solid ${BLUE}60`,
+                        cursor: "pointer",
+                        borderRadius: 2,
+                        padding: "0 2px",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      {seg.text}
+                    </span>
+                    {activeAnnotation === seg.annotationIndex && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: "100%",
+                          marginTop: 8,
+                          width: 360,
+                          background: "#fff",
+                          border: `1px solid ${BORDER}`,
+                          borderRadius: 12,
+                          padding: "16px 20px",
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+                          zIndex: 50,
+                        }}
+                      >
+                        <p
+                          className="font-mono text-[11px] uppercase"
+                          style={{ color: BLUE, fontWeight: 600, marginBottom: 8 }}
+                        >
+                          {annotations[seg.annotationIndex!].dimension}
+                        </p>
+                        <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.5, marginBottom: 10 }}>
+                          {annotations[seg.annotationIndex!].explanation}
+                        </p>
+                        <p
+                          className="font-sans text-[13px]"
+                          style={{
+                            color: DIM,
+                            lineHeight: 1.5,
+                            fontStyle: "italic",
+                            marginBottom: 14,
+                            padding: "8px 12px",
+                            background: "#f9fafb",
+                            borderRadius: 8,
+                          }}
+                        >
+                          {annotations[seg.annotationIndex!].alternative}
+                        </p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => applyAnnotation(seg.annotationIndex!)}
+                            className="font-sans text-[13px] font-semibold"
+                            style={{
+                              background: BLUE,
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 8,
+                              padding: "6px 16px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Apply
+                          </button>
+                          <button
+                            onClick={() => setActiveAnnotation(null)}
+                            className="font-sans text-[13px]"
+                            style={{
+                              background: "transparent",
+                              border: `1px solid ${BORDER}`,
+                              borderRadius: 8,
+                              padding: "6px 16px",
+                              color: DIM,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </span>
+                ) : (
+                  <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                    {seg.text}
+                  </span>
+                )
+              );
+            })()}
           </div>
+        ) : (
+          <textarea
+            ref={(el) => {
+              if (el) {
+                el.style.height = "auto";
+                el.style.height = Math.max(200, el.scrollHeight) + "px";
+              }
+            }}
+            value={content}
+            onChange={(e) => handleChange(e.target.value)}
+            placeholder="Start writing..."
+            className="w-full outline-none resize-none font-sans"
+            style={{
+              fontSize: 16,
+              color: INK,
+              lineHeight: 1.8,
+              padding: 0,
+              border: "none",
+              background: "transparent",
+              minHeight: "40vh",
+              overflow: "hidden",
+            }}
+            autoFocus
+          />
         )}
 
-        {showMultiply && profile?.voice_profile && (
-          <div className="mt-6 mb-4">
-            <MultiplyPanel draftText={content} voiceProfile={profile.voice_profile as VoiceProfile} />
-          </div>
-        )}
-
-        {content.trim().length > 20 && !coaching && (
+        {content.trim().length > 20 && (
           <div className="mt-6 space-y-3">
-            <button
-              onClick={handleCheckWriting}
-              disabled={coachLoading}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-            >
-              {coachLoading ? "Checking..." : "Check my writing"}
-            </button>
             <button
               onClick={handleExplicitSave}
               className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
@@ -3099,22 +3133,6 @@ function StandaloneWriteMode({
             >
               Save draft
             </button>
-            {draft.source_entry_id && (
-              <button
-                onClick={() => {
-                  onBack();
-                  // Trigger develop mode for this entry after going back
-                  setTimeout(() => {
-                    const event = new CustomEvent("develop-entry", { detail: draft.source_entry_id });
-                    window.dispatchEvent(event);
-                  }, 100);
-                }}
-                className="w-full py-2 font-sans text-[13px]"
-                style={{ background: "none", border: "none", color: DIM, cursor: "pointer" }}
-              >
-                Explore other angles &rarr;
-              </button>
-            )}
             {saveError && (
               <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
                 {saveError}
@@ -3123,105 +3141,7 @@ function StandaloneWriteMode({
           </div>
         )}
 
-        {coaching && (
-          <div ref={feedbackRef} className="mt-8 space-y-5">
-            <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
-              <span
-                className="font-mono uppercase block mb-2"
-                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-              >
-                Overall
-              </span>
-              <p className="font-sans" style={{ fontSize: 16, color: INK, lineHeight: 1.6 }}>
-                {coaching.overall}
-              </p>
-            </div>
-            {coaching.phrases_to_improve.length > 0 && (
-              <div className="space-y-3">
-                <span
-                  className="font-mono uppercase block"
-                  style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                >
-                  Suggestions
-                </span>
-                {coaching.phrases_to_improve.map((p, i) => {
-                  const isAccepted = accepted.has(i);
-                  return (
-                    <div
-                      key={i}
-                      className="p-4 rounded-[10px]"
-                      style={{
-                        border: `1px solid ${isAccepted ? BLUE : BORDER}`,
-                        background: isAccepted ? `${BLUE}04` : "#fff",
-                      }}
-                    >
-                      <p className="font-sans font-semibold" style={{ fontSize: 16, color: INK }}>
-                        {p.suggestion}
-                      </p>
-                      <p className="font-sans mt-1.5" style={{ fontSize: 14, color: FAINT }}>
-                        Original: {p.original}
-                      </p>
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={() =>
-                            setAccepted((prev) => {
-                              const s = new Set(prev);
-                              s.add(i);
-                              return s;
-                            })
-                          }
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
-                          style={{
-                            background: isAccepted ? BLUE : "#fff",
-                            color: isAccepted ? "#fff" : DIM,
-                            border: `1px solid ${isAccepted ? BLUE : BORDER}`,
-                            cursor: "pointer",
-                          }}
-                        >
-                          ✓ Accept
-                        </button>
-                        <button
-                          onClick={() =>
-                            setAccepted((prev) => {
-                              const s = new Set(prev);
-                              s.delete(i);
-                              return s;
-                            })
-                          }
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
-                          style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}
-                        >
-                          ✕ Skip
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="space-y-3 pt-2 pb-8">
-              <button
-                onClick={handleApplySuggestions}
-                className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
-                style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
-              >
-                {accepted.size > 0
-                  ? `Save with ${accepted.size} suggestion${accepted.size > 1 ? "s" : ""}`
-                  : "Save as-is"}
-              </button>
-              <button
-                onClick={() => {
-                  setCoaching(null);
-                  setAccepted(new Set());
-                }}
-                className="w-full font-sans text-[14px]"
-                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer", padding: "10px 0" }}
-              >
-                Dismiss feedback
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Coaching feedback removed — replaced by inline annotations */}
       </div>
     </div>
   );
