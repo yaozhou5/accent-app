@@ -45,6 +45,7 @@ import {
   type Draft,
 } from "@/lib/supabase/drafts";
 import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
+import MultiplyPanel from "@/components/MultiplyPanel";
 import {
   getCoachingSession,
   saveCoachingSession,
@@ -2765,6 +2766,7 @@ function StandaloneWriteMode({
   const feedbackRef = useRef<HTMLDivElement>(null);
   const lastSavedRef = useRef(draft.content);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showMultiply, setShowMultiply] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -2911,6 +2913,23 @@ function StandaloneWriteMode({
                 }}
               >
                 {regenerating ? "Regenerating..." : "Regenerate"}
+              </button>
+            )}
+            {draft.source_entry_id && profile?.voice_profile && (
+              <button
+                onClick={() => setShowMultiply(!showMultiply)}
+                style={{
+                  background: showMultiply ? `${BLUE}10` : "transparent",
+                  border: `1.5px solid ${showMultiply ? BLUE : FAINT}`,
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  color: showMultiply ? BLUE : DIM,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Multiply
               </button>
             )}
             <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
@@ -3079,6 +3098,12 @@ function StandaloneWriteMode({
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {showMultiply && profile?.voice_profile && (
+          <div className="mt-6 mb-4">
+            <MultiplyPanel draftText={content} voiceProfile={profile.voice_profile as VoiceProfile} />
           </div>
         )}
 
