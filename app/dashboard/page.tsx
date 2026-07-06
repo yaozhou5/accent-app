@@ -125,7 +125,7 @@ function getReadableTitle(url: string): string {
   }
 }
 
-type Tab = "log" | "ideas" | "drafts";
+type Tab = "log" | "history";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
@@ -133,20 +133,14 @@ function LogTab({
   logEntries,
   setLogEntries,
   allPlans,
-  onSwitchToIdeas,
   onStartDraft,
-  onDevelopNote,
-  onDevelopNotes,
   onPostNote,
   postingEntryId,
 }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
-  onSwitchToIdeas: () => void;
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
-  onDevelopNote: (entry: LogEntry) => void;
-  onDevelopNotes: (entries: LogEntry[]) => void;
   onPostNote: (entry: LogEntry) => void;
   postingEntryId: string | null;
 }) {
@@ -651,25 +645,6 @@ function LogTab({
         <p className="font-sans text-[13px] mb-4" style={{ color: "#DC2626" }}>
           {error}
         </p>
-      )}
-
-      {/* Unused nudge */}
-      {unusedOldCount >= 5 && filter !== "unused" && (
-        <div
-          className="mb-6 p-4 rounded-[12px] flex items-center justify-between"
-          style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}
-        >
-          <p className="font-sans text-[14px]" style={{ color: INK }}>
-            You have <strong>{unusedOldCount}</strong> unused notes — ready to turn them into content?
-          </p>
-          <button
-            onClick={onSwitchToIdeas}
-            className="font-sans text-[13px] font-semibold shrink-0 ml-3"
-            style={{ color: BLUE, background: "none", border: "none", cursor: "pointer" }}
-          >
-            Go to Ideas <ArrowRight size={12} />
-          </button>
-        </div>
       )}
 
       {/* Search + filters */}
@@ -3264,7 +3239,7 @@ export default function DashboardPage() {
   const [tab, setTabRaw] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "") as Tab;
-      if (["log", "ideas", "drafts"].includes(hash)) return hash;
+      if (["log", "history"].includes(hash)) return hash;
     }
     return "log";
   });
@@ -3279,13 +3254,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const handlePop = (e: PopStateEvent) => {
       const hash = window.location.hash.replace("#", "") as Tab;
-      if (["log", "ideas", "drafts"].includes(hash)) setTabRaw(hash);
+      if (["log", "history"].includes(hash)) setTabRaw(hash);
       else setTabRaw("log");
     };
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
-  const [ideasWeek, setIdeasWeek] = useState<string | undefined>();
+  // ideasWeek removed — Ideas tab no longer exists
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
   const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
@@ -3314,7 +3289,7 @@ export default function DashboardPage() {
       setAllPlans(plans);
       setLogEntries(finalEntries);
       setDrafts(draftsList);
-      if (plan) setTab("ideas");
+      // plan loaded — stay on log tab
       if (p && !p.tooltip_seen && finalEntries.length === 0 && !plan) setTooltipStep(1);
 
       // Check for ?develop=<entryId> param (from onboarding payoff)
@@ -3335,8 +3310,6 @@ export default function DashboardPage() {
           }
           if (entry) {
             setDevelopEntries([entry]);
-            setTabRaw("ideas");
-            window.history.replaceState({}, "", "/dashboard#ideas");
           }
         }
       }
@@ -3368,11 +3341,6 @@ export default function DashboardPage() {
   const handlePlanGenerated = (plan: ContentPlan) => {
     setCurrentPlan(plan);
     setAllPlans((prev) => [plan, ...prev]);
-    setTab("ideas");
-  };
-  const switchToIdeas = (ws?: string) => {
-    setIdeasWeek(ws);
-    setTab("ideas");
   };
 
   async function handlePostNote(entry: LogEntry) {
@@ -3435,7 +3403,7 @@ export default function DashboardPage() {
         onBack={() => setStandaloneDraft(null)}
         onSaveDone={() => {
           setStandaloneDraft(null);
-          setTab("drafts");
+          setTab("history");
           getAllDrafts().then(setDrafts);
         }}
       />
@@ -3457,7 +3425,7 @@ export default function DashboardPage() {
             onBack={() => setWriteMode(null)}
             onSaveDone={() => {
               setWriteMode(null);
-              setTab("drafts");
+              setTab("history");
               getAllDrafts().then(setDrafts);
             }}
           />
@@ -3485,8 +3453,7 @@ export default function DashboardPage() {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "log", label: "Log" },
-    { key: "ideas", label: "Ideas" },
-    { key: "drafts", label: "Drafts" },
+    { key: "history", label: "History" },
   ];
 
   return (
@@ -3531,7 +3498,7 @@ export default function DashboardPage() {
               id={`tab-${t.key}`}
               onClick={() => {
                 setTab(t.key);
-                if (t.key !== "ideas") setIdeasWeek(undefined);
+                // tab changed
               }}
               className="font-sans py-3.5 relative"
               style={{
@@ -3555,46 +3522,12 @@ export default function DashboardPage() {
             logEntries={logEntriesState}
             setLogEntries={setLogEntries}
             allPlans={allPlans}
-            onSwitchToIdeas={() => setTab("ideas")}
             onStartDraft={(data) => setStandaloneDraft(data)}
-            onDevelopNote={(entry) => {
-              setDevelopEntries([entry]);
-              setTab("ideas");
-            }}
-            onDevelopNotes={(entries) => {
-              setDevelopEntries(entries);
-              setTab("ideas");
-            }}
             onPostNote={handlePostNote}
             postingEntryId={postingEntryId}
           />
         )}
-        {tab === "ideas" && (
-          <IdeasTab
-            profile={profile!}
-            allPlans={allPlans}
-            weekEntries={weekEntries}
-            allEntries={logEntriesState}
-            initialWeek={ideasWeek}
-            initialDevelopEntries={developEntries}
-            onPlanGenerated={handlePlanGenerated}
-            onPlanUpdated={(updated) => setAllPlans((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
-            onSwitchToLog={() => setTab("log")}
-            onWritePost={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })}
-            onStartDraft={(data) => setStandaloneDraft(data)}
-            onProfileUpdated={(fields) => setProfile((prev) => (prev ? { ...prev, ...fields } : prev))}
-            onQuickLog={async (text) => {
-              const detectedUrl = detectUrl(text);
-              const entry = await createLogEntry(text, {
-                link_url: detectedUrl,
-                type: detectedUrl && text === detectedUrl ? "link" : "note",
-                url: detectedUrl && text === detectedUrl ? detectedUrl : null,
-              });
-              if (entry) setLogEntries((prev) => [entry, ...prev]);
-            }}
-          />
-        )}
-        {tab === "drafts" && (
+        {tab === "history" && (
           <DraftsTab
             drafts={draftsState}
             allPlans={allPlans}
