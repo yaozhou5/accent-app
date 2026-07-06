@@ -76,11 +76,11 @@ export default function LandingPage() {
             accent
           </span>
           <Link
-            href="/signup"
+            href="/voice"
             className="no-underline px-4 py-2 rounded-full text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
             style={{ background: BLUE, color: "#fff", borderRadius: 40 }}
           >
-            Start your workspace
+            Find your voice
           </Link>
         </div>
       </nav>
@@ -137,11 +137,11 @@ export default function LandingPage() {
           </p>
           <div className="mt-6 md:mt-8">
             <Link
-              href="/signup"
+              href="/voice"
               className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: BLUE, color: "#fff", borderRadius: 40 }}
             >
-              Start your workspace <ArrowRight size={14} color="#fff" />
+              Find your voice <ArrowRight size={14} color="#fff" />
             </Link>
             <p className="mt-2 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
               Start free. No credit card.
@@ -191,11 +191,11 @@ export default function LandingPage() {
           </div>
           <div className="text-center mt-10">
             <Link
-              href="/signup"
+              href="/voice"
               className="no-underline inline-block px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: BLUE, color: "#fff", borderRadius: 40 }}
             >
-              Start your workspace <ArrowRight size={14} color="#fff" />
+              Find your voice <ArrowRight size={14} color="#fff" />
             </Link>
             <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>
               Start free. No credit card.
@@ -458,11 +458,11 @@ export default function LandingPage() {
             3 posts free every month. Unlimited for $19/month.
           </p>
           <Link
-            href="/signup"
+            href="/voice"
             className="no-underline inline-block px-8 py-4 rounded-full font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
             style={{ background: BLUE, color: "#fff", borderRadius: 40 }}
           >
-            Start your workspace <ArrowRight size={14} color="#fff" />
+            Find your voice <ArrowRight size={14} color="#fff" />
           </Link>
           <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>
             Start free. No credit card.
