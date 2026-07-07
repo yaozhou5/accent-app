@@ -136,6 +136,7 @@ function LogTab({
   onStartDraft,
   onPostNote,
   postingEntryId,
+  profile,
 }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
@@ -143,6 +144,7 @@ function LogTab({
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
   onPostNote: (entry: LogEntry) => void;
   postingEntryId: string | null;
+  profile: UserProfile | null;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -478,6 +480,19 @@ function LogTab({
         if (menuOpen) setMenuOpen(null);
       }}
     >
+      {/* Welcome banner — first-time users with voice profile but no logs */}
+      {logEntries.length === 0 && profile?.voice_profile && (
+        <div className="mb-6 p-5 rounded-[12px]" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
+          <p className="font-sans" style={{ fontSize: 18, fontWeight: 700, color: INK, marginBottom: 6 }}>
+            Welcome. You&apos;re a {(profile.voice_profile as VoiceProfile).top_traits?.join(". ")}. writer.
+          </p>
+          <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.5 }}>
+            Log something from your week — a conversation, a win, a frustration. Accent will help you turn it into
+            content that sounds like you.
+          </p>
+        </div>
+      )}
+
       {/* Compose — single text field with paste/drop/attach */}
       <div
         id="compose-card"
@@ -3445,6 +3460,7 @@ export default function DashboardPage() {
             onStartDraft={(data) => setStandaloneDraft(data)}
             onPostNote={handlePostNote}
             postingEntryId={postingEntryId}
+            profile={profile}
           />
         )}
         {tab === "history" && (
