@@ -224,6 +224,26 @@ export default function VoiceDiscoveryPage() {
             width: "100%",
           }}
         >
+          {/* Back button */}
+          {currentPair > 0 && (
+            <button
+              onClick={() => {
+                setCurrentPair(currentPair - 1);
+                setChoices((prev) => prev.slice(0, -1));
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 14,
+                color: DIM,
+                padding: "0 0 12px",
+                fontFamily: "inherit",
+              }}
+            >
+              &larr; Back
+            </button>
+          )}
           <div
             style={{
               height: 4,
