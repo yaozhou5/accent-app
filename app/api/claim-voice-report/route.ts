@@ -47,6 +47,8 @@ function buildEmailHtml(profile: VoiceProfile, magicLink: string): string {
       const norm = normalizeScore(key, raw);
       const labels = DIMENSION_LABELS[key];
       const pct = ((norm + 1) / 2) * 100;
+      const leftPct = Math.round(pct);
+      const rightPct = 100 - leftPct;
       return `
         <tr>
           <td style="padding: 16px 0;">
@@ -57,9 +59,15 @@ function buildEmailHtml(profile: VoiceProfile, magicLink: string): string {
               </tr>
               <tr>
                 <td colspan="2" style="padding-top: 8px;">
-                  <div style="height: 10px; background: #e5e5e5; border-radius: 5px; position: relative;">
-                    <div style="position: absolute; left: ${pct}%; top: -5px; width: 20px; height: 20px; border-radius: 50%; background: #4A6CF7; margin-left: -10px;"></div>
-                  </div>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background: #e5e5e5; border-radius: 5px;">
+                    <tr>
+                      <td width="${leftPct}%" style="height: 10px;"></td>
+                      <td width="20" style="height: 10px;">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background: #4A6CF7; margin-top: -5px;"></div>
+                      </td>
+                      <td width="${rightPct}%" style="height: 10px;"></td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
             </table>
