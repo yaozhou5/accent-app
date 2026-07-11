@@ -326,7 +326,7 @@ export default function VoiceReportPage() {
             cursor: "pointer",
           }}
         >
-          Start logging
+          See what you can write
         </button>
       </div>
     </div>
