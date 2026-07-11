@@ -168,20 +168,49 @@ export default function PlaybookEditor({
             className="font-mono text-[12px]"
             style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
           >
-            <ArrowLeft size={12} /> Back
+            <ArrowLeft size={12} /> Playbooks
           </button>
           <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
             {saving ? "Saving..." : saveError ? "Save failed" : draftId ? "Saved" : ""}
           </span>
         </div>
 
-        {/* Playbook name */}
-        <h2 className="font-serif mb-1" style={{ fontSize: 24, fontWeight: 600, color: INK }}>
-          {playbook.name}
-        </h2>
-        <p className="font-sans mb-8" style={{ fontSize: 14, color: FAINT }}>
-          {playbook.tagline}
-        </p>
+        {/* Playbook hero row */}
+        <div className="flex items-start gap-4 mb-8">
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 10,
+              background: playbook.color,
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "flex-end",
+              padding: "6px 8px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: 9,
+                fontWeight: 600,
+                color: playbook.textColor,
+                lineHeight: 1.1,
+                opacity: 0.8,
+              }}
+            >
+              {playbook.name}
+            </span>
+          </div>
+          <div>
+            <h2 className="font-serif" style={{ fontSize: 24, fontWeight: 600, color: INK, marginBottom: 2 }}>
+              {playbook.name}
+            </h2>
+            <p className="font-sans" style={{ fontSize: 14, color: FAINT, lineHeight: 1.4 }}>
+              {playbook.tagline}
+            </p>
+          </div>
+        </div>
 
         {/* Sections */}
         {playbook.sections.map((section, i) => {
@@ -249,25 +278,23 @@ export default function PlaybookEditor({
           );
         })}
 
-        {/* Word count */}
+        {/* Word count + Bottom actions */}
         {totalWords > 0 && (
-          <p className="font-mono text-[11px] mt-4" style={{ color: FAINT }}>
+          <p className="font-mono text-[11px] mt-4 text-right" style={{ color: FAINT }}>
             {totalWords} words
           </p>
         )}
-
-        {/* Bottom actions */}
-        <div className="mt-8 pb-12" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div className="mt-6 pb-12" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <button
             onClick={handleDevelop}
             disabled={developing || filledSections < 2 || !profile?.voice_profile}
             className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px]"
             style={{
-              background: filledSections < 2 || !profile?.voice_profile ? FAINT : BLUE,
+              background: filledSections < 2 || !profile?.voice_profile ? INK : INK,
               color: "#fff",
               border: "none",
               cursor: developing || filledSections < 2 ? "not-allowed" : "pointer",
-              opacity: filledSections < 2 ? 0.5 : 1,
+              opacity: filledSections < 2 ? 0.35 : 1,
             }}
           >
             {developing ? "Developing..." : "Develop into draft"}
@@ -285,7 +312,7 @@ export default function PlaybookEditor({
               padding: 0,
             }}
           >
-            {saving ? "Saving..." : "Save draft"}
+            {saving ? "Saving..." : "Save for later"}
           </button>
           {saveError && (
             <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
