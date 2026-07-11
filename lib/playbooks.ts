@@ -14,6 +14,10 @@ export interface Playbook {
   sections: PlaybookSection[];
   estimateWords: number;
   bestFor: string[];
+  color: string;
+  textColor: string;
+  description?: string;
+  gridSpan?: string; // CSS grid-column / grid-row shorthand
 }
 
 export const PLAYBOOKS: Playbook[] = [
@@ -38,6 +42,10 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 200,
     bestFor: ["LinkedIn", "Substack", "X"],
+    color: "#141414",
+    textColor: "#ffffff",
+    description: "Flip the script on a common belief. Show the other side.",
+    gridSpan: "span 2 / span 2",
   },
   {
     id: "story-to-lesson",
@@ -52,6 +60,10 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 250,
     bestFor: ["LinkedIn", "Substack", "小红书"],
+    color: "#C84B31",
+    textColor: "#ffffff",
+    description: "Turn a real moment into a lesson worth sharing.",
+    gridSpan: "span 2 / span 1",
   },
   {
     id: "insider-truth",
@@ -66,6 +78,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 200,
     bestFor: ["LinkedIn", "X", "Substack"],
+    color: "#2D3A3A",
+    textColor: "#ffffff",
   },
   {
     id: "build-log",
@@ -80,6 +94,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 100,
     bestFor: ["X", "LinkedIn", "小红书"],
+    color: "#E8DCC8",
+    textColor: "#1a1a1a",
   },
   {
     id: "list-takeaway",
@@ -97,6 +113,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 200,
     bestFor: ["LinkedIn", "X", "newsletter"],
+    color: "#4A5899",
+    textColor: "#ffffff",
   },
   {
     id: "origin-story",
@@ -112,6 +130,10 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 400,
     bestFor: ["Substack", "LinkedIn", "About page"],
+    color: "#B08D2E",
+    textColor: "#ffffff",
+    description: "Tell the real story of why you're building this.",
+    gridSpan: "span 2 / span 1",
   },
   {
     id: "cold-intro",
@@ -126,6 +148,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 80,
     bestFor: [],
+    color: "#F0EDE6",
+    textColor: "#1a1a1a",
   },
   {
     id: "follow-up",
@@ -139,6 +163,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 50,
     bestFor: [],
+    color: "#E6E2DA",
+    textColor: "#1a1a1a",
   },
   {
     id: "polite-push",
@@ -153,6 +179,10 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 60,
     bestFor: [],
+    color: "#D4CDC2",
+    textColor: "#1a1a1a",
+    description: "Get what you need without burning the relationship.",
+    gridSpan: "span 2 / span 1",
   },
 ];
 
