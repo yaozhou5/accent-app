@@ -482,26 +482,13 @@ function LogTab({
         if (menuOpen) setMenuOpen(null);
       }}
     >
-      {/* Welcome banner — first-time users with voice profile but no logs */}
-      {logEntries.length === 0 && profile?.voice_profile && (
-        <div className="mb-6 p-5 rounded-[12px]" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
-          <p className="font-sans" style={{ fontSize: 18, fontWeight: 700, color: INK, marginBottom: 6 }}>
-            Welcome. You&apos;re a {(profile.voice_profile as VoiceProfile).top_traits?.join(". ")}. writer.
-          </p>
-          <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.5 }}>
-            Log something from your week — a conversation, a win, a frustration. Accent will help you turn it into
-            content that sounds like you.
-          </p>
-        </div>
-      )}
-
-      {/* Compose — single text field with paste/drop/attach */}
+      {/* Compose — clean open textarea */}
       <div
         id="compose-card"
         className="mb-6 rounded-[12px] overflow-hidden transition-colors"
         style={{
-          border: dragOver ? `2px solid ${BLUE}` : `1px solid ${BORDER}`,
-          background: dragOver ? `${BLUE}04` : "#fff",
+          border: dragOver ? `2px solid ${BLUE}` : "none",
+          background: dragOver ? `${BLUE}04` : "#FAFAF7",
         }}
         onDragOver={(e) => {
           e.preventDefault();
@@ -559,8 +546,8 @@ function LogTab({
                     composeRef.current?.focus();
                   }, 0);
                 }}
-                className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors hover:bg-gray-50"
-                style={{ color: DIM, border: `1px solid ${BORDER}`, background: "transparent", cursor: "pointer" }}
+                className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors"
+                style={{ color: DIM, border: "none", background: "#F5F0E8", cursor: "pointer" }}
               >
                 {chip.label}
               </button>
@@ -780,7 +767,9 @@ function LogTab({
       {visibleEntries.length === 0 ? (
         <div className="text-center py-12">
           <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
-            {search || filter !== "all" ? "No matching notes." : "No notes yet. What happened today?"}
+            {search || filter !== "all"
+              ? "No matching notes."
+              : "What happened this week? Log a thought and turn it into a post."}
           </p>
         </div>
       ) : (
@@ -807,8 +796,8 @@ function LogTab({
                       className="rounded-[12px] transition-all relative"
                       style={{
                         padding: "20px 44px 20px 20px",
-                        border: `1px solid ${isSelected ? BLUE : BORDER}`,
-                        background: isSelected ? `${BLUE}04` : "#fff",
+                        border: "none",
+                        background: isSelected ? `${BLUE}06` : "#FAFAF7",
                         borderLeft: isQuote
                           ? `3px solid ${BLUE}`
                           : isLink
@@ -3535,7 +3524,7 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-      <div className="max-w-[640px] mx-auto px-5 pt-6 pb-12">
+      <div className={`mx-auto px-5 pt-6 pb-12 ${tab === "playbooks" ? "max-w-[900px]" : "max-w-[640px]"}`}>
         {tab === "log" && (
           <LogTab
             logEntries={logEntriesState}
@@ -3610,6 +3599,128 @@ export default function DashboardPage() {
                       (e.currentTarget as HTMLElement).style.transform = "scale(0.985)";
                     }}
                   >
+                    {/* Decorative graphic element */}
+                    {playbook.id === "contrarian-flip" && (
+                      <div style={{ position: "absolute", top: 16, right: 16, opacity: 0.06 }}>
+                        {[80, 56, 32].map((s) => (
+                          <div
+                            key={s}
+                            style={{
+                              width: s,
+                              height: s,
+                              border: `1.5px solid ${playbook.textColor}`,
+                              borderRadius: "50%",
+                              position: "absolute",
+                              top: (80 - s) / 2,
+                              right: (80 - s) / 2,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {playbook.id === "story-to-lesson" && (
+                      <div style={{ position: "absolute", top: 18, left: 20 }}>
+                        {[60, 44, 28].map((w, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: w,
+                              height: 2,
+                              background: playbook.textColor,
+                              opacity: 0.12 - i * 0.03,
+                              marginBottom: 6,
+                              borderRadius: 1,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {playbook.id === "insider-truth" && (
+                      <div style={{ position: "absolute", top: 14, right: 14, opacity: 0.07 }}>
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            border: `1.5px solid ${playbook.textColor}`,
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            border: `1.5px solid ${playbook.textColor}`,
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                          }}
+                        />
+                      </div>
+                    )}
+                    {playbook.id === "build-log" && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 14,
+                          left: 16,
+                          fontFamily: "monospace",
+                          fontSize: 10,
+                          color: playbook.textColor,
+                          opacity: 0.08,
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        log 01
+                        <br />
+                        log 02
+                      </div>
+                    )}
+                    {playbook.id === "list-takeaway" && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 10,
+                          left: 16,
+                          fontFamily: "Georgia, serif",
+                          fontSize: 42,
+                          fontWeight: 700,
+                          color: playbook.textColor,
+                          opacity: 0.06,
+                          lineHeight: 0.9,
+                        }}
+                      >
+                        1<br />2<br />3
+                      </div>
+                    )}
+                    {playbook.id === "origin-story" && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.22))",
+                          borderRadius: 12,
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+                    {playbook.id === "cold-intro" && (
+                      <div style={{ position: "absolute", top: 14, right: 14, fontSize: 20, opacity: 0.08 }}>
+                        &#9993;
+                      </div>
+                    )}
+                    {playbook.id === "follow-up" && (
+                      <div style={{ position: "absolute", top: 14, right: 14, fontSize: 18, opacity: 0.08 }}>
+                        &#8617;
+                      </div>
+                    )}
+                    {playbook.id === "polite-push" && (
+                      <div style={{ position: "absolute", top: 14, right: 14, fontSize: 18, opacity: 0.08 }}>
+                        &#9200;
+                      </div>
+                    )}
+
                     <p
                       style={{
                         fontFamily: "Georgia, serif",
@@ -3617,6 +3728,8 @@ export default function DashboardPage() {
                         fontWeight: 600,
                         lineHeight: 1.2,
                         marginBottom: playbook.description && isWide ? 4 : 6,
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       {playbook.name}
@@ -3628,6 +3741,8 @@ export default function DashboardPage() {
                           opacity: 0.7,
                           lineHeight: 1.3,
                           marginBottom: 6,
+                          position: "relative",
+                          zIndex: 1,
                         }}
                       >
                         {playbook.description}
@@ -3640,6 +3755,8 @@ export default function DashboardPage() {
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         opacity: 0.5,
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       {playbook.sections.length} sections · ~{playbook.estimateWords} words
