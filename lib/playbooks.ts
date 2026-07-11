@@ -1,0 +1,161 @@
+// lib/playbooks.ts
+
+export interface PlaybookSection {
+  id: string;
+  label: string;
+  helper: string;
+}
+
+export interface Playbook {
+  id: string;
+  name: string;
+  tagline: string;
+  category: "content" | "email";
+  sections: PlaybookSection[];
+  estimateWords: number;
+  bestFor: string[];
+}
+
+export const PLAYBOOKS: Playbook[] = [
+  {
+    id: "contrarian-flip",
+    name: "The contrarian flip",
+    tagline: "Challenge how most people think about something. You've seen the other side.",
+    category: "content",
+    sections: [
+      { id: "bold-claim", label: "Bold claim", helper: "What do most people get wrong? One sentence." },
+      {
+        id: "why-they-think-that",
+        label: "Why they think that",
+        helper: "What's the common logic? Why does it seem right?",
+      },
+      {
+        id: "what-youve-seen",
+        label: "What you've seen instead",
+        helper: "What does the reality look like from where you stand?",
+      },
+      { id: "takeaway", label: "One-line takeaway", helper: "Land it. One sentence." },
+    ],
+    estimateWords: 200,
+    bestFor: ["LinkedIn", "Substack", "X"],
+  },
+  {
+    id: "story-to-lesson",
+    name: "The story-to-lesson",
+    tagline: "Something happened. You learned from it. Share both.",
+    category: "content",
+    sections: [
+      { id: "what-happened", label: "What happened", helper: "Set the scene. What were you doing?" },
+      { id: "what-you-expected", label: "What you expected", helper: "What did you think would happen?" },
+      { id: "what-actually-happened", label: "What actually happened", helper: "The twist. What surprised you?" },
+      { id: "what-it-taught-you", label: "What it taught you", helper: "The lesson. One clear insight." },
+    ],
+    estimateWords: 250,
+    bestFor: ["LinkedIn", "Substack", "小红书"],
+  },
+  {
+    id: "insider-truth",
+    name: "The insider truth",
+    tagline: "Your industry says one thing publicly. The reality is different.",
+    category: "content",
+    sections: [
+      { id: "what-people-hear", label: "What people hear", helper: "The public narrative. What's the common belief?" },
+      { id: "what-actually-happens", label: "What actually happens", helper: "The reality from the inside." },
+      { id: "why-the-gap", label: "Why the gap exists", helper: "Why does this disconnect persist?" },
+      { id: "what-to-do", label: "What to do about it", helper: "Practical advice for the reader." },
+    ],
+    estimateWords: 200,
+    bestFor: ["LinkedIn", "X", "Substack"],
+  },
+  {
+    id: "build-log",
+    name: "The build log",
+    tagline: "Show what you made this week. Process over polish.",
+    category: "content",
+    sections: [
+      { id: "what-you-worked-on", label: "What you worked on", helper: "What did you build, ship, or fix?" },
+      { id: "one-decision", label: "One decision you made", helper: "A choice that shaped the work." },
+      { id: "why", label: "Why", helper: "What drove that decision?" },
+      { id: "whats-next", label: "What's next", helper: "What are you tackling next?" },
+    ],
+    estimateWords: 100,
+    bestFor: ["X", "LinkedIn", "小红书"],
+  },
+  {
+    id: "list-takeaway",
+    name: "The list takeaway",
+    tagline: "Distill what you know into a handful of sharp points.",
+    category: "content",
+    sections: [
+      { id: "context", label: "Context", helper: "One sentence. What prompted this list?" },
+      {
+        id: "points",
+        label: "3-5 points",
+        helper: "Each one a full thought, not a bullet. Make each point standalone.",
+      },
+      { id: "why-it-matters", label: "Why this matters", helper: "Tie it together. What should the reader take away?" },
+    ],
+    estimateWords: 200,
+    bestFor: ["LinkedIn", "X", "newsletter"],
+  },
+  {
+    id: "origin-story",
+    name: "The origin story",
+    tagline: "Why you're building this. The real version.",
+    category: "content",
+    sections: [
+      { id: "before", label: "What you were doing before", helper: "Set the stage. Where were you?" },
+      { id: "shift", label: "The moment something shifted", helper: "What happened that changed things?" },
+      { id: "what-you-did", label: "What you did about it", helper: "The action you took." },
+      { id: "where-you-are", label: "Where you are now", helper: "The current state." },
+      { id: "what-you-believe", label: "What you believe because of it", helper: "The conviction that drives you." },
+    ],
+    estimateWords: 400,
+    bestFor: ["Substack", "LinkedIn", "About page"],
+  },
+  {
+    id: "cold-intro",
+    name: "The cold intro",
+    tagline: "Reach out to someone who doesn't know you yet.",
+    category: "email",
+    sections: [
+      { id: "why-writing", label: "Why you're writing", helper: "One sentence. Get to the point." },
+      { id: "what-you-noticed", label: "What you noticed about their work", helper: "Show you've done your homework." },
+      { id: "what-youre-building", label: "What you're building", helper: "One sentence. No pitch deck." },
+      { id: "the-ask", label: "The ask", helper: "Specific and small. Easy to say yes to." },
+    ],
+    estimateWords: 80,
+    bestFor: [],
+  },
+  {
+    id: "follow-up",
+    name: "The follow-up",
+    tagline: "They haven't replied. Nudge without being annoying.",
+    category: "email",
+    sections: [
+      { id: "reference", label: "Reference the original message", helper: "Remind them what you sent." },
+      { id: "new-thing", label: "Add one new thing", helper: "Progress, insight, or reason to reply now." },
+      { id: "restate-ask", label: "Restate the ask", helper: "Same ask, fresh framing." },
+    ],
+    estimateWords: 50,
+    bestFor: [],
+  },
+  {
+    id: "polite-push",
+    name: "The polite push",
+    tagline: "You need something from someone. Be direct without being demanding.",
+    category: "email",
+    sections: [
+      { id: "context", label: "Context", helper: "What was agreed?" },
+      { id: "where-things-stand", label: "Where things stand", helper: "Current status." },
+      { id: "what-you-need", label: "What you need", helper: "Be specific." },
+      { id: "by-when", label: "By when", helper: "Give a deadline." },
+    ],
+    estimateWords: 60,
+    bestFor: [],
+  },
+];
+
+export function getPlaybook(id: string): Playbook | undefined {
+  return PLAYBOOKS.find((p) => p.id === id);
+}

@@ -8,6 +8,8 @@ export interface Draft {
   content: string;
   source_note: string | null;
   source_entry_id: string | null;
+  playbook_id: string | null;
+  playbook_sections: Record<string, string> | null;
   published: boolean;
   published_platform: string | null;
   published_url: string | null;
@@ -98,6 +100,59 @@ export async function createStandaloneDraft(
 
   if (error) {
     console.error("Failed to create standalone draft:", JSON.stringify(error));
+    return null;
+  }
+  return data as Draft;
+}
+
+export async function createPlaybookDraft(
+  playbookId: string,
+  sections: Record<string, string>,
+  content: string
+): Promise<Draft | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("drafts")
+    .insert({
+      user_id: user.id,
+      content,
+      playbook_id: playbookId,
+      playbook_sections: sections,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to create playbook draft:", JSON.stringify(error));
+    return null;
+  }
+  return data as Draft;
+}
+
+export async function savePlaybookDraft(
+  draftId: string,
+  sections: Record<string, string>,
+  content: string
+): Promise<Draft | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("drafts")
+    .update({
+      content,
+      playbook_sections: sections,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", draftId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to save playbook draft:", JSON.stringify(error));
     return null;
   }
   return data as Draft;
