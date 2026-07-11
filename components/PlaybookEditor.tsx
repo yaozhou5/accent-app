@@ -233,7 +233,7 @@ export default function PlaybookEditor({
                 className="font-sans text-[13px]"
                 style={{
                   color: FAINT,
-                  marginBottom: 8,
+                  marginBottom: 10,
                   lineHeight: 1.4,
                   opacity: hasContent ? 0 : 1,
                   height: hasContent ? 0 : "auto",
@@ -246,17 +246,41 @@ export default function PlaybookEditor({
               <textarea
                 value={value}
                 onChange={(e) => updateSection(section.id, e.target.value)}
-                placeholder=""
+                placeholder="Start typing..."
                 className="w-full outline-none resize-none font-sans"
                 style={{
                   fontSize: 16,
                   color: INK,
                   lineHeight: 1.8,
-                  padding: 0,
-                  border: "none",
-                  background: "transparent",
+                  padding: "12px 16px",
+                  borderLeft: "2px solid transparent",
+                  borderTop: "none",
+                  borderRight: "none",
+                  borderBottom: "none",
+                  background: "#FAFAF7",
+                  borderRadius: 12,
                   minHeight: 60,
                   overflow: "hidden",
+                  transition: "background 0.15s ease, border-color 0.15s ease",
+                  cursor: "text",
+                }}
+                onMouseEnter={(e) => {
+                  if (document.activeElement !== e.currentTarget) {
+                    (e.currentTarget as HTMLElement).style.background = "#F5F2EC";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (document.activeElement !== e.currentTarget) {
+                    (e.currentTarget as HTMLElement).style.background = "#FAFAF7";
+                  }
+                }}
+                onFocus={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderLeftColor = playbook.color;
+                  (e.currentTarget as HTMLElement).style.background = "#FAFAF7";
+                }}
+                onBlur={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent";
+                  (e.currentTarget as HTMLElement).style.background = "#FAFAF7";
                 }}
                 ref={(el) => {
                   if (el) {
