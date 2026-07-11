@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import type { Playbook } from "@/lib/playbooks";
-import { createPlaybookDraft, savePlaybookDraft, type Draft } from "@/lib/supabase/drafts";
+import { createPlaybookDraft, savePlaybookDraft, createStandaloneDraft, type Draft } from "@/lib/supabase/drafts";
 import type { UserProfile } from "@/lib/supabase/profiles";
 import type { VoiceProfile } from "@/lib/voice-dimensions";
 import { ArrowLeft } from "@/components/ArrowIcon";
@@ -26,12 +26,14 @@ export default function PlaybookEditor({
   profile,
   onBack,
   onSaveDone,
+  onDevelop,
 }: {
   playbook: Playbook;
   draft?: Draft;
   profile: UserProfile | null;
   onBack: () => void;
   onSaveDone: () => void;
+  onDevelop: (draft: Draft) => void;
 }) {
   const [sections, setSections] = useState<Record<string, string>>(() => {
     if (draft?.playbook_sections) return draft.playbook_sections;
@@ -47,13 +49,7 @@ export default function PlaybookEditor({
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef(JSON.stringify(sections));
 
-  // Inline annotations state
-  const [showEdits, setShowEdits] = useState(false);
-  const [annotations, setAnnotations] = useState<
-    { phrase: string; dimension: string; explanation: string; alternative: string }[]
-  >([]);
-  const [activeAnnotation, setActiveAnnotation] = useState<number | null>(null);
-  const [loadingEdits, setLoadingEdits] = useState(false);
+  const [developing, setDeveloping] = useState(false);
 
   const updateSection = (sectionId: string, value: string) => {
     setSections((prev) => {
@@ -105,21 +101,59 @@ export default function PlaybookEditor({
     }
   };
 
-  async function fetchAnnotations() {
-    if (annotations.length > 0 || loadingEdits || !profile?.voice_profile) return;
-    setLoadingEdits(true);
-    const vp = profile.voice_profile as VoiceProfile;
+  const filledSections = Object.values(sections).filter((v) => v.trim().length > 0).length;
+
+  async function handleDevelop() {
+    if (filledSections < 2 || developing || !profile?.voice_profile) return;
+    setDeveloping(true);
+
+    // Save playbook draft first
     const content = flattenSections(sections, playbook.sections);
+    let savedDraft;
+    if (draftId) {
+      savedDraft = await savePlaybookDraft(draftId, sections, content);
+    } else {
+      savedDraft = await createPlaybookDraft(playbook.id, sections, content);
+      if (savedDraft) setDraftId(savedDraft.id);
+    }
+
+    // Build structured input for the AI
+    const structuredInput = playbook.sections
+      .map((s) => {
+        const val = sections[s.id]?.trim();
+        return val ? `[${s.label}]\n${val}` : null;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+
     try {
-      const res = await fetch("/api/voice-notes", {
+      const res = await fetch("/api/generate-draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft: content, dimensions: vp.dimensions }),
+        body: JSON.stringify({
+          entryContent: structuredInput,
+          voiceProfile: profile.voice_profile,
+          businessContext: "",
+          platform: "linkedin",
+        }),
       });
-      const data = await res.json();
-      setAnnotations(data.notes || []);
-    } catch {}
-    setLoadingEdits(false);
+      if (!res.ok) throw new Error("Generate failed");
+      const draftText = await res.text();
+
+      // Create a new standalone draft with the developed content
+      const developed = await createStandaloneDraft(draftText, content, "");
+      if (developed) {
+        posthog.capture("playbook_developed", {
+          playbook_id: playbook.id,
+          word_count: draftText.trim().split(/\s+/).length,
+        });
+        onDevelop(developed);
+      }
+    } catch (err) {
+      console.error("Develop failed:", err);
+    } finally {
+      setDeveloping(false);
+    }
   }
 
   const totalWords = flattenSections(sections, playbook.sections).trim().split(/\s+/).filter(Boolean).length;
@@ -136,33 +170,9 @@ export default function PlaybookEditor({
           >
             <ArrowLeft size={12} /> Back
           </button>
-          <div className="flex items-center gap-3">
-            {profile?.voice_profile && (
-              <button
-                onClick={() => {
-                  const next = !showEdits;
-                  setShowEdits(next);
-                  if (next) fetchAnnotations();
-                  if (!next) setActiveAnnotation(null);
-                }}
-                disabled={loadingEdits || totalWords < 20}
-                className="font-mono text-[12px]"
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  color: showEdits ? BLUE : DIM,
-                  cursor: loadingEdits || totalWords < 20 ? "not-allowed" : "pointer",
-                  opacity: totalWords < 20 ? 0.4 : 1,
-                }}
-              >
-                {loadingEdits ? "Loading..." : showEdits ? "Hide edits" : "Voice check"}
-              </button>
-            )}
-            <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
-              {saving ? "Saving..." : saveError ? "Save failed" : draftId ? "Saved" : ""}
-            </span>
-          </div>
+          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
+            {saving ? "Saving..." : saveError ? "Save failed" : draftId ? "Saved" : ""}
+          </span>
         </div>
 
         {/* Playbook name */}
@@ -225,7 +235,7 @@ export default function PlaybookEditor({
                     el.style.height = Math.max(60, el.scrollHeight) + "px";
                   }
                 }}
-                readOnly={showEdits}
+                readOnly={false}
               />
               {i < playbook.sections.length - 1 && (
                 <div
@@ -246,85 +256,36 @@ export default function PlaybookEditor({
           </p>
         )}
 
-        {/* Annotations (when Voice check is on) */}
-        {showEdits && annotations.length > 0 && (
-          <div className="mt-6 mb-4">
-            <p
-              className="font-mono text-[11px] uppercase mb-3"
-              style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
-            >
-              Voice notes
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {annotations.map((note, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveAnnotation(activeAnnotation === i ? null : i)}
-                  style={{
-                    textAlign: "left",
-                    background: activeAnnotation === i ? "#f0f4ff" : "#f9fafb",
-                    border: `1px solid ${activeAnnotation === i ? BLUE : BORDER}`,
-                    borderRadius: 10,
-                    padding: "12px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <p
-                    className="font-mono text-[11px] uppercase"
-                    style={{ color: BLUE, fontWeight: 600, marginBottom: 6 }}
-                  >
-                    {note.dimension}
-                  </p>
-                  <p
-                    className="font-sans text-[14px]"
-                    style={{
-                      color: INK,
-                      borderBottom: `2px dotted ${BLUE}40`,
-                      display: "inline",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    &ldquo;{note.phrase}&rdquo;
-                  </p>
-                  {activeAnnotation === i && (
-                    <div className="mt-3 space-y-2">
-                      <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.5 }}>
-                        {note.explanation}
-                      </p>
-                      <p
-                        className="font-sans text-[13px]"
-                        style={{
-                          color: DIM,
-                          lineHeight: 1.5,
-                          fontStyle: "italic",
-                        }}
-                      >
-                        Alternative: {note.alternative}
-                      </p>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Bottom actions */}
-        <div className="mt-8 space-y-3 pb-12">
+        <div className="mt-8 pb-12" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <button
+            onClick={handleDevelop}
+            disabled={developing || filledSections < 2 || !profile?.voice_profile}
+            className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px]"
+            style={{
+              background: filledSections < 2 || !profile?.voice_profile ? FAINT : BLUE,
+              color: "#fff",
+              border: "none",
+              cursor: developing || filledSections < 2 ? "not-allowed" : "pointer",
+              opacity: filledSections < 2 ? 0.5 : 1,
+            }}
+          >
+            {developing ? "Developing..." : "Develop into draft"}
+          </button>
           <button
             onClick={handleExplicitSave}
             disabled={saving || totalWords === 0}
-            className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+            className="font-sans text-[13px]"
             style={{
-              background: "transparent",
-              color: totalWords === 0 ? FAINT : DIM,
-              border: `1.5px solid ${BORDER}`,
+              background: "none",
+              border: "none",
+              color: DIM,
               cursor: totalWords === 0 ? "not-allowed" : "pointer",
               opacity: totalWords === 0 ? 0.5 : 1,
+              padding: 0,
             }}
           >
-            Save draft
+            {saving ? "Saving..." : "Save draft"}
           </button>
           {saveError && (
             <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>

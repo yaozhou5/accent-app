@@ -3364,6 +3364,11 @@ export default function DashboardPage() {
           setTab("history");
           getAllDrafts().then(setDrafts);
         }}
+        onDevelop={(d) => {
+          setActivePlaybook(null);
+          setStandaloneDraft({ draft: d });
+          getAllDrafts().then(setDrafts);
+        }}
       />
     );
   }
