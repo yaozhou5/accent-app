@@ -2156,14 +2156,25 @@ function DraftsTab({
                   else onOpenStandaloneDraft(d);
                 }}
               >
-                {d.playbook_id && (
-                  <span
-                    className="font-mono text-[10px] uppercase px-2 py-0.5 rounded"
-                    style={{ background: `${BLUE}10`, color: BLUE, fontWeight: 600 }}
-                  >
-                    {getPlaybook(d.playbook_id)?.name || d.playbook_id}
-                  </span>
-                )}
+                {d.playbook_id &&
+                  (() => {
+                    const pb = getPlaybook(d.playbook_id);
+                    return (
+                      <span
+                        className="font-mono text-[10px] px-2 py-0.5 rounded"
+                        style={{
+                          background: pb?.color || `${BLUE}10`,
+                          color: pb?.textColor || BLUE,
+                          fontWeight: 600,
+                          fontFamily: "Georgia, serif",
+                          textTransform: "none",
+                          fontSize: 11,
+                        }}
+                      >
+                        {pb?.name || d.playbook_id}
+                      </span>
+                    );
+                  })()}
                 {d.prompt && (
                   <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>
                     {d.prompt}
@@ -2932,6 +2943,33 @@ function StandaloneWriteMode({
             <span style={{ color: DIM }}>{(profile.voice_profile as VoiceProfile).top_traits?.join(". ")}.</span>
           </p>
         )}
+
+        {/* Playbook origin tag */}
+        {draft.playbook_id &&
+          (() => {
+            const pb = getPlaybook(draft.playbook_id);
+            return pb ? (
+              <div className="flex items-center gap-2 mb-4">
+                <span
+                  style={{
+                    display: "inline-block",
+                    fontFamily: "Georgia, serif",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: pb.color,
+                    color: pb.textColor,
+                    padding: "4px 12px",
+                    borderRadius: 20,
+                  }}
+                >
+                  {pb.name}
+                </span>
+                <span className="font-mono text-[11px]" style={{ color: FAINT }}>
+                  Developed from your playbook
+                </span>
+              </div>
+            ) : null;
+          })()}
 
         {draft.source_note && (
           <div className="mb-6">
