@@ -3511,87 +3511,114 @@ export default function DashboardPage() {
         )}
         {tab === "playbooks" && (
           <div>
-            {/* Content playbooks */}
-            <p
-              className="font-mono text-[11px] uppercase mb-4"
-              style={{ color: FAINT, letterSpacing: "0.06em", fontWeight: 600 }}
-            >
-              Content playbooks
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-              {PLAYBOOKS.filter((p) => p.category === "content").map((playbook) => (
-                <button
-                  key={playbook.id}
-                  onClick={() => setActivePlaybook({ playbook })}
-                  style={{
-                    textAlign: "left",
-                    background: "#fff",
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 12,
-                    padding: "20px 24px",
-                    cursor: "pointer",
-                    transition: "border-color 0.15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = BLUE;
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = BORDER;
-                  }}
-                >
-                  <p className="font-sans" style={{ fontSize: 17, fontWeight: 700, color: INK, marginBottom: 4 }}>
-                    {playbook.name}
-                  </p>
-                  <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.4, marginBottom: 10 }}>
-                    {playbook.tagline}
-                  </p>
-                  <p className="font-mono text-[11px]" style={{ color: FAINT }}>
-                    {playbook.sections.length} sections · ~{playbook.estimateWords} words
-                  </p>
-                </button>
-              ))}
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <p
+                className="font-mono text-[11px] uppercase"
+                style={{ color: FAINT, letterSpacing: "0.06em", fontWeight: 600 }}
+              >
+                Playbooks
+              </p>
+              <p className="font-mono text-[11px]" style={{ color: FAINT }}>
+                {PLAYBOOKS.length} structures
+              </p>
             </div>
 
-            {/* Email playbooks */}
-            <p
-              className="font-mono text-[11px] uppercase mb-4"
-              style={{ color: FAINT, letterSpacing: "0.06em", fontWeight: 600 }}
+            {/* Bento grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gridAutoRows: 150,
+                gap: 10,
+              }}
             >
-              Email playbooks
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {PLAYBOOKS.filter((p) => p.category === "email").map((playbook) => (
-                <button
-                  key={playbook.id}
-                  onClick={() => setActivePlaybook({ playbook })}
-                  style={{
-                    textAlign: "left",
-                    background: "#fff",
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 12,
-                    padding: "20px 24px",
-                    cursor: "pointer",
-                    transition: "border-color 0.15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = BLUE;
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = BORDER;
-                  }}
-                >
-                  <p className="font-sans" style={{ fontSize: 17, fontWeight: 700, color: INK, marginBottom: 4 }}>
-                    {playbook.name}
-                  </p>
-                  <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.4, marginBottom: 10 }}>
-                    {playbook.tagline}
-                  </p>
-                  <p className="font-mono text-[11px]" style={{ color: FAINT }}>
-                    {playbook.sections.length} sections · ~{playbook.estimateWords} words
-                  </p>
-                </button>
-              ))}
+              {PLAYBOOKS.map((playbook) => {
+                const isWide = playbook.gridSpan?.includes("span 2");
+                const isHero = playbook.gridSpan === "span 2 / span 2";
+                return (
+                  <button
+                    key={playbook.id}
+                    onClick={() => setActivePlaybook({ playbook })}
+                    style={{
+                      gridColumn: playbook.gridSpan?.split(" / ")[0] || "span 1",
+                      gridRow: playbook.gridSpan?.split(" / ")[1] || "span 1",
+                      background: playbook.color,
+                      color: playbook.textColor,
+                      border: "none",
+                      borderRadius: 12,
+                      padding: isHero ? "24px 28px" : "16px 20px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-end",
+                      position: "relative",
+                      overflow: "hidden",
+                      transition: "transform 0.18s ease, filter 0.18s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.transform = "scale(0.985)";
+                      (e.currentTarget as HTMLElement).style.filter = "brightness(1.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.transform = "scale(1)";
+                      (e.currentTarget as HTMLElement).style.filter = "brightness(1)";
+                    }}
+                    onMouseDown={(e) => {
+                      (e.currentTarget as HTMLElement).style.transform = "scale(0.97)";
+                    }}
+                    onMouseUp={(e) => {
+                      (e.currentTarget as HTMLElement).style.transform = "scale(0.985)";
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "Georgia, serif",
+                        fontSize: isHero ? 22 : isWide ? 18 : 15,
+                        fontWeight: 600,
+                        lineHeight: 1.2,
+                        marginBottom: playbook.description && isWide ? 4 : 6,
+                      }}
+                    >
+                      {playbook.name}
+                    </p>
+                    {playbook.description && isWide && (
+                      <p
+                        style={{
+                          fontSize: 12,
+                          opacity: 0.7,
+                          lineHeight: 1.3,
+                          marginBottom: 6,
+                        }}
+                      >
+                        {playbook.description}
+                      </p>
+                    )}
+                    <p
+                      className="font-mono"
+                      style={{
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        opacity: 0.5,
+                      }}
+                    >
+                      {playbook.sections.length} sections · ~{playbook.estimateWords} words
+                    </p>
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Mobile grid override */}
+            <style>{`
+              @media (max-width: 640px) {
+                [style*="grid-template-columns: repeat(4"] {
+                  grid-template-columns: repeat(2, 1fr) !important;
+                }
+              }
+            `}</style>
           </div>
         )}
         {tab === "history" && (
