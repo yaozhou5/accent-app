@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getProfile, upsertProfile, type UserProfile } from "@/lib/supabase/profiles";
 import type { VoiceProfile } from "@/lib/voice-dimensions";
@@ -128,7 +128,14 @@ function getReadableTitle(url: string): string {
 }
 
 type Tab = "log" | "playbooks" | "history";
-type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
+const BENTO_COLORS = ["#C84B31", "#4A5899", "#2D3A3A", "#B08D2E", "#8B3A3A"];
+const CHIP_COLORS: Record<string, string> = {
+  "A call or conversation": "#C84B31",
+  "A win": "#4A5899",
+  "A frustration": "#8B3A3A",
+  "Something I read": "#2D3A3A",
+  "A decision I made": "#B08D2E",
+};
 
 /* ══════════════ LOG TAB ══════════════ */
 function LogTab({
@@ -173,9 +180,8 @@ function LogTab({
   const [toast, setToast] = useState<string | null>(null);
   const [bookmarkNoteId, setBookmarkNoteId] = useState<string | null>(null);
   const [bookmarkNote, setBookmarkNote] = useState("");
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<LogFilter>("all");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [ogCache, setOgCache] = useState<
     Record<string, { title: string | null; description: string | null; image: string | null }>
   >({});
@@ -236,19 +242,10 @@ function LogTab({
   }
   const isUsedInPlan = (e: LogEntry) => e.content && usedContents.has(e.content.toLowerCase().trim());
 
-  // Filter + search
+  // Filter entries (show all, just exclude archived and apply tag filter)
   const visibleEntries = logEntries.filter((e) => {
     if (e.archived) return false;
-    if (filter === "notes" && e.type !== "note") return false;
-    if (filter === "links" && e.type !== "link") return false;
-    if (filter === "quotes" && e.type !== "quote") return false;
-    if (filter === "bookmarked" && !e.bookmarked) return false;
-    if (filter === "unused" && (isUsedInPlan(e) || e.bookmarked)) return false;
     if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      if (!(e.content || "").toLowerCase().includes(q) && !(e.tags || []).some((t) => t.includes(q))) return false;
-    }
     return true;
   });
 
@@ -459,19 +456,6 @@ function LogTab({
     setTimeout(() => setToast(null), 1500);
   };
 
-  const placeholders: Record<LogEntryType, string> = {
-    note: "Quick note... what happened today, an idea, something you learned",
-    link: "Paste a URL that inspired you...",
-    quote: "A quote or snippet you want to remember...",
-  };
-  const FILTERS: { key: LogFilter; label: string }[] = [
-    { key: "all", label: "All" },
-    { key: "notes", label: "Notes" },
-    { key: "links", label: "Links" },
-    { key: "quotes", label: "Quotes" },
-    { key: "bookmarked", label: "Saved" },
-    { key: "unused", label: "Unused" },
-  ];
   const availableTags = Array.from(new Set(logEntries.filter((e) => !e.archived).flatMap((e) => e.tags || [])))
     .filter(Boolean)
     .sort();
@@ -537,21 +521,35 @@ function LogTab({
               { label: "A frustration", stem: "I got frustrated when " },
               { label: "Something I read", stem: "I read something that stuck with me: " },
               { label: "A decision I made", stem: "I decided to " },
-            ].map((chip) => (
-              <button
-                key={chip.label}
-                onClick={() => {
-                  setInput(input.trim() ? input + "\n" + chip.stem : chip.stem);
-                  setTimeout(() => {
-                    composeRef.current?.focus();
-                  }, 0);
-                }}
-                className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors"
-                style={{ color: DIM, border: "none", background: "#F5F0E8", cursor: "pointer" }}
-              >
-                {chip.label}
-              </button>
-            ))}
+            ].map((chip) => {
+              const isActive = selectedType === chip.label;
+              const chipColor = CHIP_COLORS[chip.label] || DIM;
+              return (
+                <button
+                  key={chip.label}
+                  onClick={() => {
+                    if (isActive) {
+                      setSelectedType(null);
+                    } else {
+                      setSelectedType(chip.label);
+                      setInput(input.trim() ? input + "\n" + chip.stem : chip.stem);
+                      setTimeout(() => {
+                        composeRef.current?.focus();
+                      }, 0);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors"
+                  style={{
+                    color: isActive ? "#fff" : DIM,
+                    border: isActive ? "none" : "1px solid #e5e5e5",
+                    background: isActive ? chipColor : "transparent",
+                    cursor: "pointer",
+                  }}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
           </div>
         )}
         <textarea
@@ -651,72 +649,35 @@ function LogTab({
         </p>
       )}
 
-      {/* Search + filters */}
-      {logEntries.length > 0 && (
-        <div className="mb-6 space-y-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes..."
-            className="w-full outline-none font-sans"
-            style={{
-              fontSize: 14,
-              color: INK,
-              padding: "10px 14px",
-              border: `1px solid ${BORDER}`,
-              borderRadius: 8,
-              background: "#fff",
-            }}
-          />
-          <div className="flex items-center gap-2 flex-wrap">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => {
-                  setFilter(f.key);
-                }}
-                className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
-                style={{
-                  background: filter === f.key ? `${BLUE}10` : "transparent",
-                  color: filter === f.key ? BLUE : FAINT,
-                  border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`,
-                  cursor: "pointer",
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          {availableTags.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>
-                Tags:
-              </span>
-              {availableTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
-                  className="font-mono text-[11px] px-2.5 py-1 rounded-full transition-all"
-                  style={{
-                    background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent",
-                    color: TAG_COLORS[tag] || DIM,
-                    border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`,
-                    cursor: "pointer",
-                  }}
-                >
-                  {tag}
-                </button>
-              ))}
-              {tagFilter && (
-                <button
-                  onClick={() => setTagFilter(null)}
-                  className="font-sans text-[11px]"
-                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+      {/* Tag filters */}
+      {logEntries.length > 0 && availableTags.length > 0 && (
+        <div className="mb-6 flex items-center gap-2 flex-wrap">
+          <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>
+            Tags:
+          </span>
+          {availableTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+              className="font-mono text-[11px] px-2.5 py-1 rounded-full transition-all"
+              style={{
+                background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent",
+                color: TAG_COLORS[tag] || DIM,
+                border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`,
+                cursor: "pointer",
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+          {tagFilter && (
+            <button
+              onClick={() => setTagFilter(null)}
+              className="font-sans text-[11px]"
+              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+            >
+              Clear
+            </button>
           )}
         </div>
       )}
@@ -763,29 +724,39 @@ function LogTab({
         </div>
       )}
 
-      {/* Feed */}
-      {visibleEntries.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="font-sans" style={{ fontSize: 15, color: FAINT }}>
-            {search || filter !== "all"
-              ? "No matching notes."
-              : "What happened this week? Log a thought and turn it into a post."}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {dayGroups.map(({ label, entries: dayEntries }) => (
-            <div key={label}>
-              <span
-                className="font-mono uppercase block mb-3"
-                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-              >
-                {label}
-              </span>
-              <div className="space-y-3">
+      {/* Bento grid feed */}
+      <style>{`@media (max-width: 640px) { .bento-log-grid { grid-template-columns: repeat(2, 1fr) !important; } }`}</style>
+      <div
+        className="bento-log-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 10,
+          gridAutoRows: "minmax(120px, auto)",
+        }}
+      >
+        {visibleEntries.length === 0 ? (
+          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 0" }}>
+            <p style={{ fontSize: 18, color: "#6B6860" }}>What happened this week?</p>
+            <p style={{ fontSize: 14, color: "#A8A49C", marginTop: 8 }}>Log a thought and turn it into a post.</p>
+          </div>
+        ) : (
+          <>
+            {dayGroups.map(({ label: dayLabel, entries: dayEntries }) => (
+              <React.Fragment key={dayLabel}>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <p
+                    className="font-mono text-[11px] uppercase"
+                    style={{ color: "#A8A49C", letterSpacing: "0.06em", fontWeight: 600, padding: "8px 0" }}
+                  >
+                    {dayLabel}
+                  </p>
+                </div>
                 {dayEntries.map((entry) => {
-                  const isQuote = entry.type === "quote";
-                  const isLink = entry.type === "link";
+                  const contentLen = (entry.content || "").length;
+                  const gridSpan = contentLen > 200 ? "span 3" : contentLen > 80 ? "span 2" : "span 1";
+                  const globalIdx = visibleEntries.indexOf(entry);
+                  const bgColor = BENTO_COLORS[globalIdx % BENTO_COLORS.length];
                   const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
                   const used = isUsedInPlan(entry);
                   const isSelected = selected.has(entry.id);
@@ -793,33 +764,38 @@ function LogTab({
                     <div
                       key={entry.id}
                       onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
-                      className="rounded-[12px] transition-all relative"
+                      className="relative overflow-hidden"
                       style={{
-                        padding: "20px 44px 20px 20px",
-                        border: "none",
-                        background: isSelected ? `${BLUE}06` : "#FAFAF7",
-                        borderLeft: isQuote
-                          ? `3px solid ${BLUE}`
-                          : isLink
-                            ? `3px solid #0d9488`
-                            : isSelected
-                              ? `3px solid ${BLUE}`
-                              : `1px solid ${BORDER}`,
+                        gridColumn: gridSpan,
+                        borderRadius: 12,
+                        padding: "16px 20px",
+                        background: isSelected ? `${BLUE}` : bgColor,
+                        color: "#fff",
                         cursor: selectMode ? "pointer" : "default",
+                        transition: "transform 0.18s, filter 0.18s",
+                        position: "relative",
+                      }}
+                      onMouseEnter={(ev) => {
+                        (ev.currentTarget as HTMLElement).style.transform = "scale(0.985)";
+                        (ev.currentTarget as HTMLElement).style.filter = "brightness(1.08)";
+                      }}
+                      onMouseLeave={(ev) => {
+                        (ev.currentTarget as HTMLElement).style.transform = "scale(1)";
+                        (ev.currentTarget as HTMLElement).style.filter = "brightness(1)";
                       }}
                     >
                       {/* Menu */}
                       {!selectMode && editingId !== entry.id && (
-                        <div className="absolute" style={{ top: 8, right: 4 }}>
+                        <div className="absolute" style={{ top: 8, right: 4, zIndex: 2 }}>
                           <button
                             onClick={(ev) => {
                               ev.stopPropagation();
                               setMenuOpen(menuOpen === entry.id ? null : entry.id);
                             }}
-                            className="rounded hover:bg-gray-100 flex items-center justify-center"
+                            className="rounded hover:bg-white/10 flex items-center justify-center"
                             style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}
                           >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="#6B7280">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="#fff">
                               <circle cx="8" cy="3" r="1.5" />
                               <circle cx="8" cy="8" r="1.5" />
                               <circle cx="8" cy="13" r="1.5" />
@@ -974,27 +950,21 @@ function LogTab({
                         </div>
                       ) : (
                         <>
-                          {isQuote && <span style={{ fontSize: 22, color: FAINT, lineHeight: 1 }}>"</span>}
                           {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
                             <p
                               className="font-sans"
                               style={{
                                 fontSize: 15,
-                                color: BODY,
+                                color: "#fff",
                                 lineHeight: 1.6,
                                 whiteSpace: "pre-wrap",
-                                fontStyle: isQuote ? "italic" : "normal",
+                                paddingRight: 28,
                               }}
                             >
                               {entry.content}
                             </p>
                           )}
                         </>
-                      )}
-                      {isQuote && entry.source && (
-                        <p className="font-sans mt-1" style={{ fontSize: 12, color: FAINT }}>
-                          — {entry.source}
-                        </p>
                       )}
                       {(() => {
                         const images =
@@ -1011,7 +981,11 @@ function LogTab({
                                 src={images[0]}
                                 alt=""
                                 className="w-full rounded-[10px] cursor-pointer hover:opacity-95"
-                                style={{ maxHeight: 360, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                style={{
+                                  maxHeight: 200,
+                                  objectFit: "cover",
+                                  border: "1px solid rgba(255,255,255,0.2)",
+                                }}
                                 onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)}
                               />
                             ) : (
@@ -1022,7 +996,11 @@ function LogTab({
                                     src={url}
                                     alt=""
                                     className="w-full rounded-[8px] cursor-pointer hover:opacity-95"
-                                    style={{ height: 140, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                                    style={{
+                                      height: 100,
+                                      objectFit: "cover",
+                                      border: "1px solid rgba(255,255,255,0.2)",
+                                    }}
                                     onClick={() => setExpandedImage(expandedImage === url ? null : url)}
                                   />
                                 ))}
@@ -1033,7 +1011,7 @@ function LogTab({
                                 src={images[0]}
                                 alt=""
                                 className="w-full rounded-[10px] mt-2"
-                                style={{ border: `1px solid ${BORDER}` }}
+                                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
                               />
                             )}
                             {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
@@ -1041,13 +1019,13 @@ function LogTab({
                                 src={expandedImage}
                                 alt=""
                                 className="w-full rounded-[8px] mt-2"
-                                style={{ border: `1px solid ${BORDER}` }}
+                                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
                               />
                             )}
                           </div>
                         );
                       })()}
-                      {(isLink || entryUrl) &&
+                      {(entry.type === "link" || entryUrl) &&
                         entryUrl &&
                         (() => {
                           const og = ogCache[entryUrl];
@@ -1057,20 +1035,20 @@ function LogTab({
                               target="_blank"
                               rel="noopener noreferrer"
                               className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity"
-                              style={{ border: `1px solid ${BORDER}` }}
+                              style={{ border: "1px solid rgba(255,255,255,0.2)" }}
                             >
                               {og?.image && (
                                 <img
                                   src={og.image}
                                   alt=""
                                   className="w-full"
-                                  style={{ maxHeight: 160, objectFit: "cover" }}
+                                  style={{ maxHeight: 120, objectFit: "cover" }}
                                 />
                               )}
-                              <div style={{ padding: "12px 14px" }}>
+                              <div style={{ padding: "10px 12px" }}>
                                 <p
                                   className="font-sans font-semibold"
-                                  style={{ fontSize: 14, color: INK, lineHeight: 1.4 }}
+                                  style={{ fontSize: 13, color: "#fff", lineHeight: 1.4 }}
                                 >
                                   {og?.title || getReadableTitle(entryUrl)}
                                 </p>
@@ -1078,8 +1056,8 @@ function LogTab({
                                   <p
                                     className="font-sans mt-1"
                                     style={{
-                                      fontSize: 13,
-                                      color: BODY,
+                                      fontSize: 12,
+                                      color: "rgba(255,255,255,0.7)",
                                       lineHeight: 1.4,
                                       display: "-webkit-box",
                                       WebkitLineClamp: 2,
@@ -1090,7 +1068,10 @@ function LogTab({
                                     {og.description}
                                   </p>
                                 )}
-                                <span className="font-mono block mt-1.5" style={{ fontSize: 11, color: FAINT }}>
+                                <span
+                                  className="font-mono block mt-1"
+                                  style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}
+                                >
                                   {getDomain(entryUrl)}
                                 </span>
                               </div>
@@ -1098,30 +1079,40 @@ function LogTab({
                           );
                         })()}
                       <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>
-                          {getDayLabel(entry.created_at)} {formatTime(entry.created_at)}
+                        {/* Type indicator dot */}
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.5)",
+                            display: "inline-block",
+                          }}
+                        />
+                        <span className="font-mono" style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
+                          {formatTime(entry.created_at)}
                         </span>
                         {entry.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="font-mono text-[12px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ background: `${TAG_COLORS[tag] || DIM}15`, color: TAG_COLORS[tag] || DIM }}
+                            className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
                           >
                             {tag}
                           </span>
                         ))}
                         {used && (
                           <span
-                            className="font-mono text-[11px] px-2 py-0.5 rounded-full"
-                            style={{ background: `${BLUE}10`, color: BLUE }}
+                            className="font-mono text-[10px] px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
                           >
                             Used in Ideas
                           </span>
                         )}
                         {entry.bookmarked && (
                           <span
-                            className="font-mono text-[11px] px-2 py-0.5 rounded-full"
-                            style={{ background: "#f59e0b15", color: "#f59e0b" }}
+                            className="font-mono text-[10px] px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
                           >
                             Saved
                           </span>
@@ -1132,28 +1123,28 @@ function LogTab({
                               ev.stopPropagation();
                               handleToggleBookmark(entry.id, entry.bookmarked || false);
                             }}
-                            className="ml-auto p-2"
+                            className="ml-auto p-1"
                             style={{
                               background: "none",
                               border: "none",
                               cursor: "pointer",
-                              minWidth: 44,
-                              minHeight: 44,
+                              minWidth: 32,
+                              minHeight: 32,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                             }}
                           >
                             <svg
-                              width="16"
-                              height="16"
+                              width="14"
+                              height="14"
                               viewBox="0 0 24 24"
-                              fill={entry.bookmarked ? BLUE : "none"}
-                              stroke={entry.bookmarked ? BLUE : FAINT}
+                              fill={entry.bookmarked ? "#fff" : "none"}
+                              stroke="#fff"
                               strokeWidth="1.5"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              style={{ transition: "fill 0.2s, stroke 0.2s" }}
+                              style={{ transition: "fill 0.2s", opacity: entry.bookmarked ? 1 : 0.5 }}
                             >
                               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                             </svg>
@@ -1205,11 +1196,11 @@ function LogTab({
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              </React.Fragment>
+            ))}
+          </>
+        )}
+      </div>
 
       {/* Toast */}
       {toast && (
@@ -3524,7 +3515,7 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-      <div className={`mx-auto px-5 pt-6 pb-12 ${tab === "playbooks" ? "max-w-[900px]" : "max-w-[640px]"}`}>
+      <div className={`mx-auto px-5 pt-6 pb-12 ${tab === "history" ? "max-w-[640px]" : ""}`}>
         {tab === "log" && (
           <LogTab
             logEntries={logEntriesState}
