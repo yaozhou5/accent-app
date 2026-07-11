@@ -52,6 +52,8 @@ import {
   type CoachingMessage,
   type CoachingSuggestion,
 } from "@/lib/supabase/coaching";
+import { PLAYBOOKS, getPlaybook, type Playbook } from "@/lib/playbooks";
+import PlaybookEditor from "@/components/PlaybookEditor";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -125,7 +127,7 @@ function getReadableTitle(url: string): string {
   }
 }
 
-type Tab = "log" | "history";
+type Tab = "log" | "playbooks" | "history";
 type LogFilter = "all" | "notes" | "links" | "quotes" | "bookmarked" | "unused";
 
 /* ══════════════ LOG TAB ══════════════ */
@@ -2047,12 +2049,14 @@ function DraftsTab({
   allPlans,
   onOpenDraft,
   onOpenStandaloneDraft,
+  onOpenPlaybookDraft,
   onDraftsUpdated,
 }: {
   drafts: Draft[];
   allPlans: ContentPlan[];
   onOpenDraft: (planId: string, postIndex: number) => void;
   onOpenStandaloneDraft: (draft: Draft) => void;
+  onOpenPlaybookDraft: (draft: Draft, playbook: Playbook) => void;
   onDraftsUpdated: () => void;
 }) {
   const [filter, setFilter] = useState<"all" | "drafts" | "published">("all");
@@ -2140,8 +2144,26 @@ function DraftsTab({
             >
               <div
                 className="cursor-pointer"
-                onClick={() => (d.plan_id ? onOpenDraft(d.plan_id, d.post_index ?? 0) : onOpenStandaloneDraft(d))}
+                onClick={() => {
+                  if (d.playbook_id) {
+                    const pb = getPlaybook(d.playbook_id);
+                    if (pb && d.playbook_sections) {
+                      onOpenPlaybookDraft(d, pb);
+                      return;
+                    }
+                  }
+                  if (d.plan_id) onOpenDraft(d.plan_id, d.post_index ?? 0);
+                  else onOpenStandaloneDraft(d);
+                }}
               >
+                {d.playbook_id && (
+                  <span
+                    className="font-mono text-[10px] uppercase px-2 py-0.5 rounded"
+                    style={{ background: `${BLUE}10`, color: BLUE, fontWeight: 600 }}
+                  >
+                    {getPlaybook(d.playbook_id)?.name || d.playbook_id}
+                  </span>
+                )}
                 {d.prompt && (
                   <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>
                     {d.prompt}
@@ -3174,7 +3196,7 @@ export default function DashboardPage() {
   const [tab, setTabRaw] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "") as Tab;
-      if (["log", "history"].includes(hash)) return hash;
+      if (["log", "playbooks", "history"].includes(hash)) return hash;
     }
     return "log";
   });
@@ -3189,7 +3211,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const handlePop = (e: PopStateEvent) => {
       const hash = window.location.hash.replace("#", "") as Tab;
-      if (["log", "history"].includes(hash)) setTabRaw(hash);
+      if (["log", "playbooks", "history"].includes(hash)) setTabRaw(hash);
       else setTabRaw("log");
     };
     window.addEventListener("popstate", handlePop);
@@ -3198,6 +3220,7 @@ export default function DashboardPage() {
   // ideasWeek removed — Ideas tab no longer exists
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
   const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
+  const [activePlaybook, setActivePlaybook] = useState<{ playbook: Playbook; draft?: Draft } | null>(null);
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
   const [postingEntryId, setPostingEntryId] = useState<string | null>(null);
@@ -3328,6 +3351,23 @@ export default function DashboardPage() {
     }
   }
 
+  // Playbook editor mode
+  if (activePlaybook) {
+    return (
+      <PlaybookEditor
+        playbook={activePlaybook.playbook}
+        draft={activePlaybook.draft}
+        profile={profile}
+        onBack={() => setActivePlaybook(null)}
+        onSaveDone={() => {
+          setActivePlaybook(null);
+          setTab("history");
+          getAllDrafts().then(setDrafts);
+        }}
+      />
+    );
+  }
+
   // Standalone write mode (from note → draft)
   if (standaloneDraft) {
     return (
@@ -3388,6 +3428,7 @@ export default function DashboardPage() {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "log", label: "Log" },
+    { key: "playbooks", label: "Playbooks" },
     { key: "history", label: "History" },
   ];
 
@@ -3463,12 +3504,98 @@ export default function DashboardPage() {
             profile={profile}
           />
         )}
+        {tab === "playbooks" && (
+          <div>
+            {/* Content playbooks */}
+            <p
+              className="font-mono text-[11px] uppercase mb-4"
+              style={{ color: FAINT, letterSpacing: "0.06em", fontWeight: 600 }}
+            >
+              Content playbooks
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
+              {PLAYBOOKS.filter((p) => p.category === "content").map((playbook) => (
+                <button
+                  key={playbook.id}
+                  onClick={() => setActivePlaybook({ playbook })}
+                  style={{
+                    textAlign: "left",
+                    background: "#fff",
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 12,
+                    padding: "20px 24px",
+                    cursor: "pointer",
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = BLUE;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = BORDER;
+                  }}
+                >
+                  <p className="font-sans" style={{ fontSize: 17, fontWeight: 700, color: INK, marginBottom: 4 }}>
+                    {playbook.name}
+                  </p>
+                  <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.4, marginBottom: 10 }}>
+                    {playbook.tagline}
+                  </p>
+                  <p className="font-mono text-[11px]" style={{ color: FAINT }}>
+                    {playbook.sections.length} sections · ~{playbook.estimateWords} words
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            {/* Email playbooks */}
+            <p
+              className="font-mono text-[11px] uppercase mb-4"
+              style={{ color: FAINT, letterSpacing: "0.06em", fontWeight: 600 }}
+            >
+              Email playbooks
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {PLAYBOOKS.filter((p) => p.category === "email").map((playbook) => (
+                <button
+                  key={playbook.id}
+                  onClick={() => setActivePlaybook({ playbook })}
+                  style={{
+                    textAlign: "left",
+                    background: "#fff",
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 12,
+                    padding: "20px 24px",
+                    cursor: "pointer",
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = BLUE;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = BORDER;
+                  }}
+                >
+                  <p className="font-sans" style={{ fontSize: 17, fontWeight: 700, color: INK, marginBottom: 4 }}>
+                    {playbook.name}
+                  </p>
+                  <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.4, marginBottom: 10 }}>
+                    {playbook.tagline}
+                  </p>
+                  <p className="font-mono text-[11px]" style={{ color: FAINT }}>
+                    {playbook.sections.length} sections · ~{playbook.estimateWords} words
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {tab === "history" && (
           <DraftsTab
             drafts={draftsState}
             allPlans={allPlans}
             onOpenDraft={(pid, pi) => setWriteMode({ planId: pid, postIndex: pi })}
             onOpenStandaloneDraft={(d) => setStandaloneDraft({ draft: d })}
+            onOpenPlaybookDraft={(d, pb) => setActivePlaybook({ playbook: pb, draft: d })}
             onDraftsUpdated={() => getAllDrafts().then(setDrafts)}
           />
         )}
