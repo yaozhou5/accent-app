@@ -146,15 +146,13 @@ export default function PlaybookEditor({
                   if (!next) setActiveAnnotation(null);
                 }}
                 disabled={loadingEdits || totalWords < 20}
+                className="font-mono text-[12px]"
                 style={{
-                  background: showEdits ? `${BLUE}10` : "transparent",
-                  border: `1.5px solid ${showEdits ? BLUE : FAINT}`,
-                  borderRadius: 8,
-                  padding: "8px 16px",
-                  fontSize: 13,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
                   color: showEdits ? BLUE : DIM,
                   cursor: loadingEdits || totalWords < 20 ? "not-allowed" : "pointer",
-                  fontWeight: 600,
                   opacity: totalWords < 20 ? 0.4 : 1,
                 }}
               >
