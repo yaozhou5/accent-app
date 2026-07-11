@@ -469,10 +469,12 @@ function LogTab({
       {/* Compose — clean open textarea */}
       <div
         id="compose-card"
-        className="mb-6 rounded-[12px] overflow-hidden transition-colors"
+        className="overflow-hidden transition-colors"
         style={{
+          borderRadius: 10,
           border: dragOver ? `2px solid ${BLUE}` : "none",
-          background: dragOver ? `${BLUE}04` : "#FAFAF7",
+          background: dragOver ? `${BLUE}04` : "#f5f5f3",
+          margin: "8px 20px 0",
         }}
         onDragOver={(e) => {
           e.preventDefault();
@@ -514,7 +516,7 @@ function LogTab({
         )}
         {/* Prompt chips */}
         {!input.trim() && pendingImages.length === 0 && (
-          <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10, padding: "14px 20px 0" }}>
             {[
               { label: "A call or conversation", stem: "Today I talked to " },
               { label: "A win", stem: "Something that went well today: " },
@@ -538,12 +540,17 @@ function LogTab({
                       }, 0);
                     }
                   }}
-                  className="px-3 py-1.5 rounded-full font-sans text-[12px] transition-colors"
+                  className="font-sans"
                   style={{
-                    color: isActive ? "#fff" : DIM,
-                    border: isActive ? "none" : "1px solid #e5e5e5",
+                    fontSize: 12,
+                    padding: "4px 10px",
+                    borderRadius: 5,
+                    border: "none",
+                    color: isActive ? "#fff" : "#999",
                     background: isActive ? chipColor : "transparent",
                     cursor: "pointer",
+                    transition: "all 0.15s",
+                    fontFamily: "inherit",
                   }}
                 >
                   {chip.label}
@@ -574,7 +581,7 @@ function LogTab({
               addImageFiles(imageFiles);
             }
           }}
-          placeholder="A call, a win, a frustration, something you read..."
+          placeholder="What happened? A call, a thought, something that stuck with you..."
           className="w-full outline-none resize-none font-sans"
           style={{
             fontSize: 15,
@@ -635,8 +642,17 @@ function LogTab({
           <button
             onClick={handleSubmit}
             disabled={(!input.trim() && pendingImages.length === 0) || submitting}
-            className="px-7 py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
-            style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
+            className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              padding: "7px 16px",
+              borderRadius: 6,
+              background: "#1a1a1a",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 500,
+              border: "none",
+              cursor: "pointer",
+            }}
           >
             {submitting ? "Saving..." : "Log"}
           </button>
@@ -644,14 +660,14 @@ function LogTab({
       </div>
 
       {error && (
-        <p className="font-sans text-[13px] mb-4" style={{ color: "#DC2626" }}>
+        <p className="font-sans text-[13px]" style={{ color: "#DC2626", padding: "4px 20px 0" }}>
           {error}
         </p>
       )}
 
       {/* Tag filters */}
       {logEntries.length > 0 && availableTags.length > 0 && (
-        <div className="mb-6 flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap" style={{ padding: "8px 20px 0" }}>
           <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>
             Tags:
           </span>
@@ -685,8 +701,8 @@ function LogTab({
       {/* Bulk actions bar */}
       {selectMode && (
         <div
-          className="mb-4 flex items-center gap-2 p-3 rounded-[10px]"
-          style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+          className="flex items-center gap-2 p-3 rounded-[10px]"
+          style={{ background: "#fafafa", border: `1px solid ${BORDER}`, margin: "8px 20px 0" }}
         >
           <span className="font-sans text-[13px]" style={{ color: DIM }}>
             {selected.size} selected
@@ -731,8 +747,9 @@ function LogTab({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 10,
-          gridAutoRows: "minmax(120px, auto)",
+          gap: 8,
+          padding: "8px 20px 20px",
+          gridAutoRows: "minmax(140px, auto)",
         }}
       >
         {visibleEntries.length === 0 ? (
@@ -744,13 +761,17 @@ function LogTab({
           <>
             {dayGroups.map(({ label: dayLabel, entries: dayEntries }) => (
               <React.Fragment key={dayLabel}>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <p
-                    className="font-mono text-[11px] uppercase"
-                    style={{ color: "#A8A49C", letterSpacing: "0.06em", fontWeight: 600, padding: "8px 0" }}
-                  >
-                    {dayLabel}
-                  </p>
+                <div
+                  style={{
+                    gridColumn: "span 4",
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "#999",
+                    padding: "6px 0 0",
+                  }}
+                >
+                  {dayLabel}
                 </div>
                 {dayEntries.map((entry) => {
                   const contentLen = (entry.content || "").length;
@@ -767,21 +788,23 @@ function LogTab({
                       className="relative overflow-hidden"
                       style={{
                         gridColumn: gridSpan,
-                        borderRadius: 12,
-                        padding: "16px 20px",
+                        borderRadius: 10,
+                        padding: "16px 18px",
+                        minHeight: 140,
                         background: isSelected ? `${BLUE}` : bgColor,
                         color: "#fff",
                         cursor: selectMode ? "pointer" : "default",
-                        transition: "transform 0.18s, filter 0.18s",
+                        transition: "transform 0.15s ease",
                         position: "relative",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
                       }}
                       onMouseEnter={(ev) => {
-                        (ev.currentTarget as HTMLElement).style.transform = "scale(0.985)";
-                        (ev.currentTarget as HTMLElement).style.filter = "brightness(1.08)";
+                        (ev.currentTarget as HTMLElement).style.transform = "scale(0.99)";
                       }}
                       onMouseLeave={(ev) => {
                         (ev.currentTarget as HTMLElement).style.transform = "scale(1)";
-                        (ev.currentTarget as HTMLElement).style.filter = "brightness(1)";
                       }}
                     >
                       {/* Menu */}
@@ -1078,76 +1101,65 @@ function LogTab({
                             </a>
                           );
                         })()}
-                      <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        {/* Type indicator dot */}
-                        <span
-                          style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            background: "rgba(255,255,255,0.5)",
-                            display: "inline-block",
-                          }}
-                        />
-                        <span className="font-mono" style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
-                          {formatTime(entry.created_at)}
+                      <div
+                        style={{
+                          fontSize: 10,
+                          marginTop: 10,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          color: "rgba(255,255,255,0.4)",
+                        }}
+                      >
+                        <span>
+                          {entry.type || "note"} · {formatTime(entry.created_at)}
+                          {entry.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              style={{
+                                marginLeft: 4,
+                                padding: "1px 6px",
+                                borderRadius: 4,
+                                background: "rgba(255,255,255,0.15)",
+                                color: "#fff",
+                                fontSize: 10,
+                              }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {used && (
+                            <span
+                              style={{
+                                marginLeft: 4,
+                                padding: "1px 6px",
+                                borderRadius: 4,
+                                background: "rgba(255,255,255,0.15)",
+                                color: "#fff",
+                                fontSize: 10,
+                              }}
+                            >
+                              Used in Ideas
+                            </span>
+                          )}
                         </span>
-                        {entry.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {used && (
-                          <span
-                            className="font-mono text-[10px] px-2 py-0.5 rounded-full"
-                            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
-                          >
-                            Used in Ideas
-                          </span>
-                        )}
-                        {entry.bookmarked && (
-                          <span
-                            className="font-mono text-[10px] px-2 py-0.5 rounded-full"
-                            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
-                          >
-                            Saved
-                          </span>
-                        )}
                         {!selectMode && (
                           <button
                             onClick={(ev) => {
                               ev.stopPropagation();
                               handleToggleBookmark(entry.id, entry.bookmarked || false);
                             }}
-                            className="ml-auto p-1"
                             style={{
                               background: "none",
                               border: "none",
                               cursor: "pointer",
-                              minWidth: 32,
-                              minHeight: 32,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                              padding: 0,
+                              color: "rgba(255,255,255,0.4)",
+                              fontSize: 14,
+                              lineHeight: 1,
                             }}
                           >
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill={entry.bookmarked ? "#fff" : "none"}
-                              stroke="#fff"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              style={{ transition: "fill 0.2s", opacity: entry.bookmarked ? 1 : 0.5 }}
-                            >
-                              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                            </svg>
+                            🔖
                           </button>
                         )}
                       </div>
@@ -2115,13 +2127,9 @@ function DraftsTab({
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div>
           {filtered.map((d) => (
-            <div
-              key={d.id}
-              className="rounded-[12px]"
-              style={{ padding: "20px", border: `1px solid ${BORDER}`, background: "#fff" }}
-            >
+            <div key={d.id} style={{ padding: 16, background: "#f5f5f3", borderRadius: 10, marginBottom: 8 }}>
               <div
                 className="cursor-pointer"
                 onClick={() => {
@@ -2141,14 +2149,15 @@ function DraftsTab({
                     const pb = getPlaybook(d.playbook_id);
                     return (
                       <span
-                        className="font-mono text-[10px] px-2 py-0.5 rounded"
                         style={{
-                          background: pb?.color || `${BLUE}10`,
-                          color: pb?.textColor || BLUE,
-                          fontWeight: 600,
+                          display: "inline-block",
+                          fontSize: 10,
+                          padding: "2px 8px",
+                          borderRadius: 4,
+                          background: pb?.color || "#141414",
+                          color: "#fff",
                           fontFamily: "Georgia, serif",
-                          textTransform: "none",
-                          fontSize: 11,
+                          marginRight: 6,
                         }}
                       >
                         {pb?.name || d.playbook_id}
@@ -2215,8 +2224,14 @@ function DraftsTab({
                   </>
                 ) : (
                   <span
-                    className="font-mono text-[11px] px-2 py-0.5 rounded-full"
-                    style={{ background: "#f59e0b15", color: "#f59e0b" }}
+                    style={{
+                      display: "inline-block",
+                      fontSize: 10,
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      background: "#FFF3CD",
+                      color: "#856404",
+                    }}
                   >
                     Draft
                   </span>
@@ -3435,16 +3450,18 @@ export default function DashboardPage() {
   if (loading)
     return (
       <div className="min-h-screen" style={{ background: "#fff" }}>
-        <header style={{ borderBottom: `1px solid ${BORDER}` }}>
-          <div className="max-w-[640px] mx-auto px-5 py-4">
-            <span className="font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>
+        <header
+          style={{ position: "sticky", top: 0, background: "#fff", zIndex: 10, borderBottom: "0.5px solid #eee" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }}>
+            <span style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 600, color: "#1a1a1a" }}>
               accent
             </span>
           </div>
         </header>
-        <div className="max-w-[640px] mx-auto px-5 py-8 animate-pulse">
+        <div style={{ padding: "20px" }} className="animate-pulse">
           <div className="h-7 rounded w-48 mb-4" style={{ background: "#f0f0f0" }} />
-          <div className="h-44 rounded-[12px]" style={{ background: "#fafafa" }} />
+          <div className="h-44 rounded-[10px]" style={{ background: "#fafafa" }} />
         </div>
       </div>
     );
@@ -3457,65 +3474,65 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ background: "#fff" }}>
-      <header style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="no-underline font-serif" style={{ fontSize: 20, fontWeight: 600, color: INK }}>
+      <header style={{ position: "sticky", top: 0, background: "#fff", zIndex: 10, borderBottom: "0.5px solid #eee" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }}>
+          <Link
+            href="/"
+            className="no-underline"
+            style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 600, color: "#1a1a1a", marginRight: 10 }}
+          >
             accent
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              href="/dashboard/write"
-              className="no-underline flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full font-sans text-[12px] sm:text-[13px] font-semibold transition-transform hover:scale-[1.02]"
-              style={{ background: BLUE, color: "#fff" }}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Write
-            </Link>
-            <Link href="/settings" className="no-underline font-mono text-[12px]" style={{ color: DIM }}>
-              Settings
-            </Link>
-          </div>
-        </div>
-      </header>
-      <div style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="max-w-[640px] mx-auto px-5 flex gap-4 sm:gap-6">
+          <span style={{ width: 1, height: 14, background: "#e0e0e0", margin: "0 12px" }} />
           {TABS.map((t) => (
             <button
               key={t.key}
               id={`tab-${t.key}`}
-              onClick={() => {
-                setTab(t.key);
-                // tab changed
-              }}
-              className="font-sans py-3.5 relative"
+              onClick={() => setTab(t.key)}
+              className="font-sans"
               style={{
-                fontSize: 16,
-                fontWeight: tab === t.key ? 700 : 500,
-                color: tab === t.key ? INK : DIM,
-                background: "none",
+                fontSize: 13,
+                fontWeight: tab === t.key ? 500 : 400,
+                color: tab === t.key ? "#1a1a1a" : "#999",
+                background: tab === t.key ? "#f5f5f3" : "none",
                 border: "none",
-                borderBottom: `2px solid ${tab === t.key ? INK : "transparent"}`,
+                borderRadius: 6,
+                padding: "5px 10px",
                 cursor: "pointer",
+                fontFamily: "inherit",
               }}
             >
               {t.label}
             </button>
           ))}
+          <span style={{ flex: 1 }} />
+          <Link
+            href="/dashboard/write"
+            className="no-underline font-sans"
+            style={{
+              padding: "6px 14px",
+              borderRadius: 6,
+              background: "#1a1a1a",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+          >
+            Write
+          </Link>
+          <Link
+            href="/settings"
+            className="no-underline"
+            style={{ fontSize: 18, color: "#999", marginLeft: 10, lineHeight: 1 }}
+          >
+            ⚙
+          </Link>
         </div>
-      </div>
-      <div className={`mx-auto px-5 pt-6 pb-12 ${tab === "history" ? "max-w-[640px]" : ""}`}>
+      </header>
+      <div
+        className={`pb-12 ${tab === "history" ? "max-w-[640px]" : ""}`}
+        style={tab === "history" ? { padding: 20 } : undefined}
+      >
         {tab === "log" && (
           <LogTab
             logEntries={logEntriesState}
@@ -3529,26 +3546,13 @@ export default function DashboardPage() {
         )}
         {tab === "playbooks" && (
           <div>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <p
-                className="font-mono text-[11px] uppercase"
-                style={{ color: FAINT, letterSpacing: "0.06em", fontWeight: 600 }}
-              >
-                Playbooks
-              </p>
-              <p className="font-mono text-[11px]" style={{ color: FAINT }}>
-                {PLAYBOOKS.length} structures
-              </p>
-            </div>
-
             {/* Bento grid */}
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(4, 1fr)",
-                gridAutoRows: 150,
-                gap: 10,
+                gap: 8,
+                padding: "8px 20px 20px",
               }}
             >
               {PLAYBOOKS.map((playbook) => {
@@ -3564,8 +3568,9 @@ export default function DashboardPage() {
                       background: playbook.color,
                       color: playbook.textColor,
                       border: "none",
-                      borderRadius: 12,
-                      padding: isHero ? "24px 28px" : "16px 20px",
+                      borderRadius: 10,
+                      padding: "16px 18px",
+                      minHeight: isHero ? 280 : 140,
                       cursor: "pointer",
                       textAlign: "left",
                       display: "flex",
@@ -3573,21 +3578,19 @@ export default function DashboardPage() {
                       justifyContent: "flex-end",
                       position: "relative",
                       overflow: "hidden",
-                      transition: "transform 0.18s ease, filter 0.18s ease",
+                      transition: "transform 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.transform = "scale(0.985)";
-                      (e.currentTarget as HTMLElement).style.filter = "brightness(1.08)";
+                      (e.currentTarget as HTMLElement).style.transform = "scale(0.99)";
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-                      (e.currentTarget as HTMLElement).style.filter = "brightness(1)";
                     }}
                     onMouseDown={(e) => {
                       (e.currentTarget as HTMLElement).style.transform = "scale(0.97)";
                     }}
                     onMouseUp={(e) => {
-                      (e.currentTarget as HTMLElement).style.transform = "scale(0.985)";
+                      (e.currentTarget as HTMLElement).style.transform = "scale(0.99)";
                     }}
                   >
                     {/* Decorative graphic element */}
@@ -3715,10 +3718,11 @@ export default function DashboardPage() {
                     <p
                       style={{
                         fontFamily: "Georgia, serif",
-                        fontSize: isHero ? 22 : isWide ? 18 : 15,
+                        fontSize: isHero ? 24 : isWide ? 18 : playbook.category === "email" ? 14 : 15,
                         fontWeight: 600,
-                        lineHeight: 1.2,
-                        marginBottom: playbook.description && isWide ? 4 : 6,
+                        lineHeight: 1.15,
+                        margin: 0,
+                        marginBottom: playbook.description && isWide ? 5 : 4,
                         position: "relative",
                         zIndex: 1,
                       }}
@@ -3729,9 +3733,9 @@ export default function DashboardPage() {
                       <p
                         style={{
                           fontSize: 12,
-                          opacity: 0.7,
-                          lineHeight: 1.3,
-                          marginBottom: 6,
+                          color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.5)",
+                          lineHeight: 1.4,
+                          margin: "5px 0 0",
                           position: "relative",
                           zIndex: 1,
                         }}
@@ -3740,17 +3744,19 @@ export default function DashboardPage() {
                       </p>
                     )}
                     <p
-                      className="font-mono"
                       style={{
                         fontSize: 10,
                         textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        opacity: 0.5,
+                        letterSpacing: "0.05em",
+                        color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
+                        margin: "4px 0 0",
                         position: "relative",
                         zIndex: 1,
                       }}
                     >
-                      {playbook.sections.length} sections · ~{playbook.estimateWords} words
+                      {playbook.category === "email"
+                        ? `email · ~${playbook.estimateWords} words`
+                        : `${playbook.sections.length} sections · ~${playbook.estimateWords} words`}
                     </p>
                   </button>
                 );
