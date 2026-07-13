@@ -3690,19 +3690,6 @@ export default function DashboardPage() {
                     >
                       {`${playbook.sections.length} sections · ~${playbook.estimateWords} words`}
                     </p>
-                    {isHero && (
-                      <p
-                        style={{
-                          fontSize: 12,
-                          color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.45)",
-                          margin: "8px 0 0",
-                          position: "relative",
-                          zIndex: 1,
-                        }}
-                      >
-                        Open &gt;
-                      </p>
-                    )}
                   </button>
                 );
               })}
