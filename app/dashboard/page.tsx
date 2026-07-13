@@ -3532,27 +3532,29 @@ export default function DashboardPage() {
         )}
         {tab === "playbooks" && (
           <div>
-            {/* Playbooks title */}
-            <div style={{ padding: "24px 20px 8px" }}>
+            {/* Page header */}
+            <div style={{ padding: "28px 20px 16px" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>
                 Playbooks
               </h2>
-              <p style={{ fontSize: 16, color: "#999", marginTop: 6, lineHeight: 1.5 }}>
-                {PLAYBOOKS.length} proven structures. Pick a vibe, fill in your thinking, publish.
+              <p className="font-sans" style={{ fontSize: 15, color: "#999", marginTop: 6 }}>
+                9 proven structures. Pick a vibe, fill in your thinking, publish.
               </p>
             </div>
+
             {/* Bento grid */}
             <div
+              className="playbooks-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(4, 1fr)",
                 gap: 8,
-                padding: "8px 20px 20px",
+                padding: "0 20px 20px",
               }}
             >
-              {PLAYBOOKS.map((playbook, playbookIdx) => {
-                const isWide = playbook.gridSpan?.includes("span 2");
+              {PLAYBOOKS.map((playbook, idx) => {
                 const isHero = playbook.gridSpan === "span 2 / span 2";
+                const muted = playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)";
                 return (
                   <button
                     key={playbook.id}
@@ -3564,15 +3566,15 @@ export default function DashboardPage() {
                       color: playbook.textColor,
                       border: "none",
                       borderRadius: 10,
-                      padding: "16px 18px",
-                      minHeight: isHero ? 280 : 140,
+                      padding: isHero ? "24px 26px" : "18px 20px",
+                      minHeight: isHero ? 280 : 160,
+                      maxHeight: 300,
                       cursor: "pointer",
                       textAlign: "left",
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "flex-end",
+                      justifyContent: "space-between",
                       position: "relative",
-                      overflow: "hidden",
                       transition: "transform 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
@@ -3581,126 +3583,37 @@ export default function DashboardPage() {
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLElement).style.transform = "scale(1)";
                     }}
-                    onMouseDown={(e) => {
-                      (e.currentTarget as HTMLElement).style.transform = "scale(0.97)";
-                    }}
-                    onMouseUp={(e) => {
-                      (e.currentTarget as HTMLElement).style.transform = "scale(0.99)";
-                    }}
                   >
-                    {/* Card number */}
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 14,
-                        left: 16,
-                        fontSize: 11,
-                        fontFamily: "monospace",
-                        color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.3)",
-                        zIndex: 1,
-                      }}
-                    >
-                      {String(playbookIdx + 1).padStart(2, "0")}
+                    {/* Number */}
+                    <span style={{ fontSize: 12, fontFamily: "monospace", color: muted }}>
+                      {String(idx + 1).padStart(2, "0")}
                     </span>
-                    {/* Decorative graphic element */}
-                    {playbook.id === "contrarian-flip" && (
-                      <div style={{ position: "absolute", top: 16, right: 16, opacity: 0.06 }}>
-                        {[80, 56, 32].map((s) => (
-                          <div
-                            key={s}
-                            style={{
-                              width: s,
-                              height: s,
-                              border: `1.5px solid ${playbook.textColor}`,
-                              borderRadius: "50%",
-                              position: "absolute",
-                              top: (80 - s) / 2,
-                              right: (80 - s) / 2,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {playbook.id === "story-to-lesson" && (
-                      <div style={{ position: "absolute", top: 18, left: 20 }}>
-                        {[60, 44, 28].map((w, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              width: w,
-                              height: 2,
-                              background: playbook.textColor,
-                              opacity: 0.12 - i * 0.03,
-                              marginBottom: 6,
-                              borderRadius: 1,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {playbook.id === "origin-story" && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.22))",
-                          borderRadius: 12,
-                          pointerEvents: "none",
-                        }}
-                      />
-                    )}
-                    <p
-                      style={{
-                        fontFamily: "Georgia, serif",
-                        fontSize: isHero ? 24 : isWide ? 18 : playbook.category === "email" ? 14 : 15,
-                        fontWeight: 600,
-                        lineHeight: 1.15,
-                        margin: 0,
-                        marginBottom: playbook.description && isWide ? 5 : 4,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
-                    >
-                      {playbook.name}
-                    </p>
-                    {playbook.description && isWide && (
+
+                    {/* Name + Tagline at bottom */}
+                    <div>
                       <p
                         style={{
-                          fontSize: 12,
-                          color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.5)",
-                          lineHeight: 1.4,
-                          margin: "5px 0 0",
-                          position: "relative",
-                          zIndex: 1,
+                          fontFamily: "Georgia, serif",
+                          fontSize: isHero ? 30 : 20,
+                          fontWeight: 600,
+                          lineHeight: 1.15,
+                          margin: 0,
                         }}
                       >
-                        {playbook.description}
+                        {playbook.name}
                       </p>
-                    )}
-                    <p
-                      style={{
-                        fontSize: 10,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
-                        margin: "4px 0 0",
-                        position: "relative",
-                        zIndex: 1,
-                      }}
-                    >
-                      {`${playbook.sections.length} sections · ~${playbook.estimateWords} words`}
-                    </p>
+                      <p style={{ fontSize: 13, color: muted, margin: "8px 0 0", lineHeight: 1.4 }}>
+                        {playbook.tagline}
+                      </p>
+                    </div>
                   </button>
                 );
               })}
             </div>
 
-            {/* Mobile grid override */}
             <style>{`
               @media (max-width: 640px) {
-                [style*="grid-template-columns: repeat(4"] {
-                  grid-template-columns: repeat(2, 1fr) !important;
-                }
+                .playbooks-grid { grid-template-columns: repeat(2, 1fr) !important; }
               }
             `}</style>
           </div>
