@@ -150,7 +150,6 @@ function LogTab({
   onPostNote,
   postingEntryId,
   profile,
-  onWriteFromNote,
 }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
@@ -159,7 +158,6 @@ function LogTab({
   onPostNote: (entry: LogEntry) => void;
   postingEntryId: string | null;
   profile: UserProfile | null;
-  onWriteFromNote: (entry: LogEntry) => void;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -813,17 +811,6 @@ function LogTab({
                                 style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
                               >
                                 Edit
-                              </button>
-                              <button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setMenuOpen(null);
-                                  onWriteFromNote(entry);
-                                }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
-                              >
-                                Write from this
                               </button>
                               <div style={{ borderTop: "1px solid #e5e5e5", margin: "4px 0" }} />
                               <button
@@ -3510,7 +3497,6 @@ export default function DashboardPage() {
             onPostNote={handlePostNote}
             postingEntryId={postingEntryId}
             profile={profile}
-            onWriteFromNote={() => setTab("playbooks")}
           />
         )}
         {tab === "playbooks" && (
