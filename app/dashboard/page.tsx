@@ -485,46 +485,6 @@ function LogTab({
         if (menuOpen) setMenuOpen(null);
       }}
     >
-      {/* Type pills — always visible, above input */}
-      <div style={{ display: "flex", gap: 16, justifyContent: "center", padding: "20px 20px 12px" }}>
-        {[
-          { label: "Conversation", color: "#C84B31" },
-          { label: "Win", color: "#4A5899" },
-          { label: "Frustration", color: "#8B3A3A" },
-          { label: "Reading", color: "#2D3A3A" },
-          { label: "Decision", color: "#B08D2E" },
-        ].map((chip) => {
-          const isActive = selectedType === chip.label;
-          return (
-            <button
-              key={chip.label}
-              onClick={() => {
-                setSelectedType(isActive ? null : chip.label);
-                setTimeout(() => composeRef.current?.focus(), 0);
-              }}
-              className="font-sans"
-              style={{
-                fontSize: 14,
-                padding: "6px 14px",
-                borderRadius: 20,
-                border: isActive ? `1.5px solid ${chip.color}` : "1.5px solid transparent",
-                color: isActive ? chip.color : "#888",
-                background: "transparent",
-                cursor: "pointer",
-                transition: "all 0.15s",
-                fontFamily: "inherit",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: chip.color, flexShrink: 0 }} />
-              {chip.label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Compose — centered input card */}
       <div
         id="compose-card"
