@@ -760,23 +760,22 @@ function LogTab({
                   <span style={{ flex: 1, height: 1, background: "#d5d0c8" }} />
                 </div>
                 {dayEntries.map((entry) => {
-                  const contentLen = (entry.content || "").length;
-                  const gridSpan = contentLen > 200 ? "span 3" : contentLen > 80 ? "span 2" : "span 1";
                   const globalIdx = visibleEntries.indexOf(entry);
                   const cardStyle = getCardStyle(entry.content || "", globalIdx);
                   const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
                   const used = isUsedInPlan(entry);
                   const isSelected = selected.has(entry.id);
+                  const hasImages = (entry.image_urls?.length || 0) > 0 || !!entry.image_url;
                   return (
                     <div
                       key={entry.id}
                       onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
                       className="relative overflow-hidden"
                       style={{
-                        gridColumn: gridSpan,
+                        gridColumn: "span 1",
                         borderRadius: 10,
-                        padding: "16px 18px",
-                        minHeight: 140,
+                        padding: "20px 22px",
+                        minHeight: 160,
                         background: isSelected ? `${BLUE}` : cardStyle.bg,
                         color: isSelected ? "#fff" : cardStyle.text,
                         cursor: selectMode ? "pointer" : "default",
