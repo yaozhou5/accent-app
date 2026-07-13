@@ -132,28 +132,13 @@ function getReadableTitle(url: string): string {
 }
 
 type Tab = "log" | "playbooks" | "history";
-const PASTEL_CARDS: { bg: string; text: string; label: string; labelColor: string }[] = [
-  { bg: "rgba(200,75,49,0.12)", text: "#1a1a1a", label: "Conversation", labelColor: "#C84B31" },
-  { bg: "rgba(74,88,153,0.12)", text: "#1a1a1a", label: "Win", labelColor: "#4A5899" },
-  { bg: "rgba(139,58,58,0.12)", text: "#1a1a1a", label: "Frustration", labelColor: "#8B3A3A" },
-  { bg: "rgba(45,58,58,0.12)", text: "#1a1a1a", label: "Reading", labelColor: "#2D3A3A" },
-  { bg: "rgba(176,141,46,0.12)", text: "#1a1a1a", label: "Decision", labelColor: "#B08D2E" },
-];
-const CHIP_COLORS: Record<string, string> = {
-  "A call or conversation": "#C84B31",
-  "A win": "#4A5899",
-  "A frustration": "#8B3A3A",
-  "Something I read": "#2D3A3A",
-  "A decision I made": "#B08D2E",
+const TYPE_CARD_STYLES: Record<string, { bg: string; text: string; label: string; labelColor: string }> = {
+  note: { bg: "#F0ECE4", text: "#1a1a1a", label: "Note", labelColor: "#8B7355" },
+  link: { bg: "#E8EEF4", text: "#1a1a1a", label: "Link", labelColor: "#4A5899" },
+  quote: { bg: "#F0E8D8", text: "#1a1a1a", label: "Quote", labelColor: "#C84B31" },
 };
-function getCardStyle(content: string, idx: number): { bg: string; text: string; label: string; labelColor: string } {
-  const c = (content || "").toLowerCase();
-  if (c.startsWith("today i talked to") || c.includes("call") || c.includes("conversation")) return PASTEL_CARDS[0];
-  if (c.startsWith("something that went well") || c.includes("win") || c.includes("went well")) return PASTEL_CARDS[1];
-  if (c.startsWith("i got frustrated") || c.includes("frustrat")) return PASTEL_CARDS[2];
-  if (c.startsWith("i read something") || c.includes("i read") || c.includes("article")) return PASTEL_CARDS[3];
-  if (c.startsWith("i decided to") || c.includes("decision") || c.includes("decided")) return PASTEL_CARDS[4];
-  return PASTEL_CARDS[idx % PASTEL_CARDS.length];
+function getCardStyle(entry: LogEntry): { bg: string; text: string; label: string; labelColor: string } {
+  return TYPE_CARD_STYLES[entry.type] || TYPE_CARD_STYLES.note;
 }
 
 /* ══════════════ LOG TAB ══════════════ */
@@ -491,11 +476,10 @@ function LogTab({
         className="overflow-hidden transition-colors"
         style={{
           borderRadius: 10,
-          border: dragOver ? `2px solid ${BLUE}` : "none",
+          border: dragOver ? `2px solid ${BLUE}` : "1px solid #e0ddd5",
           background: dragOver ? `${BLUE}04` : "#fff",
           margin: "20px auto 0",
-          maxWidth: 640,
-          borderLeft: "3px solid #e0ddd5",
+          maxWidth: 620,
         }}
         onDragOver={(e) => {
           e.preventDefault();
@@ -535,7 +519,6 @@ function LogTab({
             ))}
           </div>
         )}
-        {/* Type pills moved above compose card */}
         <textarea
           ref={(el) => {
             composeRef.current = el;
@@ -558,13 +541,13 @@ function LogTab({
               addImageFiles(imageFiles);
             }
           }}
-          placeholder="What happened? A conversation, a win, a frustration, something you read, a decision you made..."
+          placeholder="What happened? A thought, a link, something someone said..."
           className="w-full outline-none resize-none font-sans"
           style={{
             fontSize: 15,
             color: INK,
             lineHeight: 1.6,
-            padding: "14px 16px 8px",
+            padding: "20px 20px 8px",
             border: "none",
             background: "transparent",
             minHeight: 56,
@@ -576,7 +559,7 @@ function LogTab({
             {attachError}
           </p>
         )}
-        <div className="flex items-center justify-between px-3 pb-3">
+        <div className="flex items-center justify-between px-5 pb-4">
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
@@ -626,7 +609,7 @@ function LogTab({
             className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               padding: "8px 18px",
-              borderRadius: 8,
+              borderRadius: 6,
               background: "#1a1a1a",
               color: "#fff",
               fontSize: 13,
@@ -729,8 +712,8 @@ function LogTab({
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: 12,
-          padding: "8px 40px 20px",
-          gridAutoRows: "minmax(140px, auto)",
+          padding: "8px 20px 20px",
+          gridAutoRows: "auto",
         }}
       >
         {visibleEntries.length === 0 ? (
@@ -760,8 +743,7 @@ function LogTab({
                   <span style={{ flex: 1, height: 1, background: "#d5d0c8" }} />
                 </div>
                 {dayEntries.map((entry) => {
-                  const globalIdx = visibleEntries.indexOf(entry);
-                  const cardStyle = getCardStyle(entry.content || "", globalIdx);
+                  const cardStyle = getCardStyle(entry);
                   const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
                   const used = isUsedInPlan(entry);
                   const isSelected = selected.has(entry.id);
@@ -775,7 +757,6 @@ function LogTab({
                         gridColumn: "span 1",
                         borderRadius: 10,
                         padding: "20px 22px",
-                        minHeight: 160,
                         background: isSelected ? `${BLUE}` : cardStyle.bg,
                         color: isSelected ? "#fff" : cardStyle.text,
                         cursor: selectMode ? "pointer" : "default",
@@ -783,7 +764,6 @@ function LogTab({
                         position: "relative",
                         display: "flex",
                         flexDirection: "column",
-                        justifyContent: "space-between",
                       }}
                       onMouseEnter={(ev) => {
                         (ev.currentTarget as HTMLElement).style.transform = "scale(0.99)";
@@ -907,6 +887,24 @@ function LogTab({
                           </div>
                         </div>
                       )}
+                      {/* Top header: type dot+label left, timestamp right */}
+                      <div
+                        style={{
+                          fontSize: 11,
+                          marginBottom: 10,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={{ color: cardStyle.labelColor, fontWeight: 600, fontSize: 11 }}>
+                          {"● "}
+                          {cardStyle.label}
+                        </span>
+                        <span className="font-mono" style={{ color: "#999", fontSize: 11 }}>
+                          {formatTime(entry.created_at)}
+                        </span>
+                      </div>
                       {editingId === entry.id ? (
                         <div onClick={(ev) => ev.stopPropagation()}>
                           <textarea
@@ -1083,49 +1081,46 @@ function LogTab({
                             </a>
                           );
                         })()}
-                      <div
-                        style={{
-                          fontSize: 10,
-                          marginTop: 10,
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <span style={{ color: cardStyle.labelColor, fontWeight: 600 }}>● {cardStyle.label}</span>
-                          {entry.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              style={{
-                                marginLeft: 4,
-                                padding: "1px 6px",
-                                borderRadius: 4,
-                                background: "rgba(0,0,0,0.06)",
-                                color: "#666",
-                                fontSize: 10,
-                              }}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {used && (
-                            <span
-                              style={{
-                                marginLeft: 4,
-                                padding: "1px 6px",
-                                borderRadius: 4,
-                                background: "rgba(0,0,0,0.06)",
-                                color: "#666",
-                                fontSize: 10,
-                              }}
-                            >
-                              Used in Ideas
-                            </span>
-                          )}
-                        </span>
-                        <span style={{ color: "#999", fontSize: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                          {formatTime(entry.created_at)}
+                      {/* Tags and actions row */}
+                      {(entry.tags.length > 0 || used || !selectMode) && (
+                        <div
+                          style={{
+                            fontSize: 10,
+                            marginTop: 10,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                            {entry.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                style={{
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  background: "rgba(0,0,0,0.06)",
+                                  color: "#666",
+                                  fontSize: 10,
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {used && (
+                              <span
+                                style={{
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  background: "rgba(0,0,0,0.06)",
+                                  color: "#666",
+                                  fontSize: 10,
+                                }}
+                              >
+                                Used in Ideas
+                              </span>
+                            )}
+                          </span>
                           {!selectMode && (
                             <button
                               onClick={(ev) => {
@@ -1142,11 +1137,11 @@ function LogTab({
                                 lineHeight: 1,
                               }}
                             >
-                              🔖
+                              {"🔖"}
                             </button>
                           )}
-                        </span>
-                      </div>
+                        </div>
+                      )}
                       {bookmarkNoteId === entry.id && (
                         <div className="mt-2 flex gap-2 items-center" onClick={(ev) => ev.stopPropagation()}>
                           <input
