@@ -485,15 +485,17 @@ function LogTab({
         if (menuOpen) setMenuOpen(null);
       }}
     >
-      {/* Compose — clean open textarea */}
+      {/* Compose — centered input card */}
       <div
         id="compose-card"
         className="overflow-hidden transition-colors"
         style={{
           borderRadius: 10,
           border: dragOver ? `2px solid ${BLUE}` : "none",
-          background: dragOver ? `${BLUE}04` : "#f5f5f3",
-          margin: "8px 20px 0",
+          background: dragOver ? `${BLUE}04` : "#fff",
+          margin: "20px auto 0",
+          maxWidth: 640,
+          borderLeft: "3px solid #e0ddd5",
         }}
         onDragOver={(e) => {
           e.preventDefault();
@@ -533,18 +535,17 @@ function LogTab({
             ))}
           </div>
         )}
-        {/* Prompt chips */}
+        {/* Type pills — centered above input */}
         {!input.trim() && pendingImages.length === 0 && (
-          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10, padding: "14px 20px 0" }}>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 16, padding: "20px 20px 0" }}>
             {[
-              { label: "A call or conversation", stem: "Today I talked to " },
-              { label: "A win", stem: "Something that went well today: " },
-              { label: "A frustration", stem: "I got frustrated when " },
-              { label: "Something I read", stem: "I read something that stuck with me: " },
-              { label: "A decision I made", stem: "I decided to " },
+              { label: "Conversation", stem: "Today I talked to ", color: "#C84B31" },
+              { label: "Win", stem: "Something that went well today: ", color: "#4A5899" },
+              { label: "Frustration", stem: "I got frustrated when ", color: "#8B3A3A" },
+              { label: "Reading", stem: "I read something that stuck with me: ", color: "#2D3A3A" },
+              { label: "Decision", stem: "I decided to ", color: "#B08D2E" },
             ].map((chip) => {
               const isActive = selectedType === chip.label;
-              const chipColor = CHIP_COLORS[chip.label] || DIM;
               return (
                 <button
                   key={chip.label}
@@ -561,17 +562,21 @@ function LogTab({
                   }}
                   className="font-sans"
                   style={{
-                    fontSize: 12,
-                    padding: "4px 10px",
-                    borderRadius: 5,
-                    border: "none",
-                    color: isActive ? "#fff" : "#999",
-                    background: isActive ? chipColor : "transparent",
+                    fontSize: 14,
+                    padding: "6px 14px",
+                    borderRadius: 20,
+                    border: isActive ? `1.5px solid ${chip.color}` : "1.5px solid transparent",
+                    color: isActive ? chip.color : "#888",
+                    background: "transparent",
                     cursor: "pointer",
                     transition: "all 0.15s",
                     fontFamily: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: chip.color, flexShrink: 0 }} />
                   {chip.label}
                 </button>
               );
@@ -600,7 +605,7 @@ function LogTab({
               addImageFiles(imageFiles);
             }
           }}
-          placeholder="What happened? A call, a thought, something that stuck with you..."
+          placeholder="What happened? A conversation, a win, a frustration, something you read, a decision you made..."
           className="w-full outline-none resize-none font-sans"
           style={{
             fontSize: 15,
@@ -658,13 +663,17 @@ function LogTab({
               </svg>
             </button>
           </div>
+          <span className="font-mono" style={{ fontSize: 12, color: "#bbb" }}>
+            ⌘↵ to log
+          </span>
+          <span style={{ flex: 1 }} />
           <button
             onClick={handleSubmit}
             disabled={(!input.trim() && pendingImages.length === 0) || submitting}
             className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              padding: "7px 16px",
-              borderRadius: 6,
+              padding: "8px 18px",
+              borderRadius: 8,
               background: "#1a1a1a",
               color: "#fff",
               fontSize: 13,
@@ -673,7 +682,7 @@ function LogTab({
               cursor: "pointer",
             }}
           >
-            {submitting ? "Saving..." : "Log"}
+            {submitting ? "Saving..." : "+ Log it"}
           </button>
         </div>
       </div>
@@ -765,9 +774,9 @@ function LogTab({
         className="bento-log-grid"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 8,
-          padding: "8px 20px 20px",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 12,
+          padding: "8px 40px 20px",
           gridAutoRows: "minmax(140px, auto)",
         }}
       >
@@ -782,19 +791,20 @@ function LogTab({
               <React.Fragment key={dayLabel}>
                 <div
                   style={{
-                    gridColumn: "span 4",
-                    fontSize: 10,
+                    gridColumn: "1 / -1",
+                    fontSize: 11,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     color: "#999",
-                    padding: "10px 0 2px",
+                    padding: "16px 0 4px",
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
+                    gap: 12,
+                    fontFamily: "monospace",
                   }}
                 >
                   <span style={{ whiteSpace: "nowrap" }}>{dayLabel}</span>
-                  <span style={{ flex: 1, height: 1, background: "#ddd" }} />
+                  <span style={{ flex: 1, height: 1, background: "#d5d0c8" }} />
                 </div>
                 {dayEntries.map((entry) => {
                   const contentLen = (entry.content || "").length;
@@ -3511,15 +3521,21 @@ export default function DashboardPage() {
       <header
         style={{ position: "sticky", top: 0, background: "#F5F0E8", zIndex: 10, borderBottom: "0.5px solid #e0ddd5" }}
       >
-        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", gap: 4 }}>
           <Link
             href="/"
             className="no-underline"
-            style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 600, color: "#1a1a1a", marginRight: 10 }}
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: 18,
+              fontWeight: 600,
+              fontStyle: "italic",
+              color: "#1a1a1a",
+              marginRight: 16,
+            }}
           >
             accent
           </Link>
-          <span style={{ width: 1, height: 14, background: "#e0e0e0", margin: "0 12px" }} />
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -3527,13 +3543,13 @@ export default function DashboardPage() {
               onClick={() => setTab(t.key)}
               className="font-sans"
               style={{
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: tab === t.key ? 500 : 400,
                 color: tab === t.key ? "#fff" : "#999",
                 background: tab === t.key ? "#1a1a1a" : "none",
                 border: "none",
-                borderRadius: 20,
-                padding: "5px 12px",
+                borderRadius: 6,
+                padding: "6px 14px",
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -3541,28 +3557,6 @@ export default function DashboardPage() {
               {t.label}
             </button>
           ))}
-          <span style={{ flex: 1 }} />
-          <Link
-            href="/dashboard/write"
-            className="no-underline font-sans"
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              background: "#1a1a1a",
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 500,
-            }}
-          >
-            Write
-          </Link>
-          <Link
-            href="/settings"
-            className="no-underline"
-            style={{ fontSize: 18, color: "#999", marginLeft: 10, lineHeight: 1 }}
-          >
-            ⚙
-          </Link>
         </div>
       </header>
       <div
