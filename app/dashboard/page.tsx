@@ -134,8 +134,8 @@ function getReadableTitle(url: string): string {
 type Tab = "log" | "playbooks" | "history";
 const TYPE_CARD_STYLES: Record<string, { bg: string; text: string; label: string; labelColor: string }> = {
   note: { bg: "#F0ECE4", text: "#1a1a1a", label: "Note", labelColor: "#8B7355" },
-  link: { bg: "#E8EEF4", text: "#1a1a1a", label: "Link", labelColor: "#4A5899" },
-  quote: { bg: "#F0E8D8", text: "#1a1a1a", label: "Quote", labelColor: "#C84B31" },
+  link: { bg: "#E0EAF4", text: "#1a1a1a", label: "Link", labelColor: "#4A6B99" },
+  quote: { bg: "#F5F0D8", text: "#1a1a1a", label: "Quote", labelColor: "#8B7335" },
 };
 function getCardStyle(entry: LogEntry): { bg: string; text: string; label: string; labelColor: string } {
   return TYPE_CARD_STYLES[entry.type] || TYPE_CARD_STYLES.note;
