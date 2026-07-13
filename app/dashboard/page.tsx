@@ -60,7 +60,7 @@ const INK = "#111827"; // gray-900
 const BODY = "#4b5563"; // gray-600 — body text, log entries
 const DIM = "#6b7280"; // gray-500 — inactive tabs
 const FAINT = "#9ca3af"; // gray-400 — labels, timestamps
-const BLUE = "#3B82F6"; // primary action
+const BLUE = "#1a1a1a"; // primary action — dark, no blue in Accent UI
 const BORDER = "#e5e7eb"; // gray-200
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -912,9 +912,9 @@ function LogTab({
                               color: INK,
                               lineHeight: 1.6,
                               padding: "8px 10px",
-                              border: `1px solid ${BLUE}`,
+                              border: "1.5px solid #C4B99A",
                               borderRadius: 8,
-                              background: "#fafafa",
+                              background: "transparent",
                               overflow: "hidden",
                             }}
                             autoFocus
@@ -923,20 +923,21 @@ function LogTab({
                             <button
                               onClick={handleCancelEdit}
                               className="font-sans text-[13px]"
-                              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                              style={{ color: "#B5B0A6", background: "none", border: "none", cursor: "pointer" }}
                             >
                               Cancel
                             </button>
                             <button
                               onClick={handleSaveEdit}
                               disabled={submitting}
-                              className="font-sans font-semibold rounded-full disabled:opacity-30"
+                              className="font-sans font-medium disabled:opacity-30"
                               style={{
                                 fontSize: 13,
                                 padding: "6px 16px",
-                                background: BLUE,
+                                background: "#1a1a1a",
                                 color: "#fff",
                                 border: "none",
+                                borderRadius: 6,
                                 cursor: "pointer",
                               }}
                             >
@@ -1145,21 +1146,28 @@ function LogTab({
                             style={{
                               color: INK,
                               padding: "6px 10px",
-                              border: `1px solid ${BORDER}`,
+                              border: "1px solid transparent",
                               borderRadius: 8,
-                              background: "#fafafa",
+                              background: "#F1EFEA",
+                            }}
+                            onFocus={(e) => {
+                              (e.currentTarget as HTMLElement).style.border = "1px solid #C4B99A";
+                            }}
+                            onBlur={(e) => {
+                              (e.currentTarget as HTMLElement).style.border = "1px solid transparent";
                             }}
                             autoFocus
                           />
                           <button
                             onClick={handleConfirmBookmark}
-                            className="font-sans font-semibold rounded-full shrink-0"
+                            className="font-sans font-medium shrink-0"
                             style={{
-                              fontSize: 14,
-                              padding: "8px 18px",
-                              background: BLUE,
+                              fontSize: 13,
+                              padding: "6px 16px",
+                              background: "#1a1a1a",
                               color: "#fff",
                               border: "none",
+                              borderRadius: 6,
                               cursor: "pointer",
                             }}
                           >
