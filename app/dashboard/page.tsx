@@ -793,9 +793,9 @@ function LogTab({
                             <div
                               className="absolute right-0 sm:right-0 mt-1 rounded-[8px] overflow-hidden"
                               style={{
-                                background: "#fff",
-                                border: `1px solid ${BORDER}`,
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                                background: "#F5F0E8",
+                                border: "1px solid #e0ddd5",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                                 zIndex: 10,
                                 minWidth: 130,
                                 right: 0,
@@ -807,24 +807,36 @@ function LogTab({
                                   handleStartEdit(entry);
                                   setMenuOpen(null);
                                 }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px]"
                                 style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
+                                onMouseEnter={(e) => {
+                                  (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.03)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                                }}
                               >
                                 Edit
                               </button>
-                              <div style={{ borderTop: "1px solid #e5e5e5", margin: "4px 0" }} />
+                              <div style={{ borderTop: "1px solid #d5d0c8", margin: "4px 0" }} />
                               <button
                                 onClick={(ev) => {
                                   ev.stopPropagation();
                                   setDeleteConfirmId(entry.id);
                                   setMenuOpen(null);
                                 }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
+                                className="w-full text-left px-4 py-2.5 font-sans text-[13px]"
                                 style={{
-                                  color: "#999",
+                                  color: "#A0524A",
                                   border: "none",
                                   background: "transparent",
                                   cursor: "pointer",
+                                }}
+                                onMouseEnter={(e) => {
+                                  (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.03)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.currentTarget as HTMLElement).style.background = "transparent";
                                 }}
                               >
                                 Delete
