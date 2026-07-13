@@ -150,6 +150,7 @@ function LogTab({
   onPostNote,
   postingEntryId,
   profile,
+  onWriteFromNote,
 }: {
   logEntries: LogEntry[];
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
@@ -158,6 +159,7 @@ function LogTab({
   onPostNote: (entry: LogEntry) => void;
   postingEntryId: string | null;
   profile: UserProfile | null;
+  onWriteFromNote: (entry: LogEntry) => void;
 }) {
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
@@ -805,6 +807,7 @@ function LogTab({
                                 onClick={(ev) => {
                                   ev.stopPropagation();
                                   handleStartEdit(entry);
+                                  setMenuOpen(null);
                                 }}
                                 className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
                                 style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
@@ -812,26 +815,17 @@ function LogTab({
                                 Edit
                               </button>
                               <button
-                                onClick={async (ev) => {
+                                onClick={(ev) => {
                                   ev.stopPropagation();
                                   setMenuOpen(null);
-                                  onPostNote(entry);
+                                  onWriteFromNote(entry);
                                 }}
-                                disabled={postingEntryId === entry.id}
                                 className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
-                                style={{
-                                  color: "#fff",
-                                  background: BLUE,
-                                  border: "none",
-                                  cursor: postingEntryId === entry.id ? "wait" : "pointer",
-                                  borderRadius: 6,
-                                  margin: "4px 8px",
-                                  width: "calc(100% - 16px)",
-                                  fontWeight: 600,
-                                }}
+                                style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
                               >
-                                {postingEntryId === entry.id ? "Writing..." : "Write"}
+                                Write from this
                               </button>
+                              <div style={{ borderTop: "1px solid #e5e5e5", margin: "4px 0" }} />
                               <button
                                 onClick={(ev) => {
                                   ev.stopPropagation();
@@ -840,7 +834,7 @@ function LogTab({
                                 }}
                                 className="w-full text-left px-4 py-2.5 font-sans text-[13px] hover:bg-gray-50"
                                 style={{
-                                  color: "#DC2626",
+                                  color: "#999",
                                   border: "none",
                                   background: "transparent",
                                   cursor: "pointer",
@@ -900,9 +894,6 @@ function LogTab({
                         <span style={{ color: cardStyle.labelColor, fontWeight: 600, fontSize: 11 }}>
                           {"● "}
                           {cardStyle.label}
-                        </span>
-                        <span className="font-mono" style={{ color: "#999", fontSize: 11 }}>
-                          {formatTime(entry.created_at)}
                         </span>
                       </div>
                       {editingId === entry.id ? (
@@ -3519,6 +3510,7 @@ export default function DashboardPage() {
             onPostNote={handlePostNote}
             postingEntryId={postingEntryId}
             profile={profile}
+            onWriteFromNote={() => setTab("playbooks")}
           />
         )}
         {tab === "playbooks" && (
