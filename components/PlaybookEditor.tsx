@@ -159,7 +159,7 @@ export default function PlaybookEditor({
   const totalWords = flattenSections(sections, playbook.sections).trim().split(/\s+/).filter(Boolean).length;
 
   return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-6">

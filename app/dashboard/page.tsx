@@ -99,10 +99,14 @@ function getDayLabel(ds: string): string {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const entry = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diff = Math.round((today.getTime() - entry.getTime()) / 86400000);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  if (diff < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const datePart = d.toLocaleDateString("en-US", { month: "long", day: "numeric" }).toUpperCase();
+  if (diff === 0) return `TODAY, ${datePart}`;
+  if (diff === 1) return `YESTERDAY, ${datePart}`;
+  if (diff < 7) {
+    const weekday = d.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+    return `${weekday}, ${datePart}`;
+  }
+  return datePart;
 }
 function formatTime(ds: string): string {
   return new Date(ds).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
@@ -128,7 +132,13 @@ function getReadableTitle(url: string): string {
 }
 
 type Tab = "log" | "playbooks" | "history";
-const BENTO_COLORS = ["#C84B31", "#4A5899", "#2D3A3A", "#B08D2E", "#8B3A3A"];
+const PASTEL_CARDS: { bg: string; text: string; label: string; labelColor: string }[] = [
+  { bg: "rgba(200,75,49,0.12)", text: "#1a1a1a", label: "Conversation", labelColor: "#C84B31" },
+  { bg: "rgba(74,88,153,0.12)", text: "#1a1a1a", label: "Win", labelColor: "#4A5899" },
+  { bg: "rgba(139,58,58,0.12)", text: "#1a1a1a", label: "Frustration", labelColor: "#8B3A3A" },
+  { bg: "rgba(45,58,58,0.12)", text: "#1a1a1a", label: "Reading", labelColor: "#2D3A3A" },
+  { bg: "rgba(176,141,46,0.12)", text: "#1a1a1a", label: "Decision", labelColor: "#B08D2E" },
+];
 const CHIP_COLORS: Record<string, string> = {
   "A call or conversation": "#C84B31",
   "A win": "#4A5899",
@@ -136,6 +146,15 @@ const CHIP_COLORS: Record<string, string> = {
   "Something I read": "#2D3A3A",
   "A decision I made": "#B08D2E",
 };
+function getCardStyle(content: string, idx: number): { bg: string; text: string; label: string; labelColor: string } {
+  const c = (content || "").toLowerCase();
+  if (c.startsWith("today i talked to") || c.includes("call") || c.includes("conversation")) return PASTEL_CARDS[0];
+  if (c.startsWith("something that went well") || c.includes("win") || c.includes("went well")) return PASTEL_CARDS[1];
+  if (c.startsWith("i got frustrated") || c.includes("frustrat")) return PASTEL_CARDS[2];
+  if (c.startsWith("i read something") || c.includes("i read") || c.includes("article")) return PASTEL_CARDS[3];
+  if (c.startsWith("i decided to") || c.includes("decision") || c.includes("decided")) return PASTEL_CARDS[4];
+  return PASTEL_CARDS[idx % PASTEL_CARDS.length];
+}
 
 /* ══════════════ LOG TAB ══════════════ */
 function LogTab({
@@ -768,16 +787,20 @@ function LogTab({
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     color: "#999",
-                    padding: "6px 0 0",
+                    padding: "10px 0 2px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
                   }}
                 >
-                  {dayLabel}
+                  <span style={{ whiteSpace: "nowrap" }}>{dayLabel}</span>
+                  <span style={{ flex: 1, height: 1, background: "#ddd" }} />
                 </div>
                 {dayEntries.map((entry) => {
                   const contentLen = (entry.content || "").length;
                   const gridSpan = contentLen > 200 ? "span 3" : contentLen > 80 ? "span 2" : "span 1";
                   const globalIdx = visibleEntries.indexOf(entry);
-                  const bgColor = BENTO_COLORS[globalIdx % BENTO_COLORS.length];
+                  const cardStyle = getCardStyle(entry.content || "", globalIdx);
                   const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
                   const used = isUsedInPlan(entry);
                   const isSelected = selected.has(entry.id);
@@ -791,8 +814,8 @@ function LogTab({
                         borderRadius: 10,
                         padding: "16px 18px",
                         minHeight: 140,
-                        background: isSelected ? `${BLUE}` : bgColor,
-                        color: "#fff",
+                        background: isSelected ? `${BLUE}` : cardStyle.bg,
+                        color: isSelected ? "#fff" : cardStyle.text,
                         cursor: selectMode ? "pointer" : "default",
                         transition: "transform 0.15s ease",
                         position: "relative",
@@ -815,10 +838,10 @@ function LogTab({
                               ev.stopPropagation();
                               setMenuOpen(menuOpen === entry.id ? null : entry.id);
                             }}
-                            className="rounded hover:bg-white/10 flex items-center justify-center"
+                            className="rounded hover:bg-black/5 flex items-center justify-center"
                             style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}
                           >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="#fff">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="#999">
                               <circle cx="8" cy="3" r="1.5" />
                               <circle cx="8" cy="8" r="1.5" />
                               <circle cx="8" cy="13" r="1.5" />
@@ -978,7 +1001,7 @@ function LogTab({
                               className="font-sans"
                               style={{
                                 fontSize: 15,
-                                color: "#fff",
+                                color: "#1a1a1a",
                                 lineHeight: 1.6,
                                 whiteSpace: "pre-wrap",
                                 paddingRight: 28,
@@ -1007,7 +1030,7 @@ function LogTab({
                                 style={{
                                   maxHeight: 200,
                                   objectFit: "cover",
-                                  border: "1px solid rgba(255,255,255,0.2)",
+                                  border: "1px solid rgba(0,0,0,0.08)",
                                 }}
                                 onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)}
                               />
@@ -1022,7 +1045,7 @@ function LogTab({
                                     style={{
                                       height: 100,
                                       objectFit: "cover",
-                                      border: "1px solid rgba(255,255,255,0.2)",
+                                      border: "1px solid rgba(0,0,0,0.08)",
                                     }}
                                     onClick={() => setExpandedImage(expandedImage === url ? null : url)}
                                   />
@@ -1034,7 +1057,7 @@ function LogTab({
                                 src={images[0]}
                                 alt=""
                                 className="w-full rounded-[10px] mt-2"
-                                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
+                                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
                               />
                             )}
                             {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
@@ -1042,7 +1065,7 @@ function LogTab({
                                 src={expandedImage}
                                 alt=""
                                 className="w-full rounded-[8px] mt-2"
-                                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
+                                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
                               />
                             )}
                           </div>
@@ -1058,7 +1081,7 @@ function LogTab({
                               target="_blank"
                               rel="noopener noreferrer"
                               className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity"
-                              style={{ border: "1px solid rgba(255,255,255,0.2)" }}
+                              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
                             >
                               {og?.image && (
                                 <img
@@ -1071,7 +1094,7 @@ function LogTab({
                               <div style={{ padding: "10px 12px" }}>
                                 <p
                                   className="font-sans font-semibold"
-                                  style={{ fontSize: 13, color: "#fff", lineHeight: 1.4 }}
+                                  style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.4 }}
                                 >
                                   {og?.title || getReadableTitle(entryUrl)}
                                 </p>
@@ -1080,7 +1103,7 @@ function LogTab({
                                     className="font-sans mt-1"
                                     style={{
                                       fontSize: 12,
-                                      color: "rgba(255,255,255,0.7)",
+                                      color: "#666",
                                       lineHeight: 1.4,
                                       display: "-webkit-box",
                                       WebkitLineClamp: 2,
@@ -1091,10 +1114,7 @@ function LogTab({
                                     {og.description}
                                   </p>
                                 )}
-                                <span
-                                  className="font-mono block mt-1"
-                                  style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}
-                                >
+                                <span className="font-mono block mt-1" style={{ fontSize: 10, color: "#999" }}>
                                   {getDomain(entryUrl)}
                                 </span>
                               </div>
@@ -1108,11 +1128,10 @@ function LogTab({
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          color: "rgba(255,255,255,0.4)",
                         }}
                       >
-                        <span>
-                          {entry.type || "note"} · {formatTime(entry.created_at)}
+                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ color: cardStyle.labelColor, fontWeight: 600 }}>● {cardStyle.label}</span>
                           {entry.tags.map((tag) => (
                             <span
                               key={tag}
@@ -1120,8 +1139,8 @@ function LogTab({
                                 marginLeft: 4,
                                 padding: "1px 6px",
                                 borderRadius: 4,
-                                background: "rgba(255,255,255,0.15)",
-                                color: "#fff",
+                                background: "rgba(0,0,0,0.06)",
+                                color: "#666",
                                 fontSize: 10,
                               }}
                             >
@@ -1134,8 +1153,8 @@ function LogTab({
                                 marginLeft: 4,
                                 padding: "1px 6px",
                                 borderRadius: 4,
-                                background: "rgba(255,255,255,0.15)",
-                                color: "#fff",
+                                background: "rgba(0,0,0,0.06)",
+                                color: "#666",
                                 fontSize: 10,
                               }}
                             >
@@ -1143,25 +1162,28 @@ function LogTab({
                             </span>
                           )}
                         </span>
-                        {!selectMode && (
-                          <button
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              handleToggleBookmark(entry.id, entry.bookmarked || false);
-                            }}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 0,
-                              color: "rgba(255,255,255,0.4)",
-                              fontSize: 14,
-                              lineHeight: 1,
-                            }}
-                          >
-                            🔖
-                          </button>
-                        )}
+                        <span style={{ color: "#999", fontSize: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                          {formatTime(entry.created_at)}
+                          {!selectMode && (
+                            <button
+                              onClick={(ev) => {
+                                ev.stopPropagation();
+                                handleToggleBookmark(entry.id, entry.bookmarked || false);
+                              }}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 0,
+                                color: "#999",
+                                fontSize: 14,
+                                lineHeight: 1,
+                              }}
+                            >
+                              🔖
+                            </button>
+                          )}
+                        </span>
                       </div>
                       {bookmarkNoteId === entry.id && (
                         <div className="mt-2 flex gap-2 items-center" onClick={(ev) => ev.stopPropagation()}>
@@ -2101,8 +2123,28 @@ function DraftsTab({
     { key: "published", label: "Published" },
   ];
 
+  // Find most common playbook
+  const playbookCounts: Record<string, number> = {};
+  for (const d of draftsWithContext) {
+    if (d.playbook_id) {
+      playbookCounts[d.playbook_id] = (playbookCounts[d.playbook_id] || 0) + 1;
+    }
+  }
+  const topPlaybookId = Object.entries(playbookCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topPlaybook = topPlaybookId ? getPlaybook(topPlaybookId) : null;
+
   return (
     <div>
+      {/* History title */}
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>
+          History
+        </h2>
+        <p style={{ fontSize: 14, color: "#999", marginTop: 6 }}>
+          {draftsWithContext.length} draft{draftsWithContext.length !== 1 ? "s" : ""}
+          {topPlaybook ? ` · You write a lot of ${topPlaybook.name} posts.` : ""}
+        </p>
+      </div>
       <div className="flex gap-2 mb-6 flex-wrap">
         {FILTERS.map((f) => (
           <button
@@ -2128,8 +2170,8 @@ function DraftsTab({
         </div>
       ) : (
         <div>
-          {filtered.map((d) => (
-            <div key={d.id} style={{ padding: 16, background: "#f5f5f3", borderRadius: 10, marginBottom: 8 }}>
+          {filtered.map((d, dIdx) => (
+            <div key={d.id} style={{ padding: "16px 0", borderTop: dIdx > 0 ? "1px solid #e0e0e0" : "none" }}>
               <div
                 className="cursor-pointer"
                 onClick={() => {
@@ -2144,57 +2186,49 @@ function DraftsTab({
                   else onOpenStandaloneDraft(d);
                 }}
               >
-                {d.playbook_id &&
-                  (() => {
-                    const pb = getPlaybook(d.playbook_id);
-                    return (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          fontSize: 10,
-                          padding: "2px 8px",
-                          borderRadius: 4,
-                          background: pb?.color || "#141414",
-                          color: "#fff",
-                          fontFamily: "Georgia, serif",
-                          marginRight: 6,
-                        }}
-                      >
-                        {pb?.name || d.playbook_id}
-                      </span>
-                    );
-                  })()}
-                {d.prompt && (
-                  <p className="font-sans mb-2" style={{ fontSize: 13, color: FAINT, lineHeight: 1.4 }}>
-                    {d.prompt}
-                  </p>
-                )}
-                <p
-                  className="font-sans"
-                  style={{
-                    fontSize: 15,
-                    color: BODY,
-                    lineHeight: 1.6,
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {d.content}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {d.platform && (
-                  <span
-                    className="font-sans text-[12px] px-2 py-0.5 rounded-full"
-                    style={{ background: "#f0f0f0", color: DIM }}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  {d.playbook_id &&
+                    (() => {
+                      const pb = getPlaybook(d.playbook_id);
+                      return (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            fontSize: 10,
+                            padding: "3px 8px",
+                            borderRadius: 4,
+                            background: pb?.color || "#141414",
+                            color: "#fff",
+                            fontFamily: "Georgia, serif",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                            marginTop: 2,
+                          }}
+                        >
+                          {pb?.name || d.playbook_id}
+                        </span>
+                      );
+                    })()}
+                  <p
+                    className="font-sans"
+                    style={{
+                      fontSize: 15,
+                      color: BODY,
+                      lineHeight: 1.6,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      margin: 0,
+                    }}
                   >
-                    {PLATFORM_LABELS[d.platform] || d.platform}
-                  </span>
-                )}
-                <span className="font-mono" style={{ fontSize: 12, color: FAINT }}>
-                  {d.wordCount} words · {getDayLabel(d.updated_at)}
+                    {d.content}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-2 flex-wrap" style={{ paddingLeft: d.playbook_id ? 0 : 0 }}>
+                <span className="font-mono" style={{ fontSize: 11, color: FAINT }}>
+                  {getDayLabel(d.updated_at)} · {d.wordCount} words
                 </span>
                 {d.published ? (
                   <>
@@ -2475,7 +2509,7 @@ function WriteMode({
   const sourceNote = rawSnippet.length > 5 && !/^[\s\-\[\]]*$/.test(rawSnippet) ? rawSnippet : "";
 
   return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
           <button
@@ -2847,7 +2881,7 @@ function StandaloneWriteMode({
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
           <button
@@ -3449,9 +3483,9 @@ export default function DashboardPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen" style={{ background: "#fff" }}>
+      <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
         <header
-          style={{ position: "sticky", top: 0, background: "#fff", zIndex: 10, borderBottom: "0.5px solid #eee" }}
+          style={{ position: "sticky", top: 0, background: "#F5F0E8", zIndex: 10, borderBottom: "0.5px solid #e0ddd5" }}
         >
           <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }}>
             <span style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 600, color: "#1a1a1a" }}>
@@ -3473,8 +3507,10 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
-      <header style={{ position: "sticky", top: 0, background: "#fff", zIndex: 10, borderBottom: "0.5px solid #eee" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
+      <header
+        style={{ position: "sticky", top: 0, background: "#F5F0E8", zIndex: 10, borderBottom: "0.5px solid #e0ddd5" }}
+      >
         <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }}>
           <Link
             href="/"
@@ -3493,11 +3529,11 @@ export default function DashboardPage() {
               style={{
                 fontSize: 13,
                 fontWeight: tab === t.key ? 500 : 400,
-                color: tab === t.key ? "#1a1a1a" : "#999",
-                background: tab === t.key ? "#f5f5f3" : "none",
+                color: tab === t.key ? "#fff" : "#999",
+                background: tab === t.key ? "#1a1a1a" : "none",
                 border: "none",
-                borderRadius: 6,
-                padding: "5px 10px",
+                borderRadius: 20,
+                padding: "5px 12px",
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -3546,6 +3582,15 @@ export default function DashboardPage() {
         )}
         {tab === "playbooks" && (
           <div>
+            {/* Playbooks title */}
+            <div style={{ padding: "24px 20px 8px" }}>
+              <h2 style={{ fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>
+                Playbooks
+              </h2>
+              <p style={{ fontSize: 16, color: "#999", marginTop: 6, lineHeight: 1.5 }}>
+                {PLAYBOOKS.length} proven structures. Pick a vibe, fill in your thinking, publish.
+              </p>
+            </div>
             {/* Bento grid */}
             <div
               style={{
@@ -3555,7 +3600,7 @@ export default function DashboardPage() {
                 padding: "8px 20px 20px",
               }}
             >
-              {PLAYBOOKS.map((playbook) => {
+              {PLAYBOOKS.map((playbook, playbookIdx) => {
                 const isWide = playbook.gridSpan?.includes("span 2");
                 const isHero = playbook.gridSpan === "span 2 / span 2";
                 return (
@@ -3593,6 +3638,20 @@ export default function DashboardPage() {
                       (e.currentTarget as HTMLElement).style.transform = "scale(0.99)";
                     }}
                   >
+                    {/* Card number */}
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 14,
+                        left: 16,
+                        fontSize: 11,
+                        fontFamily: "monospace",
+                        color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.3)",
+                        zIndex: 1,
+                      }}
+                    >
+                      {String(playbookIdx + 1).padStart(2, "0")}
+                    </span>
                     {/* Decorative graphic element */}
                     {playbook.id === "contrarian-flip" && (
                       <div style={{ position: "absolute", top: 16, right: 16, opacity: 0.06 }}>
@@ -3629,65 +3688,6 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     )}
-                    {playbook.id === "insider-truth" && (
-                      <div style={{ position: "absolute", top: 14, right: 14, opacity: 0.07 }}>
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            border: `1.5px solid ${playbook.textColor}`,
-                            position: "absolute",
-                            top: 0,
-                            right: 0,
-                          }}
-                        />
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            border: `1.5px solid ${playbook.textColor}`,
-                            position: "absolute",
-                            top: 8,
-                            right: 8,
-                          }}
-                        />
-                      </div>
-                    )}
-                    {playbook.id === "build-log" && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 14,
-                          left: 16,
-                          fontFamily: "monospace",
-                          fontSize: 10,
-                          color: playbook.textColor,
-                          opacity: 0.08,
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        log 01
-                        <br />
-                        log 02
-                      </div>
-                    )}
-                    {playbook.id === "list-takeaway" && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 10,
-                          left: 16,
-                          fontFamily: "Georgia, serif",
-                          fontSize: 42,
-                          fontWeight: 700,
-                          color: playbook.textColor,
-                          opacity: 0.06,
-                          lineHeight: 0.9,
-                        }}
-                      >
-                        1<br />2<br />3
-                      </div>
-                    )}
                     {playbook.id === "origin-story" && (
                       <div
                         style={{
@@ -3699,22 +3699,6 @@ export default function DashboardPage() {
                         }}
                       />
                     )}
-                    {playbook.id === "cold-intro" && (
-                      <div style={{ position: "absolute", top: 14, right: 14, fontSize: 20, opacity: 0.08 }}>
-                        &#9993;
-                      </div>
-                    )}
-                    {playbook.id === "follow-up" && (
-                      <div style={{ position: "absolute", top: 14, right: 14, fontSize: 18, opacity: 0.08 }}>
-                        &#8617;
-                      </div>
-                    )}
-                    {playbook.id === "polite-push" && (
-                      <div style={{ position: "absolute", top: 14, right: 14, fontSize: 18, opacity: 0.08 }}>
-                        &#9200;
-                      </div>
-                    )}
-
                     <p
                       style={{
                         fontFamily: "Georgia, serif",
@@ -3754,10 +3738,21 @@ export default function DashboardPage() {
                         zIndex: 1,
                       }}
                     >
-                      {playbook.category === "email"
-                        ? `email · ~${playbook.estimateWords} words`
-                        : `${playbook.sections.length} sections · ~${playbook.estimateWords} words`}
+                      {`${playbook.sections.length} sections · ~${playbook.estimateWords} words`}
                     </p>
+                    {isHero && (
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.45)",
+                          margin: "8px 0 0",
+                          position: "relative",
+                          zIndex: 1,
+                        }}
+                      >
+                        Open &gt;
+                      </p>
+                    )}
                   </button>
                 );
               })}
