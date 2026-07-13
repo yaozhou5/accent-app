@@ -65,9 +65,10 @@ export async function middleware(request: NextRequest) {
     }
 
     return response;
-  } catch (e) {
-    // Suppress AbortError from Next.js client-side navigation
-    if (e instanceof Error && e.name === "AbortError") {
+  } catch (e: unknown) {
+    // Suppress AbortError from Next.js client-side navigation / Turbopack
+    const msg = e instanceof Error ? e.message : String(e);
+    if ((e instanceof Error && e.name === "AbortError") || msg.includes("aborted") || msg.includes("signal")) {
       return NextResponse.next();
     }
     throw e;
