@@ -755,6 +755,7 @@ function LogTab({
                       className="relative"
                       style={{
                         gridColumn: "span 1",
+                        minWidth: 0,
                         borderRadius: 10,
                         padding: "20px 22px",
                         background: isSelected ? `${BLUE}` : cardStyle.bg,
@@ -955,6 +956,7 @@ function LogTab({
                                 color: "#1a1a1a",
                                 lineHeight: 1.6,
                                 whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
                                 paddingRight: 28,
                               }}
                             >
@@ -1045,7 +1047,16 @@ function LogTab({
                               <div style={{ padding: "10px 12px" }}>
                                 <p
                                   className="font-sans font-semibold"
-                                  style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.4 }}
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#1a1a1a",
+                                    lineHeight: 1.4,
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                    wordBreak: "break-word",
+                                  }}
                                 >
                                   {og?.title || getReadableTitle(entryUrl)}
                                 </p>
