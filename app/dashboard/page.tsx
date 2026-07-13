@@ -752,7 +752,7 @@ function LogTab({
                     <div
                       key={entry.id}
                       onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
-                      className="relative overflow-hidden"
+                      className="relative"
                       style={{
                         gridColumn: "span 1",
                         borderRadius: 10,
