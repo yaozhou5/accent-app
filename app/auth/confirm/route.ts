@@ -6,8 +6,22 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as "email" | "magiclink" | "email_change" | null;
   const nextParam = searchParams.get("next") ?? searchParams.get("redirect_to") ?? "/dashboard";
-  // Prevent open redirect: only allow same-origin relative paths
-  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+  // Normalize full URLs to paths, prevent open redirect
+  let next = "/dashboard";
+  if (nextParam) {
+    try {
+      const url = new URL(nextParam, request.url);
+      // Only allow same-origin redirects
+      if (url.origin === new URL(request.url).origin) {
+        next = url.pathname;
+      }
+    } catch {
+      // If it's already a relative path
+      if (nextParam.startsWith("/") && !nextParam.startsWith("//")) {
+        next = nextParam;
+      }
+    }
+  }
 
   if (token_hash && type) {
     const supabase = await createClient();
@@ -19,6 +33,13 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(new URL(next, request.url));
     }
+    console.error("Auth confirm verifyOtp failed:", {
+      error: error.message,
+      type,
+      token_hash: token_hash?.slice(0, 8) + "...",
+    });
+  } else {
+    console.error("Auth confirm missing params:", { token_hash: !!token_hash, type });
   }
 
   return NextResponse.redirect(new URL("/auth/error", request.url));
