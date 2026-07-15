@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import type { VoiceProfile } from "@/lib/voice-dimensions";
 
 const INK = "#1A1A18";
-const BLUE = "#4A6CF7";
+const BLUE = "#1a1a1a";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
 const BORDER = "#e5e7eb";
@@ -76,7 +76,7 @@ export default function MultiplyPanel({ draftText, voiceProfile }: { draftText: 
   const content = generated[activeTab] || "";
 
   return (
-    <div style={{ borderRadius: 14, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+    <div style={{ borderRadius: 0, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
       {/* Tab bar */}
       <div
         style={{
@@ -137,7 +137,7 @@ export default function MultiplyPanel({ draftText, voiceProfile }: { draftText: 
               style={{
                 background: copied === activeTab ? "#E8F5E0" : "#f9fafb",
                 border: `1px solid ${BORDER}`,
-                borderRadius: 8,
+                borderRadius: 0,
                 padding: "8px 16px",
                 cursor: "pointer",
                 color: copied === activeTab ? "#16a34a" : DIM,
@@ -156,7 +156,7 @@ export default function MultiplyPanel({ draftText, voiceProfile }: { draftText: 
               background: BLUE,
               color: "#fff",
               border: "none",
-              borderRadius: 10,
+              borderRadius: 0,
               padding: "10px 24px",
               cursor: "pointer",
             }}

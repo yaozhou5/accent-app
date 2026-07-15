@@ -1,8 +1,25 @@
 // lib/voice-instructions.ts
-import { normalizeScore, type DimensionKey, type VoiceDimensions } from "@/lib/voice-dimensions";
+import { normalizeScore, type DimensionKey, type VoiceDimensions, type VoiceProfile } from "@/lib/voice-dimensions";
 
-export function buildVoiceInstructions(dims: VoiceDimensions): string {
+export function buildVoiceInstructions(
+  dims: VoiceDimensions,
+  profile?: { top_traits?: string[]; edge?: string; gap?: string }
+): string {
   const lines: string[] = [];
+
+  // Voice identity block — most human-readable part
+  if (profile?.top_traits?.length) {
+    lines.push(`YOUR VOICE IDENTITY:\n${profile.top_traits.join(". ")}.`);
+  }
+  if (profile?.edge) {
+    lines.push(`\nYOUR EDGE:\n${profile.edge}`);
+  }
+  if (profile?.gap) {
+    lines.push(`\nWATCH OUT FOR:\n${profile.gap}`);
+  }
+  if (lines.length > 0) {
+    lines.push(""); // blank line before dimensional instructions
+  }
 
   for (const [key, raw] of Object.entries(dims) as [DimensionKey, number][]) {
     const norm = normalizeScore(key, raw);

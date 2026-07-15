@@ -10,7 +10,6 @@ import {
 } from "@/lib/voice-dimensions";
 
 const INK = "#1A1A18";
-const BLUE = "#4A6CF7";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
 const CREAM = "#F7F4EF";
@@ -71,7 +70,7 @@ export default function VoiceReportPage() {
           justifyContent: "center",
         }}
       >
-        <p style={{ color: DIM, fontSize: 18 }}>Loading your voice report...</p>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", color: DIM, fontSize: 18 }}>Loading your voice report...</p>
       </div>
     );
   }
@@ -89,13 +88,16 @@ export default function VoiceReportPage() {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: DIM, fontSize: 18, marginBottom: 24 }}>No voice profile found.</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", color: DIM, fontSize: 18, marginBottom: 24 }}>
+            No voice profile found.
+          </p>
           <a
             href="/voice"
             style={{
-              background: BLUE,
+              fontFamily: "'DM Sans', sans-serif",
+              background: INK,
               color: "#fff",
-              borderRadius: 12,
+              borderRadius: 0,
               padding: "14px 36px",
               fontSize: 16,
               fontWeight: 700,
@@ -123,7 +125,8 @@ export default function VoiceReportPage() {
         {/* Header */}
         <p
           style={{
-            fontSize: 13,
+            fontFamily: "'DM Mono', monospace",
+            fontSize: 12,
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.08em",
@@ -135,8 +138,9 @@ export default function VoiceReportPage() {
         </p>
         <h1
           style={{
+            fontFamily: "'Fraunces', Georgia, serif",
             fontSize: 40,
-            fontWeight: 800,
+            fontWeight: 700,
             color: INK,
             lineHeight: 1.15,
             marginBottom: 40,
@@ -164,6 +168,7 @@ export default function VoiceReportPage() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
+                    fontFamily: "'DM Sans', sans-serif",
                     fontSize: 14,
                     fontWeight: 600,
                     color: DIM,
@@ -176,7 +181,7 @@ export default function VoiceReportPage() {
                 <div
                   style={{
                     height: 10,
-                    background: "#e5e5e5",
+                    background: "#e0ddd5",
                     borderRadius: 5,
                     position: "relative",
                   }}
@@ -190,7 +195,7 @@ export default function VoiceReportPage() {
                       width: 20,
                       height: 20,
                       borderRadius: "50%",
-                      background: BLUE,
+                      background: INK,
                       boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                     }}
                   />
@@ -204,17 +209,18 @@ export default function VoiceReportPage() {
         <div
           style={{
             background: "#fff",
-            borderRadius: 16,
+            borderRadius: 0,
             padding: "28px 32px",
             marginBottom: 20,
-            border: "1px solid #e5e5e5",
+            border: "1px solid #e0ddd5",
           }}
         >
           <h3
             style={{
-              fontSize: 13,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 12,
               fontWeight: 700,
-              color: BLUE,
+              color: INK,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               marginBottom: 12,
@@ -222,24 +228,27 @@ export default function VoiceReportPage() {
           >
             Your edge
           </h3>
-          <p style={{ fontSize: 18, color: INK, lineHeight: 1.65 }}>{profile.edge}</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: INK, lineHeight: 1.65 }}>
+            {profile.edge}
+          </p>
         </div>
 
         {/* Gap */}
         <div
           style={{
             background: "#fff",
-            borderRadius: 16,
+            borderRadius: 0,
             padding: "28px 32px",
             marginBottom: 40,
-            border: "1px solid #e5e5e5",
+            border: "1px solid #e0ddd5",
           }}
         >
           <h3
             style={{
-              fontSize: 13,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 12,
               fontWeight: 700,
-              color: "#D97706",
+              color: "#8B7355",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               marginBottom: 12,
@@ -247,14 +256,17 @@ export default function VoiceReportPage() {
           >
             Watch out for
           </h3>
-          <p style={{ fontSize: 18, color: INK, lineHeight: 1.65 }}>{profile.gap}</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: INK, lineHeight: 1.65 }}>
+            {profile.gap}
+          </p>
         </div>
 
         {/* Writing tips per dimension */}
         <h2
           style={{
+            fontFamily: "'Fraunces', Georgia, serif",
             fontSize: 24,
-            fontWeight: 800,
+            fontWeight: 600,
             color: INK,
             marginBottom: 20,
           }}
@@ -278,16 +290,17 @@ export default function VoiceReportPage() {
                 key={key}
                 style={{
                   background: "#fff",
-                  borderRadius: 12,
+                  borderRadius: 0,
                   padding: "20px 24px",
-                  border: "1px solid #e5e5e5",
+                  border: "1px solid #e0ddd5",
                 }}
               >
                 <p
                   style={{
-                    fontSize: 14,
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: 12,
                     fontWeight: 700,
-                    color: BLUE,
+                    color: INK,
                     textTransform: "uppercase",
                     letterSpacing: "0.04em",
                     marginBottom: 8,
@@ -297,6 +310,7 @@ export default function VoiceReportPage() {
                 </p>
                 <p
                   style={{
+                    fontFamily: "'DM Sans', sans-serif",
                     fontSize: 16,
                     color: INK,
                     lineHeight: 1.6,
@@ -315,18 +329,19 @@ export default function VoiceReportPage() {
             window.location.href = "/dashboard";
           }}
           style={{
+            fontFamily: "'DM Sans', sans-serif",
             width: "100%",
-            background: BLUE,
+            background: INK,
             color: "#fff",
             border: "none",
-            borderRadius: 12,
+            borderRadius: 0,
             padding: "18px 0",
-            fontSize: 18,
-            fontWeight: 700,
+            fontSize: 17,
+            fontWeight: 600,
             cursor: "pointer",
           }}
         >
-          See what you can write
+          Get started
         </button>
       </div>
     </div>

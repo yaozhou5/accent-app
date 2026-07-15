@@ -62,7 +62,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,700,800,900&display=swap" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
         />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1A1A18" />

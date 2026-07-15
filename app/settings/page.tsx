@@ -9,7 +9,6 @@ import { ArrowLeft } from "@/components/ArrowIcon";
 import { DIMENSION_LABELS, normalizeScore, type DimensionKey, type VoiceProfile } from "@/lib/voice-dimensions";
 
 const INK = "#111827";
-const BLUE = "#4A6CF7";
 const DIM = "#6b7280";
 const FAINT = "#9ca3af";
 const BORDER = "#e5e7eb";
@@ -42,13 +41,19 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
       <nav style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
           <Link
             href="/dashboard"
             className="no-underline font-serif"
-            style={{ fontSize: 20, fontWeight: 600, color: INK }}
+            style={{
+              fontSize: 20,
+              fontWeight: 600,
+              color: INK,
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontStyle: "italic",
+            }}
           >
             accent
           </Link>
@@ -123,7 +128,7 @@ export default function SettingsPage() {
                                 width: 14,
                                 height: 14,
                                 borderRadius: "50%",
-                                background: BLUE,
+                                background: "#1a1a1a",
                               }}
                             />
                           </div>
@@ -142,8 +147,8 @@ export default function SettingsPage() {
                         display: "block",
                         textAlign: "center",
                         padding: "10px 0",
-                        borderRadius: 9999,
-                        background: BLUE,
+                        borderRadius: 0,
+                        background: "#1a1a1a",
                         color: "#fff",
                         textDecoration: "none",
                         fontWeight: 600,
@@ -162,7 +167,7 @@ export default function SettingsPage() {
                       style={{
                         flex: 1,
                         padding: "10px 0",
-                        borderRadius: 9999,
+                        borderRadius: 0,
                         border: `1px solid ${BORDER}`,
                         color: DIM,
                         background: "transparent",
@@ -179,8 +184,8 @@ export default function SettingsPage() {
                   className="font-sans text-[14px] block text-center"
                   style={{
                     padding: "14px 0",
-                    borderRadius: 9999,
-                    background: BLUE,
+                    borderRadius: 0,
+                    background: "#1a1a1a",
                     color: "#fff",
                     textDecoration: "none",
                     fontWeight: 600,
@@ -195,7 +200,7 @@ export default function SettingsPage() {
           <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${BORDER}` }}>
             <button
               onClick={handleSignOut}
-              className="w-full py-3 rounded-full font-sans text-[14px]"
+              className="w-full py-3 font-sans text-[14px]"
               style={{ border: `1px solid ${BORDER}`, color: DIM, background: "transparent", cursor: "pointer" }}
             >
               Sign out

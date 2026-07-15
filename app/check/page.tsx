@@ -14,7 +14,7 @@ import type { WriteMode } from "@/lib/types";
 const INK = "#1A1A18";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
-const ACCENT = "#4A6CF7";
+const ACCENT = "#1a1a1a";
 const CREAM = "#F7F4EF";
 
 export default function CheckPage() {
@@ -103,7 +103,7 @@ export default function CheckPage() {
         </Link>
         <Link
           href="/signup"
-          className="no-underline px-5 py-2 rounded-full text-[13px] font-sans font-semibold"
+          className="no-underline px-5 py-2 text-[13px] font-sans font-semibold"
           style={{ background: INK, color: CREAM }}
         >
           Start your workspace

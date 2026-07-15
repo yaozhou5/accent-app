@@ -32,6 +32,8 @@ export interface UserProfile {
   inferred_goal: string | null;
   account_type_confidence: string | null;
   voice_profile: VoiceProfile | null;
+  content_topic: string | null;
+  target_audience: string | null;
   created_at: string;
 }
 

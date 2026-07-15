@@ -8,7 +8,7 @@ import { ArrowLeft } from "@/components/ArrowIcon";
 import posthog from "posthog-js";
 
 const INK = "#1A1A18";
-const BLUE = "#4A6CF7";
+const BLUE = "#1a1a1a";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
 const BORDER = "#e5e7eb";
@@ -135,6 +135,7 @@ export default function PlaybookEditor({
           voiceProfile: profile.voice_profile,
           businessContext: "",
           platform: "linkedin",
+          estimateWords: playbook.estimateWords,
         }),
       });
       if (!res.ok) throw new Error("Generate failed");
@@ -165,12 +166,24 @@ export default function PlaybookEditor({
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBack}
-            className="font-mono text-[12px]"
-            style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 12,
+              color: DIM,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
             <ArrowLeft size={12} /> Playbooks
           </button>
-          <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11,
+              color: saving ? BLUE : saveError ? "#DC2626" : FAINT,
+            }}
+          >
             {saving ? "Saving..." : saveError ? "Save failed" : draftId ? "Saved" : ""}
           </span>
         </div>
@@ -181,7 +194,7 @@ export default function PlaybookEditor({
             style={{
               width: 56,
               height: 56,
-              borderRadius: 10,
+              borderRadius: 0,
               background: playbook.color,
               flexShrink: 0,
               display: "flex",
@@ -191,7 +204,7 @@ export default function PlaybookEditor({
           >
             <span
               style={{
-                fontFamily: "Georgia, serif",
+                fontFamily: "'Fraunces', Georgia, serif",
                 fontSize: 9,
                 fontWeight: 600,
                 color: playbook.textColor,
@@ -203,10 +216,18 @@ export default function PlaybookEditor({
             </span>
           </div>
           <div>
-            <h2 className="font-serif" style={{ fontSize: 24, fontWeight: 600, color: INK, marginBottom: 2 }}>
+            <h2
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 24,
+                fontWeight: 600,
+                color: INK,
+                marginBottom: 2,
+              }}
+            >
               {playbook.name}
             </h2>
-            <p className="font-sans" style={{ fontSize: 14, color: FAINT, lineHeight: 1.4 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, lineHeight: 1.4 }}>
               {playbook.tagline}
             </p>
           </div>
@@ -219,8 +240,10 @@ export default function PlaybookEditor({
           return (
             <div key={section.id} style={{ marginBottom: i < playbook.sections.length - 1 ? 0 : 0 }}>
               <p
-                className="font-mono text-[11px] uppercase"
                 style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: 11,
+                  textTransform: "uppercase" as const,
                   color: FAINT,
                   letterSpacing: "0.06em",
                   fontWeight: 600,
@@ -230,8 +253,9 @@ export default function PlaybookEditor({
                 {section.label}
               </p>
               <p
-                className="font-sans text-[13px]"
                 style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
                   color: FAINT,
                   marginBottom: 10,
                   lineHeight: 1.4,
@@ -247,8 +271,9 @@ export default function PlaybookEditor({
                 value={value}
                 onChange={(e) => updateSection(section.id, e.target.value)}
                 placeholder="Start typing..."
-                className="w-full outline-none resize-none font-sans"
+                className="w-full outline-none resize-none"
                 style={{
+                  fontFamily: "'DM Sans', sans-serif",
                   fontSize: 16,
                   color: INK,
                   lineHeight: 1.8,
@@ -258,7 +283,7 @@ export default function PlaybookEditor({
                   borderRight: "none",
                   borderBottom: "none",
                   background: "#FAFAF7",
-                  borderRadius: 12,
+                  borderRadius: 0,
                   minHeight: 60,
                   overflow: "hidden",
                   transition: "background 0.15s ease, border-color 0.15s ease",
@@ -304,7 +329,15 @@ export default function PlaybookEditor({
 
         {/* Word count + Bottom actions */}
         {totalWords > 0 && (
-          <p className="font-mono text-[11px] mt-4 text-right" style={{ color: FAINT }}>
+          <p
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11,
+              marginTop: 16,
+              textAlign: "right",
+              color: FAINT,
+            }}
+          >
             {totalWords} words
           </p>
         )}
@@ -312,8 +345,9 @@ export default function PlaybookEditor({
           <button
             onClick={handleDevelop}
             disabled={developing || filledSections < 2 || !profile?.voice_profile}
-            className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px]"
+            className="w-full py-3.5 font-semibold text-[15px]"
             style={{
+              fontFamily: "'DM Sans', sans-serif",
               background: filledSections < 2 || !profile?.voice_profile ? INK : INK,
               color: "#fff",
               border: "none",
@@ -326,8 +360,9 @@ export default function PlaybookEditor({
           <button
             onClick={handleExplicitSave}
             disabled={saving || totalWords === 0}
-            className="font-sans text-[13px]"
             style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
               background: "none",
               border: "none",
               color: DIM,
@@ -339,9 +374,7 @@ export default function PlaybookEditor({
             {saving ? "Saving..." : "Save for later"}
           </button>
           {saveError && (
-            <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
-              {saveError}
-            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#DC2626" }}>{saveError}</p>
           )}
         </div>
       </div>

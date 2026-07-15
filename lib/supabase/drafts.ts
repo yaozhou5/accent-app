@@ -92,11 +92,9 @@ export async function createStandaloneDraft(
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from("drafts")
-    .insert({ user_id: user.id, content, source_note: sourceNote, source_entry_id: sourceEntryId })
-    .select()
-    .single();
+  const row: Record<string, unknown> = { user_id: user.id, content, source_note: sourceNote };
+  if (sourceEntryId) row.source_entry_id = sourceEntryId;
+  const { data, error } = await supabase.from("drafts").insert(row).select().single();
 
   if (error) {
     console.error("Failed to create standalone draft:", JSON.stringify(error));
@@ -172,6 +170,16 @@ export async function saveDraftById(draftId: string, content: string): Promise<D
     return null;
   }
   return data as Draft;
+}
+
+export async function deleteDraft(draftId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("drafts").delete().eq("id", draftId);
+  if (error) {
+    console.error("Failed to delete draft:", JSON.stringify(error));
+    return false;
+  }
+  return true;
 }
 
 export async function saveDraft(planId: string, postIndex: number, content: string): Promise<Draft | null> {

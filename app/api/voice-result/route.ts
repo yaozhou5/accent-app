@@ -68,7 +68,8 @@ Return ONLY valid JSON: {"edge": "...", "gap": "..."}`,
       gap: parsed.gap || "",
     });
   } catch (error) {
-    console.error("voice-result error:", error);
-    return NextResponse.json({ error: "Failed to generate voice result" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("voice-result error:", msg);
+    return NextResponse.json({ error: "Failed to generate voice result", detail: msg }, { status: 500 });
   }
 }

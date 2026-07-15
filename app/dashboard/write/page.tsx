@@ -8,7 +8,7 @@ const INK = "#111827";
 const BODY = "#4b5563";
 const DIM = "#6b7280";
 const FAINT = "#9ca3af";
-const BLUE = "#3B82F6";
+const BLUE = "#1a1a1a";
 const BORDER = "#e5e7eb";
 
 interface CoachFeedback {
@@ -43,7 +43,7 @@ export default function QuickCheckPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#fff" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
       <div className="max-w-[640px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between mb-6">
           <Link href="/dashboard" className="no-underline font-mono" style={{ fontSize: 13, color: FAINT }}>
@@ -82,8 +82,8 @@ export default function QuickCheckPage() {
           <button
             onClick={handleCheck}
             disabled={checking}
-            className="mt-6 w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 40, cursor: "pointer" }}
+            className="mt-6 w-full py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 0, cursor: "pointer" }}
           >
             {checking ? "Checking..." : "Check my writing"}
           </button>

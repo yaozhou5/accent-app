@@ -127,7 +127,7 @@ function buildEmailHtml(profile: VoiceProfile, magicLink: string): string {
           <tr><td><table width="100%" cellpadding="0" cellspacing="0">${tipRows}</table></td></tr>
           <tr>
             <td style="padding: 32px 0;" align="center">
-              <a href="${magicLink}" style="display: inline-block; background: #4A6CF7; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 16px 48px; font-size: 18px; font-weight: 700;">Start logging — activate your account</a>
+              <a href="${magicLink}" style="display: inline-block; background: #4A6CF7; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 16px 48px; font-size: 18px; font-weight: 700;">See what you can write</a>
             </td>
           </tr>
           <tr>

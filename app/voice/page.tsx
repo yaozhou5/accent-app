@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import posthog from "posthog-js";
 
 const INK = "#1A1A18";
-const BLUE = "#4A6CF7";
+const BLUE = "#1A1A18";
 const DIM = "#6B6860";
 const FAINT = "#A8A49C";
 const CREAM = "#F7F4EF";
@@ -169,6 +169,7 @@ export default function VoiceDiscoveryPage() {
               color: INK,
               marginBottom: 16,
               lineHeight: 1.2,
+              fontFamily: "'Fraunces', Georgia, serif",
             }}
           >
             Find your voice in 60 seconds
@@ -179,6 +180,7 @@ export default function VoiceDiscoveryPage() {
               color: DIM,
               lineHeight: 1.6,
               marginBottom: 32,
+              fontFamily: "'DM Sans', sans-serif",
             }}
           >
             You&apos;ll see 12 pairs of writing samples. Tap the one that sounds more like you. No right answers — just
@@ -187,10 +189,10 @@ export default function VoiceDiscoveryPage() {
           <button
             onClick={() => setPhase("pairs")}
             style={{
-              background: BLUE,
+              background: "#1A1A18",
               color: "#fff",
               border: "none",
-              borderRadius: 12,
+              borderRadius: 0,
               padding: "16px 48px",
               fontSize: 18,
               fontWeight: 700,
@@ -238,7 +240,7 @@ export default function VoiceDiscoveryPage() {
                 fontSize: 14,
                 color: DIM,
                 padding: "0 0 12px",
-                fontFamily: "inherit",
+                fontFamily: "'DM Mono', monospace",
               }}
             >
               &larr; Back
@@ -268,6 +270,7 @@ export default function VoiceDiscoveryPage() {
               fontSize: 13,
               color: FAINT,
               marginTop: 8,
+              fontFamily: "'DM Mono', monospace",
             }}
           >
             {currentPair + 1} / {VOICE_PAIRS.length}
@@ -298,6 +301,7 @@ export default function VoiceDiscoveryPage() {
                 fontWeight: 700,
                 color: INK,
                 marginBottom: 16,
+                fontFamily: "'DM Sans', sans-serif",
               }}
             >
               Which sounds more like you?
@@ -309,7 +313,7 @@ export default function VoiceDiscoveryPage() {
                 style={{
                   background: "#fff",
                   border: "1.5px solid #e5e5e5",
-                  borderRadius: 12,
+                  borderRadius: 0,
                   padding: "24px 28px",
                   fontSize: 17,
                   lineHeight: 1.6,
@@ -317,10 +321,11 @@ export default function VoiceDiscoveryPage() {
                   textAlign: "left",
                   cursor: "pointer",
                   transition: "border-color 0.15s, box-shadow 0.15s",
+                  fontFamily: "'DM Sans', sans-serif",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = BLUE;
-                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 1px ${BLUE}`;
+                  (e.currentTarget as HTMLElement).style.borderColor = "#1A1A18";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 1px #1A1A18";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = "#e5e5e5";
@@ -360,7 +365,7 @@ export default function VoiceDiscoveryPage() {
               margin: "0 auto 16px",
             }}
           />
-          <p style={{ fontSize: 18, color: DIM }}>Analyzing your voice...</p>
+          <p style={{ fontSize: 18, color: DIM, fontFamily: "'DM Sans', sans-serif" }}>Analyzing your voice...</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -388,6 +393,7 @@ export default function VoiceDiscoveryPage() {
               color: INK,
               marginBottom: 32,
               lineHeight: 1.2,
+              fontFamily: "'Fraunces', Georgia, serif",
             }}
           >
             {result.topTraits.join(". ")}.
@@ -414,6 +420,7 @@ export default function VoiceDiscoveryPage() {
                       fontSize: 13,
                       color: DIM,
                       marginBottom: 6,
+                      fontFamily: "'DM Mono', monospace",
                     }}
                   >
                     <span>{labels.low}</span>
@@ -423,7 +430,7 @@ export default function VoiceDiscoveryPage() {
                     style={{
                       height: 8,
                       background: "#e5e5e5",
-                      borderRadius: 4,
+                      borderRadius: 2,
                       position: "relative",
                     }}
                   >
@@ -436,7 +443,7 @@ export default function VoiceDiscoveryPage() {
                         width: 16,
                         height: 16,
                         borderRadius: "50%",
-                        background: BLUE,
+                        background: INK,
                       }}
                     />
                   </div>
@@ -449,7 +456,7 @@ export default function VoiceDiscoveryPage() {
           <div
             style={{
               background: "#fff",
-              borderRadius: 16,
+              borderRadius: 0,
               padding: "28px 32px",
               border: "1px solid #e5e5e5",
             }}
@@ -460,6 +467,7 @@ export default function VoiceDiscoveryPage() {
                 fontWeight: 700,
                 color: INK,
                 marginBottom: 4,
+                fontFamily: "'DM Sans', sans-serif",
               }}
             >
               Get your full voice report
@@ -470,6 +478,7 @@ export default function VoiceDiscoveryPage() {
                 color: DIM,
                 marginBottom: 20,
                 lineHeight: 1.5,
+                fontFamily: "'DM Sans', sans-serif",
               }}
             >
               Personalized writing tips, your edge, and what to watch out for — delivered to your inbox.
@@ -484,30 +493,36 @@ export default function VoiceDiscoveryPage() {
                 style={{
                   width: "100%",
                   padding: "14px 16px",
-                  borderRadius: 10,
+                  borderRadius: 0,
                   border: "1px solid #e5e5e5",
                   fontSize: 16,
                   color: INK,
                   outline: "none",
                   marginBottom: 12,
                   boxSizing: "border-box",
+                  fontFamily: "'DM Sans', sans-serif",
                 }}
               />
-              {sendError && <p style={{ fontSize: 13, color: "#DC2626", marginBottom: 8 }}>{sendError}</p>}
+              {sendError && (
+                <p style={{ fontSize: 13, color: "#DC2626", marginBottom: 8, fontFamily: "'DM Mono', monospace" }}>
+                  {sendError}
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={sending}
                 style={{
                   width: "100%",
-                  background: BLUE,
+                  background: "#1A1A18",
                   color: "#fff",
                   border: "none",
-                  borderRadius: 12,
+                  borderRadius: 0,
                   padding: "16px 0",
                   fontSize: 18,
                   fontWeight: 700,
                   cursor: sending ? "wait" : "pointer",
                   opacity: sending ? 0.6 : 1,
+                  fontFamily: "'DM Sans', sans-serif",
                 }}
               >
                 {sending ? "Sending..." : "Send my report"}
@@ -555,6 +570,7 @@ export default function VoiceDiscoveryPage() {
               color: INK,
               marginBottom: 12,
               lineHeight: 1.2,
+              fontFamily: "'Fraunces', Georgia, serif",
             }}
           >
             Check your inbox
@@ -565,6 +581,7 @@ export default function VoiceDiscoveryPage() {
               color: DIM,
               lineHeight: 1.6,
               marginBottom: 8,
+              fontFamily: "'DM Sans', sans-serif",
             }}
           >
             Your full voice report is on its way to <strong style={{ color: INK }}>{email}</strong>.
@@ -574,9 +591,10 @@ export default function VoiceDiscoveryPage() {
               fontSize: 15,
               color: FAINT,
               lineHeight: 1.5,
+              fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            Click the link in the email to activate your account and start logging.
+            Click the link in the email to activate your account and see what you can write.
           </p>
         </div>
       </div>

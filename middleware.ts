@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard", "/voice/try"];
+const PROTECTED = ["/write", "/settings", "/shelf", "/dashboard"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
@@ -39,27 +39,12 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
       }
 
-      // New user routing: voice profile + log entries
-      if (path.startsWith("/dashboard") || path === "/voice/try") {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, voice_profile")
-          .eq("id", user.id)
-          .maybeSingle();
+      // New user routing: must have profile to access dashboard
+      if (path.startsWith("/dashboard")) {
+        const { data: profile } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
 
         if (!profile) {
           return NextResponse.redirect(new URL("/voice", request.url));
-        }
-
-        if (path.startsWith("/dashboard") && profile.voice_profile) {
-          const { count } = await supabase
-            .from("log_entries")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id);
-
-          if (count === 0) {
-            return NextResponse.redirect(new URL("/voice/try", request.url));
-          }
         }
       }
     }

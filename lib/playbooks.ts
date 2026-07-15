@@ -35,9 +35,9 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 100,
     bestFor: ["X", "LinkedIn", "小红书"],
-    color: "#E8DCC8",
-    textColor: "#1a1a1a",
-    gridSpan: "span 2 / span 2",
+    color: "#1A1512",
+    textColor: "#F0EAE0",
+    gridSpan: "span 2 / span 1",
   },
   // 02 — 2 wide
   {
@@ -53,8 +53,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 250,
     bestFor: ["LinkedIn", "Substack", "小红书"],
-    color: "#C84B31",
-    textColor: "#ffffff",
+    color: "#C4614A",
+    textColor: "#FFF8F5",
     gridSpan: "span 2 / span 1",
   },
   // 03 — 1 col
@@ -72,8 +72,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 400,
     bestFor: ["Substack", "LinkedIn", "About page"],
-    color: "#B08D2E",
-    textColor: "#ffffff",
+    color: "#C4A030",
+    textColor: "#1A1400",
   },
   // 04 — 1 col
   {
@@ -97,8 +97,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 200,
     bestFor: ["LinkedIn", "Substack", "X"],
-    color: "#141414",
-    textColor: "#ffffff",
+    color: "#8B2525",
+    textColor: "#FFF5F5",
   },
   // 05 — 1 col
   {
@@ -114,8 +114,9 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 200,
     bestFor: ["LinkedIn", "X", "Substack"],
-    color: "#2D3A3A",
-    textColor: "#ffffff",
+    color: "#3D4B8F",
+    textColor: "#EEF0FF",
+    gridSpan: "span 2 / span 1",
   },
   // 06 — 2 wide
   {
@@ -134,8 +135,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 200,
     bestFor: ["LinkedIn", "X", "newsletter"],
-    color: "#4A5899",
-    textColor: "#ffffff",
+    color: "#1E5C58",
+    textColor: "#E8F5F4",
     gridSpan: "span 2 / span 1",
   },
   // 07 — 1 col
@@ -152,8 +153,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 80,
     bestFor: [],
-    color: "#F0EDE6",
-    textColor: "#1a1a1a",
+    color: "#4A6B1E",
+    textColor: "#F0F5E8",
   },
   // 08 — 1 col
   {
@@ -168,8 +169,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 50,
     bestFor: [],
-    color: "#E6E2DA",
-    textColor: "#1a1a1a",
+    color: "#6B2D6B",
+    textColor: "#FBF0FB",
   },
   // 09 — 2 wide
   {
@@ -185,8 +186,8 @@ export const PLAYBOOKS: Playbook[] = [
     ],
     estimateWords: 60,
     bestFor: [],
-    color: "#D4CDC2",
-    textColor: "#1a1a1a",
+    color: "#374151",
+    textColor: "#F9FAFB",
     gridSpan: "span 2 / span 1",
   },
 ];

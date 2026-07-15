@@ -42,6 +42,7 @@ import {
   createStandaloneDraft,
   getAllDrafts,
   markAsPublished,
+  deleteDraft,
   type Draft,
 } from "@/lib/supabase/drafts";
 import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
@@ -132,12 +133,12 @@ function getReadableTitle(url: string): string {
 }
 
 type Tab = "log" | "playbooks" | "history";
-const TYPE_CARD_STYLES: Record<string, { bg: string; text: string; label: string; labelColor: string }> = {
-  note: { bg: "#F0ECE4", text: "#1a1a1a", label: "Note", labelColor: "#8B7355" },
-  link: { bg: "#E0EAF4", text: "#1a1a1a", label: "Link", labelColor: "#4A6B99" },
-  quote: { bg: "#F5F0D8", text: "#1a1a1a", label: "Quote", labelColor: "#8B7335" },
+const TYPE_CARD_STYLES: Record<string, { bg: string; text: string; label: string; labelColor: string; dot: string }> = {
+  note: { bg: "#D8EDE1", text: "#1E4030", label: "Note", labelColor: "#1E4030", dot: "#3D6B4A" },
+  link: { bg: "#E0E4F5", text: "#252E6B", label: "Link", labelColor: "#252E6B", dot: "#3D4B8F" },
+  quote: { bg: "#F4EAC8", text: "#6B4D0A", label: "Quote", labelColor: "#6B4D0A", dot: "#9B7213" },
 };
-function getCardStyle(entry: LogEntry): { bg: string; text: string; label: string; labelColor: string } {
+function getCardStyle(entry: LogEntry): { bg: string; text: string; label: string; labelColor: string; dot: string } {
   return TYPE_CARD_STYLES[entry.type] || TYPE_CARD_STYLES.note;
 }
 
@@ -198,6 +199,13 @@ function LogTab({
   const composeRef = useRef<HTMLTextAreaElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
+
+  // Setup card state (first-time users without content_topic)
+  const showSetup = logEntries.length === 0 && profile && !profile.content_topic;
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  const [setupTopic, setSetupTopic] = useState("");
+  const [setupAudience, setSetupAudience] = useState<string[]>([]);
+  const [setupSaving, setSetupSaving] = useState(false);
 
   const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -470,746 +478,929 @@ function LogTab({
         if (menuOpen) setMenuOpen(null);
       }}
     >
-      {/* Compose — centered input card */}
-      <div
-        id="compose-card"
-        className="overflow-hidden transition-colors"
-        style={{
-          borderRadius: 10,
-          border: dragOver ? `2px solid ${BLUE}` : "1px solid #e0ddd5",
-          background: dragOver ? `${BLUE}04` : "#fff",
-          margin: "20px auto 0",
-          maxWidth: 620,
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setDragOver(true);
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setDragOver(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setDragOver(false);
-          addImageFiles(Array.from(e.dataTransfer.files));
-        }}
-      >
-        {pendingPreviews.length > 0 && (
-          <div className="px-5 pt-3 flex gap-2 flex-wrap">
-            {pendingPreviews.map((preview, idx) => (
-              <div key={idx} className="relative inline-block">
-                <img
-                  src={preview}
-                  alt=""
-                  className="rounded-[8px]"
-                  style={{ width: 72, height: 72, objectFit: "cover", border: `1px solid ${BORDER}` }}
-                />
-                <button
-                  onClick={() => removePendingImage(idx)}
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}
-                >
-                  ×
-                </button>
-              </div>
+      {/* First-time setup card — hides header and composer */}
+      {showSetup && !setupDismissed ? (
+        <div
+          style={{
+            maxWidth: 620,
+            margin: "0 auto 16px",
+            padding: "24px 28px",
+            background: "#F0ECE4",
+            border: "1px solid #e0ddd5",
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: 18,
+              fontWeight: 600,
+              color: "#1a1a1a",
+              margin: "0 0 16px",
+            }}
+          >
+            One more thing before you start.
+          </h3>
+
+          {/* Topic input */}
+          <label
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: FAINT,
+              fontWeight: 600,
+              display: "block",
+              marginBottom: 6,
+            }}
+          >
+            What are you building?
+          </label>
+          <input
+            value={setupTopic}
+            onChange={(e) => setSetupTopic(e.target.value)}
+            placeholder="e.g. a pet memorial brand, an AI health tool, a design studio"
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 15,
+              width: "100%",
+              padding: "12px 14px",
+              border: "1px solid #e0ddd5",
+              background: "#fff",
+              color: "#1a1a1a",
+              outline: "none",
+              boxSizing: "border-box",
+              marginBottom: 20,
+            }}
+          />
+
+          {/* Audience select */}
+          <label
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: FAINT,
+              fontWeight: 600,
+              display: "block",
+              marginBottom: 8,
+            }}
+          >
+            Who should hear about it?
+          </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+            {["Peers in my industry", "Potential customers", "Investors", "General audience"].map((opt) => (
+              <button
+                key={opt}
+                onClick={() =>
+                  setSetupAudience((prev) => (prev.includes(opt) ? prev.filter((a) => a !== opt) : [...prev, opt]))
+                }
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 15,
+                  textAlign: "left",
+                  background: "#fff",
+                  color: "#1a1a1a",
+                  border: setupAudience.includes(opt) ? "2px solid #1a1a1a" : "1px solid #e0ddd5",
+                  padding: setupAudience.includes(opt) ? "13px 17px" : "14px 18px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {opt}
+              </button>
             ))}
           </div>
-        )}
-        <textarea
-          ref={(el) => {
-            composeRef.current = el;
-            if (el) {
-              el.style.height = "auto";
-              el.style.height = Math.max(56, el.scrollHeight) + "px";
-            }
-          }}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={(e) => {
-            const items = Array.from(e.clipboardData.items);
-            const imageFiles = items
-              .filter((it) => it.type.startsWith("image/"))
-              .map((it) => it.getAsFile())
-              .filter((f): f is File => f !== null);
-            if (imageFiles.length > 0) {
-              e.preventDefault();
-              addImageFiles(imageFiles);
-            }
-          }}
-          placeholder="What happened? A thought, a link, something someone said..."
-          className="w-full outline-none resize-none font-sans"
-          style={{
-            fontSize: 15,
-            color: INK,
-            lineHeight: 1.6,
-            padding: "20px 20px 8px",
-            border: "none",
-            background: "transparent",
-            minHeight: 56,
-            overflow: "hidden",
-          }}
-        />
-        {attachError && (
-          <p className="font-sans text-[12px] px-4 pb-1" style={{ color: "#DC2626" }}>
-            {attachError}
-          </p>
-        )}
-        <div className="flex items-center justify-between px-5 pb-4">
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple
-              onChange={handleImageSelect}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-full hover:bg-gray-50"
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                minWidth: 44,
-                minHeight: 44,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={pendingImages.length > 0 ? BLUE : FAINT}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <path d="M21 15l-5-5L5 21" />
-              </svg>
-            </button>
-          </div>
-          <span className="font-mono" style={{ fontSize: 12, color: "#bbb" }}>
-            ⌘↵ to log
-          </span>
-          <span style={{ flex: 1 }} />
+
+          {/* Actions */}
           <button
-            onClick={handleSubmit}
-            disabled={(!input.trim() && pendingImages.length === 0) || submitting}
-            className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={async () => {
+              if (!setupTopic.trim() || setupAudience.length === 0) return;
+              setSetupSaving(true);
+              await upsertProfile({ content_topic: setupTopic.trim(), target_audience: setupAudience.join(", ") });
+              setSetupSaving(false);
+              setSetupDismissed(true);
+            }}
+            disabled={!setupTopic.trim() || setupAudience.length === 0 || setupSaving}
             style={{
-              padding: "8px 18px",
-              borderRadius: 6,
-              background: "#1a1a1a",
+              fontFamily: "'DM Sans', sans-serif",
+              width: "100%",
+              padding: "14px 0",
+              fontSize: 15,
+              fontWeight: 600,
+              background: !setupTopic.trim() || setupAudience.length === 0 ? "#1a1a1a" : "#1a1a1a",
               color: "#fff",
+              border: "none",
+              cursor: !setupTopic.trim() || setupAudience.length === 0 ? "not-allowed" : "pointer",
+              opacity: !setupTopic.trim() || setupAudience.length === 0 ? 0.35 : 1,
+            }}
+          >
+            {setupSaving ? "Saving..." : "Save & start"}
+          </button>
+          <button
+            onClick={() => setSetupDismissed(true)}
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              display: "block",
+              margin: "12px auto 0",
               fontSize: 13,
-              fontWeight: 500,
+              color: FAINT,
+              background: "none",
               border: "none",
               cursor: "pointer",
             }}
           >
-            {submitting ? "Saving..." : "+ Log it"}
+            Skip for now
           </button>
         </div>
-      </div>
-
-      {error && (
-        <p className="font-sans text-[13px]" style={{ color: "#DC2626", padding: "4px 20px 0" }}>
-          {error}
-        </p>
-      )}
-
-      {/* Tag filters */}
-      {logEntries.length > 0 && availableTags.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap" style={{ padding: "8px 20px 0" }}>
-          <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>
-            Tags:
-          </span>
-          {availableTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
-              className="font-mono text-[11px] px-2.5 py-1 rounded-full transition-all"
+      ) : (
+        <>
+          {/* Log header */}
+          <div style={{ padding: "24px 20px 16px", maxWidth: 620, margin: "0 auto" }}>
+            <h2
               style={{
-                background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent",
-                color: TAG_COLORS[tag] || DIM,
-                border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`,
-                cursor: "pointer",
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 24,
+                fontWeight: 600,
+                color: "#1a1a1a",
+                margin: 0,
               }}
             >
-              {tag}
-            </button>
-          ))}
-          {tagFilter && (
-            <button
-              onClick={() => setTagFilter(null)}
-              className="font-sans text-[11px]"
-              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
+              Log
+            </h2>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, marginTop: 4 }}>
+              {logEntries.length === 0
+                ? "Start by capturing a few moments from your week."
+                : logEntries.length < 5
+                  ? `You have ${logEntries.length} note${logEntries.length !== 1 ? "s" : ""}. Keep going.`
+                  : `${logEntries.length} notes`}
+            </p>
+          </div>
 
-      {/* Bulk actions bar */}
-      {selectMode && (
-        <div
-          className="flex items-center gap-2 p-3 rounded-[10px]"
-          style={{ background: "#fafafa", border: `1px solid ${BORDER}`, margin: "8px 20px 0" }}
-        >
-          <span className="font-sans text-[13px]" style={{ color: DIM }}>
-            {selected.size} selected
-          </span>
-          <div className="ml-auto flex gap-2">
-            {selected.size > 0 && (
-              <>
-                <button
-                  onClick={handleBulkBookmark}
-                  className="font-sans text-[12px] px-3 py-1.5 rounded-full"
-                  style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}
-                >
-                  Bookmark
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="font-sans text-[12px] px-3 py-1.5 rounded-full"
-                  style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}
-                >
-                  Delete
-                </button>
-              </>
+          {/* Compose — centered input card */}
+          <div
+            id="compose-card"
+            className="overflow-hidden transition-colors"
+            style={{
+              borderRadius: 0,
+              border: dragOver ? `2px solid ${BLUE}` : "1px solid #e0ddd5",
+              background: dragOver ? `${BLUE}04` : "#fff",
+              margin: "20px auto 0",
+              maxWidth: 620,
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragOver(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragOver(false);
+              addImageFiles(Array.from(e.dataTransfer.files));
+            }}
+          >
+            {pendingPreviews.length > 0 && (
+              <div className="px-5 pt-3 flex gap-2 flex-wrap">
+                {pendingPreviews.map((preview, idx) => (
+                  <div key={idx} className="relative inline-block">
+                    <img
+                      src={preview}
+                      alt=""
+                      style={{ width: 72, height: 72, objectFit: "cover", border: `1px solid ${BORDER}` }}
+                    />
+                    <button
+                      onClick={() => removePendingImage(idx)}
+                      className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center"
+                      style={{ background: INK, color: "#fff", fontSize: 10, border: "none", cursor: "pointer" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-            <button
-              onClick={() => {
-                setSelectMode(false);
-                setSelected(new Set());
+            <textarea
+              ref={(el) => {
+                composeRef.current = el;
+                if (el) {
+                  el.style.height = "auto";
+                  el.style.height = Math.max(56, el.scrollHeight) + "px";
+                }
               }}
-              className="font-sans text-[13px]"
-              style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bento grid feed */}
-      <style>{`@media (max-width: 640px) { .bento-log-grid { grid-template-columns: repeat(2, 1fr) !important; } }`}</style>
-      <div
-        className="bento-log-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 12,
-          padding: "8px 20px 20px",
-          gridAutoRows: "auto",
-        }}
-      >
-        {visibleEntries.length === 0 ? (
-          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 0" }}>
-            <p style={{ fontSize: 18, color: "#6B6860" }}>What happened this week?</p>
-            <p style={{ fontSize: 14, color: "#A8A49C", marginTop: 8 }}>Log a thought and turn it into a post.</p>
-          </div>
-        ) : (
-          <>
-            {dayGroups.map(({ label: dayLabel, entries: dayEntries }) => (
-              <React.Fragment key={dayLabel}>
-                <div
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onPaste={(e) => {
+                const items = Array.from(e.clipboardData.items);
+                const imageFiles = items
+                  .filter((it) => it.type.startsWith("image/"))
+                  .map((it) => it.getAsFile())
+                  .filter((f): f is File => f !== null);
+                if (imageFiles.length > 0) {
+                  e.preventDefault();
+                  addImageFiles(imageFiles);
+                }
+              }}
+              placeholder="What happened? A thought, a link, something someone said..."
+              className="w-full outline-none resize-none font-sans"
+              style={{
+                fontSize: 15,
+                color: INK,
+                lineHeight: 1.6,
+                padding: "20px 20px 8px",
+                border: "none",
+                background: "transparent",
+                minHeight: 56,
+                overflow: "hidden",
+              }}
+            />
+            {attachError && (
+              <p className="font-sans text-[12px] px-4 pb-1" style={{ color: "#DC2626" }}>
+                {attachError}
+              </p>
+            )}
+            <div className="flex items-center justify-between px-5 pb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 hover:bg-gray-50"
                   style={{
-                    gridColumn: "1 / -1",
-                    fontSize: 11,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "#999",
-                    padding: "16px 0 4px",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    minWidth: 44,
+                    minHeight: 44,
                     display: "flex",
                     alignItems: "center",
-                    gap: 12,
-                    fontFamily: "monospace",
+                    justifyContent: "center",
                   }}
                 >
-                  <span style={{ whiteSpace: "nowrap" }}>{dayLabel}</span>
-                  <span style={{ flex: 1, height: 1, background: "#d5d0c8" }} />
-                </div>
-                {dayEntries.map((entry) => {
-                  const cardStyle = getCardStyle(entry);
-                  const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
-                  const used = isUsedInPlan(entry);
-                  const isSelected = selected.has(entry.id);
-                  const hasImages = (entry.image_urls?.length || 0) > 0 || !!entry.image_url;
-                  return (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={pendingImages.length > 0 ? BLUE : FAINT}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                </button>
+              </div>
+              <span className="font-mono" style={{ fontSize: 12, color: "#bbb" }}>
+                ⌘↵ to log
+              </span>
+              <span style={{ flex: 1 }} />
+              <button
+                onClick={handleSubmit}
+                disabled={(!input.trim() && pendingImages.length === 0) || submitting}
+                className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 0,
+                  background: "#1a1a1a",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {submitting ? "Saving..." : "+ Log it"}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <p className="font-sans text-[13px]" style={{ color: "#DC2626", padding: "4px 20px 0" }}>
+              {error}
+            </p>
+          )}
+
+          {/* Tag filters */}
+          {logEntries.length > 0 && availableTags.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap" style={{ padding: "8px 20px 0" }}>
+              <span className="font-mono text-[10px] uppercase" style={{ color: FAINT, letterSpacing: "0.05em" }}>
+                Tags:
+              </span>
+              {availableTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+                  className="font-mono text-[11px] px-2.5 py-1 transition-all"
+                  style={{
+                    background: tagFilter === tag ? `${TAG_COLORS[tag] || DIM}20` : "transparent",
+                    color: TAG_COLORS[tag] || DIM,
+                    border: tagFilter === tag ? `1px solid ${TAG_COLORS[tag] || DIM}40` : `1px solid ${BORDER}`,
+                    cursor: "pointer",
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
+              {tagFilter && (
+                <button
+                  onClick={() => setTagFilter(null)}
+                  className="font-sans text-[11px]"
+                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Bulk actions bar */}
+          {selectMode && (
+            <div
+              className="flex items-center gap-2 p-3"
+              style={{ background: "#fafafa", border: `1px solid ${BORDER}`, margin: "8px 20px 0" }}
+            >
+              <span className="font-sans text-[13px]" style={{ color: DIM }}>
+                {selected.size} selected
+              </span>
+              <div className="ml-auto flex gap-2">
+                {selected.size > 0 && (
+                  <>
+                    <button
+                      onClick={handleBulkBookmark}
+                      className="font-sans text-[12px] px-3 py-1.5"
+                      style={{ border: `1px solid ${BORDER}`, color: DIM, background: "#fff", cursor: "pointer" }}
+                    >
+                      Bookmark
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="font-sans text-[12px] px-3 py-1.5"
+                      style={{ border: `1px solid #DC2626`, color: "#DC2626", background: "#fff", cursor: "pointer" }}
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectMode(false);
+                    setSelected(new Set());
+                  }}
+                  className="font-sans text-[13px]"
+                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bento grid feed */}
+          <style>{`@media (max-width: 640px) { .bento-log-grid { grid-template-columns: repeat(2, 1fr) !important; } }`}</style>
+          <div
+            className="bento-log-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 12,
+              padding: "8px 20px 20px",
+              gridAutoRows: "auto",
+            }}
+          >
+            {visibleEntries.length === 0 ? (
+              <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 20px" }}>
+                {profile?.voice_profile?.top_traits && (
+                  <p
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 12,
+                      color: FAINT,
+                      letterSpacing: "0.04em",
+                      marginBottom: 16,
+                    }}
+                  >
+                    Your voice: {profile.voice_profile.top_traits.join(". ")}.
+                  </p>
+                )}
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 17,
+                    color: DIM,
+                    lineHeight: 1.6,
+                    maxWidth: 440,
+                    margin: "0 auto",
+                  }}
+                >
+                  Start by logging a few moments from your week. A conversation, something you read, a decision you
+                  made. Ideas emerge when you have enough to see patterns.
+                </p>
+              </div>
+            ) : (
+              <>
+                {dayGroups.map(({ label: dayLabel, entries: dayEntries }) => (
+                  <React.Fragment key={dayLabel}>
                     <div
-                      key={entry.id}
-                      onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
-                      className="relative"
                       style={{
-                        gridColumn: "span 1",
-                        minWidth: 0,
-                        borderRadius: 10,
-                        padding: "20px 22px",
-                        background: isSelected ? `${BLUE}` : cardStyle.bg,
-                        color: isSelected ? "#fff" : cardStyle.text,
-                        cursor: selectMode ? "pointer" : "default",
-                        transition: "transform 0.15s ease",
-                        position: "relative",
+                        gridColumn: "1 / -1",
+                        fontSize: 11,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#999",
+                        padding: "16px 0 4px",
                         display: "flex",
-                        flexDirection: "column",
-                      }}
-                      onMouseEnter={(ev) => {
-                        (ev.currentTarget as HTMLElement).style.transform = "scale(0.99)";
-                      }}
-                      onMouseLeave={(ev) => {
-                        (ev.currentTarget as HTMLElement).style.transform = "scale(1)";
+                        alignItems: "center",
+                        gap: 12,
+                        fontFamily: "'DM Mono', monospace",
                       }}
                     >
-                      {/* Menu */}
-                      {!selectMode && editingId !== entry.id && (
-                        <div className="absolute" style={{ top: 8, right: 4, zIndex: 2 }}>
-                          <button
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              setMenuOpen(menuOpen === entry.id ? null : entry.id);
-                            }}
-                            className="rounded hover:bg-black/5 flex items-center justify-center"
-                            style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="#999">
-                              <circle cx="8" cy="3" r="1.5" />
-                              <circle cx="8" cy="8" r="1.5" />
-                              <circle cx="8" cy="13" r="1.5" />
-                            </svg>
-                          </button>
-                          {menuOpen === entry.id && (
-                            <div
-                              className="absolute right-0 sm:right-0 mt-1 rounded-[8px] overflow-hidden"
-                              style={{
-                                background: "#F5F0E8",
-                                border: "1px solid #e0ddd5",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                                zIndex: 10,
-                                minWidth: 130,
-                                right: 0,
-                              }}
-                            >
-                              <button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  handleStartEdit(entry);
-                                  setMenuOpen(null);
-                                }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px]"
-                                style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
-                                onMouseEnter={(e) => {
-                                  (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.03)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  (e.currentTarget as HTMLElement).style.background = "transparent";
-                                }}
-                              >
-                                Edit
-                              </button>
-                              <div style={{ borderTop: "1px solid #d5d0c8", margin: "4px 0" }} />
-                              <button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setDeleteConfirmId(entry.id);
-                                  setMenuOpen(null);
-                                }}
-                                className="w-full text-left px-4 py-2.5 font-sans text-[13px]"
-                                style={{
-                                  color: "#A0524A",
-                                  border: "none",
-                                  background: "transparent",
-                                  cursor: "pointer",
-                                }}
-                                onMouseEnter={(e) => {
-                                  (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.03)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  (e.currentTarget as HTMLElement).style.background = "transparent";
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {/* Delete confirmation */}
-                      {deleteConfirmId === entry.id && (
+                      <span style={{ whiteSpace: "nowrap" }}>{dayLabel}</span>
+                      <span style={{ flex: 1, height: 1, background: "#d5d0c8" }} />
+                    </div>
+                    {dayEntries.map((entry) => {
+                      const cardStyle = getCardStyle(entry);
+                      const entryUrl = entry.url || entry.link_url || (entry.content ? detectUrl(entry.content) : null);
+                      const used = isUsedInPlan(entry);
+                      const isSelected = selected.has(entry.id);
+                      const hasImages = (entry.image_urls?.length || 0) > 0 || !!entry.image_url;
+                      return (
                         <div
-                          className="absolute inset-0 rounded-[12px] flex items-center justify-center"
-                          style={{ background: "rgba(255,255,255,0.95)", zIndex: 5 }}
-                          onClick={(ev) => ev.stopPropagation()}
+                          key={entry.id}
+                          onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
+                          className="relative"
+                          style={{
+                            gridColumn: "span 1",
+                            minWidth: 0,
+                            borderRadius: 0,
+                            padding: "20px 22px",
+                            background: isSelected ? `${BLUE}` : cardStyle.bg,
+                            color: isSelected ? "#fff" : cardStyle.text,
+                            cursor: selectMode ? "pointer" : "default",
+                            transition: "transform 0.15s ease",
+                            position: "relative",
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                          onMouseEnter={(ev) => {
+                            (ev.currentTarget as HTMLElement).style.transform = "scale(0.99)";
+                          }}
+                          onMouseLeave={(ev) => {
+                            (ev.currentTarget as HTMLElement).style.transform = "scale(1)";
+                          }}
                         >
-                          <div className="text-center">
-                            <p className="font-sans text-[14px] mb-3" style={{ color: INK }}>
-                              Delete this note?
-                            </p>
-                            <div className="flex gap-2 justify-center">
+                          {/* Menu */}
+                          {!selectMode && editingId !== entry.id && (
+                            <div className="absolute" style={{ top: 8, right: 4, zIndex: 2 }}>
                               <button
-                                onClick={() => setDeleteConfirmId(null)}
-                                className="font-sans text-[13px] px-4 py-2 rounded-full"
-                                style={{
-                                  border: `1px solid ${BORDER}`,
-                                  color: DIM,
-                                  background: "#fff",
-                                  cursor: "pointer",
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  setMenuOpen(menuOpen === entry.id ? null : entry.id);
                                 }}
+                                className="hover:bg-black/5 flex items-center justify-center"
+                                style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer" }}
                               >
-                                Cancel
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill={cardStyle.text}>
+                                  <circle cx="8" cy="3" r="1.5" opacity={0.5} />
+                                  <circle cx="8" cy="8" r="1.5" opacity={0.5} />
+                                  <circle cx="8" cy="13" r="1.5" opacity={0.5} />
+                                </svg>
                               </button>
-                              <button
-                                onClick={() => handleDeleteEntry(entry.id)}
-                                className="font-sans text-[13px] px-4 py-2 rounded-full"
-                                style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer" }}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {/* Top header: type dot+label left, timestamp right */}
-                      <div
-                        style={{
-                          fontSize: 11,
-                          marginBottom: 10,
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span style={{ color: cardStyle.labelColor, fontWeight: 600, fontSize: 11 }}>
-                          {"● "}
-                          {cardStyle.label}
-                        </span>
-                      </div>
-                      {editingId === entry.id ? (
-                        <div onClick={(ev) => ev.stopPropagation()}>
-                          <textarea
-                            ref={(el) => {
-                              if (el) {
-                                el.style.height = "auto";
-                                el.style.height = Math.max(60, el.scrollHeight) + "px";
-                              }
-                            }}
-                            value={editText}
-                            onChange={(ev) => setEditText(ev.target.value)}
-                            className="w-full outline-none resize-none font-sans"
-                            style={{
-                              fontSize: 15,
-                              color: INK,
-                              lineHeight: 1.6,
-                              padding: "8px 10px",
-                              border: "1.5px solid #C4B99A",
-                              borderRadius: 8,
-                              background: "transparent",
-                              overflow: "hidden",
-                            }}
-                            autoFocus
-                          />
-                          <div className="flex gap-2 mt-2 justify-end">
-                            <button
-                              onClick={handleCancelEdit}
-                              className="font-sans text-[13px]"
-                              style={{ color: "#B5B0A6", background: "none", border: "none", cursor: "pointer" }}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={handleSaveEdit}
-                              disabled={submitting}
-                              className="font-sans font-medium disabled:opacity-30"
-                              style={{
-                                fontSize: 13,
-                                padding: "6px 16px",
-                                background: "#1a1a1a",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: 6,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {submitting ? "..." : "Save"}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
-                            <p
-                              className="font-sans"
-                              style={{
-                                fontSize: 15,
-                                color: "#1a1a1a",
-                                lineHeight: 1.6,
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-word",
-                                paddingRight: 28,
-                              }}
-                            >
-                              {entry.content}
-                            </p>
-                          )}
-                        </>
-                      )}
-                      {(() => {
-                        const images =
-                          entry.image_urls && entry.image_urls.length > 0
-                            ? entry.image_urls
-                            : entry.image_url
-                              ? [entry.image_url]
-                              : [];
-                        if (images.length === 0) return null;
-                        return (
-                          <div className={entry.content ? "mt-3" : ""}>
-                            {images.length === 1 ? (
-                              <img
-                                src={images[0]}
-                                alt=""
-                                className="w-full rounded-[10px] cursor-pointer hover:opacity-95"
-                                style={{
-                                  maxHeight: 200,
-                                  objectFit: "cover",
-                                  border: "1px solid rgba(0,0,0,0.08)",
-                                }}
-                                onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)}
-                              />
-                            ) : (
-                              <div className="grid gap-2 grid-cols-2">
-                                {images.map((url, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={url}
-                                    alt=""
-                                    className="w-full rounded-[8px] cursor-pointer hover:opacity-95"
+                              {menuOpen === entry.id && (
+                                <div
+                                  className="absolute right-0 sm:right-0 mt-1 overflow-hidden"
+                                  style={{
+                                    background: "#F5F0E8",
+                                    border: "1px solid #e0ddd5",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                                    zIndex: 10,
+                                    minWidth: 130,
+                                    right: 0,
+                                  }}
+                                >
+                                  <button
+                                    onClick={(ev) => {
+                                      ev.stopPropagation();
+                                      handleStartEdit(entry);
+                                      setMenuOpen(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px]"
+                                    style={{ color: INK, border: "none", background: "transparent", cursor: "pointer" }}
+                                    onMouseEnter={(e) => {
+                                      (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.03)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <div style={{ borderTop: "1px solid #d5d0c8", margin: "4px 0" }} />
+                                  <button
+                                    onClick={(ev) => {
+                                      ev.stopPropagation();
+                                      setDeleteConfirmId(entry.id);
+                                      setMenuOpen(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 font-sans text-[13px]"
                                     style={{
-                                      height: 100,
+                                      color: "#A0524A",
+                                      border: "none",
+                                      background: "transparent",
+                                      cursor: "pointer",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.03)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Delete confirmation */}
+                          {deleteConfirmId === entry.id && (
+                            <div
+                              className="absolute inset-0 flex items-center justify-center"
+                              style={{ background: "rgba(255,255,255,0.95)", zIndex: 5 }}
+                              onClick={(ev) => ev.stopPropagation()}
+                            >
+                              <div className="text-center">
+                                <p className="font-sans text-[14px] mb-3" style={{ color: INK }}>
+                                  Delete this note?
+                                </p>
+                                <div className="flex gap-2 justify-center">
+                                  <button
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    className="font-sans text-[13px] px-4 py-2"
+                                    style={{
+                                      border: `1px solid ${BORDER}`,
+                                      color: DIM,
+                                      background: "#fff",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteEntry(entry.id)}
+                                    className="font-sans text-[13px] px-4 py-2"
+                                    style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer" }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {/* Top header: type dot+label left, timestamp right */}
+                          <div
+                            style={{
+                              fontSize: 11,
+                              marginBottom: 10,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 600, fontSize: 11 }}>
+                              <span style={{ color: cardStyle.dot }}>● </span>
+                              <span style={{ color: cardStyle.labelColor }}>{cardStyle.label}</span>
+                            </span>
+                          </div>
+                          {editingId === entry.id ? (
+                            <div onClick={(ev) => ev.stopPropagation()}>
+                              <textarea
+                                ref={(el) => {
+                                  if (el) {
+                                    el.style.height = "auto";
+                                    el.style.height = Math.max(60, el.scrollHeight) + "px";
+                                  }
+                                }}
+                                value={editText}
+                                onChange={(ev) => setEditText(ev.target.value)}
+                                className="w-full outline-none resize-none font-sans"
+                                style={{
+                                  fontSize: 15,
+                                  color: INK,
+                                  lineHeight: 1.6,
+                                  padding: "8px 10px",
+                                  border: "1.5px solid #C4B99A",
+                                  borderRadius: 0,
+                                  background: "transparent",
+                                  overflow: "hidden",
+                                }}
+                                autoFocus
+                              />
+                              <div className="flex gap-2 mt-2 justify-end">
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="font-sans text-[13px]"
+                                  style={{ color: "#B5B0A6", background: "none", border: "none", cursor: "pointer" }}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleSaveEdit}
+                                  disabled={submitting}
+                                  className="font-sans font-medium disabled:opacity-30"
+                                  style={{
+                                    fontSize: 13,
+                                    padding: "6px 16px",
+                                    background: "#1a1a1a",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 0,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {submitting ? "..." : "Save"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
+                                <p
+                                  className="font-sans"
+                                  style={{
+                                    fontSize: 15,
+                                    color: "#1a1a1a",
+                                    lineHeight: 1.6,
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word",
+                                    paddingRight: 28,
+                                  }}
+                                >
+                                  {entry.content}
+                                </p>
+                              )}
+                            </>
+                          )}
+                          {(() => {
+                            const images =
+                              entry.image_urls && entry.image_urls.length > 0
+                                ? entry.image_urls
+                                : entry.image_url
+                                  ? [entry.image_url]
+                                  : [];
+                            if (images.length === 0) return null;
+                            return (
+                              <div className={entry.content ? "mt-3" : ""}>
+                                {images.length === 1 ? (
+                                  <img
+                                    src={images[0]}
+                                    alt=""
+                                    className="w-full cursor-pointer hover:opacity-95"
+                                    style={{
+                                      maxHeight: 200,
                                       objectFit: "cover",
                                       border: "1px solid rgba(0,0,0,0.08)",
                                     }}
-                                    onClick={() => setExpandedImage(expandedImage === url ? null : url)}
+                                    onClick={() => setExpandedImage(expandedImage === entry.id ? null : entry.id)}
                                   />
-                                ))}
+                                ) : (
+                                  <div className="grid gap-2 grid-cols-2">
+                                    {images.map((url, idx) => (
+                                      <img
+                                        key={idx}
+                                        src={url}
+                                        alt=""
+                                        className="w-full cursor-pointer hover:opacity-95"
+                                        style={{
+                                          height: 100,
+                                          objectFit: "cover",
+                                          border: "1px solid rgba(0,0,0,0.08)",
+                                        }}
+                                        onClick={() => setExpandedImage(expandedImage === url ? null : url)}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                                {expandedImage === entry.id && images.length === 1 && (
+                                  <img src={images[0]} alt="" className="w-full mt-2" style={{ border: "none" }} />
+                                )}
+                                {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
+                                  <img src={expandedImage} alt="" className="w-full mt-2" style={{ border: "none" }} />
+                                )}
                               </div>
-                            )}
-                            {expandedImage === entry.id && images.length === 1 && (
-                              <img
-                                src={images[0]}
-                                alt=""
-                                className="w-full rounded-[10px] mt-2"
-                                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                              />
-                            )}
-                            {expandedImage && expandedImage !== entry.id && images.includes(expandedImage) && (
-                              <img
-                                src={expandedImage}
-                                alt=""
-                                className="w-full rounded-[8px] mt-2"
-                                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                              />
-                            )}
-                          </div>
-                        );
-                      })()}
-                      {(entry.type === "link" || entryUrl) &&
-                        entryUrl &&
-                        (() => {
-                          const og = ogCache[entryUrl];
-                          return (
-                            <a
-                              href={entryUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="no-underline block mt-3 rounded-[10px] overflow-hidden hover:opacity-95 transition-opacity"
-                              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                            >
-                              {og?.image && (
-                                <img
-                                  src={og.image}
-                                  alt=""
-                                  className="w-full"
-                                  style={{ maxHeight: 120, objectFit: "cover" }}
-                                />
-                              )}
-                              <div style={{ padding: "10px 12px" }}>
-                                <p
-                                  className="font-sans font-semibold"
-                                  style={{
-                                    fontSize: 13,
-                                    color: "#1a1a1a",
-                                    lineHeight: 1.4,
-                                    display: "-webkit-box",
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical",
-                                    overflow: "hidden",
-                                    wordBreak: "break-word",
-                                  }}
+                            );
+                          })()}
+                          {(entry.type === "link" || entryUrl) &&
+                            entryUrl &&
+                            (() => {
+                              const og = ogCache[entryUrl];
+                              return (
+                                <a
+                                  href={entryUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="no-underline block mt-3 overflow-hidden hover:opacity-95 transition-opacity"
+                                  style={{ border: "none" }}
                                 >
-                                  {og?.title || getReadableTitle(entryUrl)}
-                                </p>
-                                {og?.description && (
-                                  <p
-                                    className="font-sans mt-1"
+                                  {og?.image && (
+                                    <img
+                                      src={og.image}
+                                      alt=""
+                                      className="w-full"
+                                      style={{ maxHeight: 120, objectFit: "cover" }}
+                                    />
+                                  )}
+                                  <div style={{ padding: "10px 12px" }}>
+                                    <p
+                                      className="font-sans font-semibold"
+                                      style={{
+                                        fontSize: 13,
+                                        color: "#1a1a1a",
+                                        lineHeight: 1.4,
+                                        display: "-webkit-box",
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: "vertical",
+                                        overflow: "hidden",
+                                        wordBreak: "break-word",
+                                      }}
+                                    >
+                                      {og?.title || getReadableTitle(entryUrl)}
+                                    </p>
+                                    {og?.description && (
+                                      <p
+                                        className="font-sans mt-1"
+                                        style={{
+                                          fontSize: 12,
+                                          color: "#666",
+                                          lineHeight: 1.4,
+                                          display: "-webkit-box",
+                                          WebkitLineClamp: 2,
+                                          WebkitBoxOrient: "vertical",
+                                          overflow: "hidden",
+                                        }}
+                                      >
+                                        {og.description}
+                                      </p>
+                                    )}
+                                    <span className="font-mono block mt-1" style={{ fontSize: 10, color: "#999" }}>
+                                      {getDomain(entryUrl)}
+                                    </span>
+                                  </div>
+                                </a>
+                              );
+                            })()}
+                          {/* Tags and actions row */}
+                          {(entry.tags.length > 0 || used || !selectMode) && (
+                            <div
+                              style={{
+                                fontSize: 10,
+                                marginTop: 10,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                                {entry.tags.map((tag) => (
+                                  <span
+                                    key={tag}
                                     style={{
-                                      fontSize: 12,
+                                      padding: "1px 6px",
+                                      borderRadius: 0,
+                                      background: "rgba(0,0,0,0.06)",
                                       color: "#666",
-                                      lineHeight: 1.4,
-                                      display: "-webkit-box",
-                                      WebkitLineClamp: 2,
-                                      WebkitBoxOrient: "vertical",
-                                      overflow: "hidden",
+                                      fontSize: 10,
                                     }}
                                   >
-                                    {og.description}
-                                  </p>
+                                    {tag}
+                                  </span>
+                                ))}
+                                {used && (
+                                  <span
+                                    style={{
+                                      padding: "1px 6px",
+                                      borderRadius: 0,
+                                      background: "rgba(0,0,0,0.06)",
+                                      color: "#666",
+                                      fontSize: 10,
+                                    }}
+                                  >
+                                    Used in Ideas
+                                  </span>
                                 )}
-                                <span className="font-mono block mt-1" style={{ fontSize: 10, color: "#999" }}>
-                                  {getDomain(entryUrl)}
-                                </span>
-                              </div>
-                            </a>
-                          );
-                        })()}
-                      {/* Tags and actions row */}
-                      {(entry.tags.length > 0 || used || !selectMode) && (
-                        <div
-                          style={{
-                            fontSize: 10,
-                            marginTop: 10,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                            {entry.tags.map((tag) => (
-                              <span
-                                key={tag}
+                              </span>
+                              {!selectMode && (
+                                <button
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    handleToggleBookmark(entry.id, entry.bookmarked || false);
+                                  }}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  <svg
+                                    width="14"
+                                    height="18"
+                                    viewBox="0 0 14 18"
+                                    fill={entry.bookmarked ? cardStyle.text : "none"}
+                                    stroke={cardStyle.text}
+                                    strokeWidth="1.5"
+                                    style={{ opacity: entry.bookmarked ? 0.7 : 0.4 }}
+                                  >
+                                    <path d="M1 3C1 1.89543 1.89543 1 3 1H11C12.1046 1 13 1.89543 13 3V17L7 13L1 17V3Z" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {bookmarkNoteId === entry.id && (
+                            <div className="mt-2 flex gap-2 items-center" onClick={(ev) => ev.stopPropagation()}>
+                              <input
+                                value={bookmarkNote}
+                                onChange={(ev) => setBookmarkNote(ev.target.value)}
+                                onKeyDown={(ev) => {
+                                  if (ev.key === "Enter") handleConfirmBookmark();
+                                }}
+                                placeholder="Why I saved this (optional)"
+                                className="flex-1 outline-none font-sans text-[13px]"
                                 style={{
-                                  padding: "1px 6px",
-                                  borderRadius: 4,
-                                  background: "rgba(0,0,0,0.06)",
-                                  color: "#666",
-                                  fontSize: 10,
+                                  color: INK,
+                                  padding: "6px 10px",
+                                  border: "1px solid transparent",
+                                  borderRadius: 0,
+                                  background: "#F1EFEA",
+                                }}
+                                onFocus={(e) => {
+                                  (e.currentTarget as HTMLElement).style.border = "1px solid #C4B99A";
+                                }}
+                                onBlur={(e) => {
+                                  (e.currentTarget as HTMLElement).style.border = "1px solid transparent";
+                                }}
+                                autoFocus
+                              />
+                              <button
+                                onClick={handleConfirmBookmark}
+                                className="font-sans font-medium shrink-0"
+                                style={{
+                                  fontSize: 13,
+                                  padding: "6px 16px",
+                                  background: "#1a1a1a",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  cursor: "pointer",
                                 }}
                               >
-                                {tag}
-                              </span>
-                            ))}
-                            {used && (
-                              <span
-                                style={{
-                                  padding: "1px 6px",
-                                  borderRadius: 4,
-                                  background: "rgba(0,0,0,0.06)",
-                                  color: "#666",
-                                  fontSize: 10,
-                                }}
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setBookmarkNoteId(null)}
+                                className="font-sans text-[12px] px-2 py-1.5 shrink-0"
+                                style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
                               >
-                                Used in Ideas
-                              </span>
-                            )}
-                          </span>
-                          {!selectMode && (
-                            <button
-                              onClick={(ev) => {
-                                ev.stopPropagation();
-                                handleToggleBookmark(entry.id, entry.bookmarked || false);
-                              }}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 0,
-                                color: "#999",
-                                fontSize: 14,
-                                lineHeight: 1,
-                              }}
-                            >
-                              {"🔖"}
-                            </button>
+                                Cancel
+                              </button>
+                            </div>
                           )}
                         </div>
-                      )}
-                      {bookmarkNoteId === entry.id && (
-                        <div className="mt-2 flex gap-2 items-center" onClick={(ev) => ev.stopPropagation()}>
-                          <input
-                            value={bookmarkNote}
-                            onChange={(ev) => setBookmarkNote(ev.target.value)}
-                            onKeyDown={(ev) => {
-                              if (ev.key === "Enter") handleConfirmBookmark();
-                            }}
-                            placeholder="Why I saved this (optional)"
-                            className="flex-1 outline-none font-sans text-[13px]"
-                            style={{
-                              color: INK,
-                              padding: "6px 10px",
-                              border: "1px solid transparent",
-                              borderRadius: 8,
-                              background: "#F1EFEA",
-                            }}
-                            onFocus={(e) => {
-                              (e.currentTarget as HTMLElement).style.border = "1px solid #C4B99A";
-                            }}
-                            onBlur={(e) => {
-                              (e.currentTarget as HTMLElement).style.border = "1px solid transparent";
-                            }}
-                            autoFocus
-                          />
-                          <button
-                            onClick={handleConfirmBookmark}
-                            className="font-sans font-medium shrink-0"
-                            style={{
-                              fontSize: 13,
-                              padding: "6px 16px",
-                              background: "#1a1a1a",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: 6,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setBookmarkNoteId(null)}
-                            className="font-sans text-[12px] px-2 py-1.5 shrink-0"
-                            style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </React.Fragment>
-            ))}
-          </>
-        )}
-      </div>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </>
+            )}
+          </div>
 
-      {/* Toast */}
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5 rounded-full"
-          style={{ background: INK, color: "#fff", animation: "fadeIn 0.2s ease" }}
-        >
-          {toast}
-        </div>
+          {/* Toast */}
+          {toast && (
+            <div
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 font-sans text-[13px] px-4 py-2.5"
+              style={{ background: INK, color: "#fff", animation: "fadeIn 0.2s ease" }}
+            >
+              {toast}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -1535,7 +1726,7 @@ function IdeasTab({
         </button>
 
         {/* Source notes */}
-        <div className="p-4 rounded-[12px] mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+        <div className="p-4 mb-6" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
           <span
             className="font-mono uppercase block mb-2"
             style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
@@ -1558,15 +1749,12 @@ function IdeasTab({
             {msg.role === "ai" ? (
               <>
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  className="w-8 h-8 flex items-center justify-center shrink-0"
                   style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
                 >
                   A
                 </div>
-                <div
-                  className="p-4 rounded-[12px] flex-1"
-                  style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}
-                >
+                <div className="p-4 flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
                   <p className="font-sans" style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>
                     {msg.text}
                   </p>
@@ -1575,15 +1763,12 @@ function IdeasTab({
             ) : (
               <>
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  className="w-8 h-8 flex items-center justify-center shrink-0"
                   style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}
                 >
                   Y
                 </div>
-                <div
-                  className="p-4 rounded-[12px] flex-1"
-                  style={{ background: "#fff", border: `1px solid ${BORDER}` }}
-                >
+                <div className="p-4 flex-1" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
                   <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6 }}>
                     {msg.text}
                   </p>
@@ -1597,15 +1782,12 @@ function IdeasTab({
         {coachLoading && coachSuggestions.length === 0 && (
           <div className="flex items-start gap-3 mb-6">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+              className="w-8 h-8 flex items-center justify-center shrink-0"
               style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
             >
               A
             </div>
-            <div
-              className="p-3 rounded-[10px] animate-pulse"
-              style={{ background: "#f0f0f0", width: 200, height: 20 }}
-            />
+            <div className="p-3 animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
           </div>
         )}
 
@@ -1613,7 +1795,7 @@ function IdeasTab({
         {waitingForReply && !coachLoading && (
           <div className="flex items-start gap-3 mb-6">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+              className="w-8 h-8 flex items-center justify-center shrink-0"
               style={{ background: "#e5e7eb", color: DIM, fontSize: 14, fontWeight: 600 }}
             >
               Y
@@ -1629,7 +1811,7 @@ function IdeasTab({
                   }
                 }}
                 placeholder="Your answer..."
-                className="w-full outline-none resize-none font-sans rounded-[12px]"
+                className="w-full outline-none resize-none font-sans"
                 style={{
                   fontSize: 15,
                   color: INK,
@@ -1645,7 +1827,7 @@ function IdeasTab({
                 <button
                   onClick={submitCoachReply}
                   disabled={!coachReply.trim() || coachLoading}
-                  className="px-5 py-2.5 rounded-full font-sans font-semibold text-[14px] disabled:opacity-30"
+                  className="px-5 py-2.5 font-sans font-semibold text-[14px] disabled:opacity-30"
                   style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
                 >
                   Reply
@@ -1661,15 +1843,12 @@ function IdeasTab({
             {coachSuggestions.map((suggestion, i) => (
               <div key={i} className="flex items-start gap-3 mb-4">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  className="w-8 h-8 flex items-center justify-center shrink-0"
                   style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
                 >
                   A
                 </div>
-                <div
-                  className="p-5 rounded-[12px] flex-1"
-                  style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}
-                >
+                <div className="p-5 flex-1" style={{ background: `${BLUE}06`, border: `1px solid ${BLUE}15` }}>
                   <span
                     className="font-mono uppercase block mb-2"
                     style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
@@ -1681,7 +1860,7 @@ function IdeasTab({
                   </p>
                   <div className="flex items-center gap-2 mb-3">
                     <span
-                      className="font-mono text-[11px] px-2 py-0.5 rounded capitalize"
+                      className="font-mono text-[11px] px-2 py-0.5 capitalize"
                       style={{ background: `${BLUE}10`, color: BLUE }}
                     >
                       {suggestion.type}
@@ -1709,7 +1888,7 @@ function IdeasTab({
                       const d = await createStandaloneDraft(content, sourceNote, coachNotes[0]?.id || "");
                       if (d) onStartDraft({ draft: d });
                     }}
-                    className="mt-4 px-5 py-2.5 rounded-full font-sans font-semibold text-[14px]"
+                    className="mt-4 px-5 py-2.5 font-sans font-semibold text-[14px]"
                     style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
                   >
                     Write this <ArrowRight size={12} color="#fff" />
@@ -1733,15 +1912,12 @@ function IdeasTab({
             {coachLoading && coachSuggestions.length > 0 && (
               <div className="flex items-start gap-3 mb-4">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  className="w-8 h-8 flex items-center justify-center shrink-0"
                   style={{ background: BLUE, color: "#fff", fontSize: 14, fontWeight: 600 }}
                 >
                   A
                 </div>
-                <div
-                  className="p-3 rounded-[10px] animate-pulse"
-                  style={{ background: "#f0f0f0", width: 200, height: 20 }}
-                />
+                <div className="p-3 animate-pulse" style={{ background: "#f0f0f0", width: 200, height: 20 }} />
               </div>
             )}
           </>
@@ -1766,7 +1942,7 @@ function IdeasTab({
         <button
           onClick={generateThemes}
           disabled={generating}
-          className="px-8 py-4 rounded-full font-sans font-semibold text-[16px]"
+          className="px-8 py-4 font-sans font-semibold text-[16px]"
           style={{
             background: BLUE,
             color: "#fff",
@@ -1780,10 +1956,10 @@ function IdeasTab({
         {generating && (
           <div className="mt-6 space-y-3 animate-pulse">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-[12px] p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
-                <div className="h-3 rounded w-16 mb-3" style={{ background: "#e5e5e5" }} />
-                <div className="h-5 rounded w-3/4 mb-2" style={{ background: "#e5e5e5" }} />
-                <div className="h-12 rounded" style={{ background: "#f0f0f0" }} />
+              <div key={i} className="p-5" style={{ background: "#fff", border: `1px solid ${BORDER}` }}>
+                <div className="h-3 w-16 mb-3" style={{ background: "#e5e5e5" }} />
+                <div className="h-5 w-3/4 mb-2" style={{ background: "#e5e5e5" }} />
+                <div className="h-12" style={{ background: "#f0f0f0" }} />
               </div>
             ))}
           </div>
@@ -1802,7 +1978,7 @@ function IdeasTab({
         <button
           onClick={generateThemes}
           disabled={generating}
-          className="mt-4 px-6 py-3 rounded-full font-sans font-semibold text-[14px]"
+          className="mt-4 px-6 py-3 font-sans font-semibold text-[14px]"
           style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
         >
           {generating ? "Generating..." : "Generate themes instead"}
@@ -1830,7 +2006,7 @@ function IdeasTab({
               style={{
                 background: "#fff",
                 border: `1px solid ${BORDER}`,
-                borderRadius: 14,
+                borderRadius: 0,
                 padding: "24px 28px",
               }}
             >
@@ -1852,7 +2028,7 @@ function IdeasTab({
                     letterSpacing: "0.04em",
                     background: `${BLUE}10`,
                     padding: "4px 10px",
-                    borderRadius: 6,
+                    borderRadius: 0,
                   }}
                 >
                   {FORMAT_LABELS[theme.format] || theme.format}
@@ -1867,7 +2043,7 @@ function IdeasTab({
                     background: BLUE,
                     color: "#fff",
                     border: "none",
-                    borderRadius: 20,
+                    borderRadius: 0,
                     padding: "8px 20px",
                     cursor: "pointer",
                   }}
@@ -1906,7 +2082,7 @@ function IdeasTab({
           style={{
             background: `${BLUE}08`,
             border: `2px solid ${BLUE}30`,
-            borderRadius: 14,
+            borderRadius: 0,
             padding: "24px 28px",
             marginBottom: 24,
           }}
@@ -1951,7 +2127,7 @@ function IdeasTab({
             const d = await createStandaloneDraft("", picked.tension, picked.source_entry_id || "");
             if (d) onStartDraft({ draft: d });
           }}
-          className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] mb-6"
+          className="w-full py-3.5 font-sans font-semibold text-[15px] mb-6"
           style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
         >
           Start writing
@@ -1991,7 +2167,7 @@ function IdeasTab({
                     style={{
                       background: "#f9fafb",
                       border: `1px solid ${BORDER}`,
-                      borderRadius: 10,
+                      borderRadius: 0,
                       padding: "16px 20px",
                     }}
                   >
@@ -2043,6 +2219,8 @@ function DraftsTab({
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [pubPlatform, setPubPlatform] = useState("LinkedIn");
   const [pubUrl, setPubUrl] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const draftsWithContext = drafts
     .filter((d) => d.content.trim())
@@ -2102,25 +2280,37 @@ function DraftsTab({
   return (
     <div>
       {/* History title */}
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>
+      <div style={{ padding: "4px 0 16px" }}>
+        <h2
+          style={{
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontSize: 24,
+            fontWeight: 600,
+            color: "#1a1a1a",
+            margin: 0,
+          }}
+        >
           History
         </h2>
-        <p style={{ fontSize: 14, color: "#999", marginTop: 6 }}>
-          {draftsWithContext.length} draft{draftsWithContext.length !== 1 ? "s" : ""}
-          {topPlaybook ? ` · You write a lot of ${topPlaybook.name} posts.` : ""}
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, marginTop: 4 }}>
+          {draftsWithContext.length === 0
+            ? "Nothing here yet. Start from a playbook."
+            : `${draftsWithContext.length} draft${draftsWithContext.length !== 1 ? "s" : ""}`}
         </p>
       </div>
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-1 mb-6">
         {FILTERS.map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
             style={{
-              background: filter === f.key ? `${BLUE}10` : "transparent",
-              color: filter === f.key ? BLUE : FAINT,
-              border: filter === f.key ? `1px solid ${BLUE}20` : `1px solid ${BORDER}`,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              fontWeight: filter === f.key ? 500 : 400,
+              padding: "6px 14px",
+              background: filter === f.key ? "#1a1a1a" : "transparent",
+              color: filter === f.key ? "#fff" : "#999",
+              border: "none",
               cursor: "pointer",
             }}
           >
@@ -2136,191 +2326,367 @@ function DraftsTab({
         </div>
       ) : (
         <div>
-          {filtered.map((d, dIdx) => (
-            <div key={d.id} style={{ padding: "16px 0", borderTop: dIdx > 0 ? "1px solid #e0e0e0" : "none" }}>
+          {filtered.map((d, dIdx) => {
+            const pb = d.playbook_id ? getPlaybook(d.playbook_id) : null;
+            return (
               <div
-                className="cursor-pointer"
-                onClick={() => {
-                  if (d.playbook_id) {
-                    const pb = getPlaybook(d.playbook_id);
-                    if (pb && d.playbook_sections) {
+                key={d.id}
+                style={{ padding: "16px 0", borderTop: dIdx > 0 ? "1px solid #e0ddd5" : "none", position: "relative" }}
+              >
+                <div
+                  className="cursor-pointer"
+                  onClick={() => {
+                    if (d.playbook_id && pb && d.playbook_sections) {
                       onOpenPlaybookDraft(d, pb);
                       return;
                     }
-                  }
-                  if (d.plan_id) onOpenDraft(d.plan_id, d.post_index ?? 0);
-                  else onOpenStandaloneDraft(d);
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  {d.playbook_id &&
-                    (() => {
-                      const pb = getPlaybook(d.playbook_id);
-                      return (
-                        <span
-                          style={{
-                            display: "inline-block",
-                            fontSize: 10,
-                            padding: "3px 8px",
-                            borderRadius: 4,
-                            background: pb?.color || "#141414",
-                            color: "#fff",
-                            fontFamily: "Georgia, serif",
-                            whiteSpace: "nowrap",
-                            flexShrink: 0,
-                            marginTop: 2,
-                          }}
-                        >
-                          {pb?.name || d.playbook_id}
-                        </span>
-                      );
-                    })()}
-                  <p
-                    className="font-sans"
-                    style={{
-                      fontSize: 15,
-                      color: BODY,
-                      lineHeight: 1.6,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      margin: 0,
-                    }}
-                  >
-                    {d.content}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap" style={{ paddingLeft: d.playbook_id ? 0 : 0 }}>
-                <span className="font-mono" style={{ fontSize: 11, color: FAINT }}>
-                  {getDayLabel(d.updated_at)} · {d.wordCount} words
-                </span>
-                {d.published ? (
-                  <>
-                    <span
-                      className="font-mono text-[11px] px-2 py-0.5 rounded-full"
-                      style={{ background: "#22c55e15", color: "#16a34a" }}
-                    >
-                      Published
-                    </span>
-                    {d.published_platform && (
-                      <span className="font-mono text-[11px]" style={{ color: FAINT }}>
-                        on {d.published_platform}
-                      </span>
-                    )}
-                    {d.published_url && (
-                      <a
-                        href={d.published_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="no-underline font-mono text-[11px]"
-                        style={{ color: BLUE }}
-                      >
-                        View post <ArrowRight size={10} />
-                      </a>
-                    )}
-                  </>
-                ) : (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      fontSize: 10,
-                      padding: "2px 8px",
-                      borderRadius: 4,
-                      background: "#FFF3CD",
-                      color: "#856404",
-                    }}
-                  >
-                    Draft
-                  </span>
-                )}
-              </div>
-              {/* Publish action */}
-              {!d.published && publishingId !== d.id && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPublishingId(d.id);
+                    if (d.plan_id) onOpenDraft(d.plan_id, d.post_index ?? 0);
+                    else onOpenStandaloneDraft(d);
                   }}
-                  className="mt-3 font-sans text-[13px]"
-                  style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
                 >
-                  Mark as published
-                </button>
-              )}
-              {publishingId === d.id && (
-                <div
-                  className="mt-3 p-4 rounded-[10px] space-y-3"
-                  style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div>
-                    <span
-                      className="font-mono uppercase block mb-2"
-                      style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
-                    >
-                      Where did you post this?
-                    </span>
-                    <div className="flex gap-2 flex-wrap">
-                      {PUBLISH_PLATFORMS.map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setPubPlatform(p)}
-                          className="font-sans text-[12px] px-3 py-1.5 rounded-full transition-all"
-                          style={{
-                            background: pubPlatform === p ? `${BLUE}10` : "#fff",
-                            color: pubPlatform === p ? BLUE : DIM,
-                            border: `1px solid ${pubPlatform === p ? BLUE + "30" : BORDER}`,
-                            cursor: "pointer",
-                          }}
-                        >
-                          {p}
-                        </button>
-                      ))}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 15,
+                          color: BODY,
+                          lineHeight: 1.6,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          margin: 0,
+                        }}
+                      >
+                        {d.content}
+                      </p>
                     </div>
-                  </div>
-                  <input
-                    value={pubUrl}
-                    onChange={(e) => setPubUrl(e.target.value)}
-                    placeholder="Paste link (optional)"
-                    className="w-full outline-none font-sans text-[13px]"
-                    style={{
-                      color: INK,
-                      padding: "8px 12px",
-                      border: `1px solid ${BORDER}`,
-                      borderRadius: 8,
-                      background: "#fff",
-                    }}
-                  />
-                  <div className="flex gap-2">
+                    {/* Three-dot menu */}
                     <button
-                      onClick={() => handlePublish(d.id)}
-                      className="font-sans font-semibold rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenId(menuOpenId === d.id ? null : d.id);
+                      }}
                       style={{
-                        fontSize: 13,
-                        padding: "8px 18px",
-                        background: BLUE,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "4px 6px",
+                        fontSize: 18,
+                        color: FAINT,
+                        flexShrink: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ⋮
+                    </button>
+                  </div>
+                </div>
+                {/* Meta row */}
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {pb && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10,
+                        padding: "2px 8px",
+                        background: pb.color,
                         color: "#fff",
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {pb.name}
+                    </span>
+                  )}
+                  {d.published ? (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10,
+                        padding: "2px 8px",
+                        background: "#E8F5E0",
+                        color: "#3D6B2E",
+                        fontFamily: "'DM Mono', monospace",
+                      }}
+                    >
+                      Published{d.published_platform ? ` on ${d.published_platform}` : ""}
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10,
+                        padding: "2px 8px",
+                        background: "#F0ECE4",
+                        color: "#8B7355",
+                        fontFamily: "'DM Mono', monospace",
+                      }}
+                    >
+                      Draft
+                    </span>
+                  )}
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: FAINT }}>
+                    {getDayLabel(d.updated_at)} · {d.wordCount} words
+                  </span>
+                  {d.published && d.published_url && (
+                    <a
+                      href={d.published_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="no-underline"
+                      style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: BLUE }}
+                    >
+                      View post <ArrowRight size={10} />
+                    </a>
+                  )}
+                </div>
+                {/* Dropdown menu */}
+                {menuOpenId === d.id && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 16,
+                      right: 0,
+                      background: "#fff",
+                      border: `1px solid ${BORDER}`,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                      zIndex: 20,
+                      minWidth: 160,
+                      overflow: "hidden",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => {
+                        setMenuOpenId(null);
+                        if (d.playbook_id && pb && d.playbook_sections) {
+                          onOpenPlaybookDraft(d, pb);
+                        } else if (d.plan_id) {
+                          onOpenDraft(d.plan_id, d.post_index ?? 0);
+                        } else {
+                          onOpenStandaloneDraft(d);
+                        }
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "10px 16px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        color: INK,
+                        background: "none",
                         border: "none",
                         cursor: "pointer",
                       }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = "#f5f5f0";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = "none";
+                      }}
                     >
-                      Mark as published
+                      Edit
                     </button>
-                    <button
-                      onClick={() => setPublishingId(null)}
-                      className="font-sans text-[13px]"
-                      style={{ color: FAINT, background: "none", border: "none", cursor: "pointer" }}
-                    >
-                      Cancel
-                    </button>
+                    {!d.published && (
+                      <button
+                        onClick={() => {
+                          setMenuOpenId(null);
+                          setPublishingId(d.id);
+                        }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "10px 16px",
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          color: INK,
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.background = "#f5f5f0";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.background = "none";
+                        }}
+                      >
+                        Mark as published
+                      </button>
+                    )}
+                    {deleteConfirmId === d.id ? (
+                      <div style={{ padding: "10px 16px", borderTop: `1px solid ${BORDER}` }}>
+                        <p
+                          style={{
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 12,
+                            color: "#DC2626",
+                            marginBottom: 8,
+                          }}
+                        >
+                          Delete this draft?
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              await deleteDraft(d.id);
+                              setDeleteConfirmId(null);
+                              setMenuOpenId(null);
+                              onDraftsUpdated();
+                            }}
+                            style={{
+                              fontFamily: "'DM Sans', sans-serif",
+                              fontSize: 12,
+                              padding: "4px 12px",
+                              background: "#DC2626",
+                              color: "#fff",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Delete
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(null)}
+                            style={{
+                              fontFamily: "'DM Sans', sans-serif",
+                              fontSize: 12,
+                              padding: "4px 12px",
+                              background: "none",
+                              color: FAINT,
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(d.id)}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "10px 16px",
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          color: "#DC2626",
+                          background: "none",
+                          border: "none",
+                          borderTop: `1px solid ${BORDER}`,
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.background = "#fef2f2";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.background = "none";
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+                {/* Publish form (inline, shown when Mark as published is clicked) */}
+                {publishingId === d.id && (
+                  <div
+                    className="mt-3 p-4 space-y-3"
+                    style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div>
+                      <span
+                        style={{
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: 11,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: FAINT,
+                          fontWeight: 500,
+                          display: "block",
+                          marginBottom: 8,
+                        }}
+                      >
+                        Where did you post this?
+                      </span>
+                      <div className="flex gap-2 flex-wrap">
+                        {PUBLISH_PLATFORMS.map((p) => (
+                          <button
+                            key={p}
+                            onClick={() => setPubPlatform(p)}
+                            style={{
+                              fontFamily: "'DM Sans', sans-serif",
+                              fontSize: 12,
+                              padding: "6px 14px",
+                              background: pubPlatform === p ? "#1a1a1a" : "transparent",
+                              color: pubPlatform === p ? "#fff" : DIM,
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <input
+                      value={pubUrl}
+                      onChange={(e) => setPubUrl(e.target.value)}
+                      placeholder="Paste link (optional)"
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        width: "100%",
+                        outline: "none",
+                        color: INK,
+                        padding: "8px 12px",
+                        border: `1px solid ${BORDER}`,
+                        background: "#fff",
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handlePublish(d.id)}
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          padding: "8px 18px",
+                          background: BLUE,
+                          color: "#fff",
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setPublishingId(null)}
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          color: FAINT,
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -2520,7 +2886,7 @@ function WriteMode({
               </span>
             </button>
             {showNote && (
-              <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+              <div className="p-4" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
                 <p className="font-sans" style={{ fontSize: 15, color: BODY, lineHeight: 1.6, fontStyle: "italic" }}>
                   {sourceNote}
                 </p>
@@ -2555,10 +2921,7 @@ function WriteMode({
               </span>
             </button>
             {showStructure && (
-              <div
-                className="p-4 rounded-[10px] space-y-2"
-                style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}
-              >
+              <div className="p-4 space-y-2" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
                 {(post.structure || []).map((step: string, j: number) => (
                   <p key={j} className="font-sans text-[13px]" style={{ color: DIM, lineHeight: 1.5 }}>
                     <span className="font-mono text-[11px] mr-2" style={{ color: BLUE }}>
@@ -2595,14 +2958,14 @@ function WriteMode({
             <button
               onClick={handleCheckWriting}
               disabled={coachLoading}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-full py-3.5 font-sans font-semibold text-[15px] disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
             >
               {coachLoading ? "Checking..." : "Check my writing"}
             </button>
             <button
               onClick={handleExplicitSave}
-              className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+              className="w-full py-3 font-sans font-semibold text-[14px]"
               style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
             >
               Save draft
@@ -2618,7 +2981,7 @@ function WriteMode({
         {/* Coaching feedback */}
         {coaching && (
           <div ref={feedbackRef} className="mt-8 space-y-5">
-            <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+            <div className="p-4" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
               <span
                 className="font-mono uppercase block mb-2"
                 style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
@@ -2631,7 +2994,7 @@ function WriteMode({
             </div>
 
             {coaching.structure_feedback && (
-              <div className="p-4 rounded-[10px]" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
+              <div className="p-4" style={{ background: "#fafafa", border: `1px solid ${BORDER}` }}>
                 <span
                   className="font-mono uppercase block mb-2"
                   style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
@@ -2657,7 +3020,7 @@ function WriteMode({
                   return (
                     <div
                       key={i}
-                      className="p-4 rounded-[10px]"
+                      className="p-4"
                       style={{
                         border: `1px solid ${isAccepted ? BLUE : BORDER}`,
                         background: isAccepted ? `${BLUE}04` : "#fff",
@@ -2681,7 +3044,7 @@ function WriteMode({
                               return s;
                             })
                           }
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
+                          className="flex items-center gap-1 px-3 py-1.5 font-sans text-[12px]"
                           style={{
                             background: isAccepted ? BLUE : "#fff",
                             color: isAccepted ? "#fff" : DIM,
@@ -2699,7 +3062,7 @@ function WriteMode({
                               return s;
                             })
                           }
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full font-sans text-[12px]"
+                          className="flex items-center gap-1 px-3 py-1.5 font-sans text-[12px]"
                           style={{ background: "#fff", color: FAINT, border: `1px solid ${BORDER}`, cursor: "pointer" }}
                         >
                           ✕ Skip
@@ -2712,7 +3075,7 @@ function WriteMode({
             )}
 
             {coaching.micro_lesson && (
-              <div className="p-4 rounded-[10px]" style={{ borderLeft: `3px solid ${BLUE}`, background: `${BLUE}04` }}>
+              <div className="p-4" style={{ borderLeft: `3px solid ${BLUE}`, background: `${BLUE}04` }}>
                 <span
                   className="font-mono uppercase block mb-1"
                   style={{ fontSize: 10, letterSpacing: "0.06em", color: BLUE }}
@@ -2732,7 +3095,7 @@ function WriteMode({
             <div className="space-y-3 pt-2 pb-8">
               <button
                 onClick={handleSaveWithSuggestions}
-                className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
+                className="w-full py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.01] hover:-translate-y-px"
                 style={{ background: BLUE, color: "#fff", border: "none", cursor: "pointer" }}
               >
                 {accepted.size > 0
@@ -2891,7 +3254,7 @@ function StandaloneWriteMode({
                 style={{
                   background: "transparent",
                   border: `1.5px solid ${FAINT}`,
-                  borderRadius: 8,
+                  borderRadius: 0,
                   padding: "8px 16px",
                   fontSize: 13,
                   color: DIM,
@@ -2914,7 +3277,7 @@ function StandaloneWriteMode({
                 style={{
                   background: showEdits ? `${BLUE}10` : "transparent",
                   border: `1.5px solid ${showEdits ? BLUE : FAINT}`,
-                  borderRadius: 8,
+                  borderRadius: 0,
                   padding: "8px 16px",
                   fontSize: 13,
                   color: showEdits ? BLUE : DIM,
@@ -2948,13 +3311,13 @@ function StandaloneWriteMode({
                 <span
                   style={{
                     display: "inline-block",
-                    fontFamily: "Georgia, serif",
+                    fontFamily: "'Fraunces', Georgia, serif",
                     fontSize: 12,
                     fontWeight: 600,
                     background: pb.color,
                     color: pb.textColor,
                     padding: "4px 12px",
-                    borderRadius: 20,
+                    borderRadius: 0,
                   }}
                 >
                   {pb.name}
@@ -2992,7 +3355,7 @@ function StandaloneWriteMode({
               </span>
             </button>
             {showNote && (
-              <div className="p-4 rounded-[10px]" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+              <div className="p-4" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
                 <p
                   className="font-sans"
                   style={{
@@ -3028,7 +3391,7 @@ function StandaloneWriteMode({
                   key={i}
                   src={url}
                   alt=""
-                  className="w-full rounded-[10px]"
+                  className="w-full"
                   style={{
                     maxHeight: sourceImages.length === 1 ? 300 : 180,
                     objectFit: "cover",
@@ -3081,7 +3444,7 @@ function StandaloneWriteMode({
                         background: activeAnnotation === seg.annotationIndex ? `${BLUE}20` : `${BLUE}10`,
                         borderBottom: `2px solid ${BLUE}60`,
                         cursor: "pointer",
-                        borderRadius: 2,
+                        borderRadius: 0,
                         padding: "0 2px",
                         transition: "background 0.15s",
                       }}
@@ -3098,7 +3461,7 @@ function StandaloneWriteMode({
                           width: 360,
                           background: "#fff",
                           border: `1px solid ${BORDER}`,
-                          borderRadius: 12,
+                          borderRadius: 0,
                           padding: "16px 20px",
                           boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
                           zIndex: 50,
@@ -3122,7 +3485,7 @@ function StandaloneWriteMode({
                             marginBottom: 14,
                             padding: "8px 12px",
                             background: "#f9fafb",
-                            borderRadius: 8,
+                            borderRadius: 0,
                           }}
                         >
                           {annotations[seg.annotationIndex!].alternative}
@@ -3135,7 +3498,7 @@ function StandaloneWriteMode({
                               background: BLUE,
                               color: "#fff",
                               border: "none",
-                              borderRadius: 8,
+                              borderRadius: 0,
                               padding: "6px 16px",
                               cursor: "pointer",
                             }}
@@ -3148,7 +3511,7 @@ function StandaloneWriteMode({
                             style={{
                               background: "transparent",
                               border: `1px solid ${BORDER}`,
-                              borderRadius: 8,
+                              borderRadius: 0,
                               padding: "6px 16px",
                               color: DIM,
                               cursor: "pointer",
@@ -3198,7 +3561,7 @@ function StandaloneWriteMode({
           <div className="mt-6 space-y-3">
             <button
               onClick={handleExplicitSave}
-              className="w-full py-3 rounded-full font-sans font-semibold text-[14px]"
+              className="w-full py-3 font-sans font-semibold text-[14px]"
               style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
             >
               Save draft
@@ -3226,13 +3589,7 @@ export default function DashboardPage() {
   const [logEntriesState, setLogEntries] = useState<LogEntry[]>([]);
   const [draftsState, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTabRaw] = useState<Tab>(() => {
-    if (typeof window !== "undefined") {
-      const hash = window.location.hash.replace("#", "") as Tab;
-      if (["log", "playbooks", "history"].includes(hash)) return hash;
-    }
-    return "log";
-  });
+  const [tab, setTabRaw] = useState<Tab>("log");
   const setTab = (t: Tab) => {
     setTabRaw(t);
     if (typeof window !== "undefined") {
@@ -3240,11 +3597,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Handle browser back/forward
+  // Read hash on mount + handle browser back/forward
   useEffect(() => {
-    const handlePop = (e: PopStateEvent) => {
-      const hash = window.location.hash.replace("#", "") as Tab;
-      if (["log", "playbooks", "history"].includes(hash)) setTabRaw(hash);
+    const hash = window.location.hash.replace("#", "") as Tab;
+    if (["log", "playbooks", "history"].includes(hash)) setTabRaw(hash);
+    const handlePop = () => {
+      const h = window.location.hash.replace("#", "") as Tab;
+      if (["log", "playbooks", "history"].includes(h)) setTabRaw(h);
       else setTabRaw("log");
     };
     window.addEventListener("popstate", handlePop);
@@ -3449,19 +3808,29 @@ export default function DashboardPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
+      <div className="min-h-screen" style={{ background: "#F5F0E8" }} suppressHydrationWarning>
         <header
           style={{ position: "sticky", top: 0, background: "#F5F0E8", zIndex: 10, borderBottom: "0.5px solid #e0ddd5" }}
+          suppressHydrationWarning
         >
-          <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }}>
-            <span style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 600, color: "#1a1a1a" }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "12px 20px" }} suppressHydrationWarning>
+            <span
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 18,
+                fontWeight: 600,
+                fontStyle: "italic",
+                color: "#1a1a1a",
+              }}
+              suppressHydrationWarning
+            >
               accent
             </span>
           </div>
         </header>
         <div style={{ padding: "20px" }} className="animate-pulse">
-          <div className="h-7 rounded w-48 mb-4" style={{ background: "#f0f0f0" }} />
-          <div className="h-44 rounded-[10px]" style={{ background: "#fafafa" }} />
+          <div className="h-7 w-48 mb-4" style={{ background: "#f0f0f0" }} />
+          <div className="h-44" style={{ background: "#fafafa" }} />
         </div>
       </div>
     );
@@ -3473,22 +3842,24 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
+    <div className="min-h-screen" style={{ background: "#F5F0E8" }} suppressHydrationWarning>
       <header
         style={{ position: "sticky", top: 0, background: "#F5F0E8", zIndex: 10, borderBottom: "0.5px solid #e0ddd5" }}
+        suppressHydrationWarning
       >
-        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", gap: 4 }} suppressHydrationWarning>
           <Link
             href="/"
             className="no-underline"
             style={{
-              fontFamily: "Georgia, serif",
+              fontFamily: "'Fraunces', Georgia, serif",
               fontSize: 18,
               fontWeight: 600,
               fontStyle: "italic",
               color: "#1a1a1a",
               marginRight: 16,
             }}
+            suppressHydrationWarning
           >
             accent
           </Link>
@@ -3504,10 +3875,10 @@ export default function DashboardPage() {
                 color: tab === t.key ? "#fff" : "#999",
                 background: tab === t.key ? "#1a1a1a" : "none",
                 border: "none",
-                borderRadius: 6,
+                borderRadius: 0,
                 padding: "6px 14px",
                 cursor: "pointer",
-                fontFamily: "inherit",
+                fontFamily: "'DM Sans', sans-serif",
               }}
             >
               {t.label}
@@ -3515,10 +3886,7 @@ export default function DashboardPage() {
           ))}
         </div>
       </header>
-      <div
-        className={`pb-12 ${tab === "history" ? "max-w-[640px]" : ""}`}
-        style={tab === "history" ? { padding: 20 } : undefined}
-      >
+      <div className="pb-12" style={tab === "history" ? { maxWidth: 640, margin: "0 auto", padding: 20 } : undefined}>
         {tab === "log" && (
           <LogTab
             logEntries={logEntriesState}
@@ -3533,12 +3901,20 @@ export default function DashboardPage() {
         {tab === "playbooks" && (
           <div>
             {/* Page header */}
-            <div style={{ padding: "28px 20px 16px" }}>
-              <h2 style={{ fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>
+            <div style={{ padding: "24px 20px 16px" }}>
+              <h2
+                style={{
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: "#1a1a1a",
+                  margin: 0,
+                }}
+              >
                 Playbooks
               </h2>
-              <p className="font-sans" style={{ fontSize: 15, color: "#999", marginTop: 6 }}>
-                9 proven structures. Pick a vibe, fill in your thinking, publish.
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, marginTop: 4 }}>
+                9 proven structures. Pick one and fill in your thinking.
               </p>
             </div>
 
@@ -3553,7 +3929,7 @@ export default function DashboardPage() {
               }}
             >
               {PLAYBOOKS.map((playbook, idx) => {
-                const isHero = playbook.gridSpan === "span 2 / span 2";
+                const isHero = playbook.gridSpan?.startsWith("span 2");
                 const muted = playbook.textColor === "#1a1a1a" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)";
                 return (
                   <button
@@ -3565,7 +3941,7 @@ export default function DashboardPage() {
                       background: playbook.color,
                       color: playbook.textColor,
                       border: "none",
-                      borderRadius: 10,
+                      borderRadius: 0,
                       padding: isHero ? "24px 26px" : "18px 20px",
                       minHeight: isHero ? 280 : 160,
                       maxHeight: 300,
@@ -3585,7 +3961,7 @@ export default function DashboardPage() {
                     }}
                   >
                     {/* Number */}
-                    <span style={{ fontSize: 12, fontFamily: "monospace", color: muted }}>
+                    <span style={{ fontSize: 12, fontFamily: "'DM Mono', monospace", color: muted }}>
                       {String(idx + 1).padStart(2, "0")}
                     </span>
 
@@ -3593,7 +3969,7 @@ export default function DashboardPage() {
                     <div>
                       <p
                         style={{
-                          fontFamily: "Georgia, serif",
+                          fontFamily: "'Fraunces', Georgia, serif",
                           fontSize: isHero ? 30 : 20,
                           fontWeight: 600,
                           lineHeight: 1.15,
@@ -3602,7 +3978,15 @@ export default function DashboardPage() {
                       >
                         {playbook.name}
                       </p>
-                      <p style={{ fontSize: 13, color: muted, margin: "8px 0 0", lineHeight: 1.4 }}>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          fontFamily: "'DM Sans', sans-serif",
+                          color: muted,
+                          margin: "8px 0 0",
+                          lineHeight: 1.4,
+                        }}
+                      >
                         {playbook.tagline}
                       </p>
                     </div>
@@ -3701,7 +4085,7 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
             margin: "0 auto",
           }}
         />
-        <div className="rounded-[10px] px-4 py-3" style={{ background: "#111827", minWidth: 240, maxWidth: 300 }}>
+        <div className="px-4 py-3" style={{ background: "#111827", minWidth: 240, maxWidth: 300 }}>
           <p className="font-sans text-[14px] mb-3" style={{ color: "#fff", lineHeight: 1.5 }}>
             {current.text}
           </p>
@@ -3711,8 +4095,8 @@ function OnboardingTooltip({ step, onNext, onDismiss }: { step: number; onNext: 
             </span>
             <button
               onClick={onNext}
-              className="font-sans text-[13px] font-semibold px-3 py-1 rounded-full"
-              style={{ background: "#3B82F6", color: "#fff", border: "none", cursor: "pointer" }}
+              className="font-sans text-[13px] font-semibold px-3 py-1"
+              style={{ background: "#1a1a1a", color: "#fff", border: "none", cursor: "pointer" }}
             >
               {step < 3 ? (
                 <>

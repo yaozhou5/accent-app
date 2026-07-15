@@ -70,15 +70,22 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#fff" }}>
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#F5F0E8" }}>
       <div className="max-w-[380px] w-full">
-        <Link href="/" className="no-underline font-serif block mb-10" style={{ fontSize: 24, color: "#1A1A18" }}>
+        <Link
+          href="/"
+          className="no-underline block mb-10"
+          style={{ fontSize: 24, color: "#1A1A18", fontFamily: "'Fraunces', Georgia, serif", fontStyle: "italic" }}
+        >
           accent
         </Link>
-        <h1 className="font-serif mb-2" style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18" }}>
+        <h1
+          className="mb-2"
+          style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18", fontFamily: "'Fraunces', Georgia, serif" }}
+        >
           Welcome back
         </h1>
-        <p className="font-sans mb-8" style={{ fontSize: 15, color: "#6B6B6B" }}>
+        <p className="mb-8" style={{ fontSize: 15, color: "#A8A49C", fontFamily: "'DM Sans', sans-serif" }}>
           Sign in with your email.
         </p>
 
@@ -90,26 +97,32 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
-              className="w-full px-4 py-3 rounded-[10px] font-sans text-[16px] outline-none"
-              style={{ border: "1px solid #E5E5E5", color: "#1A1A18" }}
+              className="w-full px-4 py-3 text-[16px] outline-none"
+              style={{ border: "1px solid #e0ddd5", color: "#1A1A18", fontFamily: "'DM Sans', sans-serif" }}
             />
             {error && (
-              <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
+              <p className="text-[13px]" style={{ color: "#DC2626", fontFamily: "'DM Sans', sans-serif" }}>
                 {error}
               </p>
             )}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
-              style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}
+              className="w-full py-3.5 font-semibold text-[15px] disabled:opacity-50"
+              style={{
+                background: "#1A1A18",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
               {loading ? "Sending code..." : "Send login code"}
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4">
-            <p className="font-sans text-[14px]" style={{ color: "#6B6B6B" }}>
+            <p className="text-[14px]" style={{ color: "#A8A49C", fontFamily: "'DM Sans', sans-serif" }}>
               We sent a code to {email}
             </p>
             <input
@@ -120,19 +133,25 @@ function LoginForm() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="000000"
-              className="w-full px-4 py-3 rounded-[10px] font-mono text-[20px] text-center outline-none tracking-[0.3em]"
-              style={{ border: "1px solid #E5E5E5", color: "#1A1A18" }}
+              className="w-full px-4 py-3 text-[20px] text-center outline-none tracking-[0.3em]"
+              style={{ border: "1px solid #e0ddd5", color: "#1A1A18", fontFamily: "'DM Mono', monospace" }}
             />
             {error && (
-              <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
+              <p className="text-[13px]" style={{ color: "#DC2626", fontFamily: "'DM Sans', sans-serif" }}>
                 {error}
               </p>
             )}
             <button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="w-full py-3.5 rounded-full font-sans font-semibold text-[15px] disabled:opacity-50"
-              style={{ background: "#2563EB", color: "#fff", border: "none", cursor: "pointer" }}
+              className="w-full py-3.5 font-semibold text-[15px] disabled:opacity-50"
+              style={{
+                background: "#1A1A18",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
               {loading ? "Verifying..." : "Verify code"}
             </button>
@@ -143,17 +162,23 @@ function LoginForm() {
                 setCode("");
                 setError(null);
               }}
-              className="w-full text-[13px] font-sans"
-              style={{ color: "#6B6B6B", background: "none", border: "none", cursor: "pointer" }}
+              className="w-full text-[13px]"
+              style={{
+                color: "#A8A49C",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
               Use a different email
             </button>
           </form>
         )}
 
-        <p className="mt-8 text-center text-[14px] font-sans" style={{ color: "#6B6B6B" }}>
+        <p className="mt-8 text-center text-[14px]" style={{ color: "#A8A49C", fontFamily: "'DM Sans', sans-serif" }}>
           Don't have an account?{" "}
-          <Link href="/signup" className="no-underline font-medium" style={{ color: "#2563EB" }}>
+          <Link href="/signup" className="no-underline font-medium" style={{ color: "#1A1A18" }}>
             Sign up
           </Link>
         </p>
