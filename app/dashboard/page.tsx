@@ -1382,6 +1382,34 @@ function LogTab({
                               </button>
                             </div>
                           )}
+                          {/* Primary action */}
+                          {!selectMode && editingId !== entry.id && entry.content && entry.content.trim() && (
+                            <button
+                              onClick={(ev) => {
+                                ev.stopPropagation();
+                                try {
+                                  posthog.capture("note_to_draft_started", { entry_id: entry.id });
+                                } catch {}
+                                onPostNote(entry);
+                              }}
+                              disabled={postingEntryId === entry.id}
+                              className="w-full font-sans font-semibold"
+                              style={{
+                                marginTop: 14,
+                                padding: "10px 14px",
+                                background: cardStyle.text,
+                                color: cardStyle.bg,
+                                border: "none",
+                                fontSize: 13,
+                                letterSpacing: "0.01em",
+                                cursor: postingEntryId === entry.id ? "default" : "pointer",
+                                opacity: postingEntryId === entry.id ? 0.55 : 1,
+                                textAlign: "center",
+                              }}
+                            >
+                              {postingEntryId === entry.id ? "Writing…" : "Turn into draft →"}
+                            </button>
+                          )}
                         </div>
                       );
                     })}
