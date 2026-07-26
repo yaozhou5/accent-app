@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   VOICE_PAIRS,
   DIMENSION_LABELS,
@@ -200,6 +201,21 @@ export default function VoiceDiscoveryPage() {
           padding: 24,
         }}
       >
+        <Link
+          href="/login"
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 24,
+            fontSize: 14,
+            fontWeight: 600,
+            color: INK,
+            textDecoration: "none",
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          Log in
+        </Link>
         <div style={{ maxWidth: 520, textAlign: "center" }}>
           <h1
             style={{

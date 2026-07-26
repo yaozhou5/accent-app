@@ -79,13 +79,22 @@ export default function LandingPage() {
           >
             accent
           </span>
-          <Link
-            href="/voice"
-            className="no-underline px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
-            style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
-          >
-            Find your voice
-          </Link>
+          <div className="flex items-center gap-4 sm:gap-5">
+            <Link
+              href="/login"
+              className="no-underline text-[12px] sm:text-[13px] font-sans font-semibold transition-colors"
+              style={{ color: scrolled ? INK : "#fff" }}
+            >
+              Log in
+            </Link>
+            <Link
+              href="/voice"
+              className="no-underline px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
+              style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
+            >
+              Find your voice
+            </Link>
+          </div>
         </div>
       </nav>
 
