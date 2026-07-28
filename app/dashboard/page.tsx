@@ -39,6 +39,7 @@ import {
   getDraft,
   saveDraft,
   saveDraftById,
+  finalizeDraftEdit,
   createStandaloneDraft,
   getAllDrafts,
   markAsPublished,
@@ -3220,6 +3221,7 @@ function StandaloneWriteMode({
     lastSavedRef.current = content;
     setSaving(false);
     if (result) {
+      await finalizeDraftEdit(draft.id, content);
       posthog.capture("draft_saved", { source: "standalone", word_count: content.trim().split(/\s+/).length });
       onSaveDone();
     } else setSaveError("Failed to save.");
@@ -3569,6 +3571,9 @@ function StandaloneWriteMode({
             }}
             value={content}
             onChange={(e) => handleChange(e.target.value)}
+            onBlur={() => {
+              if (content.trim()) finalizeDraftEdit(draft.id, content);
+            }}
             placeholder="Start writing..."
             className="w-full outline-none resize-none font-sans"
             style={{

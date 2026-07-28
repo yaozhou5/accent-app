@@ -7,6 +7,8 @@ export interface Draft {
   post_index: number | null;
   content: string;
   original_draft: string | null;
+  final_draft: string | null;
+  captured_published_text: string | null;
   source_note: string | null;
   source_entry_id: string | null;
   playbook_id: string | null;
@@ -78,6 +80,10 @@ export async function markAsPublished(draftId: string, platform: string, url?: s
       published_platform: platform,
       published_url: url || null,
       published_at: new Date().toISOString(),
+      // Safety net: capture the final in-app text even if the user never hit
+      // Save/blur before publishing.
+      final_draft: existing?.content ?? null,
+      // TODO: populate captured_published_text once share/post capture is wired.
     })
     .eq("id", draftId)
     .select()
@@ -194,6 +200,24 @@ export async function saveDraftById(draftId: string, content: string): Promise<D
     computeAndStoreSignals(existing.user_id, draftId, existing.original_draft, content).catch(() => {});
   }
 
+  return data as Draft;
+}
+
+// Snapshot the in-app text when the user finishes an editing session
+// (explicit save or blur) — distinct from the continuous content autosave.
+export async function finalizeDraftEdit(draftId: string, content: string): Promise<Draft | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("drafts")
+    .update({ final_draft: content, updated_at: new Date().toISOString() })
+    .eq("id", draftId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to finalize draft edit:", JSON.stringify(error));
+    return null;
+  }
   return data as Draft;
 }
 
