@@ -56,6 +56,8 @@ import {
 } from "@/lib/supabase/coaching";
 import { PLAYBOOKS, getPlaybook, type Playbook } from "@/lib/playbooks";
 import PlaybookEditor from "@/components/PlaybookEditor";
+import VoiceCoach, { type CoachResult } from "@/components/VoiceCoach";
+import DraftFormatModal, { FORMATS, type DraftFormat } from "@/components/DraftFormatModal";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -157,10 +159,11 @@ function LogTab({
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
-  onPostNote: (entry: LogEntry) => void;
+  onPostNote: (entry: LogEntry, options?: { format?: DraftFormat; focus?: string }) => Promise<boolean>;
   postingEntryId: string | null;
   profile: UserProfile | null;
 }) {
+  const [formatPickerEntry, setFormatPickerEntry] = useState<LogEntry | null>(null);
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
     return "";
@@ -1391,9 +1394,8 @@ function LogTab({
                                 try {
                                   posthog.capture("note_to_draft_started", { entry_id: entry.id });
                                 } catch {}
-                                onPostNote(entry);
+                                setFormatPickerEntry(entry);
                               }}
-                              disabled={postingEntryId === entry.id}
                               className="w-full font-sans font-semibold"
                               style={{
                                 marginTop: 14,
@@ -1403,12 +1405,11 @@ function LogTab({
                                 border: "none",
                                 fontSize: 13,
                                 letterSpacing: "0.01em",
-                                cursor: postingEntryId === entry.id ? "default" : "pointer",
-                                opacity: postingEntryId === entry.id ? 0.55 : 1,
+                                cursor: "pointer",
                                 textAlign: "center",
                               }}
                             >
-                              {postingEntryId === entry.id ? "Writing…" : "Turn into draft →"}
+                              Turn into draft →
                             </button>
                           )}
                         </div>
@@ -1428,6 +1429,18 @@ function LogTab({
             >
               {toast}
             </div>
+          )}
+
+          {formatPickerEntry && (
+            <DraftFormatModal
+              entry={formatPickerEntry}
+              onGenerate={async (format, focus) => {
+                const ok = await onPostNote(formatPickerEntry, { format, focus: focus || undefined });
+                if (ok) setFormatPickerEntry(null);
+                return ok;
+              }}
+              onClose={() => setFormatPickerEntry(null)}
+            />
           )}
         </>
       )}
@@ -3147,32 +3160,52 @@ function WriteMode({
 }
 
 /* ══════════════ STANDALONE WRITE MODE ══════════════ */
+function IconSparkles({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 3l1.5 5.5L17 10l-5.5 1.5L10 17l-1.5-5.5L3 10l5.5-1.5z" />
+      <path d="M16 3l0.6 2 2 0.6-2 0.6-0.6 2-0.6-2-2-0.6 2-0.6z" />
+    </svg>
+  );
+}
+
 function StandaloneWriteMode({
   draft,
   sourceImages,
+  initialFormat,
   profile,
   onBack,
   onSaveDone,
 }: {
   draft: Draft;
   sourceImages?: string[];
+  initialFormat?: DraftFormat;
   profile: UserProfile | null;
   onBack: () => void;
   onSaveDone: () => void;
 }) {
   const [content, setContent] = useState(draft.content);
   const [saving, setSaving] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
+  // Format is chosen once at generation time (DraftFormatModal) — no longer
+  // switchable from within the editor, so this is just a display value.
+  const regenerateFormat = initialFormat;
   const [showNote, setShowNote] = useState(true);
-  const [showEdits, setShowEdits] = useState(false);
-  const [annotations, setAnnotations] = useState<
-    { phrase: string; dimension: string; explanation: string; alternative: string }[]
-  >([]);
-  const [activeAnnotation, setActiveAnnotation] = useState<number | null>(null);
-  const [loadingEdits, setLoadingEdits] = useState(false);
+  const [voiceCoachOpen, setVoiceCoachOpen] = useState(false);
+  const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
+  const [selectedAnnotationIndex, setSelectedAnnotationIndex] = useState<number | null>(null);
+  const [coachLeftView, setCoachLeftView] = useState<"highlighted" | "edit">("edit");
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef(draft.content);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Set for real in openVoiceCoach(); this initial value is never read since
+  // closeVoiceCoach() can only run after openVoiceCoach() has already fired.
+  const voiceCoachOpenedAt = useRef(0);
+
+  // Once Voice Coach analysis loads, default the left column to the
+  // highlighted view so the annotations are visible in context.
+  useEffect(() => {
+    if (coachResult && coachResult.annotations.length > 0) setCoachLeftView("highlighted");
+  }, [coachResult]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -3186,23 +3219,6 @@ function StandaloneWriteMode({
     return () => clearInterval(interval);
   }, [content, draft.id]);
 
-  // Fetch inline annotations on demand when "Show edits" is toggled
-  async function fetchAnnotations() {
-    if (annotations.length > 0 || loadingEdits || !profile?.voice_profile) return;
-    setLoadingEdits(true);
-    const vp = profile.voice_profile as VoiceProfile;
-    try {
-      const res = await fetch("/api/voice-notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft: content, dimensions: vp.dimensions }),
-      });
-      const data = await res.json();
-      setAnnotations(data.notes || []);
-    } catch {}
-    setLoadingEdits(false);
-  }
-
   const handleChange = (val: string) => {
     setContent(val);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -3214,400 +3230,364 @@ function StandaloneWriteMode({
     }, 1000);
   };
 
-  const handleExplicitSave = async () => {
-    setSaving(true);
-    setSaveError(null);
-    const result = await saveDraftById(draft.id, content);
-    lastSavedRef.current = content;
-    setSaving(false);
-    if (result) {
-      await finalizeDraftEdit(draft.id, content);
-      posthog.capture("draft_saved", { source: "standalone", word_count: content.trim().split(/\s+/).length });
-      onSaveDone();
-    } else setSaveError("Failed to save.");
+  const openVoiceCoach = () => {
+    voiceCoachOpenedAt.current = Date.now();
+    try {
+      posthog.capture("voice_coach_opened", { draft_id: draft.id });
+    } catch {}
+    setVoiceCoachOpen(true);
   };
 
-  function applyAnnotation(index: number) {
-    const note = annotations[index];
-    if (!note) return;
-    const updated = content.replace(note.phrase, note.alternative);
-    setContent(updated);
-    setAnnotations((prev) => prev.filter((_, i) => i !== index));
-    setActiveAnnotation(null);
-    // Auto-save
-    saveDraftById(draft.id, updated);
-    lastSavedRef.current = updated;
+  const closeVoiceCoach = () => {
+    const timeSpent = Math.round((Date.now() - voiceCoachOpenedAt.current) / 1000);
+    try {
+      posthog.capture("voice_coach_closed", { draft_id: draft.id, time_spent_seconds: timeSpent });
+    } catch {}
+    setVoiceCoachOpen(false);
+    setSelectedAnnotationIndex(null);
+    setCoachLeftView("edit");
+  };
+
+  // Build the highlighted, click-to-select view of the current draft for the
+  // Voice Coach split panel — matches on each annotation's edited_text (the
+  // version actually present in the current draft).
+  function renderCoachHighlightedDraft() {
+    const anns = coachResult?.annotations || [];
+    let remaining = content;
+    const segments: { text: string; annotationIndex?: number }[] = [];
+    const matches = anns
+      .map((a, i) => ({ ...a, originalIndex: i }))
+      .filter((a) => a.edited_text && remaining.includes(a.edited_text))
+      .sort((a, b) => remaining.indexOf(a.edited_text) - remaining.indexOf(b.edited_text));
+
+    for (const ann of matches) {
+      const idx = remaining.indexOf(ann.edited_text);
+      if (idx === -1) continue;
+      if (idx > 0) segments.push({ text: remaining.slice(0, idx) });
+      segments.push({ text: ann.edited_text, annotationIndex: ann.originalIndex });
+      remaining = remaining.slice(idx + ann.edited_text.length);
+    }
+    if (remaining) segments.push({ text: remaining });
+
+    return segments.map((seg, i) => {
+      if (seg.annotationIndex === undefined) {
+        return (
+          <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+            {seg.text}
+          </span>
+        );
+      }
+      const ann = anns[seg.annotationIndex];
+      const isSelected = selectedAnnotationIndex === seg.annotationIndex;
+      const toward = ann.direction === "toward";
+      return (
+        <span
+          key={i}
+          onClick={() => setSelectedAnnotationIndex(isSelected ? null : seg.annotationIndex!)}
+          style={{
+            whiteSpace: "pre-wrap",
+            cursor: "pointer",
+            borderRadius: 0,
+            padding: "0 2px",
+            background: isSelected ? (toward ? "#16a34a30" : "#B4530930") : toward ? "#16a34a15" : "#B4530915",
+            borderBottom: `2px solid ${toward ? "#16a34a80" : "#B4530980"}`,
+            transition: "background 0.15s",
+          }}
+        >
+          {seg.text}
+        </span>
+      );
+    });
   }
+
+  const unsavedChanges = content.trim() !== lastSavedRef.current.trim();
+  const isEdited = !!draft.original_draft && content.trim() !== draft.original_draft.trim();
+  const voiceCoachVisible = !!(draft.original_draft && draft.original_draft.trim());
 
   return (
     <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
-      <div className="max-w-[640px] mx-auto px-5 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={onBack}
-            className="font-mono text-[12px]"
-            style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+      <div
+        style={{
+          maxWidth: voiceCoachOpen ? 1100 : 720,
+          margin: "0 auto",
+          padding: "24px 20px",
+          display: "flex",
+          gap: voiceCoachOpen ? 24 : 0,
+          alignItems: "flex-start",
+          transition: "max-width 0.35s ease, gap 0.35s ease",
+        }}
+      >
+        <div
+          style={{
+            flex: voiceCoachOpen ? "1 1 50%" : "1 1 auto",
+            minWidth: 0,
+            transition: "flex-basis 0.35s ease",
+          }}
+        >
+          <div
+            style={
+              voiceCoachOpen ? { maxHeight: "calc(100vh - 48px)", overflowY: "auto", paddingRight: 12 } : undefined
+            }
           >
-            <ArrowLeft size={12} /> Back
-          </button>
-          <div className="flex items-center gap-3">
-            {draft.source_entry_id && profile?.voice_profile && (
+            <div className="flex items-center justify-between mb-6">
               <button
-                onClick={async () => {
-                  if (!draft.source_note) return;
-                  setRegenerating(true);
-                  const businessContext = [profile.business_description].filter(Boolean).join(" ");
-                  try {
-                    const res = await fetch("/api/generate-draft", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        entryContent: draft.source_note,
-                        voiceProfile: profile.voice_profile,
-                        businessContext,
-                        platform: profile.platforms?.[0] || "linkedin",
-                      }),
-                    });
-                    if (!res.ok) throw new Error("Generate failed");
-                    const text = await res.text();
-                    await saveDraftById(draft.id, text);
-                    setContent(text);
-                    lastSavedRef.current = text;
-                    posthog.capture("draft_regenerated", { draft_id: draft.id });
-                  } catch (err) {
-                    console.error("Regenerate failed:", err);
-                  } finally {
-                    setRegenerating(false);
-                  }
-                }}
-                disabled={regenerating}
-                style={{
-                  background: "transparent",
-                  border: `1.5px solid ${FAINT}`,
-                  borderRadius: 0,
-                  padding: "8px 16px",
-                  fontSize: 13,
-                  color: DIM,
-                  cursor: regenerating ? "wait" : "pointer",
-                  fontWeight: 600,
-                }}
+                onClick={onBack}
+                className="font-mono text-[12px]"
+                style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
               >
-                {regenerating ? "Regenerating..." : "Regenerate"}
+                <ArrowLeft size={12} /> Back
               </button>
-            )}
-            {draft.source_entry_id && profile?.voice_profile && (
-              <button
-                onClick={() => {
-                  const next = !showEdits;
-                  setShowEdits(next);
-                  if (next) fetchAnnotations();
-                  if (!next) setActiveAnnotation(null);
-                }}
-                disabled={loadingEdits}
-                style={{
-                  background: showEdits ? `${BLUE}10` : "transparent",
-                  border: `1.5px solid ${showEdits ? BLUE : FAINT}`,
-                  borderRadius: 0,
-                  padding: "8px 16px",
-                  fontSize: 13,
-                  color: showEdits ? BLUE : DIM,
-                  cursor: loadingEdits ? "wait" : "pointer",
-                  fontWeight: 600,
-                }}
+              <span
+                className="font-mono text-[11px]"
+                style={{ color: saving ? BLUE : saveError ? "#DC2626" : unsavedChanges ? "#B45309" : FAINT }}
               >
-                {loadingEdits ? "Loading..." : showEdits ? "Hide edits" : "Show edits"}
-              </button>
+                {saving ? "Saving..." : saveError ? "Save failed" : unsavedChanges ? "Unsaved changes" : "Saved"}
+              </span>
+            </div>
+
+            {/* Voice identity + format cards */}
+            {(!!(draft.source_entry_id && profile?.voice_profile) || !!regenerateFormat) && (
+              <div className="flex" style={{ gap: 12, marginBottom: 16 }}>
+                {draft.source_entry_id && profile?.voice_profile && (
+                  <div
+                    style={{
+                      flex: 1,
+                      background: "linear-gradient(135deg, #1A1917, #2D2B28)",
+                      color: "#fff",
+                      padding: "12px 16px",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <span
+                      className="font-mono uppercase block mb-1"
+                      style={{ fontSize: 10, letterSpacing: "0.08em", color: "rgba(255,255,255,0.5)" }}
+                    >
+                      Your voice
+                    </span>
+                    <span className="font-sans block" style={{ fontSize: 15, fontWeight: 500 }}>
+                      {(profile.voice_profile as VoiceProfile).top_traits?.join(" · ")}
+                    </span>
+                  </div>
+                )}
+                {regenerateFormat && (
+                  <div
+                    style={{
+                      flex: "0 0 auto",
+                      background: "#fff",
+                      border: `1px solid ${BORDER}`,
+                      padding: "12px 16px",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <span
+                      className="font-mono uppercase block mb-1"
+                      style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}
+                    >
+                      Format
+                    </span>
+                    <span className="font-sans block" style={{ fontSize: 14, fontWeight: 500, color: INK }}>
+                      {FORMATS.find((f) => f.key === regenerateFormat)?.label}
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
-            <span className="font-mono text-[11px]" style={{ color: saving ? BLUE : saveError ? "#DC2626" : FAINT }}>
-              {saving ? "Saving..." : saveError ? "Save failed" : "Saved"}
-            </span>
+
+            {/* Playbook origin tag */}
+            {draft.playbook_id &&
+              (() => {
+                const pb = getPlaybook(draft.playbook_id);
+                return pb ? (
+                  <div className="flex items-center gap-2 mb-4">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        background: pb.color,
+                        color: pb.textColor,
+                        padding: "4px 12px",
+                        borderRadius: 0,
+                      }}
+                    >
+                      {pb.name}
+                    </span>
+                    <span className="font-mono text-[11px]" style={{ color: FAINT }}>
+                      Developed from your playbook
+                    </span>
+                  </div>
+                ) : null;
+              })()}
+
+            {draft.source_note && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    onClick={() => setShowNote(!showNote)}
+                    className="font-mono text-[11px] uppercase flex items-center gap-1"
+                    style={{
+                      color: FAINT,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      letterSpacing: "0.05em",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Your note{" "}
+                    <span
+                      style={{
+                        fontSize: 10,
+                        transition: "transform 0.2s",
+                        transform: showNote ? "rotate(0)" : "rotate(-90deg)",
+                      }}
+                    >
+                      ▼
+                    </span>
+                  </button>
+                </div>
+                {showNote && (
+                  <div className="p-4" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+                    <p
+                      className="font-sans"
+                      style={{
+                        fontSize: 15,
+                        color: BODY,
+                        lineHeight: 1.6,
+                        fontStyle: "italic",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {draft.source_note}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {sourceImages && sourceImages.length > 0 && (
+              <div className="mb-6">
+                <span
+                  className="font-mono text-[11px] uppercase block mb-2"
+                  style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
+                >
+                  Reference images
+                </span>
+                <div
+                  className={sourceImages.length === 1 ? "" : "grid gap-2"}
+                  style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}
+                >
+                  {sourceImages.map((url, i) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt=""
+                      className="w-full"
+                      style={{
+                        maxHeight: sourceImages.length === 1 ? 300 : 180,
+                        objectFit: "cover",
+                        border: `1px solid ${BORDER}`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {voiceCoachOpen && coachResult && coachResult.annotations.length > 0 && (
+              <div className="mb-3">
+                <button
+                  onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
+                  className="font-mono text-[11px]"
+                  style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+                >
+                  {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
+                </button>
+              </div>
+            )}
+
+            {/* Draft content — coach highlights or plain textarea */}
+            {voiceCoachOpen && coachLeftView === "highlighted" && coachResult && coachResult.annotations.length > 0 ? (
+              <div
+                className="font-sans"
+                style={{ fontSize: 16, color: INK, lineHeight: 1.8, minHeight: "40vh", whiteSpace: "pre-wrap" }}
+              >
+                {renderCoachHighlightedDraft()}
+              </div>
+            ) : (
+              <div className="autosize-textarea-wrap font-sans" data-value={content}>
+                <textarea
+                  value={content}
+                  onChange={(e) => handleChange(e.target.value)}
+                  onBlur={() => {
+                    if (content.trim()) finalizeDraftEdit(draft.id, content);
+                  }}
+                  placeholder="Start writing..."
+                  className="w-full outline-none font-sans"
+                  style={{ color: INK, background: "transparent" }}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {voiceCoachVisible && (
+              <div style={{ marginTop: 24, paddingTop: 16, borderTop: `0.5px solid ${BORDER}` }}>
+                <button
+                  onClick={() => {
+                    if (isEdited) openVoiceCoach();
+                  }}
+                  disabled={!isEdited}
+                  className="w-full flex items-center justify-center gap-1.5 font-sans font-semibold"
+                  style={{
+                    border: isEdited ? "none" : `0.5px solid ${BORDER}`,
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                    fontSize: 13,
+                    color: isEdited ? "#fff" : FAINT,
+                    background: isEdited ? BLUE : "transparent",
+                    cursor: isEdited ? "pointer" : "default",
+                  }}
+                >
+                  <IconSparkles size={15} />
+                  How did I do?
+                  {!isEdited && <span style={{ opacity: 0.8 }}>&nbsp;· edit first</span>}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Voice profile indicator */}
-        {draft.source_entry_id && profile?.voice_profile && (
-          <p className="font-mono text-[12px] mb-4" style={{ color: FAINT }}>
-            Written in your voice &middot;{" "}
-            <span style={{ color: DIM }}>{(profile.voice_profile as VoiceProfile).top_traits?.join(". ")}.</span>
-          </p>
-        )}
-
-        {/* Playbook origin tag */}
-        {draft.playbook_id &&
-          (() => {
-            const pb = getPlaybook(draft.playbook_id);
-            return pb ? (
-              <div className="flex items-center gap-2 mb-4">
-                <span
-                  style={{
-                    display: "inline-block",
-                    fontFamily: "'Fraunces', Georgia, serif",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    background: pb.color,
-                    color: pb.textColor,
-                    padding: "4px 12px",
-                    borderRadius: 0,
-                  }}
-                >
-                  {pb.name}
-                </span>
-                <span className="font-mono text-[11px]" style={{ color: FAINT }}>
-                  Developed from your playbook
-                </span>
-              </div>
-            ) : null;
-          })()}
-
-        {draft.source_note && (
-          <div className="mb-6">
-            <button
-              onClick={() => setShowNote(!showNote)}
-              className="font-mono text-[11px] uppercase mb-2 flex items-center gap-1"
-              style={{
-                color: FAINT,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                letterSpacing: "0.05em",
-                fontWeight: 500,
-              }}
-            >
-              Your note{" "}
-              <span
-                style={{
-                  fontSize: 10,
-                  transition: "transform 0.2s",
-                  transform: showNote ? "rotate(0)" : "rotate(-90deg)",
+        {voiceCoachOpen && (
+          <div
+            style={{
+              flex: "1 1 50%",
+              minWidth: 0,
+              position: "sticky",
+              top: 24,
+              animation: "voiceCoachPanelIn 0.35s ease",
+            }}
+          >
+            <div style={{ maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
+              <VoiceCoach
+                draftId={draft.id}
+                originalDraft={draft.original_draft || ""}
+                currentDraft={content}
+                voiceProfile={profile?.voice_profile as VoiceProfile | undefined}
+                selectedIndex={selectedAnnotationIndex}
+                onSelectIndex={setSelectedAnnotationIndex}
+                onResultChange={setCoachResult}
+                onApplySuggestion={(updated) => {
+                  setContent(updated);
+                  saveDraftById(draft.id, updated);
+                  lastSavedRef.current = updated;
                 }}
-              >
-                ▼
-              </span>
-            </button>
-            {showNote && (
-              <div className="p-4" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
-                <p
-                  className="font-sans"
-                  style={{
-                    fontSize: 15,
-                    color: BODY,
-                    lineHeight: 1.6,
-                    fontStyle: "italic",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {draft.source_note}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {sourceImages && sourceImages.length > 0 && (
-          <div className="mb-6">
-            <span
-              className="font-mono text-[11px] uppercase block mb-2"
-              style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
-            >
-              Reference images
-            </span>
-            <div
-              className={sourceImages.length === 1 ? "" : "grid gap-2"}
-              style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}
-            >
-              {sourceImages.map((url, i) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt=""
-                  className="w-full"
-                  style={{
-                    maxHeight: sourceImages.length === 1 ? 300 : 180,
-                    objectFit: "cover",
-                    border: `1px solid ${BORDER}`,
-                  }}
-                />
-              ))}
+                onClose={closeVoiceCoach}
+              />
             </div>
           </div>
         )}
-
-        {/* Draft content — textarea when edits off, annotated view when on */}
-        {showEdits && annotations.length > 0 ? (
-          <div
-            className="font-sans"
-            style={{
-              fontSize: 16,
-              color: INK,
-              lineHeight: 1.8,
-              minHeight: "40vh",
-              position: "relative",
-            }}
-          >
-            {(() => {
-              // Build segments: split content by annotation phrases
-              let remaining = content;
-              const segments: { text: string; annotationIndex?: number }[] = [];
-              const sortedAnnotations = annotations
-                .map((a, i) => ({ ...a, originalIndex: i }))
-                .filter((a) => remaining.includes(a.phrase))
-                .sort((a, b) => remaining.indexOf(a.phrase) - remaining.indexOf(b.phrase));
-
-              for (const ann of sortedAnnotations) {
-                const idx = remaining.indexOf(ann.phrase);
-                if (idx === -1) continue;
-                if (idx > 0) segments.push({ text: remaining.slice(0, idx) });
-                segments.push({ text: ann.phrase, annotationIndex: ann.originalIndex });
-                remaining = remaining.slice(idx + ann.phrase.length);
-              }
-              if (remaining) segments.push({ text: remaining });
-
-              return segments.map((seg, i) =>
-                seg.annotationIndex !== undefined ? (
-                  <span key={i} style={{ position: "relative", display: "inline" }}>
-                    <span
-                      onClick={() =>
-                        setActiveAnnotation(activeAnnotation === seg.annotationIndex ? null : seg.annotationIndex!)
-                      }
-                      style={{
-                        background: activeAnnotation === seg.annotationIndex ? `${BLUE}20` : `${BLUE}10`,
-                        borderBottom: `2px solid ${BLUE}60`,
-                        cursor: "pointer",
-                        borderRadius: 0,
-                        padding: "0 2px",
-                        transition: "background 0.15s",
-                      }}
-                    >
-                      {seg.text}
-                    </span>
-                    {activeAnnotation === seg.annotationIndex && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: "100%",
-                          marginTop: 8,
-                          width: 360,
-                          background: "#fff",
-                          border: `1px solid ${BORDER}`,
-                          borderRadius: 0,
-                          padding: "16px 20px",
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-                          zIndex: 50,
-                        }}
-                      >
-                        <p
-                          className="font-mono text-[11px] uppercase"
-                          style={{ color: BLUE, fontWeight: 600, marginBottom: 8 }}
-                        >
-                          {annotations[seg.annotationIndex!].dimension}
-                        </p>
-                        <p className="font-sans text-[13px]" style={{ color: INK, lineHeight: 1.5, marginBottom: 10 }}>
-                          {annotations[seg.annotationIndex!].explanation}
-                        </p>
-                        <p
-                          className="font-sans text-[13px]"
-                          style={{
-                            color: DIM,
-                            lineHeight: 1.5,
-                            fontStyle: "italic",
-                            marginBottom: 14,
-                            padding: "8px 12px",
-                            background: "#f9fafb",
-                            borderRadius: 0,
-                          }}
-                        >
-                          {annotations[seg.annotationIndex!].alternative}
-                        </p>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={() => applyAnnotation(seg.annotationIndex!)}
-                            className="font-sans text-[13px] font-semibold"
-                            style={{
-                              background: BLUE,
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: 0,
-                              padding: "6px 16px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Apply
-                          </button>
-                          <button
-                            onClick={() => setActiveAnnotation(null)}
-                            className="font-sans text-[13px]"
-                            style={{
-                              background: "transparent",
-                              border: `1px solid ${BORDER}`,
-                              borderRadius: 0,
-                              padding: "6px 16px",
-                              color: DIM,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </span>
-                ) : (
-                  <span key={i} style={{ whiteSpace: "pre-wrap" }}>
-                    {seg.text}
-                  </span>
-                )
-              );
-            })()}
-          </div>
-        ) : (
-          <textarea
-            ref={(el) => {
-              if (el) {
-                el.style.height = "auto";
-                el.style.height = Math.max(200, el.scrollHeight) + "px";
-              }
-            }}
-            value={content}
-            onChange={(e) => handleChange(e.target.value)}
-            onBlur={() => {
-              if (content.trim()) finalizeDraftEdit(draft.id, content);
-            }}
-            placeholder="Start writing..."
-            className="w-full outline-none resize-none font-sans"
-            style={{
-              fontSize: 16,
-              color: INK,
-              lineHeight: 1.8,
-              padding: 0,
-              border: "none",
-              background: "transparent",
-              minHeight: "40vh",
-              overflow: "hidden",
-            }}
-            autoFocus
-          />
-        )}
-
-        {content.trim().length > 20 && (
-          <div className="mt-6 space-y-3">
-            <button
-              onClick={handleExplicitSave}
-              className="w-full py-3 font-sans font-semibold text-[14px]"
-              style={{ background: "transparent", color: FAINT, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}
-            >
-              Save draft
-            </button>
-            {saveError && (
-              <p className="font-sans text-[13px]" style={{ color: "#DC2626" }}>
-                {saveError}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Coaching feedback removed — replaced by inline annotations */}
       </div>
     </div>
   );
@@ -3644,7 +3624,11 @@ export default function DashboardPage() {
   }, []);
   // ideasWeek removed — Ideas tab no longer exists
   const [writeMode, setWriteMode] = useState<{ planId: string; postIndex: number } | null>(null);
-  const [standaloneDraft, setStandaloneDraft] = useState<{ draft: Draft; images?: string[] } | null>(null);
+  const [standaloneDraft, setStandaloneDraft] = useState<{
+    draft: Draft;
+    images?: string[];
+    format?: DraftFormat;
+  } | null>(null);
   const [activePlaybook, setActivePlaybook] = useState<{ playbook: Playbook; draft?: Draft } | null>(null);
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
@@ -3726,13 +3710,13 @@ export default function DashboardPage() {
     setAllPlans((prev) => [plan, ...prev]);
   };
 
-  async function handlePostNote(entry: LogEntry) {
+  async function handlePostNote(entry: LogEntry, options?: { format?: DraftFormat; focus?: string }): Promise<boolean> {
     if (!profile?.voice_profile) {
       // No voice profile — prompt user to complete exercise
       if (confirm("Take 60 seconds to discover your voice first?")) {
         window.location.href = "/voice";
       }
-      return;
+      return false;
     }
 
     // Set loading state
@@ -3750,6 +3734,8 @@ export default function DashboardPage() {
           voiceProfile: profile.voice_profile,
           businessContext,
           platform: profile.platforms?.[0] || "linkedin",
+          ...(options?.format ? { format: options.format } : {}),
+          ...(options?.focus ? { focus: options.focus } : {}),
         }),
       });
 
@@ -3763,14 +3749,18 @@ export default function DashboardPage() {
         posthog.capture("note_written", {
           entry_id: entry.id,
           platform: profile.platforms?.[0] || "linkedin",
+          format: options?.format,
         });
         // Refresh drafts and open draft editor
         const allDrafts = await getAllDrafts();
         setDrafts(allDrafts);
-        setStandaloneDraft({ draft });
+        setStandaloneDraft({ draft, format: options?.format });
+        return true;
       }
+      return false;
     } catch (err) {
       console.error("Post failed:", err);
+      return false;
     } finally {
       setPostingEntryId(null);
     }
@@ -3804,6 +3794,7 @@ export default function DashboardPage() {
       <StandaloneWriteMode
         draft={standaloneDraft.draft}
         sourceImages={standaloneDraft.images}
+        initialFormat={standaloneDraft.format}
         profile={profile}
         onBack={() => setStandaloneDraft(null)}
         onSaveDone={() => {
@@ -3870,8 +3861,8 @@ export default function DashboardPage() {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "log", label: "Log" },
-    { key: "playbooks", label: "Playbooks" },
-    { key: "history", label: "History" },
+    { key: "playbooks", label: "Templates" },
+    { key: "history", label: "Drafts" },
   ];
 
   return (
@@ -3944,7 +3935,7 @@ export default function DashboardPage() {
                   margin: 0,
                 }}
               >
-                Playbooks
+                Templates
               </h2>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, marginTop: 4 }}>
                 9 proven structures. Pick one and fill in your thinking.

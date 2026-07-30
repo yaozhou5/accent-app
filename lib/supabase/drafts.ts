@@ -105,7 +105,8 @@ export async function markAsPublished(draftId: string, platform: string, url?: s
 export async function createStandaloneDraft(
   content: string,
   sourceNote: string,
-  sourceEntryId: string
+  sourceEntryId: string,
+  playbookId?: string
 ): Promise<Draft | null> {
   const supabase = createClient();
   const {
@@ -115,6 +116,7 @@ export async function createStandaloneDraft(
 
   const row: Record<string, unknown> = { user_id: user.id, content, original_draft: content, source_note: sourceNote };
   if (sourceEntryId) row.source_entry_id = sourceEntryId;
+  if (playbookId) row.playbook_id = playbookId;
   const { data, error } = await supabase.from("drafts").insert(row).select().single();
 
   if (error) {

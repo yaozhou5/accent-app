@@ -9,12 +9,32 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 
 const PLATFORM_GUIDES: Record<string, string> = {
   linkedin:
-    "Format: LinkedIn post. 150-300 words. Hook in the first line. Use line breaks for readability. End with a question or call-to-reflection. No hashtags.",
+    "Format: LinkedIn post. 150-300 words. Hook in the first line. Use line breaks for readability. No hashtags.",
   x: "Format: Single tweet or short thread (2-3 tweets). Punchy. Under 280 chars per tweet. No hashtags.",
   substack: "Format: Newsletter excerpt. 200-400 words. Conversational but substantial. Include a clear insight.",
   threads: "Format: Threads post. Conversational, 100-200 words. Casual but insightful.",
   小红书: "Format: 小红书 post. 100-200 words. Mix of personal story and practical insight. Warm tone.",
 };
+
+const FORMAT_MAX_TOKENS: Record<string, number> = {
+  quick_take: 200,
+  full_post: 600,
+};
+const DEFAULT_MAX_TOKENS = 1000;
+
+const FORMAT_INSTRUCTIONS: Record<string, string> = {
+  quick_take: "This is a quick take — 2-4 sentences maximum, one sharp point, no preamble.",
+  full_post: "This is a full post — 150-250 words, one developed idea with room to explain the reasoning.",
+};
+
+// First `count` sentences of a text, for short verbatim excerpts from past
+// drafts. Capped at 400 chars as a safety net against unpunctuated runs.
+function firstSentences(text: string, count: number): string {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  const matches = cleaned.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g) || [cleaned];
+  return matches.slice(0, count).join(" ").trim().slice(0, 400);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +47,8 @@ export async function POST(request: NextRequest) {
         status: 401,
       });
 
-    const { entryContent, voiceProfile, businessContext, platform, estimateWords } = await request.json();
+    const { entryContent, voiceProfile, businessContext, platform, estimateWords, format, focus } =
+      await request.json();
 
     if (!entryContent?.trim())
       return new Response(JSON.stringify({ error: "entry content required" }), { status: 400 });
@@ -36,9 +57,31 @@ export async function POST(request: NextRequest) {
       ? buildVoiceInstructions(voiceProfile.dimensions, voiceProfile)
       : "Write in a clear, professional tone.";
 
+    // Few-shot: ground the model in the user's own finished writing, not
+    // just abstract voice-dimension rules.
+    const { data: recentDrafts } = await supabase
+      .from("drafts")
+      .select("final_draft")
+      .eq("user_id", user.id)
+      .not("final_draft", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(3);
+
+    const excerpts = (recentDrafts || [])
+      .map((d) => firstSentences(d.final_draft || "", 3))
+      .filter((s) => s.length > 0);
+
+    const examplesBlock =
+      excerpts.length > 0
+        ? `\nEXAMPLES OF HOW THIS PERSON ACTUALLY WRITES:\n${excerpts.join("\n")}\nMatch the rhythm, word choice, and energy of these examples.\n`
+        : "";
+
     const lengthGuide = estimateWords
       ? `Target length: ~${estimateWords} words.`
       : PLATFORM_GUIDES[(platform || "linkedin").toLowerCase()] || PLATFORM_GUIDES.linkedin;
+
+    const formatInstruction = format && FORMAT_INSTRUCTIONS[format] ? `\n${FORMAT_INSTRUCTIONS[format]}` : "";
+    const maxTokens = format && FORMAT_MAX_TOKENS[format] ? FORMAT_MAX_TOKENS[format] : DEFAULT_MAX_TOKENS;
 
     const today = new Date().toLocaleDateString("en-US", {
       year: "numeric",
@@ -50,8 +93,8 @@ export async function POST(request: NextRequest) {
 
 VOICE STYLE (follow these closely):
 ${voiceInstructions}
-
-${lengthGuide}
+${examplesBlock}
+${lengthGuide}${formatInstruction}
 
 Today's date: ${today}
 
@@ -61,18 +104,28 @@ RULES:
 - Use the sections as raw material — extract the story, insight, or point. Don't just polish the notes.
 - Sound like a real person, not a writing tool. No "Here's the thing...", "Let me be honest...", or other AI cliches.
 - Do not add a title, subject line, or meta-commentary. Just the draft.
-- Do not explain what you did. Just write the draft.`;
+- Do not explain what you did. Just write the draft.
+- Write as if the user is talking to one person over coffee, then clean up only the grammar. Keep rough edges. The draft should read like a smart person talking, not a writer writing.
+
+STRUCTURAL RULES:
+- Paragraphs must NOT all be the same length.
+- Do NOT resolve every idea neatly — leave one thread open.
+- Do NOT end with a rhetorical question.
+- Do NOT use more than one metaphor in the entire draft.
+- Maximum one "profound" line per draft — the rest should be plain.
+- If it sounds like a therapy insight or graduation speech, rewrite it as what a tired founder would actually say.`;
 
     const contextLine = businessContext?.trim() ? `\nContext about the author: ${businessContext}\n` : "";
+    const focusLine = focus?.trim() ? `Main point to emphasize: ${focus.trim()}\n\n` : "";
 
-    const userPrompt = `${contextLine}Raw note:
+    const userPrompt = `${focusLine}${contextLine}Raw note:
 ${entryContent}
 
 Write the post.`;
 
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-6",
-      max_tokens: 1000,
+      max_tokens: maxTokens,
       messages: [{ role: "user", content: userPrompt }],
       system: systemPrompt,
     });

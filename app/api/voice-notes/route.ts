@@ -52,7 +52,7 @@ For each moment, return:
 - "phrase": the exact phrase or sentence from the draft (verbatim, must be findable in the text)
 - "dimension": which voice dimension drove this choice (use the dimension name in caps: DIRECTNESS, PRECISION, TEMPERATURE, AUTHORITY, RHYTHM, FRAMING, ENERGY)
 - "explanation": one sentence explaining why this phrasing fits their voice (e.g. "Your contextual style builds trust before stating the point")
-- "alternative": one sentence showing how a writer on the opposite end would write it (e.g. "A more direct writer would open with: 'We need to cut this feature.'")
+- "alternative": ONLY the replacement text itself — nothing else. It must be usable as a direct drop-in replacement for "phrase" with no editing. Do NOT prefix it with framing like "A more direct writer would say" or "A cooler writer would write". Do NOT wrap it in quotation marks. Just the words that would replace "phrase" in the draft (e.g. if phrase is "I wanted to share some thoughts on where things stand", alternative is "Here's where things stand" — not "A more direct writer would open with: 'Here's where things stand.'")
 
 Return ONLY valid JSON array: [{"phrase":"...","dimension":"...","explanation":"...","alternative":"..."},...]`,
         },

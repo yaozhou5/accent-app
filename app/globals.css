@@ -40,7 +40,7 @@
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
-  --font-sans: "Switzer", var(--font-dm-sans), system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
 
   --animate-pulse-subtle: pulse-subtle 1.2s ease-in-out infinite;
   --animate-blink: blink 1s step-end infinite;
@@ -63,6 +63,17 @@
   }
   50% {
     opacity: 0;
+  }
+}
+
+@keyframes voiceCoachPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -152,6 +163,34 @@ mark {
 .privacy-policy strong {
   color: var(--color-ink);
   font-weight: 600;
+}
+
+/* Auto-resizing textarea with no JS-driven height reflow. The ::after mirror
+   holds the same text (invisibly) and shares the textarea's grid cell, so the
+   container's height grows/shrinks as a normal side effect of text layout —
+   never by resetting height to "auto" and re-measuring, which is what caused
+   visible jumps on every keystroke (worst on delete, when the box shrinks). */
+.autosize-textarea-wrap {
+  display: grid;
+  min-height: 40vh;
+}
+.autosize-textarea-wrap::after {
+  content: attr(data-value) " ";
+  white-space: pre-wrap;
+  word-break: break-word;
+  visibility: hidden;
+}
+.autosize-textarea-wrap > textarea {
+  resize: none;
+  overflow: hidden;
+}
+.autosize-textarea-wrap::after,
+.autosize-textarea-wrap > textarea {
+  grid-area: 1 / 1 / 2 / 2;
+  font-size: 16px;
+  line-height: 1.8;
+  padding: 0;
+  border: none;
 }
 
 /* Arrow hover animations */

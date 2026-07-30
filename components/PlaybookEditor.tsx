@@ -142,7 +142,7 @@ export default function PlaybookEditor({
       const draftText = await res.text();
 
       // Create a new standalone draft with the developed content
-      const developed = await createStandaloneDraft(draftText, content, "");
+      const developed = await createStandaloneDraft(draftText, content, "", playbook.id);
       if (developed) {
         posthog.capture("playbook_developed", {
           playbook_id: playbook.id,
