@@ -58,6 +58,7 @@ import { PLAYBOOKS, getPlaybook, type Playbook } from "@/lib/playbooks";
 import PlaybookEditor from "@/components/PlaybookEditor";
 import VoiceCoach, { type CoachResult } from "@/components/VoiceCoach";
 import DraftFormatModal, { FORMATS, type DraftFormat } from "@/components/DraftFormatModal";
+import UrlTakePrompt from "@/components/UrlTakePrompt";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -135,6 +136,14 @@ function getReadableTitle(url: string): string {
   }
 }
 
+// A note that's nothing but a bare link has no "raw thinking" to draft
+// from — same check LogTab already uses to auto-tag an entry as type "link".
+function getUrlOnlyLink(content: string): string | null {
+  const trimmed = content.trim();
+  const detected = detectUrl(trimmed);
+  return detected && trimmed === detected ? detected : null;
+}
+
 type Tab = "log" | "playbooks" | "history";
 const TYPE_CARD_STYLES: Record<string, { bg: string; text: string; label: string; labelColor: string; dot: string }> = {
   note: { bg: "#D8EDE1", text: "#1E4030", label: "Note", labelColor: "#1E4030", dot: "#3D6B4A" },
@@ -164,6 +173,7 @@ function LogTab({
   profile: UserProfile | null;
 }) {
   const [formatPickerEntry, setFormatPickerEntry] = useState<LogEntry | null>(null);
+  const [urlTakeEntry, setUrlTakeEntry] = useState<LogEntry | null>(null);
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
     return "";
@@ -1394,7 +1404,11 @@ function LogTab({
                                 try {
                                   posthog.capture("note_to_draft_started", { entry_id: entry.id });
                                 } catch {}
-                                setFormatPickerEntry(entry);
+                                if (getUrlOnlyLink(entry.content || "")) {
+                                  setUrlTakeEntry(entry);
+                                } else {
+                                  setFormatPickerEntry(entry);
+                                }
                               }}
                               className="w-full font-sans font-semibold"
                               style={{
@@ -1442,6 +1456,23 @@ function LogTab({
               onClose={() => setFormatPickerEntry(null)}
             />
           )}
+
+          {urlTakeEntry &&
+            (() => {
+              const url = getUrlOnlyLink(urlTakeEntry.content || "");
+              if (!url) return null;
+              return (
+                <UrlTakePrompt
+                  url={url}
+                  onSubmit={(take) => {
+                    const combined = `${take}\n\nLink for context: ${url}`;
+                    setFormatPickerEntry({ ...urlTakeEntry, content: combined });
+                    setUrlTakeEntry(null);
+                  }}
+                  onClose={() => setUrlTakeEntry(null)}
+                />
+              );
+            })()}
         </>
       )}
     </div>
