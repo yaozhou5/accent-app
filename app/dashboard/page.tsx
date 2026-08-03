@@ -201,6 +201,8 @@ function LogTab({
   const [bookmarkNote, setBookmarkNote] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [expandedContent, setExpandedContent] = useState<Set<string>>(new Set());
+  const [overflowingIds, setOverflowingIds] = useState<Set<string>>(new Set());
   const [ogCache, setOgCache] = useState<
     Record<string, { title: string | null; description: string | null; image: string | null }>
   >({});
@@ -332,10 +334,13 @@ function LogTab({
       .catch(() => {});
   };
 
-  const handleSubmit = async () => {
-    if ((!input.trim() && pendingImages.length === 0) || submitting) return;
+  // Shared by "+ Log it" and "Edit my draft ->" — both log the note the same
+  // way; they only differ in what happens after.
+  const logInput = async (): Promise<LogEntry | null> => {
+    if ((!input.trim() && pendingImages.length === 0) || submitting) return null;
     setSubmitting(true);
     setError(null);
+    let result: LogEntry | null = null;
     try {
       let imageUrls: string[] = [];
       if (pendingImages.length > 0) {
@@ -366,11 +371,31 @@ function LogTab({
             has_url: !!detectedUrl,
           });
         } catch {}
+        result = entry;
       } else setError("Failed to save.");
     } catch (e: unknown) {
       setError(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`);
     }
     setSubmitting(false);
+    return result;
+  };
+
+  const handleSubmit = async () => {
+    await logInput();
+  };
+
+  // Logs the note like normal, then opens the editor with the user's own
+  // text as the draft — no AI generation, no voice transformation.
+  const handleEditMyDraft = async () => {
+    const entry = await logInput();
+    if (!entry) return;
+    const draft = await createStandaloneDraft(entry.content, entry.content, entry.id);
+    if (draft) {
+      try {
+        posthog.capture("edit_my_draft_started", { entry_id: entry.id });
+      } catch {}
+      onStartDraft({ draft });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -700,41 +725,28 @@ function LogTab({
                 ))}
               </div>
             )}
-            <textarea
-              ref={(el) => {
-                composeRef.current = el;
-                if (el) {
-                  el.style.height = "auto";
-                  el.style.height = Math.max(56, el.scrollHeight) + "px";
-                }
-              }}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onPaste={(e) => {
-                const items = Array.from(e.clipboardData.items);
-                const imageFiles = items
-                  .filter((it) => it.type.startsWith("image/"))
-                  .map((it) => it.getAsFile())
-                  .filter((f): f is File => f !== null);
-                if (imageFiles.length > 0) {
-                  e.preventDefault();
-                  addImageFiles(imageFiles);
-                }
-              }}
-              placeholder="What happened? A thought, a link, something someone said..."
-              className="w-full outline-none resize-none font-sans"
-              style={{
-                fontSize: 15,
-                color: INK,
-                lineHeight: 1.6,
-                padding: "20px 20px 8px",
-                border: "none",
-                background: "transparent",
-                minHeight: 56,
-                overflow: "hidden",
-              }}
-            />
+            <div className="log-compose-autosize font-sans" data-value={input}>
+              <textarea
+                ref={composeRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={(e) => {
+                  const items = Array.from(e.clipboardData.items);
+                  const imageFiles = items
+                    .filter((it) => it.type.startsWith("image/"))
+                    .map((it) => it.getAsFile())
+                    .filter((f): f is File => f !== null);
+                  if (imageFiles.length > 0) {
+                    e.preventDefault();
+                    addImageFiles(imageFiles);
+                  }
+                }}
+                placeholder="What happened? A thought, a link, something someone said..."
+                className="w-full outline-none font-sans"
+                style={{ color: INK, background: "transparent" }}
+              />
+            </div>
             {attachError && (
               <p className="font-sans text-[12px] px-4 pb-1" style={{ color: "#DC2626" }}>
                 {attachError}
@@ -784,6 +796,24 @@ function LogTab({
                 ⌘↵ to log
               </span>
               <span style={{ flex: 1 }} />
+              {input.trim() && (
+                <button
+                  onClick={handleEditMyDraft}
+                  disabled={submitting}
+                  className="font-sans font-medium"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: DIM,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: submitting ? "wait" : "pointer",
+                    padding: "8px 10px",
+                  }}
+                >
+                  Edit my draft →
+                </button>
+              )}
               <button
                 onClick={handleSubmit}
                 disabled={(!input.trim() && pendingImages.length === 0) || submitting}
@@ -1154,19 +1184,77 @@ function LogTab({
                           ) : (
                             <>
                               {entry.content && !(entryUrl && entry.content.trim() === entryUrl) && (
-                                <p
-                                  className="font-sans"
-                                  style={{
-                                    fontSize: 15,
-                                    color: "#1a1a1a",
-                                    lineHeight: 1.6,
-                                    whiteSpace: "pre-wrap",
-                                    wordBreak: "break-word",
-                                    paddingRight: 28,
-                                  }}
-                                >
-                                  {entry.content}
-                                </p>
+                                <div>
+                                  <p
+                                    ref={(el) => {
+                                      // Only measure while clamped — once expanded, the clamp is
+                                      // removed and scrollHeight naturally equals clientHeight,
+                                      // which would otherwise wipe the "Show more" button.
+                                      if (!el || expandedContent.has(entry.id)) return;
+                                      const isOverflowing = el.scrollHeight > el.clientHeight + 1;
+                                      setOverflowingIds((prev) => {
+                                        const has = prev.has(entry.id);
+                                        if (isOverflowing === has) return prev;
+                                        const next = new Set(prev);
+                                        if (isOverflowing) next.add(entry.id);
+                                        else next.delete(entry.id);
+                                        return next;
+                                      });
+                                    }}
+                                    className="font-sans"
+                                    style={
+                                      expandedContent.has(entry.id)
+                                        ? {
+                                            fontSize: 15,
+                                            color: "#1a1a1a",
+                                            lineHeight: 1.6,
+                                            whiteSpace: "pre-wrap",
+                                            wordBreak: "break-word",
+                                            paddingRight: 28,
+                                          }
+                                        : {
+                                            fontSize: 15,
+                                            color: "#1a1a1a",
+                                            lineHeight: 1.6,
+                                            whiteSpace: "pre-wrap",
+                                            wordBreak: "break-word",
+                                            paddingRight: 28,
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 5,
+                                            WebkitBoxOrient: "vertical",
+                                            overflow: "hidden",
+                                          }
+                                    }
+                                  >
+                                    {entry.content}
+                                  </p>
+                                  {overflowingIds.has(entry.id) && (
+                                    <button
+                                      onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        setExpandedContent((prev) => {
+                                          const next = new Set(prev);
+                                          if (next.has(entry.id)) next.delete(entry.id);
+                                          else next.add(entry.id);
+                                          return next;
+                                        });
+                                      }}
+                                      className="font-mono"
+                                      style={{
+                                        fontSize: 11,
+                                        color: cardStyle.text,
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        padding: "4px 0",
+                                        marginTop: 2,
+                                        textDecoration: "underline",
+                                      }}
+                                    >
+                                      {expandedContent.has(entry.id) ? "Show less" : "Show more"}
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </>
                           )}
@@ -3451,7 +3539,10 @@ function StandaloneWriteMode({
                 ) : null;
               })()}
 
-            {draft.source_note && (
+            {/* Only show "Your note" when the draft actually differs from it —
+                for the direct "Edit my draft" path they're the same text, so
+                there's nothing meaningful to compare. */}
+            {draft.source_note && draft.source_note.trim() !== (draft.original_draft || "").trim() && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <button

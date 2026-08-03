@@ -193,6 +193,32 @@ mark {
   border: none;
 }
 
+/* Same technique, but grows only up to a cap, then the wrapper scrolls —
+   used by the Log compose box so long pasted text doesn't push the
+   "+ Log it" footer off-screen. */
+.log-compose-autosize {
+  display: grid;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.log-compose-autosize::after {
+  content: attr(data-value) " ";
+  white-space: pre-wrap;
+  word-break: break-word;
+  visibility: hidden;
+}
+.log-compose-autosize > textarea {
+  resize: none;
+}
+.log-compose-autosize::after,
+.log-compose-autosize > textarea {
+  grid-area: 1 / 1 / 2 / 2;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 20px 20px 8px;
+  border: none;
+}
+
 /* Arrow hover animations */
 button:hover .arrow-right,
 a:hover .arrow-right,
