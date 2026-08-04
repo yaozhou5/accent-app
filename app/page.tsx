@@ -51,7 +51,8 @@ export default function LandingPage() {
     s3 = useReveal(),
     s4 = useReveal(),
     s5 = useReveal(),
-    s6 = useReveal();
+    s6 = useReveal(),
+    s7 = useReveal();
 
   return (
     <div style={{ background: "#F5F0E8", color: INK }}>
@@ -134,8 +135,8 @@ export default function LandingPage() {
               color: "#fff",
             }}
           >
-            Never worry about
-            <br className="sm:hidden" /> content again.
+            Your voice.
+            <br className="sm:hidden" /> AI-assisted.
           </h1>
           <p
             className="font-sans mx-auto mt-4 md:mt-6"
@@ -146,7 +147,8 @@ export default function LandingPage() {
               maxWidth: 520,
             }}
           >
-            One system. Your real week becomes your best content. Your voice stays yours.
+            Accent learns how you write. Log a thought, generate a draft, edit it into your voice — and every edit makes
+            the next draft sound more like you.
           </p>
           <div className="mt-6 md:mt-8">
             <Link
@@ -211,7 +213,7 @@ export default function LandingPage() {
                 marginTop: 12,
               }}
             >
-              Your week is your content. We connect the dots.
+              From a thought to a post that sounds like you.
             </h2>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -219,20 +221,26 @@ export default function LandingPage() {
               {
                 num: "01",
                 title: "Discover your voice",
-                desc: "A 60-second exercise maps how you naturally communicate — direct or contextual, warm or cool, storyteller or structurer.",
+                desc: "A 60-second exercise maps how you naturally communicate. This is your starting point — it evolves as you write.",
                 color: "#1A1512",
               },
               {
                 num: "02",
-                title: "Log your week",
-                desc: "Capture thoughts, links, conversations, decisions. No pressure to write — just note what happened.",
+                title: "Log or paste",
+                desc: "Capture a thought, a link, a rough idea. Or paste a draft you've already written and go straight to editing.",
                 color: "#C4614A",
               },
               {
                 num: "03",
-                title: "Write from playbooks",
-                desc: "9 proven structures turn your raw notes into polished posts. Your voice stays yours — we just connect the dots.",
+                title: "Generate and edit",
+                desc: "Accent drafts in your voice. You reshape it until it sounds like you. The editing is the product — not a chore before publishing.",
                 color: "#1E5C58",
+              },
+              {
+                num: "04",
+                title: "Voice Coach learns",
+                desc: "After each edit, Voice Coach analyzes what you changed — words you replaced, patterns you removed, structure you prefer. Those insights feed back into your voice profile, so the next draft starts closer to how you actually write.",
+                color: "#8B2525",
               },
             ].map((step) => (
               <div
@@ -297,6 +305,76 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Voice-learning loop */}
+      <section style={{ background: "#F0ECE4" }}>
+        <div ref={s7.ref} style={s7.style} className="max-w-[760px] mx-auto px-6 py-12 md:py-20">
+          <div className="text-center mb-10">
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: FAINT,
+              }}
+            >
+              The voice-learning loop
+            </span>
+            <h2
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: "clamp(24px, 3.6vw, 36px)",
+                fontWeight: 400,
+                marginTop: 12,
+              }}
+            >
+              Accent gets better every time you write.
+            </h2>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center" style={{ gap: 10, marginBottom: 28 }}>
+            {["Log", "Draft", "Edit", "Learn"].map((word, i) => (
+              <div key={word} className="flex items-center" style={{ gap: 10 }}>
+                <span
+                  style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: 12,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: INK,
+                    background: "#FAFAF7",
+                    border: "1px solid #e0ddd5",
+                    padding: "8px 16px",
+                  }}
+                >
+                  {word}
+                </span>
+                {i < 3 && <span style={{ color: FAINT, fontSize: 14 }}>→</span>}
+              </div>
+            ))}
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: FAINT, marginLeft: 4 }}>
+              ↻ back to Draft
+            </span>
+          </div>
+
+          <p
+            className="mx-auto text-center"
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 15,
+              color: DIM,
+              lineHeight: 1.7,
+              maxWidth: 560,
+            }}
+          >
+            Other tools stay static — same generic output whether it's your first draft or your hundredth. Accent
+            accumulates your editing patterns into a learned voice profile. Substitutions you make, patterns you remove,
+            structures you prefer — all feeding back into the next draft. The more you use it, the more it sounds like
+            you.
+          </p>
+        </div>
+      </section>
+
       {/* Interactive demo */}
       <section>
         <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
@@ -345,12 +423,12 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 16 }}>
             {[
               {
-                title: "It's not ChatGPT.",
-                desc: "ChatGPT starts from zero every time. Accent knows your voice, your themes, your last 20 weeks. The longer you use it, the better it knows your story.",
+                title: "ChatGPT generates text. Accent learns your voice.",
+                desc: "Every edit you make teaches the system what you sound like. Words you cut, phrases you reach for, how you open and close — it all accumulates into a voice profile that gets sharper over time. ChatGPT forgets you after every conversation. Accent remembers.",
               },
               {
-                title: "The rhythm is the feature.",
-                desc: "Great content isn't one viral post. It's showing up every week. Accent makes the habit invisible.",
+                title: "Your edits are the training data.",
+                desc: "Most AI writing tools optimize for speed — generate and publish. Accent optimizes for voice. The editing step isn't friction to eliminate, it's where your voice lives. Every session makes the next draft better.",
               },
             ].map((b, i) => (
               <div
@@ -455,7 +533,12 @@ export default function LandingPage() {
                 Pro — $19/mo
               </span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {["Unlimited posts", "Brand voice memory", "Full content shelf", "Weekly rhythm tracking"].map((f) => (
+                {[
+                  "Unlimited posts",
+                  "Voice-learning profile — gets smarter with every edit",
+                  "Full content shelf",
+                  "Weekly rhythm tracking",
+                ].map((f) => (
                   <li
                     key={f}
                     className="flex items-start gap-2"
@@ -494,7 +577,7 @@ export default function LandingPage() {
                 bg: "#1E5C58",
                 title: "Solo founders",
                 pain: "No marketing team, no content strategist, no time. Just you and a system that actually works.",
-                how: "Log your week, Accent does the rest.",
+                how: "Log your thoughts. Edit your drafts. Accent learns your voice along the way.",
               },
             ].map((c) => (
               <div key={c.title} style={{ padding: "24px 22px", background: "#F0ECE4" }}>

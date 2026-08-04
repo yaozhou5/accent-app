@@ -180,7 +180,7 @@ export default function LandingDemo() {
         >
           {[
             { id: "log", label: "Log" },
-            { id: "playbooks", label: "Playbooks" },
+            { id: "playbooks", label: "Templates" },
             { id: "draft", label: "History" },
           ].map((t) => (
             <div
