@@ -17,14 +17,19 @@ const PLATFORM_GUIDES: Record<string, string> = {
   小红书: "Format: 小红书 post. 100-200 words. Mix of personal story and practical insight. Warm tone.",
 };
 
+// quick_take has real headroom above the instructed length (not just enough
+// for a compliant 2-4 sentence response) — when a rich source note tempts
+// the model into writing longer anyway, we'd rather it finish the thought
+// than get hard-cut mid-sentence by the token ceiling.
 const FORMAT_MAX_TOKENS: Record<string, number> = {
-  quick_take: 200,
+  quick_take: 400,
   full_post: 600,
 };
 const DEFAULT_MAX_TOKENS = 1000;
 
 const FORMAT_INSTRUCTIONS: Record<string, string> = {
-  quick_take: "This is a quick take — 2-4 sentences maximum, one sharp point, no preamble.",
+  quick_take:
+    "This is a quick take — 2-4 sentences maximum, one sharp point, no preamble. This is a hard limit: even if the note covers a lot of ground, pick the single sharpest point and cut everything else. Do not attempt to cover the whole note.",
   full_post: "This is a full post — 150-250 words, one developed idea with room to explain the reasoning.",
 };
 
@@ -35,6 +40,15 @@ function firstSentences(text: string, count: number): string {
   if (!cleaned) return "";
   const matches = cleaned.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g) || [cleaned];
   return matches.slice(0, count).join(" ").trim().slice(0, 400);
+}
+
+// Cuts a max_tokens-truncated draft back to its last complete sentence so a
+// mid-word cutoff never reaches the editor. Falls back to the untrimmed text
+// if no sentence boundary exists at all (better than returning nothing).
+function trimToLastCompleteSentence(text: string): string {
+  const trimmed = text.trim();
+  const lastPunct = Math.max(trimmed.lastIndexOf("."), trimmed.lastIndexOf("!"), trimmed.lastIndexOf("?"));
+  return lastPunct === -1 ? trimmed : trimmed.slice(0, lastPunct + 1);
 }
 
 export async function POST(request: NextRequest) {
@@ -139,26 +153,25 @@ ${entryContent}
 
 Write the post.`;
 
-    const stream = anthropic.messages.stream({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: maxTokens,
       messages: [{ role: "user", content: userPrompt }],
       system: systemPrompt,
     });
 
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
-        for await (const event of stream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
-        }
-        controller.close();
-      },
-    });
+    let draftText = message.content[0]?.type === "text" ? message.content[0].text : "";
 
-    return new Response(readable, {
+    // Safety net: both callers already buffer the whole response via
+    // res.text() before using it, so there's no streaming UX to preserve —
+    // buffering here lets us catch a max_tokens cutoff and trim back to the
+    // last complete sentence instead of shipping a broken mid-word draft.
+    if (message.stop_reason === "max_tokens") {
+      console.warn(`generate-draft hit max_tokens (format=${format || "default"}), trimming to last complete sentence`);
+      draftText = trimToLastCompleteSentence(draftText);
+    }
+
+    return new Response(draftText, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (error) {
