@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { type VoiceDimensions } from "@/lib/voice-dimensions";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
+import { buildLearnedInstructions, type LearnedVoiceProfile } from "@/lib/voice-patterns";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -71,9 +72,22 @@ export async function POST(request: NextRequest) {
       .map((d) => firstSentences(d.final_draft || "", 3))
       .filter((s) => s.length > 0);
 
+    // Learned profile: accumulated from Voice Coach sessions (see
+    // lib/voice-patterns.ts). best_examples are hand-picked for
+    // voice-distinctiveness, so they supplement rather than replace the
+    // recent-drafts few-shot above.
+    const { data: learnedProfileRow } = await supabase
+      .from("voice_profile_learned")
+      .select("preferred_words, banned_words, substitution_pairs, structural_habits, anti_patterns, best_examples")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const learnedProfile = learnedProfileRow as LearnedVoiceProfile | null;
+    const learnedInstructions = learnedProfile ? buildLearnedInstructions(learnedProfile) : "";
+
+    const allExcerpts = [...excerpts, ...(learnedProfile?.best_examples || []).filter((e) => !excerpts.includes(e))];
     const examplesBlock =
-      excerpts.length > 0
-        ? `\nEXAMPLES OF HOW THIS PERSON ACTUALLY WRITES:\n${excerpts.join("\n")}\nMatch the rhythm, word choice, and energy of these examples.\n`
+      allExcerpts.length > 0
+        ? `\nEXAMPLES OF HOW THIS PERSON ACTUALLY WRITES:\n${allExcerpts.join("\n")}\nMatch the rhythm, word choice, and energy of these examples.\n`
         : "";
 
     const lengthGuide = estimateWords
@@ -93,6 +107,7 @@ export async function POST(request: NextRequest) {
 
 VOICE STYLE (follow these closely):
 ${voiceInstructions}
+${learnedInstructions}
 ${examplesBlock}
 ${lengthGuide}${formatInstruction}
 

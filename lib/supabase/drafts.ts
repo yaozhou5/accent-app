@@ -66,12 +66,9 @@ export async function getAllDrafts(): Promise<Draft[]> {
 export async function markAsPublished(draftId: string, platform: string, url?: string): Promise<Draft | null> {
   const supabase = createClient();
 
-  // Fetch current state for voice signal computation
-  const { data: existing } = await supabase
-    .from("drafts")
-    .select("original_draft, content, user_id")
-    .eq("id", draftId)
-    .single();
+  // Snapshot current in-app content as final_draft, even if the user never
+  // hit Save/blur before publishing.
+  const { data: existing } = await supabase.from("drafts").select("content").eq("id", draftId).single();
 
   const { data, error } = await supabase
     .from("drafts")
@@ -80,8 +77,6 @@ export async function markAsPublished(draftId: string, platform: string, url?: s
       published_platform: platform,
       published_url: url || null,
       published_at: new Date().toISOString(),
-      // Safety net: capture the final in-app text even if the user never hit
-      // Save/blur before publishing.
       final_draft: existing?.content ?? null,
       // TODO: populate captured_published_text once share/post capture is wired.
     })
@@ -92,11 +87,6 @@ export async function markAsPublished(draftId: string, platform: string, url?: s
   if (error) {
     console.error("Failed to mark as published:", JSON.stringify(error));
     return null;
-  }
-
-  // Compute voice signals on publish (fire-and-forget)
-  if (existing?.original_draft && existing.original_draft !== existing.content) {
-    computeAndStoreSignals(existing.user_id, draftId, existing.original_draft, existing.content).catch(() => {});
   }
 
   return data as Draft;
@@ -182,9 +172,6 @@ export async function savePlaybookDraft(
 export async function saveDraftById(draftId: string, content: string): Promise<Draft | null> {
   const supabase = createClient();
 
-  // Fetch current draft to get original_draft for diff
-  const { data: existing } = await supabase.from("drafts").select("original_draft, user_id").eq("id", draftId).single();
-
   const { data, error } = await supabase
     .from("drafts")
     .update({ content, updated_at: new Date().toISOString() })
@@ -195,11 +182,6 @@ export async function saveDraftById(draftId: string, content: string): Promise<D
   if (error) {
     console.error("Failed to save draft by id:", JSON.stringify(error));
     return null;
-  }
-
-  // Compute voice signals in the background (fire-and-forget)
-  if (existing?.original_draft && existing.original_draft !== content) {
-    computeAndStoreSignals(existing.user_id, draftId, existing.original_draft, content).catch(() => {});
   }
 
   return data as Draft;
@@ -266,135 +248,4 @@ export async function saveDraft(planId: string, postIndex: number, content: stri
     return null;
   }
   return data as Draft;
-}
-
-// ── Voice signal collection ──────────────────────────────────────────
-
-interface VoiceSignal {
-  user_id: string;
-  draft_id: string;
-  signal_type: "deletion" | "rewrite" | "kept";
-  original_text: string;
-  edited_text: string | null;
-}
-
-/**
- * Compare original AI draft with user-edited version.
- * Splits both into sentences, then classifies each original sentence as:
- *   - "kept" if it appears verbatim in the edited version
- *   - "deletion" if it was removed entirely
- *   - "rewrite" if a similar sentence exists (shares 3+ words) but was changed
- */
-async function computeAndStoreSignals(
-  userId: string,
-  draftId: string,
-  original: string,
-  edited: string
-): Promise<void> {
-  const originalSentences = splitSentences(original);
-  const editedSentences = splitSentences(edited);
-
-  if (originalSentences.length === 0) return;
-
-  const editedSet = new Set(editedSentences.map((s) => s.toLowerCase().trim()));
-  const editedWords = editedSentences.map((s) => new Set(s.toLowerCase().split(/\s+/)));
-
-  const signals: VoiceSignal[] = [];
-
-  for (const sentence of originalSentences) {
-    const lower = sentence.toLowerCase().trim();
-    if (!lower) continue;
-
-    if (editedSet.has(lower)) {
-      // Kept verbatim
-      signals.push({
-        user_id: userId,
-        draft_id: draftId,
-        signal_type: "kept",
-        original_text: sentence,
-        edited_text: null,
-      });
-    } else {
-      // Check for rewrite (similar sentence with 3+ shared words)
-      const origWords = new Set(lower.split(/\s+/));
-      let bestMatch: string | null = null;
-      let bestOverlap = 0;
-
-      for (let i = 0; i < editedSentences.length; i++) {
-        let overlap = 0;
-        for (const w of origWords) {
-          if (w.length > 2 && editedWords[i].has(w)) overlap++;
-        }
-        if (overlap > bestOverlap) {
-          bestOverlap = overlap;
-          bestMatch = editedSentences[i];
-        }
-      }
-
-      if (bestOverlap >= 3 && bestMatch) {
-        signals.push({
-          user_id: userId,
-          draft_id: draftId,
-          signal_type: "rewrite",
-          original_text: sentence,
-          edited_text: bestMatch,
-        });
-      } else {
-        signals.push({
-          user_id: userId,
-          draft_id: draftId,
-          signal_type: "deletion",
-          original_text: sentence,
-          edited_text: null,
-        });
-      }
-    }
-  }
-
-  // Also capture additions: sentences in edited that don't match any original
-  const originalSet = new Set(originalSentences.map((s) => s.toLowerCase().trim()));
-  const originalWords = originalSentences.map((s) => new Set(s.toLowerCase().split(/\s+/)));
-
-  for (const sentence of editedSentences) {
-    const lower = sentence.toLowerCase().trim();
-    if (!lower || originalSet.has(lower)) continue;
-
-    // Check if this was already captured as a rewrite target
-    const isRewriteTarget = signals.some((s) => s.signal_type === "rewrite" && s.edited_text === sentence);
-    if (isRewriteTarget) continue;
-
-    // Check if it shares 3+ words with any original (would be a rewrite, already captured)
-    let isRelated = false;
-    const editWords = new Set(lower.split(/\s+/));
-    for (const origWordSet of originalWords) {
-      let overlap = 0;
-      for (const w of editWords) {
-        if (w.length > 2 && origWordSet.has(w)) overlap++;
-      }
-      if (overlap >= 3) {
-        isRelated = true;
-        break;
-      }
-    }
-    if (isRelated) continue;
-
-    // Pure addition — not related to any original sentence
-    // We don't store these as signals for now (no "addition" type yet)
-  }
-
-  if (signals.length === 0) return;
-
-  // Store signals
-  const supabase = createClient();
-  const { error } = await supabase.from("voice_signals").insert(signals);
-  if (error) {
-    console.error("Failed to store voice signals:", JSON.stringify(error));
-  }
-}
-
-function splitSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 10); // Skip very short fragments
 }

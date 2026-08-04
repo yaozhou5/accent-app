@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import type { VoiceDimensions } from "@/lib/voice-dimensions";
+import { saveVoicePatterns } from "@/lib/voice-patterns";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -17,10 +18,11 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { original_draft, current_draft, voice_profile } = (await request.json()) as {
+    const { original_draft, current_draft, voice_profile, draft_id } = (await request.json()) as {
       original_draft: string;
       current_draft: string;
       voice_profile?: { dimensions: VoiceDimensions; top_traits?: string[]; edge?: string; gap?: string };
+      draft_id?: string;
     };
 
     if (!original_draft?.trim() || !current_draft?.trim()) {
@@ -109,14 +111,31 @@ Return ONLY valid JSON, no preamble:
       return NextResponse.json({ error: "Failed to parse response" }, { status: 500 });
     }
 
-    return NextResponse.json({
+    const result = {
       pattern_summary: parsed.pattern_summary || "",
       annotations: Array.isArray(parsed.annotations) ? parsed.annotations : [],
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       edge: parsed.edge || "",
       stretch: parsed.stretch || "",
       rhythm_insight: parsed.rhythm_insight || "",
-    });
+    };
+
+    // Save + aggregate before responding (adds one insert/upsert on top of an
+    // already multi-second LLM call — negligible, and safer than a detached
+    // fire-and-forget promise that a serverless runtime could cut off).
+    // Failure here must never surface as a Voice Coach error.
+    if (draft_id) {
+      try {
+        await saveVoicePatterns(user.id, draft_id, original_draft, current_draft, {
+          edge: result.edge,
+          stretch: result.stretch,
+        });
+      } catch (e) {
+        console.error("Failed to save voice patterns:", e);
+      }
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("voice-coach error:", error);
     return NextResponse.json({ error: "Failed to generate voice coaching" }, { status: 500 });

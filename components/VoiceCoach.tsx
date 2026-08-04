@@ -118,6 +118,7 @@ export default function VoiceCoach({
           original_draft: originalDraft,
           current_draft: currentDraft,
           voice_profile: voiceProfile,
+          draft_id: draftId,
         }),
       });
       if (!res.ok) throw new Error("Request failed");
