@@ -69,7 +69,7 @@ export default function UrlTakePrompt({ url, onSubmit, onClose }: UrlTakePromptP
           placeholder="e.g. This matches what I've seen with..."
           className="w-full outline-none font-sans"
           style={{
-            fontSize: 14,
+            fontSize: 16,
             color: INK,
             lineHeight: 1.6,
             padding: "10px 12px",

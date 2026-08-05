@@ -182,7 +182,10 @@ export default function LandingDemo() {
         )}
 
         {/* Content area */}
-        <div style={{ minHeight: 440, padding: "18px 16px", position: "relative", background: BG }}>
+        <div
+          className="demo-content-area"
+          style={{ minHeight: 440, padding: "18px 16px", position: "relative", background: BG }}
+        >
           {/* LOG VIEW */}
           <div
             style={{
@@ -256,6 +259,7 @@ export default function LandingDemo() {
 
           {/* VOICE COACH VIEW */}
           <div
+            className="demo-coach-columns"
             style={{
               position: "absolute",
               inset: "18px 16px",

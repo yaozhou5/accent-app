@@ -213,10 +213,106 @@ mark {
 .log-compose-autosize::after,
 .log-compose-autosize > textarea {
   grid-area: 1 / 1 / 2 / 2;
-  font-size: 15px;
+  /* 16px, not 15 — anything smaller triggers iOS Safari's auto-zoom on focus. */
+  font-size: 16px;
   line-height: 1.6;
   padding: 20px 20px 8px;
   border: none;
+}
+
+/* The ⌘↵ hint is a desktop-keyboard-shortcut reminder — meaningless (and
+   space-competitive with the "Edit my draft"/"Log it" buttons) on mobile. */
+@media (max-width: 640px) {
+  .log-compose-kbd-hint {
+    display: none;
+  }
+}
+
+/* Voice/format identity cards in the editor: side-by-side on desktop,
+   stacked on mobile where two ~150px-wide cards get too cramped to read. */
+@media (max-width: 640px) {
+  .editor-identity-cards {
+    flex-direction: column;
+  }
+}
+
+/* "How did I do?" CTA stays reachable without scrolling to the bottom of a
+   long draft. Sticks to whichever ancestor is actually scrolling — the full
+   page in the normal editor, or the capped-height column once Voice Coach
+   is open. */
+@media (max-width: 767px) {
+  .editor-cta-footer {
+    position: sticky;
+    bottom: 0;
+    background: #f5f0e8;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 12px;
+  }
+}
+
+/* Voice Coach split panel: the two ~170px-wide columns are unreadable on
+   mobile, so below 768px it becomes a tab switcher instead. Both panes stay
+   mounted (so state/scroll position isn't lost) — one is just display:none. */
+.coach-mobile-tabs {
+  display: none;
+}
+@media (max-width: 767px) {
+  .coach-mobile-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .coach-mobile-tab-hidden {
+    display: none !important;
+  }
+}
+.coach-mobile-tab,
+.coach-mobile-tab-active {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "DM Sans", sans-serif;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  min-height: 44px;
+}
+.coach-mobile-tab {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+.coach-mobile-tab-active {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+}
+
+/* Voice Coach edge/stretch cards: side by side on desktop, full-width
+   stacked on mobile. */
+@media (max-width: 767px) {
+  .coach-edge-stretch {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Landing page demo mockup: the Voice Coach phase's two columns (draft +
+   analysis) are cramped past readability under ~480px, so they stack.
+   The container grows to fit the now-taller stacked content — it's an
+   absolutely-positioned overlay shared with the (much shorter) Log phase,
+   so this only affects the Voice Coach phase visually, not the Log one. */
+@media (max-width: 480px) {
+  .demo-coach-columns {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .demo-content-area {
+    min-height: 900px !important;
+  }
 }
 
 /* Arrow hover animations */

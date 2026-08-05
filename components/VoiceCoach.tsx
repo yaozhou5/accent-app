@@ -179,7 +179,14 @@ export default function VoiceCoach({
         <button
           onClick={onClose}
           className="font-mono text-[12px]"
-          style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+          style={{
+            color: DIM,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "14px 10px",
+            margin: "-14px -10px",
+          }}
         >
           Close ✕
         </button>
@@ -386,7 +393,7 @@ export default function VoiceCoach({
           )}
 
           {/* Edge / Stretch */}
-          <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          <div className="grid gap-2 mb-4 coach-edge-stretch" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="p-3" style={{ background: `${BLUE}06`, border: `1px solid ${BORDER}` }}>
               <span
                 className="font-mono uppercase block mb-1"

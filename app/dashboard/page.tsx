@@ -561,7 +561,7 @@ function LogTab({
             placeholder="e.g. a pet memorial brand, an AI health tool, a design studio"
             style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 15,
+              fontSize: 16,
               width: "100%",
               padding: "12px 14px",
               border: "1px solid #e0ddd5",
@@ -792,7 +792,7 @@ function LogTab({
                   </svg>
                 </button>
               </div>
-              <span className="font-mono" style={{ fontSize: 12, color: "#bbb" }}>
+              <span className="font-mono log-compose-kbd-hint" style={{ fontSize: 12, color: "#bbb" }}>
                 ⌘↵ to log
               </span>
               <span style={{ flex: 1 }} />
@@ -1144,7 +1144,7 @@ function LogTab({
                                 onChange={(ev) => setEditText(ev.target.value)}
                                 className="w-full outline-none resize-none font-sans"
                                 style={{
-                                  fontSize: 15,
+                                  fontSize: 16,
                                   color: INK,
                                   lineHeight: 1.6,
                                   padding: "8px 10px",
@@ -1416,7 +1416,8 @@ function LogTab({
                                     background: "none",
                                     border: "none",
                                     cursor: "pointer",
-                                    padding: 0,
+                                    padding: 15,
+                                    margin: -15,
                                     lineHeight: 1,
                                   }}
                                 >
@@ -1444,7 +1445,7 @@ function LogTab({
                                   if (ev.key === "Enter") handleConfirmBookmark();
                                 }}
                                 placeholder="Why I saved this (optional)"
-                                className="flex-1 outline-none font-sans text-[13px]"
+                                className="flex-1 outline-none font-sans text-[16px]"
                                 style={{
                                   color: INK,
                                   padding: "6px 10px",
@@ -1974,7 +1975,7 @@ function IdeasTab({
                 placeholder="Your answer..."
                 className="w-full outline-none resize-none font-sans"
                 style={{
-                  fontSize: 15,
+                  fontSize: 16,
                   color: INK,
                   lineHeight: 1.6,
                   padding: "12px 16px",
@@ -2804,7 +2805,7 @@ function DraftsTab({
                       placeholder="Paste link (optional)"
                       style={{
                         fontFamily: "'DM Sans', sans-serif",
-                        fontSize: 13,
+                        fontSize: 16,
                         width: "100%",
                         outline: "none",
                         color: INK,
@@ -3313,6 +3314,10 @@ function StandaloneWriteMode({
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
   const [selectedAnnotationIndex, setSelectedAnnotationIndex] = useState<number | null>(null);
   const [coachLeftView, setCoachLeftView] = useState<"highlighted" | "edit">("edit");
+  // Mobile-only: the side-by-side split is unreadable under 768px, so it
+  // becomes a tab switcher there instead (desktop keeps the split as-is).
+  // Defaults to "coach" since that's the content the user just asked to see.
+  const [mobileCoachTab, setMobileCoachTab] = useState<"edit" | "coach">("coach");
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef(draft.content);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -3355,6 +3360,7 @@ function StandaloneWriteMode({
       posthog.capture("voice_coach_opened", { draft_id: draft.id });
     } catch {}
     setVoiceCoachOpen(true);
+    setMobileCoachTab("coach");
   };
 
   const closeVoiceCoach = () => {
@@ -3365,6 +3371,7 @@ function StandaloneWriteMode({
     setVoiceCoachOpen(false);
     setSelectedAnnotationIndex(null);
     setCoachLeftView("edit");
+    setMobileCoachTab("coach");
   };
 
   // Build the highlighted, click-to-select view of the current draft for the
@@ -3430,286 +3437,316 @@ function StandaloneWriteMode({
           maxWidth: voiceCoachOpen ? 1100 : 720,
           margin: "0 auto",
           padding: "24px 20px",
-          display: "flex",
-          gap: voiceCoachOpen ? 24 : 0,
-          alignItems: "flex-start",
-          transition: "max-width 0.35s ease, gap 0.35s ease",
+          transition: "max-width 0.35s ease",
         }}
       >
+        {voiceCoachOpen && (
+          <div className="coach-mobile-tabs">
+            <button
+              onClick={() => setMobileCoachTab("edit")}
+              className={mobileCoachTab === "edit" ? "coach-mobile-tab-active" : "coach-mobile-tab"}
+            >
+              Your edit
+            </button>
+            <button
+              onClick={() => setMobileCoachTab("coach")}
+              className={mobileCoachTab === "coach" ? "coach-mobile-tab-active" : "coach-mobile-tab"}
+            >
+              Voice Coach
+            </button>
+          </div>
+        )}
         <div
           style={{
-            flex: voiceCoachOpen ? "1 1 50%" : "1 1 auto",
-            minWidth: 0,
-            transition: "flex-basis 0.35s ease",
+            display: "flex",
+            gap: voiceCoachOpen ? 24 : 0,
+            alignItems: "flex-start",
+            transition: "gap 0.35s ease",
           }}
         >
           <div
-            style={
-              voiceCoachOpen ? { maxHeight: "calc(100vh - 48px)", overflowY: "auto", paddingRight: 12 } : undefined
-            }
-          >
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={onBack}
-                className="font-mono text-[12px]"
-                style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
-              >
-                <ArrowLeft size={12} /> Back
-              </button>
-              <span
-                className="font-mono text-[11px]"
-                style={{ color: saving ? BLUE : saveError ? "#DC2626" : unsavedChanges ? "#B45309" : FAINT }}
-              >
-                {saving ? "Saving..." : saveError ? "Save failed" : unsavedChanges ? "Unsaved changes" : "Saved"}
-              </span>
-            </div>
-
-            {/* Voice identity + format cards */}
-            {(!!(draft.source_entry_id && profile?.voice_profile) || !!regenerateFormat) && (
-              <div className="flex" style={{ gap: 12, marginBottom: 16 }}>
-                {draft.source_entry_id && profile?.voice_profile && (
-                  <div
-                    style={{
-                      flex: 1,
-                      background: "linear-gradient(135deg, #1A1917, #2D2B28)",
-                      color: "#fff",
-                      padding: "12px 16px",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <span
-                      className="font-mono uppercase block mb-1"
-                      style={{ fontSize: 10, letterSpacing: "0.08em", color: "rgba(255,255,255,0.5)" }}
-                    >
-                      Your voice
-                    </span>
-                    <span className="font-sans block" style={{ fontSize: 15, fontWeight: 500 }}>
-                      {(profile.voice_profile as VoiceProfile).top_traits?.join(" · ")}
-                    </span>
-                  </div>
-                )}
-                {regenerateFormat && (
-                  <div
-                    style={{
-                      flex: "0 0 auto",
-                      background: "#fff",
-                      border: `1px solid ${BORDER}`,
-                      padding: "12px 16px",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <span
-                      className="font-mono uppercase block mb-1"
-                      style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}
-                    >
-                      Format
-                    </span>
-                    <span className="font-sans block" style={{ fontSize: 14, fontWeight: 500, color: INK }}>
-                      {FORMATS.find((f) => f.key === regenerateFormat)?.label}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Playbook origin tag */}
-            {draft.playbook_id &&
-              (() => {
-                const pb = getPlaybook(draft.playbook_id);
-                return pb ? (
-                  <div className="flex items-center gap-2 mb-4">
-                    <span
-                      style={{
-                        display: "inline-block",
-                        fontFamily: "'Fraunces', Georgia, serif",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        background: pb.color,
-                        color: pb.textColor,
-                        padding: "4px 12px",
-                        borderRadius: 0,
-                      }}
-                    >
-                      {pb.name}
-                    </span>
-                    <span className="font-mono text-[11px]" style={{ color: FAINT }}>
-                      Developed from your playbook
-                    </span>
-                  </div>
-                ) : null;
-              })()}
-
-            {/* Only show "Your note" when the draft actually differs from it —
-                for the direct "Edit my draft" path they're the same text, so
-                there's nothing meaningful to compare. */}
-            {draft.source_note && draft.source_note.trim() !== (draft.original_draft || "").trim() && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    onClick={() => setShowNote(!showNote)}
-                    className="font-mono text-[11px] uppercase flex items-center gap-1"
-                    style={{
-                      color: FAINT,
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      letterSpacing: "0.05em",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Your note{" "}
-                    <span
-                      style={{
-                        fontSize: 10,
-                        transition: "transform 0.2s",
-                        transform: showNote ? "rotate(0)" : "rotate(-90deg)",
-                      }}
-                    >
-                      ▼
-                    </span>
-                  </button>
-                </div>
-                {showNote && (
-                  <div className="p-4" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
-                    <p
-                      className="font-sans"
-                      style={{
-                        fontSize: 15,
-                        color: BODY,
-                        lineHeight: 1.6,
-                        fontStyle: "italic",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-all",
-                      }}
-                    >
-                      {draft.source_note}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {sourceImages && sourceImages.length > 0 && (
-              <div className="mb-6">
-                <span
-                  className="font-mono text-[11px] uppercase block mb-2"
-                  style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
-                >
-                  Reference images
-                </span>
-                <div
-                  className={sourceImages.length === 1 ? "" : "grid gap-2"}
-                  style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}
-                >
-                  {sourceImages.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt=""
-                      className="w-full"
-                      style={{
-                        maxHeight: sourceImages.length === 1 ? 300 : 180,
-                        objectFit: "cover",
-                        border: `1px solid ${BORDER}`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {voiceCoachOpen && coachResult && coachResult.annotations.length > 0 && (
-              <div className="mb-3">
-                <button
-                  onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
-                  className="font-mono text-[11px]"
-                  style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
-                >
-                  {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
-                </button>
-              </div>
-            )}
-
-            {/* Draft content — coach highlights or plain textarea */}
-            {voiceCoachOpen && coachLeftView === "highlighted" && coachResult && coachResult.annotations.length > 0 ? (
-              <div
-                className="font-sans"
-                style={{ fontSize: 16, color: INK, lineHeight: 1.8, minHeight: "40vh", whiteSpace: "pre-wrap" }}
-              >
-                {renderCoachHighlightedDraft()}
-              </div>
-            ) : (
-              <div className="autosize-textarea-wrap font-sans" data-value={content}>
-                <textarea
-                  value={content}
-                  onChange={(e) => handleChange(e.target.value)}
-                  onBlur={() => {
-                    if (content.trim()) finalizeDraftEdit(draft.id, content);
-                  }}
-                  placeholder="Start writing..."
-                  className="w-full outline-none font-sans"
-                  style={{ color: INK, background: "transparent" }}
-                  autoFocus
-                />
-              </div>
-            )}
-
-            {voiceCoachVisible && (
-              <div style={{ marginTop: 24, paddingTop: 16, borderTop: `0.5px solid ${BORDER}` }}>
-                <button
-                  onClick={() => {
-                    if (isEdited) openVoiceCoach();
-                  }}
-                  disabled={!isEdited}
-                  className="w-full flex items-center justify-center gap-1.5 font-sans font-semibold"
-                  style={{
-                    border: isEdited ? "none" : `0.5px solid ${BORDER}`,
-                    borderRadius: 8,
-                    padding: "12px 14px",
-                    fontSize: 13,
-                    color: isEdited ? "#fff" : FAINT,
-                    background: isEdited ? BLUE : "transparent",
-                    cursor: isEdited ? "pointer" : "default",
-                  }}
-                >
-                  <IconSparkles size={15} />
-                  How did I do?
-                  {!isEdited && <span style={{ opacity: 0.8 }}>&nbsp;· edit first</span>}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {voiceCoachOpen && (
-          <div
+            className={voiceCoachOpen && mobileCoachTab === "coach" ? "coach-mobile-tab-hidden" : undefined}
             style={{
-              flex: "1 1 50%",
+              flex: voiceCoachOpen ? "1 1 50%" : "1 1 auto",
               minWidth: 0,
-              position: "sticky",
-              top: 24,
-              animation: "voiceCoachPanelIn 0.35s ease",
+              transition: "flex-basis 0.35s ease",
             }}
           >
-            <div style={{ maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
-              <VoiceCoach
-                draftId={draft.id}
-                originalDraft={draft.original_draft || ""}
-                currentDraft={content}
-                voiceProfile={profile?.voice_profile as VoiceProfile | undefined}
-                selectedIndex={selectedAnnotationIndex}
-                onSelectIndex={setSelectedAnnotationIndex}
-                onResultChange={setCoachResult}
-                onApplySuggestion={(updated) => {
-                  setContent(updated);
-                  saveDraftById(draft.id, updated);
-                  lastSavedRef.current = updated;
-                }}
-                onClose={closeVoiceCoach}
-              />
+            <div
+              style={
+                voiceCoachOpen ? { maxHeight: "calc(100vh - 48px)", overflowY: "auto", paddingRight: 12 } : undefined
+              }
+            >
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={onBack}
+                  className="font-mono text-[12px]"
+                  style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+                >
+                  <ArrowLeft size={12} /> Back
+                </button>
+                <span
+                  className="font-mono text-[11px]"
+                  style={{ color: saving ? BLUE : saveError ? "#DC2626" : unsavedChanges ? "#B45309" : FAINT }}
+                >
+                  {saving ? "Saving..." : saveError ? "Save failed" : unsavedChanges ? "Unsaved changes" : "Saved"}
+                </span>
+              </div>
+
+              {/* Voice identity + format cards */}
+              {(!!(draft.source_entry_id && profile?.voice_profile) || !!regenerateFormat) && (
+                <div className="flex editor-identity-cards" style={{ gap: 12, marginBottom: 16 }}>
+                  {draft.source_entry_id && profile?.voice_profile && (
+                    <div
+                      style={{
+                        flex: 1,
+                        background: "linear-gradient(135deg, #1A1917, #2D2B28)",
+                        color: "#fff",
+                        padding: "12px 16px",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <span
+                        className="font-mono uppercase block mb-1"
+                        style={{ fontSize: 10, letterSpacing: "0.08em", color: "rgba(255,255,255,0.5)" }}
+                      >
+                        Your voice
+                      </span>
+                      <span className="font-sans block" style={{ fontSize: 15, fontWeight: 500 }}>
+                        {(profile.voice_profile as VoiceProfile).top_traits?.join(" · ")}
+                      </span>
+                    </div>
+                  )}
+                  {regenerateFormat && (
+                    <div
+                      style={{
+                        flex: "0 0 auto",
+                        background: "#fff",
+                        border: `1px solid ${BORDER}`,
+                        padding: "12px 16px",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <span
+                        className="font-mono uppercase block mb-1"
+                        style={{ fontSize: 10, letterSpacing: "0.08em", color: FAINT }}
+                      >
+                        Format
+                      </span>
+                      <span className="font-sans block" style={{ fontSize: 14, fontWeight: 500, color: INK }}>
+                        {FORMATS.find((f) => f.key === regenerateFormat)?.label}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Playbook origin tag */}
+              {draft.playbook_id &&
+                (() => {
+                  const pb = getPlaybook(draft.playbook_id);
+                  return pb ? (
+                    <div className="flex items-center gap-2 mb-4">
+                      <span
+                        style={{
+                          display: "inline-block",
+                          fontFamily: "'Fraunces', Georgia, serif",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          background: pb.color,
+                          color: pb.textColor,
+                          padding: "4px 12px",
+                          borderRadius: 0,
+                        }}
+                      >
+                        {pb.name}
+                      </span>
+                      <span className="font-mono text-[11px]" style={{ color: FAINT }}>
+                        Developed from your playbook
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
+
+              {/* Only show "Your note" when the draft actually differs from it —
+                for the direct "Edit my draft" path they're the same text, so
+                there's nothing meaningful to compare. */}
+              {draft.source_note && draft.source_note.trim() !== (draft.original_draft || "").trim() && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      onClick={() => setShowNote(!showNote)}
+                      className="font-mono text-[11px] uppercase flex items-center gap-1"
+                      style={{
+                        color: FAINT,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        letterSpacing: "0.05em",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Your note{" "}
+                      <span
+                        style={{
+                          fontSize: 10,
+                          transition: "transform 0.2s",
+                          transform: showNote ? "rotate(0)" : "rotate(-90deg)",
+                        }}
+                      >
+                        ▼
+                      </span>
+                    </button>
+                  </div>
+                  {showNote && (
+                    <div className="p-4" style={{ background: "#f9fafb", border: `1px solid ${BORDER}` }}>
+                      <p
+                        className="font-sans"
+                        style={{
+                          fontSize: 15,
+                          color: BODY,
+                          lineHeight: 1.6,
+                          fontStyle: "italic",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        {draft.source_note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {sourceImages && sourceImages.length > 0 && (
+                <div className="mb-6">
+                  <span
+                    className="font-mono text-[11px] uppercase block mb-2"
+                    style={{ color: FAINT, letterSpacing: "0.05em", fontWeight: 500 }}
+                  >
+                    Reference images
+                  </span>
+                  <div
+                    className={sourceImages.length === 1 ? "" : "grid gap-2"}
+                    style={sourceImages.length > 1 ? { gridTemplateColumns: "1fr 1fr" } : {}}
+                  >
+                    {sourceImages.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt=""
+                        className="w-full"
+                        style={{
+                          maxHeight: sourceImages.length === 1 ? 300 : 180,
+                          objectFit: "cover",
+                          border: `1px solid ${BORDER}`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {voiceCoachOpen && coachResult && coachResult.annotations.length > 0 && (
+                <div className="mb-3">
+                  <button
+                    onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
+                    className="font-mono text-[11px]"
+                    style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
+                  </button>
+                </div>
+              )}
+
+              {/* Draft content — coach highlights or plain textarea */}
+              {voiceCoachOpen &&
+              coachLeftView === "highlighted" &&
+              coachResult &&
+              coachResult.annotations.length > 0 ? (
+                <div
+                  className="font-sans"
+                  style={{ fontSize: 16, color: INK, lineHeight: 1.8, minHeight: "40vh", whiteSpace: "pre-wrap" }}
+                >
+                  {renderCoachHighlightedDraft()}
+                </div>
+              ) : (
+                <div className="autosize-textarea-wrap font-sans" data-value={content}>
+                  <textarea
+                    value={content}
+                    onChange={(e) => handleChange(e.target.value)}
+                    onBlur={() => {
+                      if (content.trim()) finalizeDraftEdit(draft.id, content);
+                    }}
+                    placeholder="Start writing..."
+                    className="w-full outline-none font-sans"
+                    style={{ color: INK, background: "transparent" }}
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              {voiceCoachVisible && (
+                <div
+                  className="editor-cta-footer"
+                  style={{ marginTop: 24, paddingTop: 16, borderTop: `0.5px solid ${BORDER}` }}
+                >
+                  <button
+                    onClick={() => {
+                      if (isEdited) openVoiceCoach();
+                    }}
+                    disabled={!isEdited}
+                    className="w-full flex items-center justify-center gap-1.5 font-sans font-semibold"
+                    style={{
+                      border: isEdited ? "none" : `0.5px solid ${BORDER}`,
+                      borderRadius: 8,
+                      padding: "12px 14px",
+                      fontSize: 13,
+                      color: isEdited ? "#fff" : FAINT,
+                      background: isEdited ? BLUE : "transparent",
+                      cursor: isEdited ? "pointer" : "default",
+                    }}
+                  >
+                    <IconSparkles size={15} />
+                    How did I do?
+                    {!isEdited && <span style={{ opacity: 0.8 }}>&nbsp;· edit first</span>}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        )}
+
+          {voiceCoachOpen && (
+            <div
+              className={mobileCoachTab === "edit" ? "coach-mobile-tab-hidden" : undefined}
+              style={{
+                flex: "1 1 50%",
+                minWidth: 0,
+                position: "sticky",
+                top: 24,
+                animation: "voiceCoachPanelIn 0.35s ease",
+              }}
+            >
+              <div style={{ maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
+                <VoiceCoach
+                  draftId={draft.id}
+                  originalDraft={draft.original_draft || ""}
+                  currentDraft={content}
+                  voiceProfile={profile?.voice_profile as VoiceProfile | undefined}
+                  selectedIndex={selectedAnnotationIndex}
+                  onSelectIndex={setSelectedAnnotationIndex}
+                  onResultChange={setCoachResult}
+                  onApplySuggestion={(updated) => {
+                    setContent(updated);
+                    saveDraftById(draft.id, updated);
+                    lastSavedRef.current = updated;
+                  }}
+                  onClose={closeVoiceCoach}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -4069,7 +4106,6 @@ export default function DashboardPage() {
               className="playbooks-grid"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
                 gap: 8,
                 padding: "0 20px 20px",
               }}
@@ -4142,8 +4178,16 @@ export default function DashboardPage() {
             </div>
 
             <style>{`
+              .playbooks-grid { grid-template-columns: 1fr; }
               @media (max-width: 640px) {
-                .playbooks-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                /* Hero cards request "span 2" via inline style — left alone,
+                   that forces the browser to keep an implicit 2nd column
+                   track even though grid-template-columns is 1fr, so every
+                   card needs its own span forced to 1 here too. */
+                .playbooks-grid > button { grid-column: span 1 !important; grid-row: span 1 !important; }
+              }
+              @media (min-width: 641px) {
+                .playbooks-grid { grid-template-columns: repeat(4, 1fr); }
               }
             `}</style>
           </div>

@@ -139,7 +139,7 @@ export default function DraftFormatModal({ entry, onGenerate, onClose }: DraftFo
               placeholder="e.g. the lesson I learned, not just what happened"
               className="w-full outline-none font-sans"
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 color: INK,
                 padding: "10px 12px",
                 border: `1px solid ${BORDER}`,
