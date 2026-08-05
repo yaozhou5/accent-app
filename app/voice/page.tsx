@@ -91,6 +91,22 @@ export default function VoiceDiscoveryPage() {
     setSelectedChoice(null);
   }, [currentPair]);
 
+  // WebKit re-evaluates :hover against whatever's under a *stationary*
+  // cursor right after a layout change (confirmed via Playwright's webkit
+  // engine) — not just on genuine pointer movement. Gating the hover CSS
+  // class behind a real mousemove event, reset each pair, closes that gap
+  // for desktop Safari on top of the (hover: hover) media query, which
+  // already rules touch devices out entirely.
+  const [pointerHasMoved, setPointerHasMoved] = useState(false);
+  useEffect(() => {
+    setPointerHasMoved(false);
+    const onMove = () => setPointerHasMoved(true);
+    window.addEventListener("mousemove", onMove, { once: true });
+    return () => window.removeEventListener("mousemove", onMove);
+    // currentPair alone misses the intro -> pairs transition into question 1,
+    // since currentPair is already 0 both before and after entering "pairs".
+  }, [phase, currentPair]);
+
   // Shows the tap as selected for a beat before advancing, so there's
   // visible confirmation instead of an instant, jarring jump to the next
   // pair. selectedChoice is reset by the pair-change effect below.
@@ -389,7 +405,7 @@ export default function VoiceDiscoveryPage() {
                   key={choice}
                   onClick={() => handleSelect(choice)}
                   disabled={selectedChoice !== null}
-                  className="voice-pair-option"
+                  className={`voice-pair-option${pointerHasMoved ? " voice-pair-option-hover-ready" : ""}`}
                   aria-pressed={isSelected}
                   style={{
                     background: isSelected ? "#EAF6EF" : "#fff",
@@ -424,7 +440,7 @@ export default function VoiceDiscoveryPage() {
                and box-shadow for the neutral/selected states on every
                render, which otherwise beats a plain (non-important)
                stylesheet rule regardless of :hover matching. */
-            .voice-pair-option:hover:not(:disabled) {
+            .voice-pair-option-hover-ready:hover:not(:disabled) {
               border-color: #1A1A18 !important;
               box-shadow: 0 0 0 1px #1A1A18 !important;
             }
