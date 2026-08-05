@@ -179,11 +179,8 @@ export default function LandingPage() {
               className="font-serif italic"
               style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}
             >
-              "I have plenty of material scattered everywhere. I just never know which piece matters most, for which
-              channel, or when to post it. So I end up posting nothing."
-            </p>
-            <p className="font-sans mt-3.5" style={{ fontSize: 13, color: DIM }}>
-              — Heather, founder
+              "I tried using AI to write, but the output never sounded like me. I spent more time fixing the voice than
+              I saved generating it."
             </p>
           </div>
         </div>
@@ -558,25 +555,25 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
             {[
               {
-                emoji: "🏠",
-                bg: "#C4A030",
-                title: "Community builders",
-                pain: "Running events, having conversations, but never turning those moments into content",
-                how: "Drop notes after each event. Accent shows which moments resonate.",
-              },
-              {
                 emoji: "🚀",
-                bg: "#C4614A",
-                title: "Build-in-public founders",
-                pain: "Want to share the journey but stare at blank pages every week",
-                how: "Your week is the content. Accent finds the stories you're too close to see.",
+                bg: "#C4A030",
+                title: "Founders",
+                pain: "Building a company and a personal brand at the same time.",
+                how: "No marketing team — just you and your voice.",
               },
               {
-                emoji: "🧑‍💻",
+                emoji: "🧑‍💼",
+                bg: "#C4614A",
+                title: "Consultants & freelancers",
+                pain: "Your clients hire you, not a generic service.",
+                how: "Your writing should sound like you, not like AI.",
+              },
+              {
+                emoji: "✍️",
                 bg: "#1E5C58",
-                title: "Solo founders",
-                pain: "No marketing team, no content strategist, no time. Just you and a system that actually works.",
-                how: "Log your thoughts. Edit your drafts. Accent learns your voice along the way.",
+                title: "Writers & creators",
+                pain: "You publish under your name.",
+                how: "AI can help you draft — but only if the output sounds like something you'd actually write.",
               },
             ].map((c) => (
               <div key={c.title} style={{ padding: "24px 22px", background: "#F0ECE4" }}>

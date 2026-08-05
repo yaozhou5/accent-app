@@ -79,7 +79,7 @@ export async function GET() {
             maxWidth: "1000px",
           }}
         >
-          Never worry about content again.
+          Your voice. AI-assisted.
         </div>
         <div
           style={{
@@ -89,7 +89,7 @@ export async function GET() {
             marginTop: "20px",
           }}
         >
-          Content planning for solo founders.
+          AI that learns your voice. Every draft gets closer.
         </div>
       </div>
 
