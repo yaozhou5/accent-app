@@ -147,8 +147,7 @@ export default function LandingPage() {
               maxWidth: 520,
             }}
           >
-            Accent learns how you write. Log a thought, generate a draft, edit it into your voice — and every edit makes
-            the next draft sound more like you.
+            Every draft gets closer.
           </p>
           <div className="mt-6 md:mt-8">
             <Link
