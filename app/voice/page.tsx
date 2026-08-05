@@ -57,10 +57,15 @@ function voiceTip(key: DimensionKey, norm: number): string {
 
 type Phase = "intro" | "pairs" | "loading" | "result" | "sent";
 
+const GREEN = "#4FA97E";
+
 export default function VoiceDiscoveryPage() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentPair, setCurrentPair] = useState(0);
   const [choices, setChoices] = useState<("a" | "b")[]>([]);
+  // Null until the user actually taps/clicks an option — never defaults to
+  // "a" or 0, and resets on every new pair so nothing carries over.
+  const [selectedChoice, setSelectedChoice] = useState<"a" | "b" | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -79,6 +84,22 @@ export default function VoiceDiscoveryPage() {
       setIsLoggedIn(!!user);
     });
   }, []);
+
+  // Every new pair starts with nothing selected — covers both advancing
+  // forward and going Back to a previous question.
+  useEffect(() => {
+    setSelectedChoice(null);
+  }, [currentPair]);
+
+  // Shows the tap as selected for a beat before advancing, so there's
+  // visible confirmation instead of an instant, jarring jump to the next
+  // pair. selectedChoice is reset by the pair-change effect below.
+  const SELECTION_FLASH_MS = 280;
+  function handleSelect(choice: "a" | "b") {
+    if (selectedChoice) return; // ignore taps while already advancing
+    setSelectedChoice(choice);
+    setTimeout(() => handleChoice(choice), SELECTION_FLASH_MS);
+  }
 
   async function handleChoice(choice: "a" | "b") {
     const newChoices = [...choices, choice];
@@ -361,37 +382,54 @@ export default function VoiceDiscoveryPage() {
             >
               Which sounds more like you?
             </p>
-            {(["a", "b"] as const).map((choice) => (
-              <button
-                key={choice}
-                onClick={() => handleChoice(choice)}
-                style={{
-                  background: "#fff",
-                  border: "1.5px solid #e5e5e5",
-                  borderRadius: 0,
-                  padding: "24px 28px",
-                  fontSize: 17,
-                  lineHeight: 1.6,
-                  color: INK,
-                  textAlign: "left",
-                  cursor: "pointer",
-                  transition: "border-color 0.15s, box-shadow 0.15s",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#1A1A18";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 1px #1A1A18";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#e5e5e5";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                }}
-              >
-                {choice === "a" ? pair.optionA : pair.optionB}
-              </button>
-            ))}
+            {(["a", "b"] as const).map((choice) => {
+              const isSelected = selectedChoice === choice;
+              return (
+                <button
+                  key={choice}
+                  onClick={() => handleSelect(choice)}
+                  disabled={selectedChoice !== null}
+                  className="voice-pair-option"
+                  aria-pressed={isSelected}
+                  style={{
+                    background: isSelected ? "#EAF6EF" : "#fff",
+                    border: `1.5px solid ${isSelected ? GREEN : "#e5e5e5"}`,
+                    boxShadow: isSelected ? `0 0 0 1px ${GREEN}` : "none",
+                    borderRadius: 0,
+                    padding: "24px 28px",
+                    fontSize: 17,
+                    lineHeight: 1.6,
+                    color: INK,
+                    textAlign: "left",
+                    cursor: selectedChoice !== null ? "default" : "pointer",
+                    transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  {choice === "a" ? pair.optionA : pair.optionB}
+                </button>
+              );
+            })}
           </div>
         </div>
+        {/* Real-hover devices only — a JS mouseenter/mouseleave implementation
+            here previously caused WebKit to apply the hover style as a
+            phantom highlight right after the phase transition (no actual
+            pointer movement needed to trigger it), and iOS Safari would get
+            it stuck on the tapped option since touch synthesizes hover
+            events that never cleanly fire mouseleave. */}
+        <style>{`
+          @media (hover: hover) and (pointer: fine) {
+            /* !important: the button's own inline style sets border-color
+               and box-shadow for the neutral/selected states on every
+               render, which otherwise beats a plain (non-important)
+               stylesheet rule regardless of :hover matching. */
+            .voice-pair-option:hover:not(:disabled) {
+              border-color: #1A1A18 !important;
+              box-shadow: 0 0 0 1px #1A1A18 !important;
+            }
+          }
+        `}</style>
       </div>
     );
   }
