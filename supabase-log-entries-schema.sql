@@ -3,6 +3,15 @@ CREATE TABLE log_entries (
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   content text NOT NULL,
   tags text[] DEFAULT '{}',
+  image_url text,
+  image_urls text[] DEFAULT '{}',
+  link_url text,
+  url text,
+  source text,
+  type text,
+  bookmarked boolean DEFAULT false,
+  bookmark_note text,
+  archived boolean DEFAULT false,
   created_at timestamptz DEFAULT now() NOT NULL
 );
 

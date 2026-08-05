@@ -39,7 +39,7 @@ function voiceTip(key: DimensionKey, norm: number): string {
   return norm >= 0 ? tips[key].pos : tips[key].neg;
 }
 
-function buildEmailHtml(profile: VoiceProfile, magicLink: string): string {
+function buildEmailHtml(profile: VoiceProfile, dashboardUrl: string): string {
   const dims = profile.dimensions;
 
   const spectrumRows = (Object.entries(dims) as [DimensionKey, number][])
@@ -127,12 +127,12 @@ function buildEmailHtml(profile: VoiceProfile, magicLink: string): string {
           <tr><td><table width="100%" cellpadding="0" cellspacing="0">${tipRows}</table></td></tr>
           <tr>
             <td style="padding: 32px 0;" align="center">
-              <a href="${magicLink}" style="display: inline-block; background: #4A6CF7; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 16px 48px; font-size: 18px; font-weight: 700;">See what you can write</a>
+              <a href="${dashboardUrl}" style="display: inline-block; background: #4A6CF7; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 16px 48px; font-size: 18px; font-weight: 700;">See what you can write</a>
             </td>
           </tr>
           <tr>
             <td style="padding: 16px 0 0 0;" align="center">
-              <p style="font-size: 13px; color: #A8A49C; margin: 0;">Clicking the button above creates your free Accent account and logs you in.</p>
+              <p style="font-size: 13px; color: #A8A49C; margin: 0;">Your free Accent account is ready — sign in to get started.</p>
             </td>
           </tr>
           <tr>
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
       cookies: { getAll: () => [], setAll: () => {} },
     });
 
-    // Generate magic link — creates user if needed, returns the link
+    // Create user account if needed (generateLink creates the user as a side effect)
     const siteUrl = process.env.NODE_ENV === "production" ? "https://myaccent.io" : "http://localhost:3000";
 
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
@@ -178,17 +178,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (linkError || !linkData?.properties?.hashed_token) {
+    if (linkError) {
       console.error("generateLink error:", linkError);
       return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
     }
 
-    // Build the magic link URL that auto-authenticates on click
-    const token = linkData.properties.hashed_token;
-    const magicLink = `${siteUrl}/auth/confirm?token_hash=${token}&type=magiclink&redirect_to=${encodeURIComponent(`${siteUrl}/dashboard`)}`;
-
     // Save voice profile to the user's profile row now (user exists after generateLink)
-    const userId = linkData.user?.id;
+    const userId = linkData?.user?.id;
     if (userId) {
       await supabase.from("profiles").upsert({
         id: userId,
@@ -197,12 +193,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send ONE email via Resend with the magic link embedded
+    // Send voice results email with a plain dashboard link (not a magic link)
+    // Users will sign in normally when they visit — no expiring tokens
+    const dashboardUrl = `${siteUrl}/dashboard`;
     const { error: emailError } = await resend.emails.send({
       from: "Accent <yao@myaccent.io>",
       to: cleanEmail,
       subject: `Your voice: ${voiceProfile.top_traits.join(". ")}.`,
-      html: buildEmailHtml(voiceProfile, magicLink),
+      html: buildEmailHtml(voiceProfile, dashboardUrl),
     });
 
     if (emailError) {
