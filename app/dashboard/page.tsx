@@ -915,8 +915,20 @@ function LogTab({
             </div>
           )}
 
-          {/* Bento grid feed */}
-          <style>{`@media (max-width: 640px) { .bento-log-grid { grid-template-columns: repeat(2, 1fr) !important; } }`}</style>
+          {/* Bento grid feed on desktop; single-column full-width stack below 768px */}
+          <style>{`
+            @media (max-width: 767px) {
+              .bento-log-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+              }
+              .log-note-text {
+                font-size: 16px !important;
+              }
+            }
+          `}</style>
           <div
             className="bento-log-grid"
             style={{
@@ -1201,7 +1213,7 @@ function LogTab({
                                         return next;
                                       });
                                     }}
-                                    className="font-sans"
+                                    className="font-sans log-note-text"
                                     style={
                                       expandedContent.has(entry.id)
                                         ? {
