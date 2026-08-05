@@ -3322,6 +3322,7 @@ function StandaloneWriteMode({
   // switchable from within the editor, so this is just a display value.
   const regenerateFormat = initialFormat;
   const [showNote, setShowNote] = useState(true);
+  const [showDraftSection, setShowDraftSection] = useState(true);
   const [voiceCoachOpen, setVoiceCoachOpen] = useState(false);
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
   const [selectedAnnotationIndex, setSelectedAnnotationIndex] = useState<number | null>(null);
@@ -3659,43 +3660,93 @@ function StandaloneWriteMode({
                 </div>
               )}
 
-              {voiceCoachOpen && coachResult && coachResult.annotations.length > 0 && (
-                <div className="mb-3">
-                  <button
-                    onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
-                    className="font-mono text-[11px]"
-                    style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
-                  >
-                    {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
-                  </button>
-                </div>
-              )}
-
-              {/* Draft content — coach highlights or plain textarea */}
-              {voiceCoachOpen &&
-              coachLeftView === "highlighted" &&
-              coachResult &&
-              coachResult.annotations.length > 0 ? (
-                <div
-                  className="font-sans"
-                  style={{ fontSize: 16, color: INK, lineHeight: 1.8, minHeight: "40vh", whiteSpace: "pre-wrap" }}
+              <div className="mb-2">
+                <button
+                  onClick={() => setShowDraftSection(!showDraftSection)}
+                  className="font-mono text-[11px] uppercase flex items-center gap-1"
+                  style={{
+                    color: FAINT,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    letterSpacing: "0.05em",
+                    fontWeight: 500,
+                  }}
                 >
-                  {renderCoachHighlightedDraft()}
-                </div>
-              ) : (
-                <div className="autosize-textarea-wrap font-sans" data-value={content}>
-                  <textarea
-                    value={content}
-                    onChange={(e) => handleChange(e.target.value)}
-                    onBlur={() => {
-                      if (content.trim()) finalizeDraftEdit(draft.id, content);
+                  Your draft{" "}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      transition: "transform 0.2s",
+                      transform: showDraftSection ? "rotate(0)" : "rotate(-90deg)",
                     }}
-                    placeholder="Start writing..."
-                    className="w-full outline-none font-sans"
-                    style={{ color: INK, background: "transparent" }}
-                    autoFocus
-                  />
-                </div>
+                  >
+                    ▼
+                  </span>
+                </button>
+              </div>
+
+              {showDraftSection && (
+                <>
+                  {voiceCoachOpen && coachResult && coachResult.annotations.length > 0 && (
+                    <div className="mb-3">
+                      <button
+                        onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
+                        className="font-mono text-[11px]"
+                        style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+                      >
+                        {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Draft content — coach highlights or plain textarea */}
+                  {voiceCoachOpen &&
+                  coachLeftView === "highlighted" &&
+                  coachResult &&
+                  coachResult.annotations.length > 0 ? (
+                    <div
+                      className="font-sans"
+                      style={{ fontSize: 16, color: INK, lineHeight: 1.8, minHeight: "40vh", whiteSpace: "pre-wrap" }}
+                    >
+                      {renderCoachHighlightedDraft()}
+                    </div>
+                  ) : (
+                    // Distinct from the quoted "Your note" box below it — a solid
+                    // fill + accent left border reads as an active field, not
+                    // reference text, so it's clearer this is what you edit.
+                    <div
+                      style={{
+                        background: "#fff",
+                        border: `1px solid ${BORDER}`,
+                        borderLeft: `3px solid ${BLUE}`,
+                        padding: "16px 18px",
+                      }}
+                    >
+                      {!isEdited && (
+                        <p
+                          className="font-sans"
+                          style={{ fontSize: 12, color: FAINT, fontStyle: "italic", marginBottom: 10 }}
+                        >
+                          Edit this draft to make it yours
+                        </p>
+                      )}
+                      <div className="autosize-textarea-wrap font-sans" data-value={content}>
+                        <textarea
+                          value={content}
+                          onChange={(e) => handleChange(e.target.value)}
+                          onBlur={() => {
+                            if (content.trim()) finalizeDraftEdit(draft.id, content);
+                          }}
+                          placeholder="Start writing..."
+                          className="w-full outline-none font-sans"
+                          style={{ color: INK, background: "transparent", cursor: "text" }}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {voiceCoachVisible && (
@@ -3703,6 +3754,14 @@ function StandaloneWriteMode({
                   className="editor-cta-footer"
                   style={{ marginTop: 24, paddingTop: 16, borderTop: `0.5px solid ${BORDER}` }}
                 >
+                  {!isEdited && (
+                    <p
+                      className="font-sans text-center"
+                      style={{ fontSize: 12, color: DIM, marginBottom: 8, lineHeight: 1.4 }}
+                    >
+                      Edit the draft above, then ask &quot;How did I do?&quot;
+                    </p>
+                  )}
                   <button
                     onClick={() => {
                       if (isEdited) openVoiceCoach();
@@ -3721,7 +3780,6 @@ function StandaloneWriteMode({
                   >
                     <IconSparkles size={15} />
                     How did I do?
-                    {!isEdited && <span style={{ opacity: 0.8 }}>&nbsp;· edit first</span>}
                   </button>
                 </div>
               )}
