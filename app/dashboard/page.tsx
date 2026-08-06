@@ -145,7 +145,7 @@ function getUrlOnlyLink(content: string): string | null {
   return detected && trimmed === detected ? detected : null;
 }
 
-type Tab = "log" | "playbooks" | "history";
+type Tab = "log" | "playbooks" | "history" | "voice-profile";
 const TYPE_CARD_STYLES: Record<string, { bg: string; text: string; label: string; labelColor: string; dot: string }> = {
   note: { bg: "#D8EDE1", text: "#1E4030", label: "Note", labelColor: "#1E4030", dot: "#3D6B4A" },
   link: { bg: "#E0E4F5", text: "#252E6B", label: "Link", labelColor: "#252E6B", dot: "#3D4B8F" },
@@ -3843,10 +3843,10 @@ export default function DashboardPage() {
   // Read hash on mount + handle browser back/forward
   useEffect(() => {
     const hash = window.location.hash.replace("#", "") as Tab;
-    if (["log", "playbooks", "history"].includes(hash)) setTabRaw(hash);
+    if (["log", "playbooks", "history", "voice-profile"].includes(hash)) setTabRaw(hash);
     const handlePop = () => {
       const h = window.location.hash.replace("#", "") as Tab;
-      if (["log", "playbooks", "history"].includes(h)) setTabRaw(h);
+      if (["log", "playbooks", "history", "voice-profile"].includes(h)) setTabRaw(h);
       else setTabRaw("log");
     };
     window.addEventListener("popstate", handlePop);
@@ -4098,6 +4098,7 @@ export default function DashboardPage() {
     { key: "log", label: "Log" },
     { key: "playbooks", label: "Templates" },
     { key: "history", label: "Drafts" },
+    { key: "voice-profile", label: "Voice Profile" },
   ];
 
   return (
@@ -4147,18 +4148,15 @@ export default function DashboardPage() {
       </header>
       <div className="pb-12" style={tab === "history" ? { maxWidth: 640, margin: "0 auto", padding: 20 } : undefined}>
         {tab === "log" && (
-          <>
-            <VoiceLearningCard data={voiceLearning} />
-            <LogTab
-              logEntries={logEntriesState}
-              setLogEntries={setLogEntries}
-              allPlans={allPlans}
-              onStartDraft={(data) => setStandaloneDraft(data)}
-              onPostNote={handlePostNote}
-              postingEntryId={postingEntryId}
-              profile={profile}
-            />
-          </>
+          <LogTab
+            logEntries={logEntriesState}
+            setLogEntries={setLogEntries}
+            allPlans={allPlans}
+            onStartDraft={(data) => setStandaloneDraft(data)}
+            onPostNote={handlePostNote}
+            postingEntryId={postingEntryId}
+            profile={profile}
+          />
         )}
         {tab === "playbooks" && (
           <div>
@@ -4280,6 +4278,27 @@ export default function DashboardPage() {
             onOpenPlaybookDraft={(d, pb) => setActivePlaybook({ playbook: pb, draft: d })}
             onDraftsUpdated={() => getAllDrafts().then(setDrafts)}
           />
+        )}
+        {tab === "voice-profile" && (
+          <div>
+            <div style={{ padding: "24px 20px 16px", maxWidth: 620, margin: "0 auto" }}>
+              <h2
+                style={{
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: "#1a1a1a",
+                  margin: 0,
+                }}
+              >
+                Voice Profile
+              </h2>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, marginTop: 4 }}>
+                How your voice has evolved from Voice Coach sessions.
+              </p>
+            </div>
+            <VoiceLearningCard data={voiceLearning} />
+          </div>
         )}
       </div>
 
