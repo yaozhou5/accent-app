@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -88,6 +89,13 @@ Return ONLY the question. One or two sentences max. Calm, direct tone.`;
         messages: [{ role: "user", content: questionPrompt }],
       });
 
+      await logAiUsage({
+        feature: "coach_note_question",
+        model: "claude-sonnet-4-6",
+        usage: message.usage,
+        userId: user.id,
+      });
+
       const content = message.content[0];
       return NextResponse.json({ type: "followup", response: content.type === "text" ? content.text.trim() : null });
     } else if (step === "respond") {
@@ -145,6 +153,13 @@ WHY: [one sentence on why this angle works]`;
         model: "claude-sonnet-4-6",
         max_tokens: 300,
         messages: [{ role: "user", content: respondPrompt }],
+      });
+
+      await logAiUsage({
+        feature: "coach_note_respond",
+        model: "claude-sonnet-4-6",
+        usage: message.usage,
+        userId: user.id,
       });
 
       const content = message.content[0];
@@ -210,6 +225,13 @@ Be specific to their situation. No generic advice.${avoidAngles}`;
         model: "claude-sonnet-4-6",
         max_tokens: 250,
         messages: [{ role: "user", content: suggestPrompt }],
+      });
+
+      await logAiUsage({
+        feature: "coach_note_suggest",
+        model: "claude-sonnet-4-6",
+        usage: message.usage,
+        userId: user.id,
       });
 
       const content = message.content[0];

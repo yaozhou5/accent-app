@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createServerClient } from "@supabase/ssr";
 import { type VoiceDimensions, DIMENSION_LABELS, normalizeScore, type DimensionKey } from "@/lib/voice-dimensions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -96,6 +97,8 @@ Return ONLY valid JSON: {"edge": "...", "gap": "..."}`,
         },
       ],
     });
+
+    await logAiUsage({ feature: "voice_result", model: "claude-sonnet-4-6", usage: message.usage });
 
     let text = message.content[0].type === "text" ? message.content[0].text : "";
     // Strip markdown code fences if present

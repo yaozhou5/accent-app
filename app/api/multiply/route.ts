@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import type { VoiceDimensions } from "@/lib/voice-dimensions";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -74,6 +75,14 @@ RULES:
           }
         }
         controller.close();
+        // Usage is only available once the stream has fully resolved.
+        const finalMessage = await stream.finalMessage();
+        await logAiUsage({
+          feature: "multiply",
+          model: "claude-sonnet-4-6",
+          usage: finalMessage.usage,
+          userId: user.id,
+        });
       },
     });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -100,6 +101,8 @@ Return ONLY valid JSON. Each channel key maps to an object with "text", "choices
       max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
+
+    await logAiUsage({ feature: "spread", model: "claude-sonnet-4-6", usage: message.usage, userId: user.id });
 
     const content = message.content[0];
     if (content.type !== "text") {

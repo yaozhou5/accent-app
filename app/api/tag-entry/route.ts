@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -37,6 +38,13 @@ Categories:
 Note: "${content}"`,
         },
       ],
+    });
+
+    await logAiUsage({
+      feature: "tag_entry",
+      model: "claude-haiku-4-5-20251001",
+      usage: message.usage,
+      userId: user.id,
     });
 
     const text = message.content[0];

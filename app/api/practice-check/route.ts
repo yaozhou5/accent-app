@@ -4,6 +4,7 @@ import { buildPracticeCheckPrompt } from "@/lib/prompts";
 import type { PracticeCheckRequest, PracticeCheckResponse } from "@/lib/types";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 3 });
 
@@ -43,6 +44,13 @@ export async function POST(request: NextRequest) {
       model: "claude-haiku-4-5-20251001",
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
+    });
+
+    await logAiUsage({
+      feature: "practice_check",
+      model: "claude-haiku-4-5-20251001",
+      usage: message.usage,
+      userId: user.id,
     });
 
     const content = message.content[0];

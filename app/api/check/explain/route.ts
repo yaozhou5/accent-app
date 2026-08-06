@@ -5,6 +5,7 @@ import type { Issue } from "@/lib/types";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 3 });
 
@@ -44,6 +45,13 @@ export async function POST(request: NextRequest) {
       model: "claude-haiku-4-5-20251001",
       max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
+    });
+
+    await logAiUsage({
+      feature: "check_explain",
+      model: "claude-haiku-4-5-20251001",
+      usage: message.usage,
+      userId: user.id,
     });
 
     const content = message.content[0];

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import type { VoiceDimensions } from "@/lib/voice-dimensions";
 import { saveVoicePatterns } from "@/lib/voice-patterns";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -110,6 +111,8 @@ Return ONLY valid JSON, no preamble:
     if (!parsed) {
       return NextResponse.json({ error: "Failed to parse response" }, { status: 500 });
     }
+
+    await logAiUsage({ feature: "voice_coach", model: "claude-sonnet-4-6", usage: message.usage, userId: user.id });
 
     const result = {
       pattern_summary: parsed.pattern_summary || "",

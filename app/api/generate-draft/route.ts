@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { type VoiceDimensions } from "@/lib/voice-dimensions";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import { buildLearnedInstructions, type LearnedVoiceProfile } from "@/lib/voice-patterns";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -159,6 +160,8 @@ Write the post.`;
       messages: [{ role: "user", content: userPrompt }],
       system: systemPrompt,
     });
+
+    await logAiUsage({ feature: "generate_draft", model: "claude-sonnet-4-6", usage: message.usage, userId: user.id });
 
     let draftText = message.content[0]?.type === "text" ? message.content[0].text : "";
 

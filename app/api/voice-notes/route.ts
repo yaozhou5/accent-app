@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { DIMENSION_LABELS, normalizeScore, type DimensionKey, type VoiceDimensions } from "@/lib/voice-dimensions";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -58,6 +59,8 @@ Return ONLY valid JSON array: [{"phrase":"...","dimension":"...","explanation":"
         },
       ],
     });
+
+    await logAiUsage({ feature: "voice_notes", model: "claude-sonnet-4-6", usage: message.usage, userId: user.id });
 
     let text = message.content[0].type === "text" ? message.content[0].text : "[]";
     text = text

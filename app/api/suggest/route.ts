@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -48,6 +49,8 @@ Return ONLY valid JSON, no preamble:
       max_tokens: 512,
       messages: [{ role: "user", content: prompt }],
     });
+
+    await logAiUsage({ feature: "suggest", model: "claude-haiku-4-5-20251001", usage: message.usage, userId: user.id });
 
     const content = message.content[0];
     if (content.type !== "text") {

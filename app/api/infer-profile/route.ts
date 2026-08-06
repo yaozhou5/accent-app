@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -70,6 +71,8 @@ Warm and curious in tone, like a smart editor who sees the post hiding in there 
       max_tokens: 300,
       messages: [{ role: "user", content: prompt }],
     });
+
+    await logAiUsage({ feature: "infer_profile", model: "claude-sonnet-4-6", usage: message.usage, userId: user.id });
 
     const content = message.content[0];
     if (content.type !== "text") return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
