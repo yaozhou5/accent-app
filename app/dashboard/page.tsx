@@ -44,6 +44,7 @@ import VoiceCoach, { type CoachResult } from "@/components/VoiceCoach";
 import DraftFormatModal, { FORMATS, type DraftFormat } from "@/components/DraftFormatModal";
 import UrlTakePrompt from "@/components/UrlTakePrompt";
 import VoiceLearningCard from "@/components/VoiceLearningCard";
+import VoiceIdentityCard from "@/components/VoiceIdentityCard";
 import { getVoiceLearningData, type VoiceLearningData } from "@/lib/supabase/voice-learning";
 
 // Design tokens
@@ -3470,9 +3471,10 @@ export default function DashboardPage() {
                 Voice Profile
               </h2>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: FAINT, marginTop: 4 }}>
-                How your voice has evolved from Voice Coach sessions.
+                Your voice test results and how your voice has evolved from Voice Coach sessions.
               </p>
             </div>
+            <VoiceIdentityCard voiceProfile={(profile?.voice_profile as VoiceProfile) || null} />
             <VoiceLearningCard data={voiceLearning} />
           </div>
         )}
