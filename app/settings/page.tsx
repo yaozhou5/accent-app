@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, upsertProfile } from "@/lib/supabase/profiles";
+import { getVoiceLearningData, type VoiceLearningData } from "@/lib/supabase/voice-learning";
 import { ArrowLeft } from "@/components/ArrowIcon";
 import { DIMENSION_LABELS, normalizeScore, type DimensionKey, type VoiceProfile } from "@/lib/voice-dimensions";
 
@@ -13,11 +14,29 @@ const DIM = "#6b7280";
 const FAINT = "#9ca3af";
 const BORDER = "#e5e7eb";
 
+const STRUCTURAL_LABELS: Record<string, string> = {
+  opener_style: "Opens with",
+  closer_style: "Closes with",
+  paragraph_length_tendency: "Paragraphs",
+  fragment_usage: "Fragments",
+};
+
+const STRUCTURAL_VALUES: Record<string, string> = {
+  question: "Questions",
+  short: "Short, punchy lines",
+  long: "Long sentences",
+  medium: "Medium length",
+  frequent: "Frequent",
+  occasional: "Occasional",
+  rare: "Rare",
+};
+
 export default function SettingsPage() {
   const [email, setEmail] = useState("");
   const [resetting, setResetting] = useState(false);
   const [voiceProfile, setVoiceProfile] = useState<VoiceProfile | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [voiceLearning, setVoiceLearning] = useState<VoiceLearningData | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -33,6 +52,7 @@ export default function SettingsPage() {
       setVoiceProfile((p?.voice_profile as VoiceProfile) || null);
       setProfileLoaded(true);
     });
+    getVoiceLearningData().then(setVoiceLearning);
   }, []);
 
   const handleSignOut = async () => {
@@ -193,6 +213,102 @@ export default function SettingsPage() {
                 >
                   Discover your voice
                 </a>
+              )}
+            </div>
+          )}
+
+          {/* Voice Learning section */}
+          {voiceLearning && (
+            <div className="pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <label
+                className="font-mono uppercase block mb-4"
+                style={{ fontSize: 11, letterSpacing: "0.05em", color: FAINT, fontWeight: 500 }}
+              >
+                Voice Learning
+              </label>
+
+              {voiceLearning.sessionCount === 0 ? (
+                <p className="font-sans text-[14px]" style={{ color: DIM, lineHeight: 1.6 }}>
+                  Run a draft through Voice Coach and edit it — Accent learns your voice from what you change.
+                </p>
+              ) : (
+                <div>
+                  <p className="font-sans text-[15px] mb-4" style={{ color: INK }}>
+                    <strong>{voiceLearning.sessionCount}</strong> Voice Coach session
+                    {voiceLearning.sessionCount === 1 ? "" : "s"} analyzed
+                  </p>
+
+                  {voiceLearning.profile && Object.keys(voiceLearning.profile.structural_habits).length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                      {Object.entries(voiceLearning.profile.structural_habits).map(([key, value]) => (
+                        <div key={key} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                          <span style={{ color: DIM }}>{STRUCTURAL_LABELS[key] || key}</span>
+                          <span style={{ color: INK, fontWeight: 600 }}>{STRUCTURAL_VALUES[value] || value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {voiceLearning.profile && voiceLearning.profile.substitution_pairs.length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                      <p
+                        className="font-mono uppercase"
+                        style={{ fontSize: 10, letterSpacing: "0.05em", color: FAINT, marginBottom: 8 }}
+                      >
+                        Learned substitutions
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {voiceLearning.profile.substitution_pairs.slice(0, 5).map((pair, i) => (
+                          <p key={i} className="font-sans text-[13px]" style={{ color: DIM }}>
+                            <span style={{ textDecoration: "line-through" }}>{pair.from}</span>{" "}
+                            <span style={{ color: INK }}>→ {pair.to}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {voiceLearning.profile &&
+                    (voiceLearning.profile.preferred_words.length > 0 ||
+                      voiceLearning.profile.banned_words.length > 0) && (
+                      <div style={{ marginBottom: 20 }}>
+                        {voiceLearning.profile.preferred_words.length > 0 && (
+                          <p className="font-sans text-[13px]" style={{ color: DIM, marginBottom: 4 }}>
+                            Words you favor:{" "}
+                            <span style={{ color: INK }}>{voiceLearning.profile.preferred_words.join(", ")}</span>
+                          </p>
+                        )}
+                        {voiceLearning.profile.banned_words.length > 0 && (
+                          <p className="font-sans text-[13px]" style={{ color: DIM }}>
+                            Words you avoid:{" "}
+                            <span style={{ color: INK }}>{voiceLearning.profile.banned_words.join(", ")}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {voiceLearning.profile && voiceLearning.profile.best_examples.length > 0 && (
+                    <div>
+                      <p
+                        className="font-mono uppercase"
+                        style={{ fontSize: 10, letterSpacing: "0.05em", color: FAINT, marginBottom: 8 }}
+                      >
+                        Your voice at its best
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {voiceLearning.profile.best_examples.slice(0, 3).map((ex, i) => (
+                          <p
+                            key={i}
+                            className="font-sans text-[13px]"
+                            style={{ color: INK, fontStyle: "italic", lineHeight: 1.5 }}
+                          >
+                            &ldquo;{ex}&rdquo;
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
