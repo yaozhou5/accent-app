@@ -58,6 +58,8 @@ import PlaybookEditor from "@/components/PlaybookEditor";
 import VoiceCoach, { type CoachResult } from "@/components/VoiceCoach";
 import DraftFormatModal, { FORMATS, type DraftFormat } from "@/components/DraftFormatModal";
 import UrlTakePrompt from "@/components/UrlTakePrompt";
+import VoiceLearningCard from "@/components/VoiceLearningCard";
+import { getVoiceLearningData, type VoiceLearningData } from "@/lib/supabase/voice-learning";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -3861,6 +3863,11 @@ export default function DashboardPage() {
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
   const [postingEntryId, setPostingEntryId] = useState<string | null>(null);
+  const [voiceLearning, setVoiceLearning] = useState<VoiceLearningData | null>(null);
+
+  useEffect(() => {
+    getVoiceLearningData().then(setVoiceLearning);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -4140,15 +4147,18 @@ export default function DashboardPage() {
       </header>
       <div className="pb-12" style={tab === "history" ? { maxWidth: 640, margin: "0 auto", padding: 20 } : undefined}>
         {tab === "log" && (
-          <LogTab
-            logEntries={logEntriesState}
-            setLogEntries={setLogEntries}
-            allPlans={allPlans}
-            onStartDraft={(data) => setStandaloneDraft(data)}
-            onPostNote={handlePostNote}
-            postingEntryId={postingEntryId}
-            profile={profile}
-          />
+          <>
+            <VoiceLearningCard data={voiceLearning} />
+            <LogTab
+              logEntries={logEntriesState}
+              setLogEntries={setLogEntries}
+              allPlans={allPlans}
+              onStartDraft={(data) => setStandaloneDraft(data)}
+              onPostNote={handlePostNote}
+              postingEntryId={postingEntryId}
+              profile={profile}
+            />
+          </>
         )}
         {tab === "playbooks" && (
           <div>
