@@ -37,8 +37,6 @@ export function voiceTip(key: DimensionKey, norm: number): string {
 export interface VoiceReportEmailOptions {
   dashboardUrl: string;
   ctaText: string;
-  /** Optional line under the CTA button — claim-voice-report uses this, send-voice-report doesn't. */
-  subtext?: string;
 }
 
 export function buildVoiceReportEmailHtml(profile: VoiceProfile, options: VoiceReportEmailOptions): string {
@@ -96,15 +94,6 @@ export function buildVoiceReportEmailHtml(profile: VoiceProfile, options: VoiceR
     })
     .join("");
 
-  const subtextRow = options.subtext
-    ? `
-          <tr>
-            <td style="padding: 16px 0 0 0;" align="center">
-              <p style="font-size: 13px; color: #A8A49C; margin: 0;">${options.subtext}</p>
-            </td>
-          </tr>`
-    : "";
-
   return `
 <!DOCTYPE html>
 <html>
@@ -140,7 +129,7 @@ export function buildVoiceReportEmailHtml(profile: VoiceProfile, options: VoiceR
             <td style="padding: 32px 0;" align="center">
               <a href="${options.dashboardUrl}" style="display: inline-block; background: #4A6CF7; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 16px 48px; font-size: 18px; font-weight: 700;">${options.ctaText}</a>
             </td>
-          </tr>${subtextRow}
+          </tr>
           <tr>
             <td style="padding: 32px 0 0 0; border-top: 1px solid #e5e5e5;" align="center">
               <p style="font-size: 13px; color: #A8A49C; margin: 0;">accent — help every voice grow in the age of AI</p>
