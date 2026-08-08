@@ -55,7 +55,7 @@ function voiceTip(key: DimensionKey, norm: number): string {
   return norm >= 0 ? tips[key].pos : tips[key].neg;
 }
 
-type Phase = "intro" | "pairs" | "loading" | "result" | "sent";
+type Phase = "intro" | "pairs" | "loading" | "result";
 
 const GREEN = "#4FA97E";
 
@@ -67,9 +67,6 @@ export default function VoiceDiscoveryPage() {
   // "a" or 0, and resets on every new pair so nothing carries over.
   const [selectedChoice, setSelectedChoice] = useState<"a" | "b" | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     dimensions: VoiceDimensions;
     topTraits: string[];
@@ -175,53 +172,6 @@ export default function VoiceDiscoveryPage() {
 
       setResult({ dimensions, topTraits, edge, gap });
       setPhase("result");
-    }
-  }
-
-  async function handleSendReport(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || sending || !result) return;
-    setSending(true);
-    setSendError(null);
-
-    const voiceProfile: VoiceProfile = {
-      dimensions: result.dimensions,
-      top_traits: result.topTraits,
-      edge: result.edge,
-      gap: result.gap,
-      completed_at: new Date().toISOString(),
-    };
-
-    if (isLoggedIn) {
-      // Already logged in — just save and go to report
-      await upsertProfile({ voice_profile: voiceProfile });
-      window.location.href = "/voice/report";
-      return;
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-      const res = await fetch("/api/claim-voice-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), voiceProfile }),
-        signal: controller.signal,
-        cache: "no-store",
-      });
-      clearTimeout(timeout);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send");
-      }
-      const claimedEmail = email.trim();
-      posthog.identify(claimedEmail, { email: claimedEmail });
-      posthog.capture("voice_report_claimed", { email: claimedEmail });
-      setPhase("sent");
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : "Something went wrong. Try again.");
-    } finally {
-      setSending(false);
     }
   }
 
@@ -672,67 +622,32 @@ export default function VoiceDiscoveryPage() {
             })}
           </div>
 
-          {/* Optional: email me a copy */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 0,
-              padding: "28px 32px",
-              border: "1px solid #e5e5e5",
-            }}
-          >
-            <p
+          {/* Save the profile / continue */}
+          {isLoggedIn ? (
+            <div
               style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: INK,
-                marginBottom: 4,
-                fontFamily: "'DM Sans', sans-serif",
+                background: "#fff",
+                borderRadius: 0,
+                padding: "28px 32px",
+                border: "1px solid #e5e5e5",
+                textAlign: "center",
               }}
             >
-              Want this saved and emailed to you?
-            </p>
-            <p
-              style={{
-                fontSize: 15,
-                color: DIM,
-                marginBottom: 20,
-                lineHeight: 1.5,
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              Optional — we&apos;ll email you a copy of this report and save it to a free account so you can pick up
-              where you left off.
-            </p>
-            <form onSubmit={handleSendReport}>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
+              <p
                 style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderRadius: 0,
-                  border: "1px solid #e5e5e5",
-                  fontSize: 16,
+                  fontSize: 18,
+                  fontWeight: 700,
                   color: INK,
-                  outline: "none",
-                  marginBottom: 12,
-                  boxSizing: "border-box",
+                  marginBottom: 20,
                   fontFamily: "'DM Sans', sans-serif",
                 }}
-              />
-              {sendError && (
-                <p style={{ fontSize: 13, color: "#DC2626", marginBottom: 8, fontFamily: "'DM Mono', monospace" }}>
-                  {sendError}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={sending}
+              >
+                Your profile is saved.
+              </p>
+              <Link
+                href="/voice/report"
                 style={{
+                  display: "block",
                   width: "100%",
                   background: "#1A1A18",
                   color: "#fff",
@@ -741,82 +656,75 @@ export default function VoiceDiscoveryPage() {
                   padding: "16px 0",
                   fontSize: 18,
                   fontWeight: 700,
-                  cursor: sending ? "wait" : "pointer",
-                  opacity: sending ? 0.6 : 1,
+                  textDecoration: "none",
+                  boxSizing: "border-box",
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
-                {sending ? "Sending..." : "Email me my report"}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- SENT SCREEN ---
-  if (phase === "sent") {
-    return (
-      <div
-        style={{
-          minHeight: "100dvh",
-          background: CREAM,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-        }}
-      >
-        <div style={{ maxWidth: 480, textAlign: "center" }}>
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              background: "#E8F5E0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 24px",
-              fontSize: 32,
-            }}
-          >
-            &#10003;
-          </div>
-          <h1
-            style={{
-              fontSize: 32,
-              fontWeight: 800,
-              color: INK,
-              marginBottom: 12,
-              lineHeight: 1.2,
-              fontFamily: "'Fraunces', Georgia, serif",
-            }}
-          >
-            Check your inbox
-          </h1>
-          <p
-            style={{
-              fontSize: 18,
-              color: DIM,
-              lineHeight: 1.6,
-              marginBottom: 8,
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            Your full voice report is on its way to <strong style={{ color: INK }}>{email}</strong>.
-          </p>
-          <p
-            style={{
-              fontSize: 15,
-              color: FAINT,
-              lineHeight: 1.5,
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            Click the link in the email to activate your account and see what you can write.
-          </p>
+                View full report
+              </Link>
+            </div>
+          ) : (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 0,
+                padding: "28px 32px",
+                border: "1px solid #e5e5e5",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: INK,
+                  marginBottom: 4,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Keep this profile
+              </p>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: DIM,
+                  marginBottom: 20,
+                  lineHeight: 1.5,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Create a free account and it&apos;s saved — plus you can start writing in your voice right away.
+              </p>
+              {/* Same-tab navigation is required: pending_voice_profile lives in
+                  sessionStorage, which is scoped to this tab. target="_blank" or
+                  window.open would silently lose it. */}
+              <Link
+                href="/signup"
+                onClick={() => {
+                  try {
+                    posthog.capture("voice_result_signup_clicked");
+                  } catch {}
+                }}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  background: "#1A1A18",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 0,
+                  padding: "16px 0",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  textAlign: "center",
+                  textDecoration: "none",
+                  boxSizing: "border-box",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Save my voice profile
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     );
