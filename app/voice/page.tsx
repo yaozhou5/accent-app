@@ -152,14 +152,17 @@ export default function VoiceDiscoveryPage() {
         completed_at: new Date().toISOString(),
       };
 
-      // If logged in, save directly. Otherwise, store in sessionStorage.
+      // If logged in, save directly. Otherwise, store in localStorage — not
+      // sessionStorage, which dies with the tab. This is a stopgap; the
+      // profile still doesn't survive a fresh browser/device, only a closed
+      // tab. Server-side persistence with an anon id replaces this later.
       if (isLoggedIn) {
         await upsertProfile({
           voice_profile: voiceProfile,
           onboarding_completed: true,
         });
       } else {
-        sessionStorage.setItem("pending_voice_profile", JSON.stringify(voiceProfile));
+        localStorage.setItem("pending_voice_profile", JSON.stringify(voiceProfile));
       }
 
       posthog.capture("voice_discovery_completed", {
@@ -695,9 +698,9 @@ export default function VoiceDiscoveryPage() {
               >
                 Create a free account and it&apos;s saved — plus you can start writing in your voice right away.
               </p>
-              {/* Same-tab navigation is required: pending_voice_profile lives in
-                  sessionStorage, which is scoped to this tab. target="_blank" or
-                  window.open would silently lose it. */}
+              {/* pending_voice_profile lives in localStorage now, so it's no
+                  longer tab-scoped — but same-tab is still the natural UX
+                  for a signup flow, so keeping default Link behavior. */}
               <Link
                 href="/signup"
                 onClick={() => {

@@ -16,7 +16,7 @@ export default function SignupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    setFromVoice(!!sessionStorage.getItem("pending_voice_profile"));
+    setFromVoice(!!localStorage.getItem("pending_voice_profile"));
   }, []);
   const supabase = createClient();
 
@@ -45,7 +45,7 @@ export default function SignupPage() {
     else {
       posthog.capture("signup_completed", { email: email.trim().toLowerCase() });
       // Save pending voice profile and send email report
-      const pending = sessionStorage.getItem("pending_voice_profile");
+      const pending = localStorage.getItem("pending_voice_profile");
       if (pending) {
         try {
           const voiceProfile = JSON.parse(pending);
@@ -54,7 +54,7 @@ export default function SignupPage() {
             voice_profile: voiceProfile,
             onboarding_completed: true,
           });
-          sessionStorage.removeItem("pending_voice_profile");
+          localStorage.removeItem("pending_voice_profile");
           // Send the full voice report email
           await fetch("/api/send-voice-report", {
             method: "POST",

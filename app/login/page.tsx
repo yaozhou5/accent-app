@@ -43,7 +43,7 @@ function LoginForm() {
       setError("Invalid or expired code.");
     } else {
       // Save pending voice profile and send email report
-      const pending = sessionStorage.getItem("pending_voice_profile");
+      const pending = localStorage.getItem("pending_voice_profile");
       if (pending) {
         try {
           const voiceProfile = JSON.parse(pending);
@@ -52,7 +52,7 @@ function LoginForm() {
             voice_profile: voiceProfile,
             onboarding_completed: true,
           });
-          sessionStorage.removeItem("pending_voice_profile");
+          localStorage.removeItem("pending_voice_profile");
           // Send the full voice report email
           await fetch("/api/send-voice-report", {
             method: "POST",
