@@ -38,15 +38,6 @@ export async function middleware(request: NextRequest) {
         loginUrl.searchParams.set("redirect", path);
         return NextResponse.redirect(loginUrl);
       }
-
-      // New user routing: must have profile to access dashboard
-      if (path.startsWith("/dashboard")) {
-        const { data: profile } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
-
-        if (!profile) {
-          return NextResponse.redirect(new URL("/voice", request.url));
-        }
-      }
     }
 
     return response;

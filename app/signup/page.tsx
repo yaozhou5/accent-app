@@ -55,6 +55,7 @@ export default function SignupPage() {
             onboarding_completed: true,
           });
           localStorage.removeItem("pending_voice_profile");
+          posthog.capture("signup_completed_with_voice_profile", { email: email.trim().toLowerCase() });
           // Send the full voice report email
           await fetch("/api/send-voice-report", {
             method: "POST",
@@ -66,8 +67,10 @@ export default function SignupPage() {
         }
         window.location.href = "/voice/report";
       } else {
-        // No voice profile yet — send them to take the exercise
-        window.location.href = "/voice";
+        // No voice profile yet — straight to the product. The quiz is
+        // surfaced as a dismissible prompt on the dashboard instead of a
+        // mandatory gate before anyone sees anything.
+        window.location.href = "/dashboard";
       }
     }
   };

@@ -210,6 +210,31 @@ function LogTab({
   const [setupAudience, setSetupAudience] = useState<string[]>([]);
   const [setupSaving, setSetupSaving] = useState(false);
 
+  // Voice quiz prompt (dismissible banner for users who never completed the quiz)
+  const showVoicePrompt = !!profile && !profile.voice_profile;
+  const [voicePromptDismissed, setVoicePromptDismissed] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("voice_quiz_prompt_dismissed") === "1";
+    return false;
+  });
+  const voicePromptShownRef = useRef(false);
+  useEffect(() => {
+    if (showVoicePrompt && !voicePromptDismissed && !voicePromptShownRef.current) {
+      voicePromptShownRef.current = true;
+      try {
+        posthog.capture("voice_quiz_prompt_shown");
+      } catch {}
+    }
+  }, [showVoicePrompt, voicePromptDismissed]);
+  const dismissVoicePrompt = () => {
+    try {
+      localStorage.setItem("voice_quiz_prompt_dismissed", "1");
+    } catch {}
+    setVoicePromptDismissed(true);
+    try {
+      posthog.capture("voice_quiz_prompt_dismissed");
+    } catch {}
+  };
+
   const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -663,6 +688,77 @@ function LogTab({
                   : `${logEntries.length} notes`}
             </p>
           </div>
+
+          {/* Voice quiz prompt — dismissible, persists via localStorage */}
+          {showVoicePrompt && !voicePromptDismissed && (
+            <div
+              style={{
+                maxWidth: 620,
+                margin: "0 auto 16px",
+                padding: "20px 24px",
+                background: "#F0ECE4",
+                border: "1px solid #e0ddd5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: "#1a1a1a",
+                    margin: "0 0 4px",
+                  }}
+                >
+                  Find your writing voice
+                </p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: FAINT, margin: 0 }}>
+                  A 2-minute quiz unlocks your voice profile — tailored tips and a coach that helps every draft sound
+                  like you.
+                </p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                <Link
+                  href="/voice"
+                  onClick={() => {
+                    try {
+                      posthog.capture("voice_quiz_prompt_started");
+                    } catch {}
+                  }}
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#fff",
+                    background: "#1a1a1a",
+                    padding: "10px 18px",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Take the quiz
+                </Link>
+                <button
+                  onClick={dismissVoicePrompt}
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    color: FAINT,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Compose — centered input card */}
           <div
