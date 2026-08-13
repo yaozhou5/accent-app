@@ -17,9 +17,22 @@ export const FORMATS: { key: DraftFormat; label: string; description: string }[]
   { key: "full_post", label: "Full post", description: "150-250 words, developed idea" },
 ];
 
+// Machine-readable failure reasons (from generate-draft's response, or from
+// handlePostNote's own catch/save-failure branches) mapped to copy a user
+// can act on. Falls back to a generic retry prompt for anything unlisted.
+export const ERROR_MESSAGES: Record<string, string> = {
+  timeout: "That took too long to generate. Try again?",
+  rate_limited: "Getting a lot of requests right now. Try again in a moment.",
+  upstream_error: "Something went wrong generating your draft. Try again?",
+  empty_response: "Didn't get a usable draft back. Try again?",
+  save_failed: "Generated the draft but couldn't save it. Try again?",
+  network_error: "Couldn't reach the server. Check your connection and try again.",
+};
+export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Try again?";
+
 interface DraftFormatModalProps {
   entry: LogEntry;
-  onGenerate: (format: DraftFormat, focus: string) => Promise<boolean>;
+  onGenerate: (format: DraftFormat, focus: string) => Promise<{ ok: true } | { ok: false; reason: string }>;
   onClose: () => void;
 }
 
@@ -27,12 +40,17 @@ export default function DraftFormatModal({ entry, onGenerate, onClose }: DraftFo
   const [format, setFormat] = useState<DraftFormat | null>(null);
   const [focus, setFocus] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!format || submitting) return;
     setSubmitting(true);
-    const ok = await onGenerate(format, focus.trim());
-    if (!ok) setSubmitting(false);
+    setError(null);
+    const result = await onGenerate(format, focus.trim());
+    if (!result.ok) {
+      setError(ERROR_MESSAGES[result.reason] || DEFAULT_ERROR_MESSAGE);
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -98,7 +116,10 @@ export default function DraftFormatModal({ entry, onGenerate, onClose }: DraftFo
             return (
               <button
                 key={f.key}
-                onClick={() => setFormat(f.key)}
+                onClick={() => {
+                  setFormat(f.key);
+                  setError(null);
+                }}
                 disabled={submitting}
                 style={{
                   textAlign: "left",
@@ -149,6 +170,16 @@ export default function DraftFormatModal({ entry, onGenerate, onClose }: DraftFo
               autoFocus
             />
           </div>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="font-sans"
+            style={{ fontSize: 13, color: "#B91C1C", marginBottom: 10, lineHeight: 1.45 }}
+          >
+            {error}
+          </p>
         )}
 
         <button

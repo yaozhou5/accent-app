@@ -1,11 +1,11 @@
 // app/api/generate-draft/route.ts
 import { NextRequest } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { APIConnectionTimeoutError, RateLimitError, APIError } from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { type VoiceDimensions } from "@/lib/voice-dimensions";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import { buildLearnedInstructions, type LearnedVoiceProfile } from "@/lib/voice-patterns";
-import { logAiUsage } from "@/lib/ai-usage-log";
+import { logAiUsage, logAiGenerationFailure } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
 
@@ -53,6 +53,14 @@ function trimToLastCompleteSentence(text: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Measured from here (not just around the Anthropic call) so it reflects
+  // what the person waiting actually experiences — maxRetries: 2 on the
+  // client means a failing call can take a lot longer than one request.
+  const startedAt = Date.now();
+  // Declared outside the try block so it's still reachable from catch —
+  // `user` itself is scoped to the try block and isn't visible there.
+  let userId: string | null = null;
+
   try {
     const supabase = await createClient();
     const {
@@ -62,6 +70,7 @@ export async function POST(request: NextRequest) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
       });
+    userId = user.id;
 
     const { entryContent, voiceProfile, businessContext, platform, estimateWords, format, focus } =
       await request.json();
@@ -174,11 +183,46 @@ Write the post.`;
       draftText = trimToLastCompleteSentence(draftText);
     }
 
+    if (!draftText.trim()) {
+      // Claude returned 200 with no usable text. This used to count as
+      // success — the caller created an empty draft row, dropped the user
+      // into a blank editor, and the row then became permanently invisible
+      // (the Drafts list filters out empty content). Treat it as a failure:
+      // no row gets created, and the user lands back where they can retry.
+      console.error(
+        `generate-draft returned empty text (format=${format || "default"}, stop_reason=${message.stop_reason})`
+      );
+      await logAiGenerationFailure({
+        feature: "generate_draft",
+        model: "claude-sonnet-4-6",
+        reason: "empty_response",
+        durationMs: Date.now() - startedAt,
+        detail: `stop_reason=${message.stop_reason}, format=${format || "default"}`,
+        userId,
+      });
+      return new Response(JSON.stringify({ error: "Generation returned no content", reason: "empty_response" }), {
+        status: 502,
+      });
+    }
+
     return new Response(draftText, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (error) {
     console.error("generate-draft error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate draft" }), { status: 500 });
+    let reason = "error";
+    if (error instanceof APIConnectionTimeoutError) reason = "timeout";
+    else if (error instanceof RateLimitError) reason = "rate_limited";
+    else if (error instanceof APIError && typeof error.status === "number" && error.status >= 500)
+      reason = "upstream_error";
+    await logAiGenerationFailure({
+      feature: "generate_draft",
+      model: "claude-sonnet-4-6",
+      reason,
+      durationMs: Date.now() - startedAt,
+      detail: error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500),
+      userId,
+    });
+    return new Response(JSON.stringify({ error: "Failed to generate draft", reason }), { status: 500 });
   }
 }

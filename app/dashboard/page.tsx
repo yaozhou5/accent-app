@@ -41,7 +41,12 @@ import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
 import { PLAYBOOKS, getPlaybook, type Playbook } from "@/lib/playbooks";
 import PlaybookEditor from "@/components/PlaybookEditor";
 import VoiceCoach, { type CoachResult } from "@/components/VoiceCoach";
-import DraftFormatModal, { FORMATS, type DraftFormat } from "@/components/DraftFormatModal";
+import DraftFormatModal, {
+  FORMATS,
+  type DraftFormat,
+  ERROR_MESSAGES,
+  DEFAULT_ERROR_MESSAGE,
+} from "@/components/DraftFormatModal";
 import UrlTakePrompt from "@/components/UrlTakePrompt";
 import VoiceLearningCard from "@/components/VoiceLearningCard";
 import VoiceIdentityCard from "@/components/VoiceIdentityCard";
@@ -155,7 +160,10 @@ function LogTab({
   setLogEntries: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   allPlans: ContentPlan[];
   onStartDraft: (data: { draft: Draft; images?: string[] }) => void;
-  onPostNote: (entry: LogEntry, options?: { format?: DraftFormat; focus?: string }) => Promise<boolean>;
+  onPostNote: (
+    entry: LogEntry,
+    options?: { format?: DraftFormat; focus?: string }
+  ) => Promise<{ ok: true } | { ok: false; reason: string }>;
   postingEntryId: string | null;
   profile: UserProfile | null;
 }) {
@@ -1633,9 +1641,9 @@ function LogTab({
             <DraftFormatModal
               entry={formatPickerEntry}
               onGenerate={async (format, focus) => {
-                const ok = await onPostNote(formatPickerEntry, { format, focus: focus || undefined });
-                if (ok) setFormatPickerEntry(null);
-                return ok;
+                const result = await onPostNote(formatPickerEntry, { format, focus: focus || undefined });
+                if (result.ok) setFormatPickerEntry(null);
+                return result;
               }}
               onClose={() => setFormatPickerEntry(null)}
             />
@@ -3152,6 +3160,16 @@ export default function DashboardPage() {
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
   const [tooltipStep, setTooltipStep] = useState<number | null>(null);
   const [postingEntryId, setPostingEntryId] = useState<string | null>(null);
+  // Result of the most recent note→draft generation. Lives here, not in
+  // DraftFormatModal or LogTab, so it survives a tab switch — LogTab (and
+  // the modal inside it) unmounts the instant `tab` changes away from
+  // "log", which used to make the "Writing..." state vanish mid-request
+  // even though the fetch kept running. Success no longer force-navigates
+  // into the editor either: by the time a generation resolves, the user may
+  // have moved on, so it surfaces as a dismissible, click-to-open notice.
+  const [draftResult, setDraftResult] = useState<
+    { status: "ready"; draft: Draft; format?: DraftFormat } | { status: "failed"; reason: string } | null
+  >(null);
   const [voiceLearning, setVoiceLearning] = useState<VoiceLearningData | null>(null);
 
   useEffect(() => {
@@ -3218,17 +3236,35 @@ export default function DashboardPage() {
     };
   }, []);
 
-  async function handlePostNote(entry: LogEntry, options?: { format?: DraftFormat; focus?: string }): Promise<boolean> {
+  async function handlePostNote(
+    entry: LogEntry,
+    options?: { format?: DraftFormat; focus?: string }
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
     if (!profile?.voice_profile) {
       // No voice profile — prompt user to complete exercise
       if (confirm("Take 60 seconds to discover your voice first?")) {
         window.location.href = "/voice";
       }
-      return false;
+      return { ok: false, reason: "no_voice_profile" };
     }
 
     // Set loading state
     setPostingEntryId(entry.id);
+    // Client-perceived wait time — from click to whatever happens, success
+    // or failure. maxRetries: 2 on the server's Anthropic client means a
+    // failing call can take a lot longer than one request, and this is the
+    // number that answers "how long did someone actually wait."
+    const startedAt = Date.now();
+    const reportFailure = (reason: string) => {
+      try {
+        posthog.capture("draft_generation_failed", {
+          entry_id: entry.id,
+          reason,
+          duration_ms: Date.now() - startedAt,
+          format: options?.format,
+        });
+      } catch {}
+    };
 
     // Business context is optional — voice profile alone is enough
     const businessContext = [profile.business_description].filter(Boolean).join(" ");
@@ -3247,28 +3283,48 @@ export default function DashboardPage() {
         }),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        let reason = "error";
+        try {
+          const body = await res.json();
+          if (typeof body?.reason === "string") reason = body.reason;
+        } catch {
+          // Non-JSON error body — fall back to the generic reason.
+        }
+        console.error("generate-draft failed:", reason);
+        setDraftResult({ status: "failed", reason });
+        reportFailure(reason);
+        return { ok: false, reason };
+      }
 
       const text = await res.text();
 
       const draft = await createStandaloneDraft(text, entry.content || "", entry.id);
 
-      if (draft) {
-        posthog.capture("note_written", {
-          entry_id: entry.id,
-          platform: profile.platforms?.[0] || "linkedin",
-          format: options?.format,
-        });
-        // Refresh drafts and open draft editor
-        const allDrafts = await getAllDrafts();
-        setDrafts(allDrafts);
-        setStandaloneDraft({ draft, format: options?.format });
-        return true;
+      if (!draft) {
+        console.error("Post failed: createStandaloneDraft returned null");
+        setDraftResult({ status: "failed", reason: "save_failed" });
+        reportFailure("save_failed");
+        return { ok: false, reason: "save_failed" };
       }
-      return false;
+
+      posthog.capture("note_written", {
+        entry_id: entry.id,
+        platform: profile.platforms?.[0] || "linkedin",
+        format: options?.format,
+      });
+      // Refresh the drafts list, but don't force-navigate into the editor —
+      // by the time this resolves the user may have moved on to something
+      // else. Surface it as a dismissible, click-to-open notice instead.
+      const allDrafts = await getAllDrafts();
+      setDrafts(allDrafts);
+      setDraftResult({ status: "ready", draft, format: options?.format });
+      return { ok: true };
     } catch (err) {
       console.error("Post failed:", err);
-      return false;
+      setDraftResult({ status: "failed", reason: "network_error" });
+      reportFailure("network_error");
+      return { ok: false, reason: "network_error" };
     } finally {
       setPostingEntryId(null);
     }
@@ -3419,6 +3475,111 @@ export default function DashboardPage() {
           ))}
         </div>
       </header>
+
+      {/* Note→draft generation status — fixed position so it survives tab
+          switches (LogTab, which owns the format-picker modal, unmounts the
+          instant `tab` changes away from "log"). Success never auto-opens
+          the editor; it's a click-to-view notice so a late-arriving result
+          can't yank the user out of whatever they're doing now. */}
+      {(postingEntryId || draftResult) && (
+        <>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div
+            style={{
+              position: "fixed",
+              bottom: 24,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 60,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              background: "#1a1a1a",
+              color: "#fff",
+              padding: "12px 16px",
+              maxWidth: "calc(100vw - 32px)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+            }}
+          >
+            {postingEntryId && !draftResult && (
+              <>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 14,
+                    height: 14,
+                    flexShrink: 0,
+                    border: "2px solid rgba(255,255,255,0.3)",
+                    borderTopColor: "#fff",
+                    borderRadius: "50%",
+                    animation: "spin 0.7s linear infinite",
+                  }}
+                />
+                <span>Writing your draft…</span>
+              </>
+            )}
+            {draftResult?.status === "ready" && (
+              <>
+                <span>Your draft is ready.</span>
+                <button
+                  onClick={() => {
+                    setStandaloneDraft({ draft: draftResult.draft, format: draftResult.format });
+                    setDraftResult(null);
+                  }}
+                  className="font-sans font-semibold"
+                  style={{
+                    background: "#fff",
+                    color: "#1a1a1a",
+                    border: "none",
+                    borderRadius: 0,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => setDraftResult(null)}
+                  aria-label="Dismiss"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: 14,
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕
+                </button>
+              </>
+            )}
+            {draftResult?.status === "failed" && (
+              <>
+                <span>{ERROR_MESSAGES[draftResult.reason] || DEFAULT_ERROR_MESSAGE}</span>
+                <button
+                  onClick={() => setDraftResult(null)}
+                  aria-label="Dismiss"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: 14,
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
       <div className="pb-12" style={tab === "history" ? { maxWidth: 640, margin: "0 auto", padding: 20 } : undefined}>
         {tab === "log" && (
           <LogTab

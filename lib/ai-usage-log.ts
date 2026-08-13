@@ -35,3 +35,48 @@ export async function logAiUsage({ feature, model, usage, userId }: LogAiUsagePa
     console.error(`Failed to log AI usage (${feature}):`, e);
   }
 }
+
+interface LogAiGenerationFailureParams {
+  feature: string;
+  model: string;
+  // Matches the reason values generate-draft returns to the client (and
+  // handlePostNote's own client-side failure branches), so this table and
+  // the draft_generation_failed PostHog event count the same buckets:
+  // timeout | rate_limited | upstream_error | empty_response | save_failed |
+  // network_error | error
+  reason: string;
+  durationMs: number;
+  detail?: string | null;
+  userId?: string | null;
+}
+
+// Separate from logAiUsage (which only ever fires on success and has NOT
+// NULL token columns) rather than an ALTER TABLE — a failed call has no
+// token usage to record, and this keeps ai_usage_log's meaning ("cost per
+// generation") from blurring with failure tracking. Never throws, same
+// reason as logAiUsage: a logging failure must never surface as a
+// user-facing error on the actual feature.
+export async function logAiGenerationFailure({
+  feature,
+  model,
+  reason,
+  durationMs,
+  detail,
+  userId,
+}: LogAiGenerationFailureParams): Promise<void> {
+  try {
+    const { error } = await client()
+      .from("ai_generation_failures")
+      .insert({
+        feature,
+        model,
+        reason,
+        duration_ms: durationMs,
+        detail: detail ?? null,
+        user_id: userId ?? null,
+      });
+    if (error) console.error(`Failed to log AI generation failure (${feature}):`, JSON.stringify(error));
+  } catch (e) {
+    console.error(`Failed to log AI generation failure (${feature}):`, e);
+  }
+}
