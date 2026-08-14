@@ -6,6 +6,7 @@ import type { UserProfile } from "@/lib/supabase/profiles";
 import type { VoiceProfile } from "@/lib/voice-dimensions";
 import { ArrowLeft } from "@/components/ArrowIcon";
 import posthog from "posthog-js";
+import { bumpVoiceQuizInvitationDraftCount } from "@/lib/voice-quiz-invitation";
 
 const INK = "#1A1A18";
 const BLUE = "#1a1a1a";
@@ -33,7 +34,7 @@ export default function PlaybookEditor({
   profile: UserProfile | null;
   onBack: () => void;
   onSaveDone: () => void;
-  onDevelop: (draft: Draft) => void;
+  onDevelop: (draft: Draft, withoutProfile: boolean) => void;
 }) {
   const [sections, setSections] = useState<Record<string, string>>(() => {
     if (draft?.playbook_sections) return draft.playbook_sections;
@@ -104,7 +105,8 @@ export default function PlaybookEditor({
   const filledSections = Object.values(sections).filter((v) => v.trim().length > 0).length;
 
   async function handleDevelop() {
-    if (filledSections < 2 || developing || !profile?.voice_profile) return;
+    if (filledSections < 2 || developing || !profile) return;
+    const hadProfile = !!profile.voice_profile;
     setDeveloping(true);
 
     // Save playbook draft first
@@ -148,7 +150,13 @@ export default function PlaybookEditor({
           playbook_id: playbook.id,
           word_count: draftText.trim().split(/\s+/).length,
         });
-        onDevelop(developed);
+        if (!hadProfile) {
+          try {
+            posthog.capture("draft_generated_without_profile", { playbook_id: playbook.id, source: "playbook" });
+          } catch {}
+          bumpVoiceQuizInvitationDraftCount();
+        }
+        onDevelop(developed, !hadProfile);
       }
     } catch (err) {
       console.error("Develop failed:", err);
@@ -344,11 +352,11 @@ export default function PlaybookEditor({
         <div className="mt-6 pb-12" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <button
             onClick={handleDevelop}
-            disabled={developing || filledSections < 2 || !profile?.voice_profile}
+            disabled={developing || filledSections < 2}
             className="w-full py-3.5 font-semibold text-[15px]"
             style={{
               fontFamily: "'DM Sans', sans-serif",
-              background: filledSections < 2 || !profile?.voice_profile ? INK : INK,
+              background: INK,
               color: "#fff",
               border: "none",
               cursor: developing || filledSections < 2 ? "not-allowed" : "pointer",

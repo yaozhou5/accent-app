@@ -51,6 +51,11 @@ import UrlTakePrompt from "@/components/UrlTakePrompt";
 import VoiceLearningCard from "@/components/VoiceLearningCard";
 import VoiceIdentityCard from "@/components/VoiceIdentityCard";
 import { getVoiceLearningData, type VoiceLearningData } from "@/lib/supabase/voice-learning";
+import {
+  bumpVoiceQuizInvitationDraftCount,
+  shouldShowVoiceQuizInvitation,
+  dismissVoiceQuizInvitation,
+} from "@/lib/voice-quiz-invitation";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -2606,6 +2611,7 @@ function StandaloneWriteMode({
   sourceImages,
   initialFormat,
   profile,
+  withoutProfile,
   onBack,
   onSaveDone,
 }: {
@@ -2613,6 +2619,7 @@ function StandaloneWriteMode({
   sourceImages?: string[];
   initialFormat?: DraftFormat;
   profile: UserProfile | null;
+  withoutProfile?: boolean;
   onBack: () => void;
   onSaveDone: () => void;
 }) {
@@ -2637,6 +2644,28 @@ function StandaloneWriteMode({
   // Set for real in openVoiceCoach(); this initial value is never read since
   // closeVoiceCoach() can only run after openVoiceCoach() has already fired.
   const voiceCoachOpenedAt = useRef(0);
+
+  // Voice quiz invitation — shown on a draft generated without a profile.
+  // Re-arms after 3 more profile-less drafts since the last dismissal
+  // (see lib/voice-quiz-invitation.ts), so dismissing once doesn't silence
+  // it for good.
+  const [showInvitation, setShowInvitation] = useState(() => shouldShowVoiceQuizInvitation());
+  const invitationShownRef = useRef(false);
+  useEffect(() => {
+    if (withoutProfile && showInvitation && !invitationShownRef.current) {
+      invitationShownRef.current = true;
+      try {
+        posthog.capture("voice_quiz_invitation_shown", { draft_id: draft.id });
+      } catch {}
+    }
+  }, [withoutProfile, showInvitation, draft.id]);
+  const dismissInvitation = () => {
+    dismissVoiceQuizInvitation();
+    setShowInvitation(false);
+    try {
+      posthog.capture("voice_quiz_invitation_dismissed", { draft_id: draft.id });
+    } catch {}
+  };
 
   // Once Voice Coach analysis loads, default the left column to the
   // highlighted view so the annotations are visible in context.
@@ -2805,6 +2834,62 @@ function StandaloneWriteMode({
                   {saving ? "Saving..." : saveError ? "Save failed" : unsavedChanges ? "Unsaved changes" : "Saved"}
                 </span>
               </div>
+
+              {/* Voice quiz invitation — dismissible, non-blocking, persists via localStorage */}
+              {withoutProfile && showInvitation && (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: "16px 20px",
+                    background: "#F0ECE4",
+                    border: "1px solid #e0ddd5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 16,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1a1a1a", margin: 0 }}>
+                    This will sound more like you once you&apos;ve done the voice quiz.
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                    <Link
+                      href="/voice"
+                      onClick={() => {
+                        try {
+                          localStorage.setItem("voice_quiz_invitation_pending", "1");
+                        } catch {}
+                      }}
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#fff",
+                        background: "#1a1a1a",
+                        padding: "8px 14px",
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Take the quiz
+                    </Link>
+                    <button
+                      onClick={dismissInvitation}
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        color: FAINT,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Voice identity + format cards */}
               {(!!(draft.source_entry_id && profile?.voice_profile) || !!regenerateFormat) && (
@@ -3155,6 +3240,7 @@ export default function DashboardPage() {
     draft: Draft;
     images?: string[];
     format?: DraftFormat;
+    withoutProfile?: boolean;
   } | null>(null);
   const [activePlaybook, setActivePlaybook] = useState<{ playbook: Playbook; draft?: Draft } | null>(null);
   const [developEntries, setDevelopEntries] = useState<LogEntry[] | null>(null);
@@ -3168,7 +3254,9 @@ export default function DashboardPage() {
   // into the editor either: by the time a generation resolves, the user may
   // have moved on, so it surfaces as a dismissible, click-to-open notice.
   const [draftResult, setDraftResult] = useState<
-    { status: "ready"; draft: Draft; format?: DraftFormat } | { status: "failed"; reason: string } | null
+    | { status: "ready"; draft: Draft; format?: DraftFormat; withoutProfile?: boolean }
+    | { status: "failed"; reason: string }
+    | null
   >(null);
   const [voiceLearning, setVoiceLearning] = useState<VoiceLearningData | null>(null);
 
@@ -3240,13 +3328,14 @@ export default function DashboardPage() {
     entry: LogEntry,
     options?: { format?: DraftFormat; focus?: string }
   ): Promise<{ ok: true } | { ok: false; reason: string }> {
-    if (!profile?.voice_profile) {
-      // No voice profile — prompt user to complete exercise
-      if (confirm("Take 60 seconds to discover your voice first?")) {
-        window.location.href = "/voice";
-      }
-      return { ok: false, reason: "no_voice_profile" };
+    if (!profile) {
+      // Profile hasn't loaded yet — genuinely nothing to send. Distinct from
+      // "no voice_profile," which is no longer a block: the route already
+      // has its own fallback instruction for a missing profile.
+      console.error("Post failed: no profile loaded");
+      return { ok: false, reason: "no_profile" };
     }
+    const hadProfile = !!profile.voice_profile;
 
     // Set loading state
     setPostingEntryId(entry.id);
@@ -3313,12 +3402,18 @@ export default function DashboardPage() {
         platform: profile.platforms?.[0] || "linkedin",
         format: options?.format,
       });
+      if (!hadProfile) {
+        try {
+          posthog.capture("draft_generated_without_profile", { entry_id: entry.id, source: "log" });
+        } catch {}
+        bumpVoiceQuizInvitationDraftCount();
+      }
       // Refresh the drafts list, but don't force-navigate into the editor —
       // by the time this resolves the user may have moved on to something
       // else. Surface it as a dismissible, click-to-open notice instead.
       const allDrafts = await getAllDrafts();
       setDrafts(allDrafts);
-      setDraftResult({ status: "ready", draft, format: options?.format });
+      setDraftResult({ status: "ready", draft, format: options?.format, withoutProfile: !hadProfile });
       return { ok: true };
     } catch (err) {
       console.error("Post failed:", err);
@@ -3343,9 +3438,9 @@ export default function DashboardPage() {
           setTab("history");
           getAllDrafts().then(setDrafts);
         }}
-        onDevelop={(d) => {
+        onDevelop={(d, withoutProfile) => {
           setActivePlaybook(null);
-          setStandaloneDraft({ draft: d });
+          setStandaloneDraft({ draft: d, withoutProfile });
           getAllDrafts().then(setDrafts);
         }}
       />
@@ -3360,6 +3455,7 @@ export default function DashboardPage() {
         sourceImages={standaloneDraft.images}
         initialFormat={standaloneDraft.format}
         profile={profile}
+        withoutProfile={standaloneDraft.withoutProfile}
         onBack={() => setStandaloneDraft(null)}
         onSaveDone={() => {
           setStandaloneDraft(null);
@@ -3525,7 +3621,11 @@ export default function DashboardPage() {
                 <span>Your draft is ready.</span>
                 <button
                   onClick={() => {
-                    setStandaloneDraft({ draft: draftResult.draft, format: draftResult.format });
+                    setStandaloneDraft({
+                      draft: draftResult.draft,
+                      format: draftResult.format,
+                      withoutProfile: draftResult.withoutProfile,
+                    });
                     setDraftResult(null);
                   }}
                   className="font-sans font-semibold"

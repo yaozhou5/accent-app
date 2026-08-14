@@ -173,6 +173,15 @@ export default function VoiceDiscoveryPage() {
       // The full report is shown on screen for everyone at this point — no email required.
       posthog.capture("voice_report_viewed");
 
+      // If this quiz was reached via the "sound more like you" invitation on
+      // a profile-less draft, close the loop so we can measure follow-through.
+      try {
+        if (localStorage.getItem("voice_quiz_invitation_pending") === "1") {
+          localStorage.removeItem("voice_quiz_invitation_pending");
+          posthog.capture("voice_quiz_invitation_completed");
+        }
+      } catch {}
+
       setResult({ dimensions, topTraits, edge, gap });
       setPhase("result");
     }

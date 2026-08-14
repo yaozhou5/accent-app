@@ -1,30 +1,11 @@
 // app/api/voice-result/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createServerClient } from "@supabase/ssr";
 import { type VoiceDimensions, DIMENSION_LABELS, normalizeScore, type DimensionKey } from "@/lib/voice-dimensions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logAiUsage } from "@/lib/ai-usage-log";
 
 const anthropic = new Anthropic({ maxRetries: 2 });
-
-// Service-role client for the shared cache table (no user session on this
-// public route). Service role bypasses RLS; the table has no public policies.
-function cacheClient() {
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    cookies: { getAll: () => [], setAll: () => {} },
-  });
-}
-
-// Canonical key from the 7 dimension scores, sorted by dimension name so the
-// key is stable regardless of object key order. The report is a pure function
-// of these scores, so the same key always maps to the same edge/gap.
-function dimsKey(dimensions: VoiceDimensions): string {
-  return (Object.keys(dimensions) as DimensionKey[])
-    .sort()
-    .map((k) => `${k}:${dimensions[k]}`)
-    .join("|");
-}
 
 // No auth required — this endpoint is used by the public /voice page
 export async function POST(request: NextRequest) {
@@ -36,35 +17,19 @@ export async function POST(request: NextRequest) {
 
     if (!dimensions) return NextResponse.json({ error: "dimensions required" }, { status: 400 });
 
-    // 1. Compute the canonical cache key from the sorted dimension scores.
-    const key = dimsKey(dimensions);
-
-    // 2. Cache lookup. On HIT: return the cached report immediately — no
-    //    Anthropic call and no rate-limit check (hits are never throttled).
-    const supabase = cacheClient();
-    try {
-      const { data: cached } = await supabase
-        .from("voice_report_cache")
-        .select("edge, gap")
-        .eq("dims_key", key)
-        .maybeSingle();
-      if (cached) {
-        return NextResponse.json({ edge: cached.edge || "", gap: cached.gap || "" });
-      }
-    } catch (e) {
-      // Cache read failed (e.g. table missing / transient) — treat as a MISS
-      // and fall through to the throttled generation path.
-      console.error("voice_report_cache read error:", e instanceof Error ? e.message : e);
-    }
-
-    // 3. MISS only: apply per-IP rate limiting before spending on Anthropic.
+    // No cross-request cache — edge/gap used to be cached keyed only on the
+    // 7 dimension scores, which meant two people who landed on the same
+    // combination got byte-identical "personal" analysis. Only 110 distinct
+    // combinations exist across 135 completions, so collisions were common
+    // and grew with volume. The cache saved ~8 Anthropic calls in its
+    // entire lifetime — not worth re-keying, not worth keeping. Every
+    // completion gets its own generation now, so rate limiting applies
+    // unconditionally rather than only on a cache miss.
     const ip = getClientIp(request);
     const rateLimit = checkRateLimit(ip);
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: "Too many requests, please try again later." }, { status: 429 });
     }
-
-    // 4. Generate via Anthropic, then cache the result keyed on dims_key.
 
     // Build a readable summary of dimensions
     const dimSummary = (Object.entries(dimensions) as [DimensionKey, number][])
@@ -118,19 +83,6 @@ Return ONLY valid JSON: {"edge": "...", "gap": "..."}`,
 
     const edge = parsed.edge || "";
     const gap = parsed.gap || "";
-
-    // Best-effort cache write. on-conflict-do-nothing (ignoreDuplicates) handles
-    // two concurrent misses racing on the same key. Skip writing an empty result
-    // so a transient parse failure never poisons the cache permanently.
-    if (edge || gap) {
-      try {
-        await supabase
-          .from("voice_report_cache")
-          .upsert({ dims_key: key, edge, gap }, { onConflict: "dims_key", ignoreDuplicates: true });
-      } catch (e) {
-        console.error("voice_report_cache write error:", e instanceof Error ? e.message : e);
-      }
-    }
 
     return NextResponse.json({ edge, gap });
   } catch (error) {
