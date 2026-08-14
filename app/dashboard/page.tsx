@@ -152,6 +152,28 @@ function getCardStyle(entry: LogEntry): { bg: string; text: string; label: strin
   return TYPE_CARD_STYLES[entry.type] || TYPE_CARD_STYLES.note;
 }
 
+// Empty-state example note (Log tab, zero real entries only). Runs through
+// the exact same generate flow as a real note — id/user_id left blank so
+// createStandaloneDraft's `if (sourceEntryId) row.source_entry_id = ...`
+// simply omits it (same pattern PlaybookEditor already uses for drafts with
+// no log entry behind them). Never written to log_entries.
+const SAMPLE_NOTE_CONTENT = "Rewrote the same email four times and sent the second version anyway.";
+const SAMPLE_LOG_ENTRY: LogEntry = {
+  id: "",
+  user_id: "",
+  content: SAMPLE_NOTE_CONTENT,
+  image_url: null,
+  image_urls: [],
+  link_url: null,
+  url: null,
+  source: null,
+  tags: [],
+  type: "note",
+  bookmarked: false,
+  archived: false,
+  created_at: "2026-01-01T00:00:00.000Z",
+};
+
 /* ══════════════ LOG TAB ══════════════ */
 function LogTab({
   logEntries,
@@ -175,6 +197,26 @@ function LogTab({
 }) {
   const [formatPickerEntry, setFormatPickerEntry] = useState<LogEntry | null>(null);
   const [urlTakeEntry, setUrlTakeEntry] = useState<LogEntry | null>(null);
+
+  // Empty-state sample note — shown once per mount while the user has zero
+  // real entries. Separate from note_to_draft_started (which lives on each
+  // real note's own button) so a sample tap never pollutes that event with
+  // a blank entry_id.
+  const sampleNoteShownRef = useRef(false);
+  useEffect(() => {
+    if (logEntries.length === 0 && !sampleNoteShownRef.current) {
+      sampleNoteShownRef.current = true;
+      try {
+        posthog.capture("sample_note_shown");
+      } catch {}
+    }
+  }, [logEntries.length]);
+  const handleSampleNoteClick = () => {
+    try {
+      posthog.capture("sample_note_used");
+    } catch {}
+    setFormatPickerEntry(SAMPLE_LOG_ENTRY);
+  };
   const [input, setInputRaw] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("accent-log-draft") || "";
     return "";
@@ -1064,6 +1106,47 @@ function LogTab({
                   Start by logging a few moments from your week. A conversation, something you read, a decision you
                   made. Ideas emerge when you have enough to see patterns.
                 </p>
+                {logEntries.length === 0 && (
+                  <button
+                    onClick={handleSampleNoteClick}
+                    className="w-full text-left"
+                    style={{
+                      display: "block",
+                      maxWidth: 440,
+                      margin: "28px auto 0",
+                      padding: "18px 20px",
+                      background: "transparent",
+                      border: `1px dashed ${FAINT}`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "'DM Mono', monospace",
+                        fontWeight: 600,
+                        fontSize: 11,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: FAINT,
+                        margin: "0 0 8px",
+                      }}
+                    >
+                      Example note — tap to try it
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 15,
+                        fontStyle: "italic",
+                        color: DIM,
+                        lineHeight: 1.5,
+                        margin: 0,
+                      }}
+                    >
+                      {SAMPLE_NOTE_CONTENT}
+                    </p>
+                  </button>
+                )}
               </div>
             ) : (
               <>
