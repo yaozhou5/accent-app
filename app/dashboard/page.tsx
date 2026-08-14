@@ -56,6 +56,7 @@ import {
   shouldShowVoiceQuizInvitation,
   dismissVoiceQuizInvitation,
 } from "@/lib/voice-quiz-invitation";
+import { submitProInterest } from "@/lib/supabase/pro-interest";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -2612,6 +2613,7 @@ function StandaloneWriteMode({
   initialFormat,
   profile,
   withoutProfile,
+  draftCount,
   onBack,
   onSaveDone,
 }: {
@@ -2620,6 +2622,7 @@ function StandaloneWriteMode({
   initialFormat?: DraftFormat;
   profile: UserProfile | null;
   withoutProfile?: boolean;
+  draftCount?: number;
   onBack: () => void;
   onSaveDone: () => void;
 }) {
@@ -2665,6 +2668,62 @@ function StandaloneWriteMode({
     try {
       posthog.capture("voice_quiz_invitation_dismissed", { draft_id: draft.id });
     } catch {}
+  };
+
+  // Pro upgrade card — nothing gated, nobody loses access. Pro doesn't
+  // exist yet: clicking through is an honest dead end that captures
+  // interest (email + optional call) instead of pretending to sell
+  // something real.
+  const proEventProps = {
+    draft_id: draft.id,
+    has_voice_profile: !!profile?.voice_profile,
+    draft_count: draftCount ?? null,
+  };
+  const [proCardOpen, setProCardOpen] = useState(false);
+  const [proEmail, setProEmail] = useState("");
+  const [proWantsCall, setProWantsCall] = useState(false);
+  const [proSubmitting, setProSubmitting] = useState(false);
+  const [proSubmitted, setProSubmitted] = useState(false);
+  const [proSubmitError, setProSubmitError] = useState<string | null>(null);
+  const proCardShownRef = useRef(false);
+  useEffect(() => {
+    if (!proCardShownRef.current) {
+      proCardShownRef.current = true;
+      try {
+        posthog.capture("pro_card_shown", proEventProps);
+      } catch {}
+    }
+    // Fire once on mount — proEventProps is a fresh object every render, so
+    // it can't be a dependency without defeating the ref guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const openProCard = () => {
+    setProCardOpen(true);
+    try {
+      posthog.capture("pro_card_clicked", proEventProps);
+    } catch {}
+  };
+  const submitProCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proEmail.trim() || proSubmitting) return;
+    setProSubmitting(true);
+    setProSubmitError(null);
+    const ok = await submitProInterest({
+      email: proEmail.trim(),
+      wantsCall: proWantsCall,
+      hadVoiceProfile: !!profile?.voice_profile,
+      draftCount: draftCount ?? 0,
+    });
+    setProSubmitting(false);
+    if (!ok) {
+      setProSubmitError("Something went wrong — try again.");
+      return;
+    }
+    try {
+      posthog.capture("pro_card_email_submitted", proEventProps);
+      if (proWantsCall) posthog.capture("pro_card_call_requested", proEventProps);
+    } catch {}
+    setProSubmitted(true);
   };
 
   // Once Voice Coach analysis loads, default the left column to the
@@ -3202,6 +3261,141 @@ function StandaloneWriteMode({
             </div>
           )}
         </div>
+
+        {/* Pro upgrade card — nothing gated, an honest dead end today */}
+        <div
+          style={{
+            maxWidth: 620,
+            margin: "24px auto 0",
+            padding: "18px 22px",
+            background: "#fff",
+            border: `1px solid ${BORDER}`,
+          }}
+        >
+          {proSubmitted ? (
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: INK, margin: 0 }}>
+              {proWantsCall
+                ? "Thanks — I'll email you when it's ready, and reach out about a call."
+                : "Thanks — I'll email you when it's ready."}
+            </p>
+          ) : !proCardOpen ? (
+            <button
+              onClick={openProCard}
+              className="w-full text-left"
+              style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            >
+              <div className="flex items-center justify-between" style={{ gap: 16, flexWrap: "wrap" }}>
+                <div>
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: INK,
+                      margin: "0 0 4px",
+                    }}
+                  >
+                    Accent Pro — £19/mo
+                  </p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: FAINT, margin: 0 }}>
+                    A voice profile that keeps learning from every edit you make, so drafts get more like you over time.
+                  </p>
+                </div>
+                <span
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: BLUE,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Learn more →
+                </span>
+              </div>
+            </button>
+          ) : (
+            <form onSubmit={submitProCard}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: INK,
+                  margin: "0 0 4px",
+                }}
+              >
+                Not ready yet
+              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: FAINT, margin: "0 0 12px" }}>
+                Pro doesn&apos;t exist today. Want to know when it does?
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  type="email"
+                  required
+                  value={proEmail}
+                  onChange={(e) => setProEmail(e.target.value)}
+                  placeholder="you@email.com"
+                  style={{
+                    flex: "1 1 200px",
+                    padding: "8px 12px",
+                    border: `1px solid ${BORDER}`,
+                    fontSize: 13,
+                    fontFamily: "'DM Sans', sans-serif",
+                    color: INK,
+                    background: "#fff",
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={proSubmitting || !proEmail.trim()}
+                  style={{
+                    padding: "8px 16px",
+                    background: BLUE,
+                    color: "#fff",
+                    border: "none",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: proSubmitting ? "default" : "pointer",
+                    opacity: proSubmitting ? 0.6 : 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {proSubmitting ? "Sending..." : "Notify me"}
+                </button>
+              </div>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 10,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12,
+                  color: DIM,
+                  cursor: "pointer",
+                }}
+              >
+                <input type="checkbox" checked={proWantsCall} onChange={(e) => setProWantsCall(e.target.checked)} />
+                I&apos;d also like a 15-minute call to talk it through
+              </label>
+              {proSubmitError && (
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 12,
+                    color: "#DC2626",
+                    marginTop: 8,
+                  }}
+                >
+                  {proSubmitError}
+                </p>
+              )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -3456,6 +3650,7 @@ export default function DashboardPage() {
         initialFormat={standaloneDraft.format}
         profile={profile}
         withoutProfile={standaloneDraft.withoutProfile}
+        draftCount={draftsState.length}
         onBack={() => setStandaloneDraft(null)}
         onSaveDone={() => {
           setStandaloneDraft(null);
