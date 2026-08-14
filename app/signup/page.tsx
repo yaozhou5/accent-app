@@ -89,12 +89,10 @@ export default function SignupPage() {
           className="font-serif mb-2"
           style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18", fontFamily: "'Fraunces', Georgia, serif" }}
         >
-          {fromVoice ? "Your voice report is ready" : "Start writing like you"}
+          {fromVoice ? "Save your voice profile" : "Start writing like you"}
         </h1>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: "#A8A49C" }}>
-          {fromVoice
-            ? "Enter your email to save your profile and get the full report."
-            : "Free account. No credit card."}
+          {fromVoice ? "Create your account and start writing in your voice." : "Free account. No credit card."}
         </p>
 
         {step === "email" ? (
@@ -119,7 +117,7 @@ export default function SignupPage() {
               className="w-full py-3.5 font-sans font-semibold text-[15px] disabled:opacity-50"
               style={{ background: "#1a1a1a", color: "#fff", border: "none", cursor: "pointer" }}
             >
-              {loading ? "Sending code..." : fromVoice ? "Send my report" : "Create account"}
+              {loading ? "Sending code..." : "Create account"}
             </button>
             <p className="text-center text-[12px] font-sans" style={{ color: "#AAAAAA" }}>
               By signing up you agree to our{" "}
