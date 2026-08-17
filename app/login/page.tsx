@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { identifyUser } from "@/lib/identify-user";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -37,11 +38,16 @@ function LoginForm() {
     if (code.length !== 6 || loading) return;
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: "email" });
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code,
+      type: "email",
+    });
     setLoading(false);
     if (error) {
       setError("Invalid or expired code.");
     } else {
+      if (data.user) identifyUser(data.user);
       // Save pending voice profile and send email report
       const pending = localStorage.getItem("pending_voice_profile");
       if (pending) {

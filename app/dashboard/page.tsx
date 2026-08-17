@@ -58,6 +58,7 @@ import {
 } from "@/lib/voice-quiz-invitation";
 import { submitProInterest } from "@/lib/supabase/pro-interest";
 import { PRO_PRICE_SHORT } from "@/lib/pricing";
+import { identifyUser } from "@/lib/identify-user";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -3540,13 +3541,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const [p, plan, plans, entries, draftsList] = await Promise.all([
+      const [p, plan, plans, entries, draftsList, authResult] = await Promise.all([
         getProfile(),
         getCurrentPlan(),
         getAllPlans(),
         getLogEntries(),
         getAllDrafts(),
+        createSupabaseClient().auth.getUser(),
       ]);
+      // Session restore — links this browser to the account even for
+      // returning users who never re-run the login/signup verify flow.
+      if (authResult.data.user) identifyUser(authResult.data.user);
       // If entries are empty but profile exists, retry once (auth session may not be ready)
       let finalEntries = entries;
       if (finalEntries.length === 0 && p) {

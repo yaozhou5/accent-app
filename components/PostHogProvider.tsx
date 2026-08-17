@@ -6,17 +6,10 @@ import posthog from "posthog-js";
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (!key) return;
-
-    posthog.init(key, {
-      api_host: "/ingest",
-      ui_host: "https://eu.posthog.com",
-      defaults: "2026-01-30",
-      capture_exceptions: true,
-      debug: process.env.NODE_ENV === "development",
-    });
-    // Expose globally for debugging
+    // Actual init lives in instrumentation-client.ts, which runs before
+    // hydration — this used to call posthog.init() again, but posthog-js
+    // no-ops any re-init after the first, so it never took effect. Kept
+    // only for the debug exposure below.
     (window as unknown as { posthog: typeof posthog }).posthog = posthog;
   }, []);
 
