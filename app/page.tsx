@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowRight } from "@/components/ArrowIcon";
 import LandingDemo from "@/components/LandingDemo";
+import { PRO_PRICE_SHORT, PRO_PRICE_LONG } from "@/lib/pricing";
 
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
@@ -485,7 +486,7 @@ export default function LandingPage() {
               marginBottom: 32,
             }}
           >
-            3 posts free every month. Unlimited for $19/month.
+            3 posts free every month. Unlimited for {PRO_PRICE_LONG}.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div style={{ background: "#FAFAF7", padding: 28 }}>
@@ -526,7 +527,7 @@ export default function LandingPage() {
                   marginBottom: 16,
                 }}
               >
-                Pro — $19/mo
+                Pro — {PRO_PRICE_SHORT}
               </span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {[
@@ -627,7 +628,7 @@ export default function LandingPage() {
             <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content is in there.</span>
           </h2>
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            3 posts free every month. Unlimited for $19/month.
+            3 posts free every month. Unlimited for {PRO_PRICE_LONG}.
           </p>
           <Link
             href="/voice"

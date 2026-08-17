@@ -57,6 +57,7 @@ import {
   dismissVoiceQuizInvitation,
 } from "@/lib/voice-quiz-invitation";
 import { submitProInterest } from "@/lib/supabase/pro-interest";
+import { PRO_PRICE_SHORT } from "@/lib/pricing";
 
 // Design tokens
 const INK = "#111827"; // gray-900
@@ -3374,7 +3375,7 @@ function StandaloneWriteMode({
                       margin: "0 0 4px",
                     }}
                   >
-                    Accent Pro — £19/mo
+                    Accent Pro — {PRO_PRICE_SHORT}
                   </p>
                   <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: FAINT, margin: 0 }}>
                     A voice profile that keeps learning from every edit you make, so drafts get more like you over time.
