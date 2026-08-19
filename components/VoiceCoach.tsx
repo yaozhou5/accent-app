@@ -100,6 +100,12 @@ export default function VoiceCoach({
   const [tab, setTab] = useState<"edits" | "suggestions">("edits");
   const [rhythmOpen, setRhythmOpen] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState<Set<number>>(new Set());
+  // Unlike appliedSuggestions (per-result indices, reset on every fetch —
+  // see below), this accumulates across the whole panel session and is
+  // sent with every request, so a re-run doesn't re-propose something
+  // already accepted. Session-only: doesn't survive a remount, so it
+  // won't catch a suggestion accepted in an earlier visit to this draft.
+  const [appliedHistory, setAppliedHistory] = useState<{ phrase: string; alternative: string }[]>([]);
   const draftTextRef = useRef(currentDraft);
 
   // Keep the base text for Apply up to date if the user edits outside the panel.
@@ -119,6 +125,7 @@ export default function VoiceCoach({
           current_draft: currentDraft,
           voice_profile: voiceProfile,
           draft_id: draftId,
+          applied_suggestions: appliedHistory,
         }),
       });
       if (!res.ok) throw new Error("Request failed");
@@ -160,6 +167,7 @@ export default function VoiceCoach({
     const updated = draftTextRef.current.replace(s.phrase, s.alternative);
     draftTextRef.current = updated;
     setAppliedSuggestions((prev) => new Set(prev).add(i));
+    setAppliedHistory((prev) => [...prev, { phrase: s.phrase, alternative: s.alternative }]);
     onApplySuggestion(updated);
     try {
       posthog.capture("voice_coach_suggestion_applied", { draft_id: draftId, index: i });

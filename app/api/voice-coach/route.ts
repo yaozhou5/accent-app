@@ -1,6 +1,7 @@
 // app/api/voice-coach/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import crypto from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import type { VoiceDimensions } from "@/lib/voice-dimensions";
@@ -11,6 +12,12 @@ const anthropic = new Anthropic({ maxRetries: 2 });
 
 const ANNOTATION_DIMENSIONS = ["Compression", "Rhythm", "Perspective", "Directness", "Vocabulary", "Tone", "Structure"];
 
+// Low but not zero — this is judgment (which edits matter, which direction
+// they move), not generative writing, and 0.0 risks stilted, repetitive
+// prose on the annotation/suggestion text. The SDK defaults to 1.0 if
+// unset, which is the opposite end of the range from what this task needs.
+const COACH_TEMPERATURE = 0.2;
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -19,20 +26,53 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { original_draft, current_draft, voice_profile, draft_id } = (await request.json()) as {
+    const { original_draft, current_draft, voice_profile, draft_id, applied_suggestions } = (await request.json()) as {
       original_draft: string;
       current_draft: string;
       voice_profile?: { dimensions: VoiceDimensions; top_traits?: string[]; edge?: string; gap?: string };
       draft_id?: string;
+      applied_suggestions?: { phrase: string; alternative: string }[];
     };
 
     if (!original_draft?.trim() || !current_draft?.trim()) {
       return NextResponse.json({ error: "original_draft and current_draft are required" }, { status: 400 });
     }
 
+    // Cache lookup — same (draft_id, original_draft, current_draft) always
+    // gets the same analysis instead of a fresh, temperature-driven sample.
+    // Keyed on this draft's own text; see the migration for why this
+    // doesn't repeat the deleted edge/gap cache's collision problem.
+    // Null-byte separator, since draft text can't contain one — a plain
+    // space or newline could let two different (original, current) pairs
+    // hash to the same key at the boundary.
+    const textKey = crypto
+      .createHash("sha256")
+      .update(original_draft + "\x00" + current_draft)
+      .digest("hex");
+    if (draft_id) {
+      const { data: cached } = await supabase
+        .from("voice_coach_cache")
+        .select("result")
+        .eq("draft_id", draft_id)
+        .eq("text_key", textKey)
+        .maybeSingle();
+      if (cached) {
+        return NextResponse.json(cached.result);
+      }
+    }
+
     const voiceInstructions = voice_profile?.dimensions
       ? buildVoiceInstructions(voice_profile.dimensions, voice_profile)
       : "No voice profile on file — infer their voice from how they edited, and favor their edited version's instincts over generic polish.";
+
+    // Without this, a re-run has no way to know a suggestion was already
+    // considered and accepted — it can re-propose the same swap, or worse,
+    // propose reversing it. The client accumulates this across a session
+    // (not persisted across page loads) and sends it on every request.
+    const appliedSuggestionsBlock =
+      applied_suggestions && applied_suggestions.length > 0
+        ? `\nALREADY-APPLIED SUGGESTIONS (the user already accepted these earlier in this session — do not suggest any of these again, and do not propose reversing them):\n${applied_suggestions.map((a) => `- "${a.phrase}" → "${a.alternative}"`).join("\n")}\n`
+        : "";
 
     const prompt = `You are a writing teacher reviewing how someone edited an AI-generated draft into their own words. You're not a copy editor — you're looking for what their editing choices reveal about their voice, and helping them see it.
 
@@ -50,7 +90,7 @@ CURRENT DRAFT (after the user's edits):
 """
 ${current_draft}
 """
-
+${appliedSuggestionsBlock}
 Do the following:
 
 1. PATTERN SUMMARY: Read across all the differences between the two drafts and name 2-3 real patterns in how they edit — not a list of individual changes, but what a writing teacher would open with after reading the whole piece. E.g. "You consistently compress formal language into something plainer" or "You keep adding dashes where the original used full sentences." Write it as 2-3 flowing sentences, not bullets.
@@ -91,6 +131,7 @@ Return ONLY valid JSON, no preamble:
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 3000,
+      temperature: COACH_TEMPERATURE,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -126,7 +167,11 @@ Return ONLY valid JSON, no preamble:
     // Save + aggregate before responding (adds one insert/upsert on top of an
     // already multi-second LLM call — negligible, and safer than a detached
     // fire-and-forget promise that a serverless runtime could cut off).
-    // Failure here must never surface as a Voice Coach error.
+    // Failure here must never surface as a Voice Coach error. Only runs on
+    // a genuine cache miss (see the early-return above) — a cache hit means
+    // this exact text pair already got a voice_patterns row the first time,
+    // so a repeat "How did I do?" click on unchanged text can't inflate the
+    // learned-profile counts a second time for the same diff.
     if (draft_id) {
       try {
         await saveVoicePatterns(user.id, draft_id, original_draft, current_draft, {
@@ -135,6 +180,16 @@ Return ONLY valid JSON, no preamble:
         });
       } catch (e) {
         console.error("Failed to save voice patterns:", e);
+      }
+      try {
+        await supabase
+          .from("voice_coach_cache")
+          .upsert(
+            { user_id: user.id, draft_id, text_key: textKey, result },
+            { onConflict: "draft_id,text_key", ignoreDuplicates: true }
+          );
+      } catch (e) {
+        console.error("Failed to cache voice coach result:", e);
       }
     }
 
