@@ -71,12 +71,12 @@ export default function SignupPage() {
         } catch (e) {
           console.error("Failed to save voice profile:", e);
         }
-        window.location.href = "/voice/report";
+        router.push("/voice/report");
       } else {
         // No voice profile yet — straight to the product. The quiz is
         // surfaced as a dismissible prompt on the dashboard instead of a
         // mandatory gate before anyone sees anything.
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       }
     }
   };

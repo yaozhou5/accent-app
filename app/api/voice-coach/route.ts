@@ -42,9 +42,6 @@ export async function POST(request: NextRequest) {
     // gets the same analysis instead of a fresh, temperature-driven sample.
     // Keyed on this draft's own text; see the migration for why this
     // doesn't repeat the deleted edge/gap cache's collision problem.
-    // Null-byte separator, since draft text can't contain one — a plain
-    // space or newline could let two different (original, current) pairs
-    // hash to the same key at the boundary.
     const textKey = crypto
       .createHash("sha256")
       .update(original_draft + "\x00" + current_draft)
@@ -68,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Without this, a re-run has no way to know a suggestion was already
     // considered and accepted — it can re-propose the same swap, or worse,
     // propose reversing it. The client accumulates this across a session
-    // (not persisted across page loads) and sends it on every request.
+    // (lib not persisted across page loads) and sends it on every request.
     const appliedSuggestionsBlock =
       applied_suggestions && applied_suggestions.length > 0
         ? `\nALREADY-APPLIED SUGGESTIONS (the user already accepted these earlier in this session — do not suggest any of these again, and do not propose reversing them):\n${applied_suggestions.map((a) => `- "${a.phrase}" → "${a.alternative}"`).join("\n")}\n`
@@ -95,7 +92,7 @@ Do the following:
 
 1. PATTERN SUMMARY: Read across all the differences between the two drafts and name 2-3 real patterns in how they edit — not a list of individual changes, but what a writing teacher would open with after reading the whole piece. E.g. "You consistently compress formal language into something plainer" or "You keep adding dashes where the original used full sentences." Write it as 2-3 flowing sentences, not bullets.
 
-2. ANNOTATIONS: Pick the 4-8 MOST MEANINGFUL edits between the two drafts (not an exhaustive diff — the ones that actually reveal something about their voice). ONLY analyze passages where the text actually DIFFERS between the original draft and the edited version. If a passage is identical in both versions, skip it entirely — do NOT include it as an annotation. Unchanged text is the AI's writing, not the user's. Do not analyze it, praise it, or comment on it. For each:
+2. ANNOTATIONS: Pick the 4-8 MOST MEANINGFUL edits between the two drafts (not an exhaustive diff — the ones that actually reveal something about their voice). ONLY analyze passages where the text actually DIFFERS between the original draft and the edited version. If a passage is identical in both versions, skip it entirely — do NOT include it as an annotation. Unchanged text is the AI's writing, not the user's. Do not analyze it, praise it, or comment on it. Return AT MOST ONE annotation per distinct span of edited_text — never describe the same change twice from two different angles (e.g. once as a compression question, once as a structure insight). If a single change is meaningful along more than one dimension, pick the strongest dimension and fold the rest into the annotation's own text rather than emitting a second annotation for the same span. For each:
    - original_text: the exact original passage (verbatim, must be findable in the original draft)
    - edited_text: their exact replacement (verbatim, must be findable in the current draft)
    - type: "insight" if it's a clear statement about what the edit does and why it matters, or "question" if there's a genuine tradeoff worth asking about
@@ -103,9 +100,9 @@ Do the following:
    - direction: "toward" if the edit moves the writing toward their voice profile, "away" if it moves away from it
    - text: the annotation itself, written in second person ("You changed X to Y because..."), like a teacher talking to the writer, never like a robot. If type is "question", present a genuine tradeoff — e.g. "You gained punch but lost the context a new reader needs — was that intentional?" — not a rhetorical or leading question.
 
-3. SUGGESTIONS: Find 2-4 phrases in the CURRENT draft that the user did NOT touch but that read as generic or off their voice profile. For each:
-   - phrase: the exact current text (verbatim, must be findable in the current draft)
-   - alternative: what they'd probably actually say — this must sound MORE like their voice profile, not blander or more formal
+3. SUGGESTIONS: Find 2-4 phrases in the CURRENT draft that the user did NOT touch but that read as generic or off their voice profile. This is about how a line SOUNDS, not about replacing it — favor small, surgical changes: a word, a short phrase, a punctuation mark. Do NOT propose rewriting a whole sentence or clause; if a passage needs more than that to fix, it's not a good candidate — pick a narrower phrase within it instead, or skip it. For each:
+   - phrase: the exact current text (verbatim, must be findable in the current draft) — as short as it can be while still being the specific thing that reads wrong. It must fall entirely within a single paragraph — never let it span a paragraph break. If the generic-sounding text crosses paragraphs, pick the strongest single-paragraph excerpt from it instead of the whole span.
+   - alternative: what they'd probably actually say instead of THIS PHRASE specifically — this must sound MORE like their voice profile, not blander or more formal, and should stay close in length to phrase rather than expanding it into a new sentence
    - reason: framed as a "say it out loud" test, e.g. "Would you say this to a founder over coffee? You'd probably say '[alternative]' instead."
 
 4. EDGE: One sentence naming their strongest voice trait, based on their editing patterns specifically (not generic flattery). Just one thing.

@@ -27,6 +27,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   empty_response: "Didn't get a usable draft back. Try again?",
   save_failed: "Generated the draft but couldn't save it. Try again?",
   network_error: "Couldn't reach the server. Check your connection and try again.",
+  auth_expired: "Your session expired. Sign in again and retry.",
+  bad_input: "The note was empty — add some text and try again.",
 };
 export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Try again?";
 

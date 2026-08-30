@@ -7,7 +7,7 @@ import { buildVoiceInstructions } from "@/lib/voice-instructions";
 import { buildLearnedInstructions, type LearnedVoiceProfile } from "@/lib/voice-patterns";
 import { logAiUsage, logAiGenerationFailure } from "@/lib/ai-usage-log";
 
-const anthropic = new Anthropic({ maxRetries: 2 });
+const anthropic = new Anthropic({ maxRetries: 2, timeout: 30_000 });
 
 const PLATFORM_GUIDES: Record<string, string> = {
   linkedin:
@@ -66,17 +66,35 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user)
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    if (!user) {
+      await logAiGenerationFailure({
+        feature: "generate_draft",
+        model: "claude-sonnet-4-6",
+        reason: "auth_expired",
+        durationMs: Date.now() - startedAt,
+        detail: "No authenticated user — session likely expired",
+        userId: null,
+      });
+      return new Response(JSON.stringify({ error: "Unauthorized", reason: "auth_expired" }), {
         status: 401,
       });
+    }
     userId = user.id;
 
     const { entryContent, voiceProfile, businessContext, platform, estimateWords, format, focus } =
       await request.json();
 
-    if (!entryContent?.trim())
-      return new Response(JSON.stringify({ error: "entry content required" }), { status: 400 });
+    if (!entryContent?.trim()) {
+      await logAiGenerationFailure({
+        feature: "generate_draft",
+        model: "claude-sonnet-4-6",
+        reason: "bad_input",
+        durationMs: Date.now() - startedAt,
+        detail: "Missing or empty entryContent",
+        userId,
+      });
+      return new Response(JSON.stringify({ error: "entry content required", reason: "bad_input" }), { status: 400 });
+    }
 
     const voiceInstructions = voiceProfile?.dimensions
       ? buildVoiceInstructions(voiceProfile.dimensions, voiceProfile)
