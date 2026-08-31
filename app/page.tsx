@@ -119,7 +119,7 @@ export default function LandingPage() {
         <div
           className="absolute inset-0 z-[2]"
           style={{
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.7) 100%)",
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.8) 100%)",
           }}
         />
         {/* Mobile fallback — solid dark bg if video doesn't load */}
@@ -164,13 +164,6 @@ export default function LandingPage() {
               No account needed. Free for your first read.
             </span>
           </div>
-          <a
-            href="#demo"
-            className="no-underline inline-block mt-4 font-sans text-[13px] transition-opacity hover:opacity-100"
-            style={{ color: "rgba(255,255,255,0.9)" }}
-          >
-            See how it works ↓
-          </a>
         </div>
       </section>
 
