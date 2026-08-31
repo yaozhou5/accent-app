@@ -945,59 +945,88 @@ function LogTab({
                 ⌘↵ to log
               </span>
               <span style={{ flex: 1 }} />
-              {input.trim() && (
-                <button
-                  onClick={handleEditMyDraft}
-                  disabled={submitting}
-                  className="font-sans font-medium"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: DIM,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: submitting ? "wait" : "pointer",
-                    padding: "8px 10px",
-                  }}
-                >
-                  Edit my draft →
-                </button>
+              {input.trim() ? (
+                <>
+                  <button
+                    onClick={handleEditMyDraft}
+                    disabled={submitting}
+                    className="font-sans"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: DIM,
+                      fontSize: 13,
+                      cursor: submitting ? "wait" : "pointer",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    Edit my draft &rarr;
+                  </button>
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem("review-initial-text", input.trim());
+                      window.location.href = "/dashboard/review";
+                    }}
+                    className="font-sans"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: DIM,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    Get a read on it &rarr;
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={(!input.trim() && pendingImages.length === 0) || submitting}
+                    className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: 0,
+                      background: "#1a1a1a",
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {submitting ? "Saving..." : "+ Log it"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/dashboard/review"
+                    className="no-underline font-sans"
+                    style={{ fontSize: 13, color: DIM, padding: "8px 10px" }}
+                  >
+                    Get a read on something you wrote &rarr;
+                  </Link>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={(!input.trim() && pendingImages.length === 0) || submitting}
+                    className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: 0,
+                      background: "#1a1a1a",
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {submitting ? "Saving..." : "+ Log it"}
+                  </button>
+                </>
               )}
-              <button
-                onClick={handleSubmit}
-                disabled={(!input.trim() && pendingImages.length === 0) || submitting}
-                className="font-sans font-medium disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{
-                  padding: "8px 18px",
-                  borderRadius: 0,
-                  background: "#1a1a1a",
-                  color: "#fff",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                {submitting ? "Saving..." : "+ Log it"}
-              </button>
             </div>
           </div>
-
-          {/* Review entry point */}
-          <Link
-            href="/dashboard/review"
-            className="no-underline block font-sans"
-            style={{
-              maxWidth: 620,
-              margin: "10px auto 0",
-              padding: "12px 20px",
-              fontSize: 14,
-              color: DIM,
-              textAlign: "center",
-            }}
-          >
-            Already written something? <span style={{ color: INK, fontWeight: 500 }}>Get a read on it &rarr;</span>
-          </Link>
 
           {error && (
             <p className="font-sans text-[13px]" style={{ color: "#DC2626", padding: "4px 20px 0" }}>
@@ -2834,10 +2863,11 @@ function StandaloneWriteMode({
   profile: UserProfile | null;
   withoutProfile?: boolean;
   draftCount?: number;
-  onBack: () => void;
+  onBack: (edited: boolean) => void;
   onSaveDone: () => void;
 }) {
   const [content, setContent] = useState(draft.content);
+  const editedRef = useRef(false);
   const [saving, setSaving] = useState(false);
   // Format is chosen once at generation time (DraftFormatModal) — no longer
   // switchable from within the editor, so this is just a display value.
@@ -2976,6 +3006,7 @@ function StandaloneWriteMode({
 
   const handleChange = (val: string) => {
     setContent(val);
+    editedRef.current = true;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(async () => {
       setSaving(true);
@@ -3151,7 +3182,7 @@ function StandaloneWriteMode({
             <div style={voiceCoachOpen ? { paddingRight: 12 } : undefined}>
               <div className="flex items-center justify-between mb-6">
                 <button
-                  onClick={onBack}
+                  onClick={() => onBack(editedRef.current)}
                   className="font-mono text-[12px]"
                   style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
                 >
@@ -3939,7 +3970,12 @@ export default function DashboardPage() {
         profile={profile}
         withoutProfile={standaloneDraft.withoutProfile}
         draftCount={draftsState.length}
-        onBack={() => setStandaloneDraft(null)}
+        onBack={(edited) => {
+          if (!edited && standaloneDraft) {
+            deleteDraft(standaloneDraft.draft.id);
+          }
+          setStandaloneDraft(null);
+        }}
         onSaveDone={() => {
           setStandaloneDraft(null);
           setTab("history");

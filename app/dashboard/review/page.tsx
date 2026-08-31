@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "@/components/ArrowIcon";
 import ReviewMode from "@/components/ReviewMode";
@@ -10,6 +10,16 @@ const DIM = "#6b7280";
 
 export default function ReviewPage() {
   const [hasResults, setHasResults] = useState(false);
+  const [initialText, setInitialText] = useState("");
+
+  // Read and clear any text passed from the dashboard composer
+  useEffect(() => {
+    const stored = sessionStorage.getItem("review-initial-text");
+    if (stored) {
+      setInitialText(stored);
+      sessionStorage.removeItem("review-initial-text");
+    }
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ background: "#F5F0E8" }}>
@@ -34,7 +44,7 @@ export default function ReviewPage() {
           </>
         )}
 
-        <ReviewMode onResultsChange={setHasResults} />
+        <ReviewMode onResultsChange={setHasResults} initialText={initialText} />
       </div>
     </div>
   );

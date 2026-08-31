@@ -56,6 +56,7 @@ interface ReviewModeProps {
   apiEndpoint?: string;
   maxWords?: number;
   footer?: ReactNode;
+  initialText?: string;
 }
 
 // --- Helpers ---
@@ -183,8 +184,9 @@ export default function ReviewMode({
   apiEndpoint = "/api/review",
   maxWords,
   footer,
+  initialText = "",
 }: ReviewModeProps) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ReactNode>("");
   const [result, setResult] = useState<ReviewResult | null>(null);
