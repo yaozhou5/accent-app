@@ -388,7 +388,7 @@ export default function LandingPage() {
                 marginTop: 12,
               }}
             >
-              From thought to post in one loop.
+              See what it says about your writing.
             </h2>
           </div>
           <LandingDemo />
