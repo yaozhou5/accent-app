@@ -2868,6 +2868,8 @@ function StandaloneWriteMode({
 }) {
   const [content, setContent] = useState(draft.content);
   const editedRef = useRef(false);
+  const sessionStartRef = useRef(Date.now());
+  const draftSavedFiredRef = useRef(false);
   const [saving, setSaving] = useState(false);
   // Format is chosen once at generation time (DraftFormatModal) — no longer
   // switchable from within the editor, so this is just a display value.
@@ -2893,6 +2895,27 @@ function StandaloneWriteMode({
   // Set for real in openVoiceCoach(); this initial value is never read since
   // closeVoiceCoach() can only run after openVoiceCoach() has already fired.
   const voiceCoachOpenedAt = useRef(0);
+
+  // Emit draft_opened on mount, draft_saved on unmount/session end
+  useEffect(() => {
+    try {
+      posthog.capture("draft_opened", { source: "standalone", draft_id: draft.id });
+    } catch {}
+    return () => {
+      if (draftSavedFiredRef.current) return;
+      draftSavedFiredRef.current = true;
+      try {
+        posthog.capture("draft_saved", {
+          source: "standalone",
+          draft_id: draft.id,
+          word_count: lastSavedRef.current.trim().split(/\s+/).filter(Boolean).length,
+          edited: lastSavedRef.current !== (draft.original_draft || draft.content),
+          session_ms: Date.now() - sessionStartRef.current,
+        });
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Voice quiz invitation — shown on a draft generated without a profile.
   // Re-arms after 3 more profile-less drafts since the last dismissal
@@ -4040,7 +4063,6 @@ export default function DashboardPage() {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "log", label: "Log" },
-    { key: "playbooks", label: "Templates" },
     { key: "history", label: "Drafts" },
     { key: "voice-profile", label: "Voice Profile" },
   ];
