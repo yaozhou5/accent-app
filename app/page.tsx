@@ -284,11 +284,11 @@ export default function LandingPage() {
           </div>
           <div className="text-center mt-10">
             <Link
-              href="/voice"
+              href="/review"
               className="no-underline inline-block px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: BLUE, color: "#fff", borderRadius: 0 }}
             >
-              Find your voice <ArrowRight size={14} color="#fff" />
+              Paste something you wrote <ArrowRight size={14} color="#fff" />
             </Link>
             <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>
               Start free. No credit card.
@@ -481,7 +481,7 @@ export default function LandingPage() {
               marginBottom: 32,
             }}
           >
-            3 posts free every month. Unlimited for {PRO_PRICE_LONG}.
+            3 reads free every month. Unlimited for {PRO_PRICE_LONG}.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div style={{ background: "#FAFAF7", padding: 28 }}>
@@ -499,7 +499,7 @@ export default function LandingPage() {
                 Free
               </span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {["Unlimited logging", "Unlimited ideas", "3 posts per month", "Writing tools included"].map((f) => (
+                {["Unlimited logging", "Unlimited ideas", "3 reads per month", "Writing tools included"].map((f) => (
                   <li
                     key={f}
                     className="flex items-start gap-2"
@@ -526,9 +526,9 @@ export default function LandingPage() {
               </span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {[
-                  "Unlimited posts",
+                  "Unlimited reads",
                   "Voice-learning profile — gets smarter with every edit",
-                  "Full content shelf",
+                  "Full voice profile",
                   "Weekly rhythm tracking",
                 ].map((f) => (
                   <li
@@ -618,23 +618,18 @@ export default function LandingPage() {
       <section ref={s6.ref} style={s6.style}>
         <div className="max-w-[520px] mx-auto px-6 py-14 md:py-20 text-center">
           <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
-            <span style={{ fontWeight: 300 }}>Your week already happened.</span>
-            <br />
-            <span style={{ fontWeight: 700, fontStyle: "italic" }}>The content is in there.</span>
+            Paste something you wrote.
           </h2>
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            3 posts free every month. Unlimited for {PRO_PRICE_LONG}.
+            Free for your first read. No account needed.
           </p>
           <Link
-            href="/voice"
+            href="/review"
             className="no-underline inline-block px-8 py-4 font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
             style={{ background: BLUE, color: "#fff", borderRadius: 0 }}
           >
-            Find your voice <ArrowRight size={14} color="#fff" />
+            Try it now <ArrowRight size={14} color="#fff" />
           </Link>
-          <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>
-            Start free. No credit card.
-          </p>
         </div>
       </section>
 
