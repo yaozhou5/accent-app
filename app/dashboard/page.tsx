@@ -40,7 +40,15 @@ import {
 import { ArrowRight, ArrowLeft } from "@/components/ArrowIcon";
 import { PLAYBOOKS, getPlaybook, type Playbook } from "@/lib/playbooks";
 import PlaybookEditor from "@/components/PlaybookEditor";
-import VoiceCoach, { type CoachResult } from "@/components/VoiceCoach";
+import VoiceCoach, {
+  type CoachResult,
+  type FocusTarget,
+  type WordToken,
+  tokenizeWithWhitespace,
+  diffWordIndices,
+  changeRatio,
+  HEAVY_REWRITE_RATIO_THRESHOLD,
+} from "@/components/VoiceCoach";
 import DraftFormatModal, {
   FORMATS,
   type DraftFormat,
@@ -974,6 +982,22 @@ function LogTab({
               </button>
             </div>
           </div>
+
+          {/* Review entry point */}
+          <Link
+            href="/dashboard/review"
+            className="no-underline block font-sans"
+            style={{
+              maxWidth: 620,
+              margin: "10px auto 0",
+              padding: "12px 20px",
+              fontSize: 14,
+              color: DIM,
+              textAlign: "center",
+            }}
+          >
+            Already written something? <span style={{ color: INK, fontWeight: 500 }}>Get a read on it &rarr;</span>
+          </Link>
 
           {error && (
             <p className="font-sans text-[13px]" style={{ color: "#DC2626", padding: "4px 20px 0" }}>
@@ -2683,6 +2707,108 @@ function WriteMode({
 }
 
 /* ══════════════ STANDALONE WRITE MODE ══════════════ */
+
+interface ParagraphChunk {
+  tokens: WordToken[];
+  gapAfter: string;
+}
+
+// Splits a matched region's exact text into paragraph-separated chunks —
+// a whitespace run containing a blank line is a paragraph break. Most
+// matches are a single chunk; only a match whose text itself spans a
+// paragraph (the coaching prompt now tells the model not to do this for
+// suggestions, but annotations aren't constrained, and models don't
+// always obey anyway) produces more than one.
+function splitIntoParagraphChunks(text: string): ParagraphChunk[] {
+  const tokens = tokenizeWithWhitespace(text);
+  const chunks: ParagraphChunk[] = [{ tokens: [], gapAfter: "" }];
+  for (const tok of tokens) {
+    if (!tok.isWord && /\n\s*\n/.test(tok.text)) {
+      chunks[chunks.length - 1].gapAfter = tok.text;
+      chunks.push({ tokens: [], gapAfter: "" });
+    } else {
+      chunks[chunks.length - 1].tokens.push(tok);
+    }
+  }
+  return chunks;
+}
+
+// Renders one matched annotation/suggestion region, verbatim to what's in
+// the draft. A single-paragraph match (the normal case) gets the usual
+// tinted background across its whole span. A match that spans a paragraph
+// break renders as multiple fragments instead — one per paragraph, joined
+// by the ordinary unstyled gap text between them — each fragment getting a
+// thin left rule rather than a background fill, so the pair still reads as
+// one marked region instead of two separate highlights. Either way, words
+// flagged in diffIndices (the actual difference between old and new) get a
+// stronger mark than the rest of the matched text.
+function renderMatchedRegion(opts: {
+  matchedText: string;
+  diffIndices: Set<number>;
+  isFocused: boolean;
+  accentColor: string;
+  onClick: () => void;
+  keyPrefix: string;
+}) {
+  const { matchedText, diffIndices, isFocused, accentColor, onClick, keyPrefix } = opts;
+  const chunks = splitIntoParagraphChunks(matchedText);
+  const spansParagraphs = chunks.length > 1;
+  const lightBg = `${accentColor}15`;
+  // Same step already used to mark the region as focused — reused here for
+  // the changed-word mark rather than inventing a third, darker tint.
+  const focusedBg = `${accentColor}30`;
+
+  let wordIndex = 0;
+  const pieces: React.ReactNode[] = [];
+
+  chunks.forEach((chunk, chunkIdx) => {
+    const wordSpans = chunk.tokens.map((tok, tokIdx) => {
+      if (!tok.isWord) return tok.text;
+      const isDiffWord = diffIndices.has(wordIndex);
+      wordIndex++;
+      return (
+        <span
+          key={`${keyPrefix}-w-${chunkIdx}-${tokIdx}`}
+          // Diff-word emphasis is background-only — never a text colour
+          // change. In the paragraph-spanning fallback (no background tint
+          // at all, by design — see splitIntoParagraphChunks) that leaves
+          // weight as the only differentiator for a changed word.
+          style={
+            spansParagraphs
+              ? { fontWeight: isDiffWord ? 700 : 400 }
+              : { background: isDiffWord ? focusedBg : "transparent", fontWeight: isDiffWord ? 700 : 400 }
+          }
+        >
+          {tok.text}
+        </span>
+      );
+    });
+    pieces.push(
+      <span
+        key={`${keyPrefix}-chunk-${chunkIdx}`}
+        onClick={onClick}
+        style={
+          spansParagraphs
+            ? { cursor: "pointer", borderLeft: `2px solid ${accentColor}`, paddingLeft: 4 }
+            : {
+                cursor: "pointer",
+                borderRadius: 0,
+                padding: "0 2px",
+                background: isFocused ? focusedBg : lightBg,
+                borderBottom: `2px solid ${accentColor}80`,
+                transition: "background 0.15s",
+              }
+        }
+      >
+        {wordSpans}
+      </span>
+    );
+    if (chunk.gapAfter) pieces.push(chunk.gapAfter);
+  });
+
+  return pieces;
+}
+
 function IconSparkles({ size = 15 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="currentColor">
@@ -2720,7 +2846,12 @@ function StandaloneWriteMode({
   const [showDraftSection, setShowDraftSection] = useState(true);
   const [voiceCoachOpen, setVoiceCoachOpen] = useState(false);
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
-  const [selectedAnnotationIndex, setSelectedAnnotationIndex] = useState<number | null>(null);
+  // Which tab is active and which item (if any) is focused — lifted here
+  // because the document highlight layer has to agree with both: it can
+  // only ever render the layer for the active tab, and only one span is
+  // ever focused at a time, in either tab.
+  const [coachTab, setCoachTab] = useState<"edits" | "suggestions">("edits");
+  const [coachFocused, setCoachFocused] = useState<FocusTarget | null>(null);
   const [coachLeftView, setCoachLeftView] = useState<"highlighted" | "edit">("edit");
   // Mobile-only: the side-by-side split is unreadable under 768px, so it
   // becomes a tab switcher there instead (desktop keeps the split as-is).
@@ -2812,9 +2943,23 @@ function StandaloneWriteMode({
   };
 
   // Once Voice Coach analysis loads, default the left column to the
-  // highlighted view so the annotations are visible in context.
+  // highlighted view so whichever tab is active is visible in context.
   useEffect(() => {
-    if (coachResult && coachResult.annotations.length > 0) setCoachLeftView("highlighted");
+    if (coachResult && (coachResult.annotations.length > 0 || coachResult.suggestions.length > 0)) {
+      setCoachLeftView("highlighted");
+    }
+  }, [coachResult]);
+
+  // Coaching pushes the editable draft roughly half a screen down if the
+  // source-note block is left open above it — collapse it the first time
+  // coaching data arrives. One-shot (a ref, not tied to coachResult
+  // directly) so a later re-check doesn't fight the user's own toggle.
+  const noteCollapsedForCoachRef = useRef(false);
+  useEffect(() => {
+    if (coachResult && !noteCollapsedForCoachRef.current) {
+      noteCollapsedForCoachRef.current = true;
+      setShowNote(false);
+    }
   }, [coachResult]);
 
   useEffect(() => {
@@ -2855,15 +3000,16 @@ function StandaloneWriteMode({
       posthog.capture("voice_coach_closed", { draft_id: draft.id, time_spent_seconds: timeSpent });
     } catch {}
     setVoiceCoachOpen(false);
-    setSelectedAnnotationIndex(null);
+    setCoachFocused(null);
     setCoachLeftView("edit");
     setMobileCoachTab("coach");
   };
 
-  // Build the highlighted, click-to-select view of the current draft for the
-  // Voice Coach split panel — matches on each annotation's edited_text (the
-  // version actually present in the current draft).
-  function renderCoachHighlightedDraft() {
+  // Build the highlighted, click-to-focus view of the current draft for the
+  // Voice Coach split panel. Only one of these two ever renders at a time —
+  // whichever matches the panel's active tab — so the document and panel
+  // can never show mismatched layers (a span with no card, or vice versa).
+  function renderCoachAnnotationHighlights() {
     const anns = coachResult?.annotations || [];
     let remaining = content;
     const segments: { text: string; annotationIndex?: number }[] = [];
@@ -2890,23 +3036,67 @@ function StandaloneWriteMode({
         );
       }
       const ann = anns[seg.annotationIndex];
-      const isSelected = selectedAnnotationIndex === seg.annotationIndex;
-      const toward = ann.direction === "toward";
+      const isFocused = coachFocused?.kind === "annotation" && coachFocused.index === seg.annotationIndex;
+      // A near-total rewrite makes per-word marking noise, not signal —
+      // fall back to one flat tint across the whole span instead.
+      const heavyRewrite = changeRatio(ann.original_text, ann.edited_text) >= HEAVY_REWRITE_RATIO_THRESHOLD;
       return (
-        <span
-          key={i}
-          onClick={() => setSelectedAnnotationIndex(isSelected ? null : seg.annotationIndex!)}
-          style={{
-            whiteSpace: "pre-wrap",
-            cursor: "pointer",
-            borderRadius: 0,
-            padding: "0 2px",
-            background: isSelected ? (toward ? "#16a34a30" : "#B4530930") : toward ? "#16a34a15" : "#B4530915",
-            borderBottom: `2px solid ${toward ? "#16a34a80" : "#B4530980"}`,
-            transition: "background 0.15s",
-          }}
-        >
-          {seg.text}
+        <span key={i}>
+          {renderMatchedRegion({
+            matchedText: seg.text,
+            diffIndices: heavyRewrite ? new Set<number>() : diffWordIndices(ann.original_text, ann.edited_text, "new"),
+            isFocused,
+            accentColor: ann.direction === "toward" ? "#16a34a" : "#B45309",
+            onClick: () => setCoachFocused(isFocused ? null : { kind: "annotation", index: seg.annotationIndex! }),
+            keyPrefix: `ann-${seg.annotationIndex}`,
+          })}
+        </span>
+      );
+    });
+  }
+
+  // Suggestions ("Say it out loud?") match on the untouched phrase in the
+  // current draft — same matching shape as annotations, no "toward/away"
+  // axis to color by, so a single reused accent tint instead.
+  function renderCoachSuggestionHighlights() {
+    const suggs = coachResult?.suggestions || [];
+    let remaining = content;
+    const segments: { text: string; suggestionIndex?: number }[] = [];
+    const matches = suggs
+      .map((s, i) => ({ ...s, originalIndex: i }))
+      .filter((s) => s.phrase && remaining.includes(s.phrase))
+      .sort((a, b) => remaining.indexOf(a.phrase) - remaining.indexOf(b.phrase));
+
+    for (const s of matches) {
+      const idx = remaining.indexOf(s.phrase);
+      if (idx === -1) continue;
+      if (idx > 0) segments.push({ text: remaining.slice(0, idx) });
+      segments.push({ text: s.phrase, suggestionIndex: s.originalIndex });
+      remaining = remaining.slice(idx + s.phrase.length);
+    }
+    if (remaining) segments.push({ text: remaining });
+
+    return segments.map((seg, i) => {
+      if (seg.suggestionIndex === undefined) {
+        return (
+          <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+            {seg.text}
+          </span>
+        );
+      }
+      const s = suggs[seg.suggestionIndex];
+      const isFocused = coachFocused?.kind === "suggestion" && coachFocused.index === seg.suggestionIndex;
+      const heavyRewrite = changeRatio(s.phrase, s.alternative) >= HEAVY_REWRITE_RATIO_THRESHOLD;
+      return (
+        <span key={i}>
+          {renderMatchedRegion({
+            matchedText: seg.text,
+            diffIndices: heavyRewrite ? new Set<number>() : diffWordIndices(s.phrase, s.alternative, "old"),
+            isFocused,
+            accentColor: BLUE,
+            onClick: () => setCoachFocused(isFocused ? null : { kind: "suggestion", index: seg.suggestionIndex! }),
+            keyPrefix: `sug-${seg.suggestionIndex}`,
+          })}
         </span>
       );
     });
@@ -3124,7 +3314,7 @@ function StandaloneWriteMode({
                         fontWeight: 500,
                       }}
                     >
-                      Your note{" "}
+                      {coachResult ? (showNote ? "Hide original" : "Show original") : "Your note"}{" "}
                       <span
                         style={{
                           fontSize: 10,
@@ -3213,28 +3403,27 @@ function StandaloneWriteMode({
 
               {showDraftSection && (
                 <>
-                  {voiceCoachOpen && coachResult && coachResult.annotations.length > 0 && (
-                    <div className="mb-3">
-                      <button
-                        onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
-                        className="font-mono text-[11px]"
-                        style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
-                      >
-                        {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Draft content — coach highlights or plain textarea */}
                   {voiceCoachOpen &&
-                  coachLeftView === "highlighted" &&
-                  coachResult &&
-                  coachResult.annotations.length > 0 ? (
+                    coachResult &&
+                    (coachResult.annotations.length > 0 || coachResult.suggestions.length > 0) && (
+                      <div className="mb-3">
+                        <button
+                          onClick={() => setCoachLeftView(coachLeftView === "highlighted" ? "edit" : "highlighted")}
+                          className="font-mono text-[11px]"
+                          style={{ color: DIM, background: "none", border: "none", cursor: "pointer" }}
+                        >
+                          {coachLeftView === "highlighted" ? "Edit text" : "Show highlights"}
+                        </button>
+                      </div>
+                    )}
+
+                  {/* Draft content — coach highlights (whichever tab is active) or plain textarea */}
+                  {voiceCoachOpen && coachLeftView === "highlighted" && coachResult ? (
                     <div
                       className="font-sans"
                       style={{ fontSize: 16, color: INK, lineHeight: 1.8, minHeight: "40vh", whiteSpace: "pre-wrap" }}
                     >
-                      {renderCoachHighlightedDraft()}
+                      {coachTab === "edits" ? renderCoachAnnotationHighlights() : renderCoachSuggestionHighlights()}
                     </div>
                   ) : (
                     // Distinct from the quoted "Your note" box below it — a solid
@@ -3322,21 +3511,31 @@ function StandaloneWriteMode({
                 animation: "voiceCoachPanelIn 0.35s ease",
               }}
             >
-              <VoiceCoach
-                draftId={draft.id}
-                originalDraft={draft.original_draft || ""}
-                currentDraft={content}
-                voiceProfile={profile?.voice_profile as VoiceProfile | undefined}
-                selectedIndex={selectedAnnotationIndex}
-                onSelectIndex={setSelectedAnnotationIndex}
-                onResultChange={setCoachResult}
-                onApplySuggestion={(updated) => {
-                  setContent(updated);
-                  saveDraftById(draft.id, updated);
-                  lastSavedRef.current = updated;
-                }}
-                onClose={closeVoiceCoach}
-              />
+              {/* The draft column (left) is left to its natural full length —
+                  it's a normal document, read by scrolling the page. This
+                  column is sticky instead, so it needs its own scroll: without
+                  a height cap, a panel taller than the viewport would have no
+                  way to reveal its lower cards once the page itself stops
+                  scrolling (or never needed to, if the draft is short). */}
+              <div style={{ maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
+                <VoiceCoach
+                  draftId={draft.id}
+                  originalDraft={draft.original_draft || ""}
+                  currentDraft={content}
+                  voiceProfile={profile?.voice_profile as VoiceProfile | undefined}
+                  tab={coachTab}
+                  onTabChange={setCoachTab}
+                  focused={coachFocused}
+                  onFocusChange={setCoachFocused}
+                  onResultChange={setCoachResult}
+                  onApplySuggestion={(updated) => {
+                    setContent(updated);
+                    saveDraftById(draft.id, updated);
+                    lastSavedRef.current = updated;
+                  }}
+                  onClose={closeVoiceCoach}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -3536,19 +3735,23 @@ export default function DashboardPage() {
   const [voiceLearning, setVoiceLearning] = useState<VoiceLearningData | null>(null);
 
   useEffect(() => {
-    getVoiceLearningData().then(setVoiceLearning);
-  }, []);
-
-  useEffect(() => {
     async function load() {
-      const [p, plan, plans, entries, draftsList, authResult] = await Promise.all([
+      // Warm the auth token cache with a single getUser() call before
+      // running parallel fetches. Each helper creates its own client ref
+      // (same singleton) and calls getUser() internally — without this
+      // preflight they all race for the same token-refresh lock and
+      // Supabase throws "lock was released because another request stole it".
+      const authResult = await createSupabaseClient().auth.getUser();
+
+      const [p, plan, plans, entries, draftsList, voiceLearningData] = await Promise.all([
         getProfile(),
         getCurrentPlan(),
         getAllPlans(),
         getLogEntries(),
         getAllDrafts(),
-        createSupabaseClient().auth.getUser(),
+        getVoiceLearningData(),
       ]);
+      setVoiceLearning(voiceLearningData);
       // Session restore — links this browser to the account even for
       // returning users who never re-run the login/signup verify flow.
       if (authResult.data.user) identifyUser(authResult.data.user);

@@ -1,3 +1,11 @@
+import { AI_PHRASE_CATEGORIES } from "./ai-phrases";
+
+const BUZZWORD_EXAMPLES =
+  AI_PHRASE_CATEGORIES.find((c) => c.id === "nouns")
+    ?.phrases.slice(0, 6)
+    .map((p) => `"${p}"`)
+    .join(", ") || "";
+
 export function buildFixPrompt(text: string): string {
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -21,7 +29,7 @@ B. AI filler phrases — confident-sounding boilerplate with no information.
    Examples: "I am confident that", "I thrive in fast-paced environments", "I am excited about the opportunity to", "At the intersection of".
 
 C. Vague buzzwords — words that gesture at work without naming it.
-   Examples: "impactful solutions", "drive measurable results", "cross-functionally", "leverage synergies", "strategic alignment", "value-add".
+   Examples: ${BUZZWORD_EXAMPLES}.
 
 D. Generic personality phrases — descriptions that could apply to literally anyone.
    Examples: "passionate about innovation", "eager to take on new challenges", "detail-oriented team player", "lifelong learner".
