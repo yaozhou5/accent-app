@@ -136,9 +136,8 @@ export default function LandingPage() {
               color: "#fff",
             }}
           >
-            Every tool makes your writing better
-            <br />
-            <span style={{ fontStyle: "italic", fontWeight: 600 }}>by making it less yours.</span>
+            Your voice.
+            <br className="sm:hidden" /> AI-assisted.
           </h1>
           <p
             className="font-sans mx-auto mt-4 md:mt-6"
@@ -149,8 +148,7 @@ export default function LandingPage() {
               maxWidth: 520,
             }}
           >
-            accent doesn&apos;t rewrite you. It reads what you&apos;ve written and shows you which parts are actually
-            yours.
+            Every draft gets closer.
           </p>
           <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
             <Link
