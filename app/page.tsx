@@ -150,17 +150,24 @@ export default function LandingPage() {
           >
             Every draft gets closer.
           </p>
-          <div className="mt-6 md:mt-8">
+          <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
             <Link
-              href="/voice"
+              href="/review"
               className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
             >
-              Find your voice <ArrowRight size={14} color="#1a1a1a" />
+              Try it now — paste something you wrote <ArrowRight size={14} color="#1a1a1a" />
             </Link>
-            <p className="mt-2 font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.9)" }}>
-              Start free. No credit card.
-            </p>
+            <span className="font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
+              No account needed.
+            </span>
+            <Link
+              href="/voice"
+              className="no-underline font-sans text-[13px]"
+              style={{ color: "rgba(255,255,255,0.9)" }}
+            >
+              Or find your voice first <ArrowRight size={12} color="rgba(255,255,255,0.9)" />
+            </Link>
           </div>
           <a
             href="#demo"
