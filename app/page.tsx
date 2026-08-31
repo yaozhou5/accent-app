@@ -136,8 +136,9 @@ export default function LandingPage() {
               color: "#fff",
             }}
           >
-            Your voice.
-            <br className="sm:hidden" /> AI-assisted.
+            Every tool makes your writing better
+            <br />
+            <span style={{ fontStyle: "italic", fontWeight: 600 }}>by making it less yours.</span>
           </h1>
           <p
             className="font-sans mx-auto mt-4 md:mt-6"
@@ -148,7 +149,8 @@ export default function LandingPage() {
               maxWidth: 520,
             }}
           >
-            Every draft gets closer.
+            accent doesn&apos;t rewrite you. It reads what you&apos;ve written and shows you which parts are actually
+            yours.
           </p>
           <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
             <Link
@@ -156,18 +158,11 @@ export default function LandingPage() {
               className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
             >
-              Try it now — paste something you wrote <ArrowRight size={14} color="#1a1a1a" />
+              Paste something you wrote <ArrowRight size={14} color="#1a1a1a" />
             </Link>
             <span className="font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-              No account needed.
+              No account needed. Free for your first read.
             </span>
-            <Link
-              href="/voice"
-              className="no-underline font-sans text-[13px]"
-              style={{ color: "rgba(255,255,255,0.9)" }}
-            >
-              Or find your voice first <ArrowRight size={12} color="rgba(255,255,255,0.9)" />
-            </Link>
           </div>
           <a
             href="#demo"
