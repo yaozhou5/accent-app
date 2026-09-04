@@ -173,18 +173,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pain quote */}
+      {/* Distribution-first statement */}
       <section ref={s1.ref} style={s1.style}>
         <div className="max-w-[640px] mx-auto px-6 py-10 md:py-14">
-          <div className="pl-6" style={{ borderLeft: `2px solid ${BLUE}` }}>
-            <p
-              className="font-serif italic"
-              style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}
-            >
-              &ldquo;Most founders build for months before anyone outside the room hears about it. Distribution-first
-              means talking about the work while it&apos;s still changing.&rdquo;
-            </p>
-          </div>
+          <p
+            className="font-serif"
+            style={{
+              fontSize: "clamp(19px, 2.8vw, 24px)",
+              fontWeight: 600,
+              lineHeight: 1.55,
+              color: INK,
+              marginBottom: 8,
+            }}
+          >
+            Most founders build for months before anyone outside the room hears about it.
+          </p>
+          <p
+            className="font-sans"
+            style={{ fontSize: "clamp(15px, 2.2vw, 17px)", fontWeight: 400, lineHeight: 1.6, color: DIM }}
+          >
+            Distribution-first means talking about the work while it&apos;s still changing.
+          </p>
         </div>
       </section>
 
