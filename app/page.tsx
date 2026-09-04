@@ -57,6 +57,12 @@ export default function LandingPage() {
   const [fallbackInput, setFallbackInput] = useState("");
   const [copied, setCopied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToHeroInput = () => {
+    urlInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => urlInputRef.current?.focus(), 400);
+  };
 
   const getReferrer = () => (typeof document !== "undefined" ? document.referrer : "");
 
@@ -166,13 +172,13 @@ export default function LandingPage() {
             >
               Log in
             </Link>
-            <Link
-              href="/review"
-              className="no-underline px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
-              style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
+            <button
+              onClick={scrollToHeroInput}
+              className="px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
+              style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0, border: "none", cursor: "pointer" }}
             >
               Get my first post
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
@@ -231,6 +237,7 @@ export default function LandingPage() {
           <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
             <div className="flex w-full sm:w-auto">
               <input
+                ref={urlInputRef}
                 type="url"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
@@ -470,13 +477,13 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="text-center mt-10">
-            <Link
-              href="/review"
-              className="no-underline inline-block px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-              style={{ background: BLUE, color: "#fff", borderRadius: 0 }}
+            <button
+              onClick={scrollToHeroInput}
+              className="px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
+              style={{ background: BLUE, color: "#fff", borderRadius: 0, border: "none", cursor: "pointer" }}
             >
               Try it free <ArrowRight size={14} color="#fff" />
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -700,13 +707,13 @@ export default function LandingPage() {
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
             Paste your product link and see what comes out. Free, no account needed.
           </p>
-          <Link
-            href="/review"
-            className="no-underline inline-block px-8 py-4 font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-            style={{ background: BLUE, color: "#fff", borderRadius: 0 }}
+          <button
+            onClick={scrollToHeroInput}
+            className="px-8 py-4 font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
+            style={{ background: BLUE, color: "#fff", borderRadius: 0, border: "none", cursor: "pointer" }}
           >
             Try it now <ArrowRight size={14} color="#fff" />
-          </Link>
+          </button>
         </div>
       </section>
 
