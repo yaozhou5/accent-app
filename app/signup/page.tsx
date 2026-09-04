@@ -49,7 +49,29 @@ export default function SignupPage() {
     if (error) setError("Invalid or expired code.");
     else {
       if (data.user) identifyUser(data.user);
-      posthog.capture("signup_completed", { email: email.trim().toLowerCase() });
+      // Capture attribution
+      const ref = typeof document !== "undefined" ? document.referrer : "";
+      const params =
+        typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+      posthog.capture("signup_completed", {
+        email: email.trim().toLowerCase(),
+        referrer: ref,
+        utm_source: params.get("utm_source") || "",
+        utm_medium: params.get("utm_medium") || "",
+        utm_campaign: params.get("utm_campaign") || "",
+      });
+      // Store attribution on profile
+      try {
+        const { upsertProfile } = await import("@/lib/supabase/profiles");
+        await upsertProfile({
+          signup_referrer: ref || null,
+          signup_utm_source: params.get("utm_source") || null,
+          signup_utm_medium: params.get("utm_medium") || null,
+          signup_utm_campaign: params.get("utm_campaign") || null,
+        });
+      } catch (e) {
+        console.error("Failed to save attribution:", e);
+      }
       // Save pending voice profile and send email report
       const pending = localStorage.getItem("pending_voice_profile");
       if (pending) {

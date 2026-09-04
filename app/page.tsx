@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight } from "@/components/ArrowIcon";
 import LandingDemo from "@/components/LandingDemo";
 import { PRO_PRICE_SHORT, PRO_PRICE_LONG } from "@/lib/pricing";
+import posthog from "posthog-js";
 
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
@@ -46,6 +47,82 @@ export default function LandingPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // URL-to-post flow
+  const [urlInput, setUrlInput] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generatedPost, setGeneratedPost] = useState("");
+  const [genError, setGenError] = useState("");
+  const [showFallback, setShowFallback] = useState(false);
+  const [fallbackInput, setFallbackInput] = useState("");
+  const [copied, setCopied] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  const getReferrer = () => (typeof document !== "undefined" ? document.referrer : "");
+
+  const handleGenerate = async (url?: string, description?: string) => {
+    if (generating) return;
+    setGenerating(true);
+    setGenError("");
+    setGeneratedPost("");
+    setShowFallback(false);
+
+    try {
+      posthog.capture("link_submitted", { url: url || "", has_description: !!description, referrer: getReferrer() });
+    } catch {}
+
+    try {
+      const body: Record<string, string> = {};
+      if (url) body.url = url;
+      if (description) body.description = description;
+
+      const res = await fetch("/api/generate-from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.needsDescription) {
+          setShowFallback(true);
+          setGenError(data.error || "Couldn't read that page.");
+        } else {
+          setGenError(data.error || "Something went wrong.");
+        }
+        setGenerating(false);
+        return;
+      }
+
+      setGeneratedPost(data.post);
+      try {
+        posthog.capture("post_generated", { source: data.source, referrer: getReferrer() });
+      } catch {}
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    } catch {
+      setGenError("Couldn't reach the server. Check your connection.");
+    }
+    setGenerating(false);
+  };
+
+  const handleCopyPost = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedPost);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = generatedPost;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const s1 = useReveal(),
     s2 = useReveal(),
@@ -94,7 +171,7 @@ export default function LandingPage() {
               className="no-underline px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
             >
-              Try it free
+              Get my first post
             </Link>
           </div>
         </div>
@@ -155,23 +232,127 @@ export default function LandingPage() {
             <div className="flex w-full sm:w-auto">
               <input
                 type="url"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && urlInput.trim()) handleGenerate(urlInput.trim());
+                }}
                 placeholder="yourproduct.com"
-                className="font-sans text-[15px] px-4 py-3.5 flex-1 sm:w-[280px] outline-none"
+                disabled={generating}
+                className="font-sans text-[15px] px-4 py-3.5 flex-1 sm:w-[280px] outline-none disabled:opacity-50"
                 style={{ background: "#fff", color: "#1a1a1a", border: "none", borderRadius: 0 }}
               />
               <button
-                className="font-sans font-semibold text-[15px] px-7 py-3.5 transition-transform hover:scale-[1.02] hover:-translate-y-px whitespace-nowrap"
+                onClick={() => urlInput.trim() && handleGenerate(urlInput.trim())}
+                disabled={generating || !urlInput.trim()}
+                className="font-sans font-semibold text-[15px] px-7 py-3.5 transition-transform hover:scale-[1.02] hover:-translate-y-px whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "#1a1a1a", color: "#F5F0E8", border: "none", borderRadius: 0, cursor: "pointer" }}
               >
-                Paste your link <ArrowRight size={14} color="#F5F0E8" />
+                {generating ? (
+                  "Writing..."
+                ) : (
+                  <>
+                    Get my first post <ArrowRight size={14} color="#F5F0E8" />
+                  </>
+                )}
               </button>
             </div>
             <span className="font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
               Free, no account needed.
             </span>
+            {genError && !showFallback && (
+              <span className="font-sans" style={{ fontSize: 13, color: "#fca5a5" }}>
+                {genError}
+              </span>
+            )}
           </div>
+
+          {/* Fallback: description input when URL fetch fails */}
+          {showFallback && (
+            <div className="mt-6 flex flex-col items-center gap-3 w-full" style={{ maxWidth: 520 }}>
+              <p className="font-sans text-center" style={{ fontSize: 14, color: "rgba(255,255,255,0.7)" }}>
+                {genError} Tell us what you&apos;re building instead:
+              </p>
+              <div className="flex w-full sm:w-auto">
+                <input
+                  type="text"
+                  value={fallbackInput}
+                  onChange={(e) => setFallbackInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && fallbackInput.trim()) handleGenerate(undefined, fallbackInput.trim());
+                  }}
+                  placeholder="A tool that helps founders post weekly about what they're building"
+                  disabled={generating}
+                  className="font-sans text-[15px] px-4 py-3.5 flex-1 sm:w-[360px] outline-none disabled:opacity-50"
+                  style={{ background: "#fff", color: "#1a1a1a", border: "none", borderRadius: 0 }}
+                />
+                <button
+                  onClick={() => fallbackInput.trim() && handleGenerate(undefined, fallbackInput.trim())}
+                  disabled={generating || !fallbackInput.trim()}
+                  className="font-sans font-semibold text-[15px] px-7 py-3.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: "#1a1a1a",
+                    color: "#F5F0E8",
+                    border: "none",
+                    borderRadius: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  {generating ? "Writing..." : "Generate"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
+
+      {/* Generated post result */}
+      {generatedPost && (
+        <section ref={resultRef} style={{ background: "#FAFAF7", borderBottom: "1px solid #e0ddd5" }}>
+          <div className="max-w-[640px] mx-auto px-6 py-10 md:py-14">
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: FAINT,
+                display: "block",
+                marginBottom: 16,
+              }}
+            >
+              Your post
+            </span>
+            <p
+              className="font-sans"
+              style={{ fontSize: 16, color: INK, lineHeight: 1.7, whiteSpace: "pre-wrap", marginBottom: 20 }}
+            >
+              {generatedPost}
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleCopyPost}
+                className="font-sans font-semibold text-[14px] px-5 py-2.5"
+                style={{ background: BLUE, color: "#F5F0E8", border: "none", borderRadius: 0, cursor: "pointer" }}
+              >
+                {copied ? "Copied" : "Copy post"}
+              </button>
+              <Link
+                href="/signup"
+                onClick={() => {
+                  try {
+                    posthog.capture("signup_started", { source: "post_generated", referrer: getReferrer() });
+                  } catch {}
+                }}
+                className="no-underline font-sans text-[14px]"
+                style={{ color: DIM }}
+              >
+                Sign up to save &amp; edit &rarr;
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Distribution-first statement */}
       <section ref={s1.ref} style={s1.style}>

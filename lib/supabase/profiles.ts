@@ -34,6 +34,10 @@ export interface UserProfile {
   voice_profile: VoiceProfile | null;
   content_topic: string | null;
   target_audience: string | null;
+  signup_referrer: string | null;
+  signup_utm_source: string | null;
+  signup_utm_medium: string | null;
+  signup_utm_campaign: string | null;
   created_at: string;
 }
 
