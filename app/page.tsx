@@ -90,11 +90,11 @@ export default function LandingPage() {
               Log in
             </Link>
             <Link
-              href="/voice"
+              href="/review"
               className="no-underline px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
             >
-              Find your voice
+              Try it free
             </Link>
           </div>
         </div>
@@ -211,34 +211,25 @@ export default function LandingPage() {
                 marginTop: 12,
               }}
             >
-              From a thought to a post that sounds like you.
+              From a product link to a post in five minutes.
             </h2>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {[
               {
                 num: "01",
-                title: "Discover your voice",
-                desc: "A 60-second exercise maps how you naturally communicate. This is your starting point — it evolves as you write.",
-                color: "#1A1512",
+                title: "Paste your link",
+                desc: "Drop your product URL, landing page, or pitch deck link. Accent reads what you've built.",
               },
               {
                 num: "02",
-                title: "Log or paste",
-                desc: "Capture a thought, a link, a rough idea. Or paste a draft you've already written and go straight to editing.",
-                color: "#C4614A",
+                title: "Get a draft that sounds like you",
+                desc: "Not a press release. A post in your voice — the way you'd explain it to another founder over coffee.",
               },
               {
                 num: "03",
-                title: "Generate and edit",
-                desc: "Accent drafts in your voice. You reshape it until it sounds like you. The editing is the product — not a chore before publishing.",
-                color: "#1E5C58",
-              },
-              {
-                num: "04",
-                title: "Voice Coach learns",
-                desc: "After each edit, Voice Coach analyzes what you changed — words you replaced, patterns you removed, structure you prefer. Those insights feed back into your voice profile, so the next draft starts closer to how you actually write.",
-                color: "#8B2525",
+                title: "Edit, publish, repeat weekly",
+                desc: "Each week, a new angle on what you're building. Your audience grows alongside the product, not after it ships.",
               },
             ].map((step) => (
               <div
@@ -294,110 +285,28 @@ export default function LandingPage() {
               className="no-underline inline-block px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
               style={{ background: BLUE, color: "#fff", borderRadius: 0 }}
             >
-              Paste something you wrote <ArrowRight size={14} color="#fff" />
+              Try it free <ArrowRight size={14} color="#fff" />
             </Link>
-            <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>
-              Start free. No credit card.
-            </p>
           </div>
         </div>
       </section>
 
-      {/* Who it's for — Founders */}
+      {/* Who it's for — Founders statement */}
       <section ref={s5.ref} style={s5.style}>
-        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
-          <div style={{ maxWidth: 400, padding: "24px 22px", background: "#F0ECE4" }}>
-            <div
-              className="mb-3 flex items-center justify-center"
-              style={{ width: 48, height: 48, borderRadius: "50%", background: "#C4A03018" }}
-            >
-              <span style={{ fontSize: 24 }}>🚀</span>
-            </div>
-            <h3 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, fontWeight: 400, marginBottom: 12 }}>
-              Founders
-            </h3>
-            <p
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13,
-                color: DIM,
-                lineHeight: 1.55,
-                marginBottom: 12,
-              }}
-            >
-              Building a company and a personal brand at the same time.
-            </p>
-            <div style={{ borderTop: "1px solid #e0ddd5", paddingTop: 12 }}>
-              <p
-                style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  color: INK,
-                  lineHeight: 1.55,
-                  margin: 0,
-                }}
-              >
-                No marketing team — just you and your voice.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Voice-learning loop */}
-      <section style={{ background: "#F0ECE4" }}>
-        <div ref={s7.ref} style={s7.style} className="max-w-[760px] mx-auto px-6 py-12 md:py-20">
-          <div className="text-center mb-10">
-            <span
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: FAINT,
-              }}
-            >
-              The voice-learning loop
-            </span>
-            <h2
-              style={{
-                fontFamily: "'Fraunces', Georgia, serif",
-                fontSize: "clamp(24px, 3.6vw, 36px)",
-                fontWeight: 400,
-                marginTop: 12,
-              }}
-            >
-              Accent gets better every time you write.
-            </h2>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center" style={{ gap: 10, marginBottom: 28 }}>
-            {["Log", "Draft", "Edit", "Learn"].map((word, i) => (
-              <div key={word} className="flex items-center" style={{ gap: 10 }}>
-                <span
-                  style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 12,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    color: INK,
-                    background: "#FAFAF7",
-                    border: "1px solid #e0ddd5",
-                    padding: "8px 16px",
-                  }}
-                >
-                  {word}
-                </span>
-                {i < 3 && <span style={{ color: FAINT, fontSize: 14 }}>→</span>}
-              </div>
-            ))}
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: FAINT, marginLeft: 4 }}>
-              ↻ back to Draft
-            </span>
-          </div>
-
+        <div className="max-w-[640px] mx-auto px-6 py-12 md:py-16">
+          <h2
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: "clamp(22px, 3.2vw, 30px)",
+              fontWeight: 400,
+              lineHeight: 1.35,
+              color: INK,
+              marginBottom: 16,
+            }}
+          >
+            Built for founders who are building and talking about it at the same time.
+          </h2>
           <p
-            className="mx-auto text-center"
             style={{
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 15,
@@ -406,16 +315,14 @@ export default function LandingPage() {
               maxWidth: 560,
             }}
           >
-            Other tools stay static — same generic output whether it's your first draft or your hundredth. Accent
-            accumulates your editing patterns into a learned voice profile. Substitutions you make, patterns you remove,
-            structures you prefer — all feeding back into the next draft. The more you use it, the more it sounds like
-            you.
+            No marketing team. No content calendar. Just you, your product, and a weekly post that tells the right
+            people what you&apos;re working on. Accent turns your building updates into posts that actually get read.
           </p>
         </div>
       </section>
 
       {/* Interactive demo */}
-      <section>
+      <section style={{ background: "#F0ECE4" }}>
         <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
           <div className="text-center mb-10">
             <span
@@ -437,14 +344,14 @@ export default function LandingPage() {
                 marginTop: 12,
               }}
             >
-              See what it says about your writing.
+              From a rough update to a finished post.
             </h2>
           </div>
           <LandingDemo />
         </div>
       </section>
 
-      {/* Why this works */}
+      {/* Why weekly posting works */}
       <section ref={s3.ref} style={s3.style}>
         <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
           <h2
@@ -457,17 +364,17 @@ export default function LandingPage() {
               marginBottom: 32,
             }}
           >
-            Why this works when everything else didn&apos;t.
+            Why founders who post weekly get funded faster.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 16 }}>
             {[
               {
-                title: "ChatGPT generates text. Accent learns your voice.",
-                desc: "Every edit you make teaches the system what you sound like. Words you cut, phrases you reach for, how you open and close — it all accumulates into a voice profile that gets sharper over time. ChatGPT forgets you after every conversation. Accent remembers.",
+                title: "Your audience grows with your product.",
+                desc: "By the time you launch, thousands of people already know what you're building and why. No cold outreach, no launch-day scramble. The people who need it have been following along.",
               },
               {
-                title: "Your edits are the training data.",
-                desc: "Most AI writing tools optimize for speed — generate and publish. Accent optimizes for voice. The editing step isn't friction to eliminate, it's where your voice lives. Every session makes the next draft better.",
+                title: "Investors find you, not the other way around.",
+                desc: "A founder who posts every week about what they're learning is more fundable than one who appears out of nowhere with a deck. Consistent public building is the best warm intro that exists.",
               },
             ].map((b, i) => (
               <div
@@ -528,7 +435,7 @@ export default function LandingPage() {
               marginBottom: 32,
             }}
           >
-            3 reads free every month. Unlimited for {PRO_PRICE_LONG}.
+            Start free. Go unlimited for {PRO_PRICE_LONG}.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div style={{ background: "#FAFAF7", padding: 28 }}>
@@ -546,15 +453,17 @@ export default function LandingPage() {
                 Free
               </span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {["Unlimited logging", "Unlimited ideas", "3 reads per month", "Writing tools included"].map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2"
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: INK }}
-                  >
-                    <span style={{ color: INK, flexShrink: 0 }}>&#10003;</span> {f}
-                  </li>
-                ))}
+                {["3 posts per month", "Your voice, not AI-generic", "Review and edit tools", "No credit card"].map(
+                  (f) => (
+                    <li
+                      key={f}
+                      className="flex items-start gap-2"
+                      style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: INK }}
+                    >
+                      <span style={{ color: INK, flexShrink: 0 }}>&#10003;</span> {f}
+                    </li>
+                  )
+                )}
               </ul>
             </div>
             <div style={{ background: "#1A1512", padding: 28 }}>
@@ -573,10 +482,10 @@ export default function LandingPage() {
               </span>
               <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {[
-                  "Unlimited reads",
-                  "Voice-learning profile — gets smarter with every edit",
-                  "Full voice profile",
-                  "Weekly rhythm tracking",
+                  "Unlimited posts",
+                  "Voice profile that learns how you write",
+                  "Weekly posting reminders",
+                  "Full edit history",
                 ].map((f) => (
                   <li
                     key={f}
@@ -592,16 +501,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Who it's for — Founders only */}
-
       {/* Final CTA */}
       <section ref={s6.ref} style={s6.style}>
         <div className="max-w-[520px] mx-auto px-6 py-14 md:py-20 text-center">
           <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
-            Paste something you wrote.
+            Your first post takes five minutes.
           </h2>
           <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 380 }}>
-            Free for your first read. No account needed.
+            Paste your product link and see what comes out. Free, no account needed.
           </p>
           <Link
             href="/review"
