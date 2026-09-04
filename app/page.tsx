@@ -136,8 +136,9 @@ export default function LandingPage() {
               color: "#fff",
             }}
           >
-            Your voice.
-            <br className="sm:hidden" /> AI-assisted.
+            Find your users
+            <br />
+            <span style={{ fontStyle: "italic", fontWeight: 600 }}>before you finish the product.</span>
           </h1>
           <p
             className="font-sans mx-auto mt-4 md:mt-6"
@@ -148,18 +149,25 @@ export default function LandingPage() {
               maxWidth: 520,
             }}
           >
-            Every draft gets closer.
+            Paste your product link. Get the post that tells the right people what you&apos;re building.
           </p>
           <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
-            <Link
-              href="/review"
-              className="no-underline w-full sm:w-auto inline-block px-7 py-3.5 font-sans font-semibold text-[15px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-              style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0 }}
-            >
-              Paste something you wrote <ArrowRight size={14} color="#1a1a1a" />
-            </Link>
+            <div className="flex w-full sm:w-auto">
+              <input
+                type="url"
+                placeholder="yourproduct.com"
+                className="font-sans text-[15px] px-4 py-3.5 flex-1 sm:w-[280px] outline-none"
+                style={{ background: "#fff", color: "#1a1a1a", border: "none", borderRadius: 0 }}
+              />
+              <button
+                className="font-sans font-semibold text-[15px] px-7 py-3.5 transition-transform hover:scale-[1.02] hover:-translate-y-px whitespace-nowrap"
+                style={{ background: "#1a1a1a", color: "#F5F0E8", border: "none", borderRadius: 0, cursor: "pointer" }}
+              >
+                Paste your link <ArrowRight size={14} color="#F5F0E8" />
+              </button>
+            </div>
             <span className="font-sans" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-              No account needed. Free for your first read.
+              Free, no account needed.
             </span>
           </div>
         </div>
@@ -173,8 +181,8 @@ export default function LandingPage() {
               className="font-serif italic"
               style={{ fontSize: "clamp(19px, 2.8vw, 24px)", fontWeight: 300, lineHeight: 1.55, color: INK }}
             >
-              "I tried using AI to write, but the output never sounded like me. I spent more time fixing the voice than
-              I saved generating it."
+              &ldquo;Most founders build for months before anyone outside the room hears about it. Distribution-first
+              means talking about the work while it&apos;s still changing.&rdquo;
             </p>
           </div>
         </div>
@@ -291,6 +299,47 @@ export default function LandingPage() {
             <p className="mt-2 font-sans" style={{ fontSize: 13, color: DIM }}>
               Start free. No credit card.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Who it's for — Founders */}
+      <section ref={s5.ref} style={s5.style}>
+        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
+          <div style={{ maxWidth: 400, padding: "24px 22px", background: "#F0ECE4" }}>
+            <div
+              className="mb-3 flex items-center justify-center"
+              style={{ width: 48, height: 48, borderRadius: "50%", background: "#C4A03018" }}
+            >
+              <span style={{ fontSize: 24 }}>🚀</span>
+            </div>
+            <h3 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, fontWeight: 400, marginBottom: 12 }}>
+              Founders
+            </h3>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: DIM,
+                lineHeight: 1.55,
+                marginBottom: 12,
+              }}
+            >
+              Building a company and a personal brand at the same time.
+            </p>
+            <div style={{ borderTop: "1px solid #e0ddd5", paddingTop: 12 }}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  color: INK,
+                  lineHeight: 1.55,
+                  margin: 0,
+                }}
+              >
+                No marketing team — just you and your voice.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -543,74 +592,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Who it's for */}
-      <section ref={s5.ref} style={s5.style}>
-        <div className="max-w-[840px] mx-auto px-6 py-12 md:py-20">
-          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14 }}>
-            {[
-              {
-                emoji: "🚀",
-                bg: "#C4A030",
-                title: "Founders",
-                pain: "Building a company and a personal brand at the same time.",
-                how: "No marketing team — just you and your voice.",
-              },
-              {
-                emoji: "🧑‍💼",
-                bg: "#C4614A",
-                title: "Consultants & freelancers",
-                pain: "Your clients hire you, not a generic service.",
-                how: "Your writing should sound like you, not like AI.",
-              },
-              {
-                emoji: "✍️",
-                bg: "#1E5C58",
-                title: "Writers & creators",
-                pain: "You publish under your name.",
-                how: "AI can help you draft — but only if the output sounds like something you'd actually write.",
-              },
-            ].map((c) => (
-              <div key={c.title} style={{ padding: "24px 22px", background: "#F0ECE4" }}>
-                <div
-                  className="mb-3 flex items-center justify-center"
-                  style={{ width: 48, height: 48, borderRadius: "50%", background: `${c.bg}18` }}
-                >
-                  <span style={{ fontSize: 24 }}>{c.emoji}</span>
-                </div>
-                <h3
-                  style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, fontWeight: 400, marginBottom: 12 }}
-                >
-                  {c.title}
-                </h3>
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13,
-                    color: DIM,
-                    lineHeight: 1.55,
-                    marginBottom: 12,
-                  }}
-                >
-                  {c.pain}
-                </p>
-                <div style={{ borderTop: `1px solid #e0ddd5`, paddingTop: 12 }}>
-                  <p
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 13,
-                      color: INK,
-                      lineHeight: 1.55,
-                      margin: 0,
-                    }}
-                  >
-                    {c.how}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Who it's for — Founders only */}
 
       {/* Final CTA */}
       <section ref={s6.ref} style={s6.style}>
