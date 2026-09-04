@@ -353,7 +353,7 @@ export default function LandingPage() {
                 marginTop: 12,
               }}
             >
-              From a rough update to a finished post.
+              From a link to a post.
             </h2>
           </div>
           <LandingDemo />
