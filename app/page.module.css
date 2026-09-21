@@ -1,3 +1,55 @@
+.announcementBar {
+  background: var(--card);
+  border-bottom: 1px solid var(--rule);
+}
+.announcementBarIn {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 10px 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.announcementLink {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--muted);
+  text-decoration: none;
+  text-align: center;
+}
+.announcementLink:hover {
+  color: var(--ink);
+}
+.announcementLink:focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.announcementClose {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.announcementClose:hover {
+  color: var(--ink);
+  background: var(--rule);
+}
+.announcementClose:focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 2px;
+}
+
 .wrap {
   max-width: 1000px;
   margin: 0 auto;

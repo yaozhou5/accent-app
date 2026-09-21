@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AnnouncementBar from "@/components/AnnouncementBar";
 import HeroDevice from "@/components/HeroDevice";
 import RepToggle from "@/components/RepToggle";
 import styles from "./page.module.css";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <div className="accent-legacy">
+      <AnnouncementBar />
       <div className={styles.wrap}>
         <nav>
           <div className={styles.in}>
