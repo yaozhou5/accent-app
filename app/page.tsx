@@ -1,356 +1,470 @@
-"use client";
-
-import { useState, useEffect, useRef } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import HeroDevice from "@/components/HeroDevice";
+import RepToggle from "@/components/RepToggle";
+import styles from "./page.module.css";
 
-const INK = "#1A1A18";
-const DIM = "rgba(26,26,24,0.50)";
-const FAINT = "#A8A49C";
-const BLUE = "#1a1a1a";
-const BORDER = "rgba(26,26,24,0.06)";
-const CONTACT_EMAIL = "hello@myaccent.io";
-
-function useReveal(delay = 0) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [v, setV] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) setTimeout(() => setV(true), delay);
-      },
-      { threshold: 0.12 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [delay]);
-  return {
-    ref,
-    style: {
-      opacity: v ? 1 : 0,
-      transform: v ? "translateY(0)" : "translateY(18px)",
-      transition: "opacity 0.75s ease, transform 0.75s ease",
-    } as React.CSSProperties,
-    visible: v,
-  };
-}
+export const metadata: Metadata = {
+  title: "Accent",
+  description:
+    "The test every investor runs in the first minute, and the one thing you can't judge for yourself — Accent records it, times it, and shows you what you actually said.",
+};
 
 export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const s1 = useReveal(),
-    s2 = useReveal(),
-    s3 = useReveal(),
-    s4 = useReveal();
-
   return (
-    <div style={{ background: "#F5F0E8", color: INK }}>
-      {/* Nav */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          height: 52,
-          background: scrolled ? "rgba(245,240,232,0.92)" : "transparent",
-          backdropFilter: scrolled ? "blur(16px)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(16px)" : "none",
-          borderBottom: scrolled ? `1px solid ${BORDER}` : "none",
-        }}
-      >
-        <div className="max-w-[960px] mx-auto px-5 md:px-12 h-full flex items-center justify-between">
-          <span
-            className="transition-colors"
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              color: scrolled ? INK : "#fff",
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontStyle: "italic",
-            }}
-          >
-            accent
-          </span>
-          <div className="flex items-center gap-4 sm:gap-5">
-            <Link
-              href="/login"
-              className="no-underline text-[12px] sm:text-[13px] font-sans font-semibold transition-colors"
-              style={{ color: scrolled ? INK : "#fff" }}
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="no-underline px-4 py-2 text-[12px] sm:text-[13px] sm:px-5 font-sans font-semibold transition-transform hover:scale-[1.02] hover:-translate-y-px"
-              style={{ background: "#F5F0E8", color: "#1a1a1a", borderRadius: 0, border: "none", cursor: "pointer" }}
-            >
-              Sign up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section
-        className="text-center relative overflow-hidden flex items-center justify-center"
-        style={{ minHeight: "min(100svh, 700px)" }}
-      >
-        {/* Video background */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover z-[1]"
-          src="/hero.mp4"
-        />
-        {/* Dark overlay — gradient for better text contrast */}
-        <div
-          className="absolute inset-0 z-[2]"
-          style={{
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.8) 100%)",
-          }}
-        />
-        {/* Mobile fallback — solid dark bg if video doesn't load */}
-        <div className="absolute inset-0 z-0" style={{ background: "#111" }} />
-
-        <div className="max-w-[760px] mx-auto px-6 sm:px-8 relative z-[3] py-14 md:py-20">
-          <h1
-            className="font-serif"
-            style={{
-              fontSize: "clamp(28px, 7vw, 50px)",
-              fontWeight: 300,
-              lineHeight: 1.12,
-              letterSpacing: "-0.03em",
-              color: "#fff",
-            }}
-          >
-            Pitch feedback,
-            <br />
-            <span style={{ fontStyle: "italic", fontWeight: 600 }}>attached to the moment you said it.</span>
-          </h1>
-          <p
-            className="font-sans mx-auto mt-4 md:mt-6"
-            style={{
-              fontSize: "clamp(15px, 3.8vw, 17px)",
-              color: "rgba(255,255,255,0.7)",
-              lineHeight: 1.6,
-              maxWidth: 520,
-            }}
-          >
-            Most pitch feedback arrives as a few lines on paper after the fact. Useful in the room, gone by the next
-            week.
-          </p>
-          <div className="mt-6 md:mt-8">
-            <a
-              href={`mailto:${CONTACT_EMAIL}`}
-              className="no-underline inline-block font-sans font-semibold text-[15px] px-7 py-3.5 transition-transform hover:scale-[1.02] hover:-translate-y-px whitespace-nowrap"
-              style={{ background: "#1a1a1a", color: "#F5F0E8", border: "none", borderRadius: 0, cursor: "pointer" }}
-            >
-              Get in touch
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* What it is */}
-      <section ref={s1.ref} style={s1.style}>
-        <div className="max-w-[640px] mx-auto px-6 py-12 md:py-16">
-          <h2
-            style={{
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: "clamp(22px, 3.2vw, 30px)",
-              fontWeight: 400,
-              lineHeight: 1.35,
-              color: INK,
-              marginBottom: 16,
-            }}
-          >
-            What it is
-          </h2>
-          <p
-            className="font-sans"
-            style={{ fontSize: 15, color: DIM, lineHeight: 1.7, maxWidth: 560, marginBottom: 16 }}
-          >
-            PitchRoom records a founder pitching, transcribes it, and anchors every comment to the second it was said.
-            You get back your own words with the notes in the margin, and an overall read on the pitch as a whole.
-          </p>
-          <p className="font-sans" style={{ fontSize: 15, color: DIM, lineHeight: 1.7, maxWidth: 560 }}>
-            Most pitch feedback evaporates. A fifteen-minute call, some good observations, and nothing left by next
-            month. This keeps it, session after session, so the fourth time isn&apos;t the first time again.
-          </p>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section style={{ background: "#F0ECE4" }}>
-        <div ref={s2.ref} style={s2.style} className="max-w-[760px] mx-auto px-6 py-12 md:py-20">
-          <div className="text-center mb-12">
-            <h2
-              style={{
-                fontFamily: "'Fraunces', Georgia, serif",
-                fontSize: "clamp(24px, 3.6vw, 36px)",
-                fontWeight: 400,
-              }}
-            >
-              How it works
-            </h2>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {[
-              { num: "01", text: "You pitch. We record." },
-              {
-                num: "02",
-                text: "Afterwards, someone marks up the transcript — what landed, what didn't, what never got said.",
-              },
-              {
-                num: "03",
-                text: "You get a document: your pitch, the comments where they belong, and one note on the shape of the whole thing.",
-              },
-            ].map((step) => (
-              <div
-                key={step.num}
-                style={{
-                  display: "flex",
-                  gap: 20,
-                  padding: "28px 0",
-                  borderBottom: "1px solid #e0ddd5",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 13,
-                    color: FAINT,
-                    flexShrink: 0,
-                    paddingTop: 2,
-                  }}
-                >
-                  {step.num}
-                </span>
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 16,
-                    color: INK,
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  {step.text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Privacy */}
-      <section>
-        <div className="max-w-[480px] mx-auto px-6 py-8 md:py-10 text-center">
-          <div style={{ border: `1px solid ${BORDER}`, background: "#F0ECE4", padding: "14px 20px" }}>
-            <span
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 11,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: FAINT,
-                display: "block",
-                marginBottom: 6,
-              }}
-            >
-              Privacy
+    <div className="accent-legacy">
+      <div className={styles.wrap}>
+        <nav>
+          <div className={styles.in}>
+            <span className={styles.word}>
+              Acc<em>e</em>nt
             </span>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: DIM, lineHeight: 1.5, margin: 0 }}>
-              Your audio stays on the device it was recorded on. Nothing is uploaded.
+            <span className={styles.sp}></span>
+            <Link className={styles.navlink} href="#how">
+              How it works
+            </Link>
+            <Link className={styles.navlink} href="#faq">
+              FAQ
+            </Link>
+            <Link className={styles.navbtn} href="/listen">
+              Listen
+            </Link>
+          </div>
+        </nav>
+
+        <header className={styles.hero}>
+          <div>
+            <h1>Talk your way to a clear pitch.</h1>
+            <p className={styles.lede}>Practice out loud in 60 seconds, and find out what people actually heard.</p>
+            <div className={styles.ctarow}>
+              <Link className={styles.cta} href="/listen">
+                Listen to someone’s 60 seconds
+              </Link>
+            </div>
+            <p className={styles.trust}>Runs on your phone. Nothing leaves it unless you send it.</p>
+          </div>
+
+          <HeroDevice />
+        </header>
+
+        <div className={`${styles.card} ${styles.lastrun}`} id="lastrun">
+          <div className={styles.clockhead}>
+            <span className={styles.t}>Your last run</span>
+            <span className={styles.m}>2:51 · target 1:00</span>
+          </div>
+
+          <svg
+            viewBox="0 0 680 108"
+            width="100%"
+            height="auto"
+            role="img"
+            aria-label="Timeline: 74 seconds on the problem, 22 seconds on what you do, 11 seconds of proof, then 64 seconds over the target."
+          >
+            <rect
+              className={styles.bar}
+              style={{ animationDelay: "0s" }}
+              x="0"
+              y="16"
+              width="294"
+              height="44"
+              fill="var(--mark)"
+            />
+            <rect
+              className={styles.bar}
+              style={{ animationDelay: ".35s" }}
+              x="294"
+              y="16"
+              width="87"
+              height="44"
+              fill="var(--mark2)"
+            />
+            <rect
+              className={styles.bar}
+              style={{ animationDelay: ".5s" }}
+              x="381"
+              y="16"
+              width="44"
+              height="44"
+              fill="var(--mark3)"
+            />
+            <rect
+              className={styles.bar}
+              style={{ animationDelay: ".62s" }}
+              x="425"
+              y="16"
+              width="255"
+              height="44"
+              fill="var(--flag)"
+            />
+            <line x1="238" y1="4" x2="238" y2="72" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="4 3" />
+            <text x="243" y="12" fontFamily="Archivo, sans-serif" fontSize="11" fill="var(--ink)">
+              60 s target
+            </text>
+            <text className={styles.lbl} x="10" y="43" fontFamily="Archivo, sans-serif" fontSize="12" fill="#fff">
+              Problem — 74 s
+            </text>
+            <text className={styles.lbl} x="302" y="43" fontFamily="Archivo, sans-serif" fontSize="12" fill="#fff">
+              What you do — 22 s
+            </text>
+            <text className={styles.lbl} x="435" y="43" fontFamily="Archivo, sans-serif" fontSize="12" fill="#fff">
+              Still going — 64 s
+            </text>
+            <text x="0" y="88" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+              0:00
+            </text>
+            <text x="222" y="88" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+              1:00
+            </text>
+            <text x="460" y="88" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+              2:00
+            </text>
+            <text x="648" y="88" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+              2:51
+            </text>
+          </svg>
+
+          <p className={styles.clockread}>
+            <b>You reached “what you do” at 1:14.</b> Most of the room decided before you got there.
+          </p>
+        </div>
+
+        <section>
+          <p className={styles.eyebrow} id="how">
+            Alone, on your phone
+          </p>
+          <h2>4 ways to hear yourself properly</h2>
+          <div className={styles.modes}>
+            <div className={styles.mode}>
+              <span className={`${styles.tag} ${styles.live}`}>Live</span>
+              <svg width="72" height="30" viewBox="0 0 72 30" aria-hidden="true">
+                <rect x="0" y="9" width="40" height="12" fill="var(--mark)" />
+                <rect x="40" y="9" width="32" height="12" fill="var(--flag)" />
+                <line x1="30" y1="3" x2="30" y2="27" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="3 2" />
+              </svg>
+              <h3>The clock</h3>
+              <p>How long until you say what you do. Not filler words — the thing that actually loses people.</p>
+            </div>
+
+            <div className={styles.mode}>
+              <span className={`${styles.tag} ${styles.soon}`}>Building</span>
+              <svg width="72" height="30" viewBox="0 0 72 30" aria-hidden="true">
+                <g fill="var(--mark)">
+                  <rect x="0" y="12" width="3" height="6" />
+                  <rect x="6" y="7" width="3" height="16" />
+                  <rect x="12" y="3" width="3" height="24" />
+                  <rect x="18" y="10" width="3" height="10" />
+                  <rect x="24" y="6" width="3" height="18" />
+                </g>
+                <rect x="40" y="5" width="32" height="20" fill="none" stroke="var(--mark3)" strokeWidth="2" />
+                <circle cx="56" cy="15" r="4" fill="var(--mark3)" />
+              </svg>
+              <h3>Sound off, picture off</h3>
+              <p>
+                Watch it once with no audio, once with no picture. 2 different problems, and you can&apos;t see either
+                with both on.
+              </p>
+            </div>
+
+            <div className={styles.mode}>
+              <span className={`${styles.tag} ${styles.soon}`}>Building</span>
+              <svg width="72" height="30" viewBox="0 0 72 30" aria-hidden="true">
+                <g fill="var(--rule)">
+                  <rect x="14" y="3" width="52" height="3" />
+                  <rect x="14" y="10" width="44" height="3" />
+                  <rect x="14" y="17" width="56" height="3" />
+                  <rect x="14" y="24" width="30" height="3" />
+                </g>
+                <g fill="var(--mark)">
+                  <rect x="0" y="3" width="9" height="3" />
+                  <rect x="0" y="10" width="9" height="3" />
+                  <rect x="0" y="17" width="9" height="3" />
+                  <rect x="0" y="24" width="9" height="3" />
+                </g>
+              </svg>
+              <h3>Your transcript</h3>
+              <p>What you said, not what you think you said. Most people have never read one of their own.</p>
+            </div>
+
+            <div className={styles.mode}>
+              <span className={`${styles.tag} ${styles.soon}`}>Building</span>
+              <svg width="72" height="30" viewBox="0 0 72 30" aria-hidden="true">
+                <rect x="0" y="2" width="46" height="9" fill="var(--hl)" />
+                <rect x="0" y="2" width="46" height="9" fill="none" stroke="var(--flag)" strokeWidth="1" />
+                <rect x="48" y="2" width="18" height="9" fill="var(--rule)" />
+                <rect x="0" y="19" width="46" height="9" fill="var(--hl)" />
+                <rect x="0" y="19" width="46" height="9" fill="none" stroke="var(--flag)" strokeWidth="1" />
+                <rect x="48" y="19" width="24" height="9" fill="var(--rule)" />
+              </svg>
+              <h3>The repeat check</h3>
+              <p>
+                Answer the same question twice, days apart. Identical phrasing means you&apos;re reciting, and it breaks
+                the moment someone interrupts.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>The repeat check</h2>
+          <div className={styles.narrow}>
+            <p>2 answers to the same question, 3 days apart. Everything highlighted came out word for word.</p>
+          </div>
+          <div className={styles.card}>
+            <div className={styles.diffrow}>
+              <span className={styles.lbl}>Monday</span>
+              <p>
+                <mark>We&apos;re building an intelligent routing layer for last-mile delivery</mark>, and what really
+                sets us apart is the optimisation engine underneath.
+              </p>
+            </div>
+            <div className={styles.diffrow}>
+              <span className={styles.lbl}>Thursday</span>
+              <p>
+                <mark>We&apos;re building an intelligent routing layer for last-mile delivery</mark>
+                {" — so basically it's software for couriers."}
+              </p>
+            </div>
+            <p className={styles.diffread}>
+              <b>11 words identical.</b>
+              {" That sentence is memorised. It'll survive right up until someone stops you in the middle of it."}
             </p>
           </div>
-        </div>
-      </section>
+          <p className={styles.caption}>An example, not a real company.</p>
+        </section>
 
-      {/* Who it's for */}
-      <section ref={s3.ref} style={s3.style}>
-        <div className="max-w-[640px] mx-auto px-6 py-12 md:py-16">
-          <h2
-            style={{
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: "clamp(22px, 3.2vw, 30px)",
-              fontWeight: 400,
-              lineHeight: 1.35,
-              color: INK,
-              marginBottom: 16,
-            }}
-          >
-            Who it&apos;s for
-          </h2>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: DIM, lineHeight: 1.7, maxWidth: 560 }}>
-            Accelerators, incubators and programmes running regular pitch practice, where one or two facilitators are
-            trying to give useful feedback to forty founders.
-          </p>
-        </div>
-      </section>
-
-      {/* Right now */}
-      <section ref={s4.ref} style={s4.style}>
-        <div className="max-w-[520px] mx-auto px-6 py-14 md:py-20 text-center">
-          <h2 className="font-serif mb-4" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
-            Right now
-          </h2>
-          <p className="font-sans mx-auto mb-2" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 420 }}>
-            This is early. I&apos;m running sessions myself, for a small number of programmes, and improving it from
-            what comes back.
-          </p>
-          <p className="font-sans mx-auto mb-6" style={{ fontSize: 15, color: DIM, lineHeight: 1.6, maxWidth: 420 }}>
-            If you run a programme — or you&apos;re a founder who wants one session marked up — email me.
-          </p>
-          <a
-            href={`mailto:${CONTACT_EMAIL}`}
-            className="no-underline inline-block px-8 py-4 font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
-            style={{ background: BLUE, color: "#fff", borderRadius: 0, border: "none", cursor: "pointer" }}
-          >
-            Email me
-          </a>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ borderTop: `1px solid ${BORDER}` }}>
-        <div className="max-w-[840px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span
-            style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: INK,
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontStyle: "italic",
-            }}
-          >
-            accent
-          </span>
-          <div className="flex gap-6 text-[12px] font-sans" style={{ color: DIM }}>
-            <Link href="/privacy-contact" className="no-underline" style={{ color: DIM }}>
-              Privacy
-            </Link>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="no-underline" style={{ color: DIM }}>
-              Contact
-            </a>
+        <section>
+          <h2>12 runs later</h2>
+          <div className={styles.narrow}>
+            <p>Every run is kept, and 1 number tracks across all of them: how long it takes you to say what you do.</p>
           </div>
-        </div>
-      </footer>
 
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes float { from{transform:translateY(0) rotate(var(--rot,0deg))} to{transform:translateY(-4px) rotate(var(--rot,0deg))} }
-        @keyframes glowPulse { 0%,100%{box-shadow:0 0 20px rgba(26,26,24,0.08)} 50%{box-shadow:0 0 28px rgba(26,26,24,0.15)} }
-      `}</style>
+          <div className={styles.card}>
+            <svg
+              viewBox="0 0 680 180"
+              width="100%"
+              height="auto"
+              role="img"
+              aria-label="Chart: time to say what you do falls from 74 seconds at rep 1 to 7 seconds at rep 12."
+            >
+              <line x1="34" y1="150" x2="672" y2="150" stroke="var(--rule)" strokeWidth="1" />
+              <line x1="34" y1="42" x2="672" y2="42" stroke="var(--ink)" strokeWidth="1" strokeDasharray="4 3" />
+              <text x="36" y="36" fontFamily="Archivo, sans-serif" fontSize="11" fill="var(--ink)">
+                60 s
+              </text>
+              <text x="0" y="154" fontFamily="Archivo, sans-serif" fontSize="11" fill="var(--muted)">
+                0 s
+              </text>
+              <g fill="var(--mark)">
+                <rect x="44" y="17" width="34" height="133" />
+                <rect x="96" y="30" width="34" height="120" />
+                <rect x="148" y="24" width="34" height="126" />
+                <rect x="200" y="55" width="34" height="95" />
+                <rect x="252" y="61" width="34" height="89" />
+                <rect x="304" y="48" width="34" height="102" />
+                <rect x="356" y="86" width="34" height="64" />
+                <rect x="408" y="93" width="34" height="57" />
+                <rect x="460" y="79" width="34" height="71" />
+                <rect x="512" y="111" width="34" height="39" />
+                <rect x="564" y="122" width="34" height="28" />
+                <rect x="616" y="137" width="34" height="13" />
+              </g>
+              <text x="44" y="172" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+                rep 1
+              </text>
+              <text x="608" y="172" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+                rep 12
+              </text>
+              <text x="44" y="12" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
+                74 s
+              </text>
+              <text x="616" y="132" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--mark)">
+                7 s
+              </text>
+            </svg>
+          </div>
+
+          <div className={styles.card} style={{ marginTop: 20 }}>
+            <p className={styles.q}>What does your company do?</p>
+            <p className={styles.qmeta}>Same question, 12 runs apart</p>
+            <RepToggle />
+          </div>
+          <p className={styles.caption}>An example, not a real company.</p>
+        </section>
+
+        <section>
+          <p className={styles.eyebrow}>When you&apos;re ready</p>
+          <h2>Send 60 seconds to 5 listeners</h2>
+          <div className={styles.narrow}>
+            <p>
+              Working alone shows you what you said. It can&apos;t tell you what landed — you&apos;re the one person who
+              can&apos;t hear your own pitch fresh, and the people you normally ask already know what you do.
+            </p>
+            <p>
+              So when you want that, send the 60 seconds — not your deck, not your numbers — to 5 people who&apos;ve
+              never heard of you. They answer 1 question: what does this company do. You listen to 3 others to get your
+              5.
+            </p>
+          </div>
+          <div className={styles.card}>
+            <div className={styles.meter}>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i className={styles.got}></i>
+              <span>1 of 5 understood</span>
+            </div>
+            <div className={styles.heard}>
+              <span className={styles.dot}></span>
+              <p>Delivery software? For a supermarket, maybe.</p>
+            </div>
+            <div className={styles.heard}>
+              <span className={styles.dot}></span>
+              <p>Something about algorithms. Didn&apos;t catch who uses it.</p>
+            </div>
+            <div className={styles.heard}>
+              <span className={styles.dot}></span>
+              <p>An app for drivers.</p>
+            </div>
+            <div className={styles.heard}>
+              <span className={styles.dot}></span>
+              <p>No idea, honestly. Logistics something.</p>
+            </div>
+            <div className={styles.heard}>
+              <span className={`${styles.dot} ${styles.got}`}></span>
+              <p>It plans delivery routes for courier companies.</p>
+            </div>
+            <p className={styles.verdict}>
+              <b>3 heard a different product.</b> You named 3 things and the last one buried the first.
+            </p>
+          </div>
+          <p className={styles.caption}>An example, not a real company.</p>
+        </section>
+
+        <section>
+          <p className={styles.eyebrow}>Where this actually is</p>
+          <h2>1 feature works. The rest is this month.</h2>
+          <div className={styles.status}>
+            <ul>
+              <li>
+                <span className={`${styles.st} ${styles.on}`}>Live</span>
+                <span>The clock — record, and see when you get to what you do.</span>
+              </li>
+              <li>
+                <span className={styles.st}>Next</span>
+                <span>The listener link. This is the part I want help with.</span>
+              </li>
+              <li>
+                <span className={styles.st}>Then</span>
+                <span>Transcript, sound off / picture off, the repeat check.</span>
+              </li>
+            </ul>
+            <p>
+              I&apos;d rather tell you that than let you find out. If you want to try the clock, or be a listener for
+              someone else, say so and I&apos;ll send it over.
+            </p>
+          </div>
+          <div className={styles.ctarow}>
+            <Link className={styles.cta} href="/listen">
+              Listen to someone&apos;s sixty seconds
+            </Link>
+            <Link className={`${styles.cta} ${styles.quiet}`} href="/clock">
+              Try the clock
+            </Link>
+          </div>
+        </section>
+
+        <section>
+          <h2 id="faq">Questions</h2>
+          <div className={styles.faq}>
+            <details>
+              <summary>Is this AI deciding whether my pitch is good?</summary>
+              <p>
+                No. The parts that run on your phone only measure — how long until you say what you do, what words you
+                actually used, whether 2 answers came out identical. None of that is an opinion. Any judgement comes
+                from people, and you can see who said what.
+              </p>
+            </details>
+            <details>
+              <summary>Why not just have an AI listen?</summary>
+              <p>
+                You can prompt a model to be neutral. You can&apos;t prompt it to not understand. It reads your whole
+                answer at once and gets the point even when you buried it at minute two — which is exactly the miss a
+                person hearing you once would make. That miss is what you&apos;re trying to find.
+              </p>
+            </details>
+            <details>
+              <summary>Who are the listeners?</summary>
+              <p>
+                Other founders, and people who&apos;ve agreed to spend 90 seconds listening. They don&apos;t need to be
+                investors or experts — the only quality that matters is that they&apos;ve never heard of your company.
+                That&apos;s the thing your friends and your team can&apos;t be.
+              </p>
+            </details>
+            <details>
+              <summary>Do I have to share my deck or my numbers?</summary>
+              <p>
+                No, and you can&apos;t. The only thing that can be sent is the 60-second recording. There&apos;s no
+                upload for a deck, a financial model or a data room, because none of that is needed to find out whether
+                people understand what you do.
+              </p>
+            </details>
+            <details>
+              <summary>What happens to my recording?</summary>
+              <p>
+                It stays on your device. Sending it to listeners is a separate, deliberate step, and you can delete it
+                at any point. It&apos;s never published, never sold, and never used to train a model.{" "}
+                <a href="/privacy">The full policy</a>.
+              </p>
+            </details>
+            <details>
+              <summary>What does it cost?</summary>
+              <p>
+                Nothing right now. If there&apos;s ever a price, you&apos;ll hear about it before anything changes, and
+                nothing you&apos;ve already recorded gets locked behind it.
+              </p>
+            </details>
+            <details>
+              <summary>I&apos;m not raising. Is this any use?</summary>
+              <p>
+                Probably. The 60-second test isn&apos;t really about investors — it&apos;s the same test a customer, a
+                hire or an interviewer runs in the first minute. Founders raising money just feel it most sharply, which
+                is why they&apos;re who it&apos;s built around first.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <section>
+          <div className={styles.privacy}>
+            <p>
+              The recording stays on your device. The clock, the transcript and the repeat check all run there — no
+              upload, no account needed to use any of it.
+            </p>
+            <p>
+              Nothing is sent anywhere unless you choose to send it, and the only thing you can send is the 60 seconds.
+              A recording of your voice is personal data, so sending is always a deliberate step and you can delete it
+              whenever you like.
+            </p>
+            <p>
+              <a href="/privacy" style={{ color: "var(--mark)" }}>
+                The full policy
+              </a>{" "}
+              — what&apos;s kept, for how long, and how to make us delete it.
+            </p>
+          </div>
+        </section>
+
+        <footer>
+          <div className={styles.in}>
+            <span className={styles.sp}></span>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/content">Content tool</a>
+            <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

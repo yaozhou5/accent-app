@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, JetBrains_Mono, DM_Sans } from "next/font/google";
+import { Fraunces, JetBrains_Mono, DM_Sans, Newsreader, Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import "./globals.css";
@@ -21,6 +21,23 @@ const jetbrains = JetBrains_Mono({
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
+  display: "swap",
+});
+
+// Used by the ported static pages (/, /privacy, /terms) — see globals.css's
+// --serif/--sans tokens. Weights match what the original Google Fonts <link>
+// requested: Archivo:wght@400;500;600 and Newsreader's opsz,wght@...300;400;500.
+const newsreader = Newsreader({
+  weight: ["300", "400", "500"],
+  subsets: ["latin"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
+
+const archivo = Archivo({
+  weight: ["400", "500", "600"],
+  subsets: ["latin"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -55,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${jetbrains.variable} ${dmSans.variable}`}
+      className={`${fraunces.variable} ${jetbrains.variable} ${dmSans.variable} ${newsreader.variable} ${archivo.variable}`}
       suppressHydrationWarning
     >
       <head>
