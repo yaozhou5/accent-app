@@ -25,11 +25,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
+    "@huggingface/transformers": "^4.3.0",
     "@sentry/nextjs": "^10.47.0",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
     "@vercel/analytics": "^2.0.1",
     "franc": "^6.2.0",
+    "idb-keyval": "^6.3.0",
     "next": "16.2.2",
     "posthog-js": "^1.364.7",
     "posthog-node": "^5.21.2",

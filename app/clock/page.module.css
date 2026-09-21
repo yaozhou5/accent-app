@@ -1,0 +1,430 @@
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+.wrap a {
+  color: var(--mark);
+}
+.wrap a:focus-visible,
+.wrap button:focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 3px;
+}
+
+.wrap nav {
+  padding: 24px 0 0;
+}
+.wrap nav .in {
+  display: flex;
+  align-items: baseline;
+}
+.wrap .word {
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--ink);
+}
+.wrap .word em {
+  font-style: normal;
+  color: var(--mark);
+}
+
+.wrap h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(28px, 4.6vw, 40px);
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  margin: 48px 0 14px;
+}
+.wrap .recorderNote {
+  color: var(--muted);
+  font-size: 16px;
+  font-family: var(--serif);
+  margin: 16px 0 0;
+  max-width: 56ch;
+}
+
+.wrap .card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 24px;
+  margin-top: 16px;
+}
+.wrap .step {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--mark);
+  margin: 0 0 14px;
+}
+
+/* Recorder */
+.wrap .recorder {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.wrap .recordBtn {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.wrap .recordDot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--flag);
+  transition: border-radius 0.2s ease;
+}
+.wrap .recordBtn.recording {
+  border-color: var(--flag);
+}
+.wrap .recordBtn.recording .recordDot {
+  border-radius: 6px;
+}
+.wrap .recorderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wrap .timer {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.wrap .timer.timerPast {
+  color: var(--mark);
+}
+.wrap .timerNote {
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.wrap .recorderState {
+  font-size: 15.5px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.wrap .recorderError {
+  font-size: 14px;
+  color: var(--flag);
+  margin: 12px 0 0;
+}
+
+.wrap .btn {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--card);
+  background: var(--ink);
+  border: 0;
+  padding: 11px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wrap .btn:hover {
+  background: var(--mark);
+}
+
+.wrap .privacyNote {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 12px 2px 0;
+}
+
+.wrap .warning {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--flag);
+  border-radius: 2px;
+  background: var(--hl);
+  font-size: 14.5px;
+  color: var(--ink);
+}
+.wrap .warning p {
+  margin: 0 0 8px;
+}
+.wrap .warning a {
+  font-weight: 600;
+}
+
+.wrap .empty {
+  margin-top: 28px;
+  font-size: 15.5px;
+  color: var(--muted);
+}
+
+/* Runs list */
+.wrap .runsList {
+  margin-top: 40px;
+}
+.wrap .runsHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wrap .linkBtn {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--rule);
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.wrap .linkBtn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.wrap .confirmRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.wrap .deleteBtn {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--flag);
+  background: none;
+  border: 1px solid var(--flag);
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.wrap .deleteBtn:hover {
+  background: var(--flag);
+  color: var(--card);
+}
+
+.wrap .runHead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.wrap .runTitle {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--ink);
+}
+.wrap .runMeta {
+  font-size: 13.5px;
+  color: var(--muted);
+  flex: 1;
+}
+.wrap .player {
+  width: 100%;
+  margin-top: 14px;
+}
+.wrap .transcriptArea {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.wrap .markQuestion {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(22px, 3.4vw, 28px);
+  line-height: 1.25;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.wrap .markHint {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+.wrap .markResult {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(22px, 3.6vw, 30px);
+  line-height: 1.3;
+  color: var(--mark);
+  margin: 0 0 20px;
+}
+.wrap .markResultSub {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--muted);
+}
+.wrap .markResultNone {
+  color: var(--flag);
+}
+.wrap .transcript {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--ink);
+}
+.wrap .chunk {
+  all: unset;
+  display: inline;
+  cursor: pointer;
+  padding: 1px 2px;
+  border-radius: 3px;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+.wrap .chunk:hover {
+  background: var(--hl);
+}
+.wrap .chunkDimmed {
+  opacity: 0.4;
+}
+.wrap .chunkActive {
+  display: block;
+  background: var(--mark3);
+  border-left: 3px solid var(--mark);
+  padding: 10px 14px;
+  margin: 8px 0;
+  border-radius: 0 4px 4px 0;
+}
+.wrap .chunkActive:hover {
+  background: var(--mark3);
+}
+.wrap .chunkTag {
+  display: inline-block;
+  margin-left: 10px;
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--card);
+  background: var(--mark);
+  padding: 2px 9px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.wrap .transcriptActions {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.wrap .quietLink {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.wrap .quietLink:hover {
+  color: var(--ink);
+}
+.wrap .transcribeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wrap .transcribeHint {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 46ch;
+}
+.wrap .transcribeError {
+  font-size: 13.5px;
+  color: var(--flag);
+  margin: 0;
+}
+
+.wrap .devCompare {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px dashed var(--rule);
+  border-radius: 3px;
+}
+.wrap .devCompareLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.wrap .devCompareRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.wrap .devSelect {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+.wrap .devCompareResult {
+  margin: 12px 0 0;
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.wrap footer {
+  border-top: 1px solid var(--rule);
+  margin-top: 48px;
+  padding: 22px 0 0;
+  font-size: 14.5px;
+  color: var(--muted);
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.wrap footer a {
+  text-decoration: none;
+}
+
+@media (max-width: 520px) {
+  .wrap h1 {
+    margin-top: 36px;
+  }
+  .wrap .recorder {
+    gap: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap .recordDot {
+    transition: none;
+  }
+}
