@@ -8,7 +8,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "Accent",
   description:
-    "The test every investor runs in the first minute, and the one thing you can't judge for yourself — Accent records it, times it, and shows you what you actually said.",
+    "The test every investor runs in the first minute, and the one thing you can't judge for yourself: Accent records it, times it, and shows you what you actually said.",
 };
 
 export default function LandingPage() {
@@ -27,6 +27,9 @@ export default function LandingPage() {
             </Link>
             <Link className={styles.navlink} href="#faq">
               FAQ
+            </Link>
+            <Link className={styles.navbtn} href="/clock">
+              The clock
             </Link>
             <Link className={styles.navbtn} href="/listen">
               Listen
@@ -103,13 +106,13 @@ export default function LandingPage() {
               60 s target
             </text>
             <text className={styles.lbl} x="10" y="43" fontFamily="Archivo, sans-serif" fontSize="12" fill="#fff">
-              Problem — 74 s
+              Problem: 74 s
             </text>
             <text className={styles.lbl} x="302" y="43" fontFamily="Archivo, sans-serif" fontSize="12" fill="#fff">
-              What you do — 22 s
+              What you do: 22 s
             </text>
             <text className={styles.lbl} x="435" y="43" fontFamily="Archivo, sans-serif" fontSize="12" fill="#fff">
-              Still going — 64 s
+              Still going: 64 s
             </text>
             <text x="0" y="88" fontFamily="Archivo, sans-serif" fontSize="11.5" fill="var(--muted)">
               0:00
@@ -144,7 +147,7 @@ export default function LandingPage() {
                 <line x1="30" y1="3" x2="30" y2="27" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="3 2" />
               </svg>
               <h3>The clock</h3>
-              <p>How long until you say what you do. Not filler words — the thing that actually loses people.</p>
+              <p>How long until you say what you do. Not filler words. The thing that actually loses people.</p>
             </div>
 
             <div className={styles.mode}>
@@ -223,7 +226,7 @@ export default function LandingPage() {
               <span className={styles.lbl}>Thursday</span>
               <p>
                 <mark>We&apos;re building an intelligent routing layer for last-mile delivery</mark>
-                {" — so basically it's software for couriers."}
+                {". So basically it's software for couriers."}
               </p>
             </div>
             <p className={styles.diffread}>
@@ -298,13 +301,12 @@ export default function LandingPage() {
           <h2>Send 60 seconds to 5 listeners</h2>
           <div className={styles.narrow}>
             <p>
-              Working alone shows you what you said. It can&apos;t tell you what landed — you&apos;re the one person who
+              Working alone shows you what you said. It can&apos;t tell you what landed: you&apos;re the one person who
               can&apos;t hear your own pitch fresh, and the people you normally ask already know what you do.
             </p>
             <p>
-              So when you want that, send the 60 seconds — not your deck, not your numbers — to 5 people who&apos;ve
-              never heard of you. They answer 1 question: what does this company do. You listen to 3 others to get your
-              5.
+              So when you want that, send the 60 seconds: not your deck, not your numbers, to 5 people who&apos;ve never
+              heard of you. They answer 1 question: what does this company do. You listen to 3 others to get your 5.
             </p>
           </div>
           <div className={styles.card}>
@@ -350,7 +352,9 @@ export default function LandingPage() {
             <ul>
               <li>
                 <span className={`${styles.st} ${styles.on}`}>Live</span>
-                <span>The clock — record, and see when you get to what you do.</span>
+                <span>
+                  The clock. Record yourself, get a transcript, and see how long it takes you to say what you do.
+                </span>
               </li>
               <li>
                 <span className={styles.st}>Next</span>
@@ -358,12 +362,12 @@ export default function LandingPage() {
               </li>
               <li>
                 <span className={styles.st}>Then</span>
-                <span>Transcript, sound off / picture off, the repeat check.</span>
+                <span>Sound off / picture off, the repeat check.</span>
               </li>
             </ul>
             <p>
-              I&apos;d rather tell you that than let you find out. If you want to try the clock, or be a listener for
-              someone else, say so and I&apos;ll send it over.
+              I&apos;d rather tell you that than let you find out. The clock is ready to try now. If you&apos;d like to
+              be a listener for someone else, say so and I&apos;ll send you the link.
             </p>
           </div>
           <div className={styles.ctarow}>
@@ -382,7 +386,7 @@ export default function LandingPage() {
             <details>
               <summary>Is this AI deciding whether my pitch is good?</summary>
               <p>
-                No. The parts that run on your phone only measure — how long until you say what you do, what words you
+                No. The parts that run on your phone only measure: how long until you say what you do, what words you
                 actually used, whether 2 answers came out identical. None of that is an opinion. Any judgement comes
                 from people, and you can see who said what.
               </p>
@@ -391,15 +395,15 @@ export default function LandingPage() {
               <summary>Why not just have an AI listen?</summary>
               <p>
                 You can prompt a model to be neutral. You can&apos;t prompt it to not understand. It reads your whole
-                answer at once and gets the point even when you buried it at minute two — which is exactly the miss a
-                person hearing you once would make. That miss is what you&apos;re trying to find.
+                answer at once and gets the point even when you buried it at minute two: exactly the miss a person
+                hearing you once would make. That miss is what you&apos;re trying to find.
               </p>
             </details>
             <details>
               <summary>Who are the listeners?</summary>
               <p>
                 Other founders, and people who&apos;ve agreed to spend 90 seconds listening. They don&apos;t need to be
-                investors or experts — the only quality that matters is that they&apos;ve never heard of your company.
+                investors or experts: the only quality that matters is that they&apos;ve never heard of your company.
                 That&apos;s the thing your friends and your team can&apos;t be.
               </p>
             </details>
@@ -429,7 +433,7 @@ export default function LandingPage() {
             <details>
               <summary>I&apos;m not raising. Is this any use?</summary>
               <p>
-                Probably. The 60-second test isn&apos;t really about investors — it&apos;s the same test a customer, a
+                Probably. The 60-second test isn&apos;t really about investors: it&apos;s the same test a customer, a
                 hire or an interviewer runs in the first minute. Founders raising money just feel it most sharply, which
                 is why they&apos;re who it&apos;s built around first.
               </p>
@@ -440,7 +444,7 @@ export default function LandingPage() {
         <section>
           <div className={styles.privacy}>
             <p>
-              The recording stays on your device. The clock, the transcript and the repeat check all run there — no
+              The recording stays on your device. The clock, the transcript and the repeat check all run there: no
               upload, no account needed to use any of it.
             </p>
             <p>
@@ -451,8 +455,8 @@ export default function LandingPage() {
             <p>
               <a href="/privacy" style={{ color: "var(--mark)" }}>
                 The full policy
-              </a>{" "}
-              — what&apos;s kept, for how long, and how to make us delete it.
+              </a>
+              : what&apos;s kept, for how long, and how to make us delete it.
             </p>
           </div>
         </section>
