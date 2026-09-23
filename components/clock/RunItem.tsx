@@ -231,10 +231,11 @@ export default function RunItem({
           </button>
         ) : transcribeState.phase === "downloading" ? (
           <p className={styles.transcribeHint}>
-            Downloading speech model{transcribeState.percent !== null ? ` — ${transcribeState.percent}%` : "…"}
+            Downloading {transcribeState.modelLabel}
+            {transcribeState.percent !== null ? ` — ${transcribeState.percent}%` : "…"}
           </p>
         ) : transcribeState.phase === "transcribing" ? (
-          <p className={styles.transcribeHint}>Transcribing…</p>
+          <p className={styles.transcribeHint}>Transcribing with {transcribeState.modelLabel}…</p>
         ) : (
           <div className={styles.transcribeRow}>
             <p className={styles.transcribeError}>

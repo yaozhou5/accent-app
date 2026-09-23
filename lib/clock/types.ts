@@ -29,6 +29,6 @@ export type Run = {
 
 export type TranscribeState =
   | { phase: "idle" }
-  | { phase: "downloading"; percent: number | null }
-  | { phase: "transcribing" }
+  | { phase: "downloading"; percent: number | null; modelLabel: string }
+  | { phase: "transcribing"; modelLabel: string }
   | { phase: "error"; message: string };

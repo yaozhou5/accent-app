@@ -5,10 +5,16 @@ import styles from "@/app/clock/page.module.css";
 import { decodeAudio } from "@/lib/clock/decodeAudio";
 import { deleteAllRuns, deleteRun, isDbAvailable, listRuns, saveRun, updateRun } from "@/lib/clock/db";
 import { formatClock, isToday } from "@/lib/clock/format";
+import { getModelForDevice } from "@/lib/clock/model";
 import { hasSeenModelIntro, markModelIntroSeen } from "@/lib/clock/modelIntro";
 import { loadScriptDraft, saveScriptDraft } from "@/lib/clock/scriptDraft";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
+import {
+  markTranscriptionFinished,
+  markTranscriptionStarted,
+  takeStaleTranscriptionRunId,
+} from "@/lib/clock/transcriptionGuard";
 import type { Run, TranscribeState } from "@/lib/clock/types";
 import ModelIntro from "./ModelIntro";
 import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorder";
@@ -51,7 +57,29 @@ export default function ClockApp() {
     setDbAvailable(isDbAvailable());
     setIntroSeen(hasSeenModelIntro());
     listRuns()
-      .then(setRuns)
+      .then((loadedRuns) => {
+        setRuns(loadedRuns);
+        // A run still marked in-flight means the previous attempt never
+        // reached its own success/error handling — the tab crashed (iOS
+        // OOM) rather than transcription failing normally. Surface that
+        // instead of auto-retrying: a crash loop is worse than a failure.
+        const staleId = takeStaleTranscriptionRunId();
+        const staleRun = staleId ? loadedRuns.find((r) => r.id === staleId) : undefined;
+        if (staleRun && !staleRun.transcript) {
+          console.error(
+            "Transcription for run",
+            staleId,
+            "was still in progress when the page reloaded — likely a crash. Not auto-retrying."
+          );
+          setTranscribeStates((s) => ({
+            ...s,
+            [staleId as string]: {
+              phase: "error",
+              message: "Didn't finish last time — the tab may have run out of memory. Try again when you're ready.",
+            },
+          }));
+        }
+      })
       .catch(() => setRuns([]))
       .finally(() => setLoaded(true));
     loadScriptDraft()
@@ -65,22 +93,26 @@ export default function ClockApp() {
   }, []);
 
   const runTranscription = useCallback(async (run: Run, preDecodedAudio?: Float32Array) => {
-    setTranscribeStates((s) => ({ ...s, [run.id]: { phase: "downloading", percent: null } }));
+    const model = getModelForDevice();
+    markTranscriptionStarted(run.id);
+    setTranscribeStates((s) => ({ ...s, [run.id]: { phase: "downloading", percent: null, modelLabel: model.label } }));
     try {
       const audio = preDecodedAudio ?? (await decodeAudio(run.blob)).audio;
       const transcript = await transcribe(
         run.id,
         audio,
+        model.id,
         (progress: TranscribeProgress) => {
           setTranscribeStates((s) => ({
             ...s,
             [run.id]: {
               phase: "downloading",
               percent: typeof progress.progress === "number" ? Math.round(progress.progress) : null,
+              modelLabel: model.label,
             },
           }));
         },
-        () => setTranscribeStates((s) => ({ ...s, [run.id]: { phase: "transcribing" } }))
+        () => setTranscribeStates((s) => ({ ...s, [run.id]: { phase: "transcribing", modelLabel: model.label } }))
       );
       setRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, transcript } : r)));
       updateRun(run.id, { transcript }).catch(() => {});
@@ -95,6 +127,8 @@ export default function ClockApp() {
         ...s,
         [run.id]: { phase: "error", message: err instanceof Error ? err.message : String(err) },
       }));
+    } finally {
+      markTranscriptionFinished(run.id);
     }
   }, []);
 

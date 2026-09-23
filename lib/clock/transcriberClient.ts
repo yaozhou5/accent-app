@@ -67,9 +67,9 @@ function ensureWorker(): Worker {
 export function transcribe(
   id: string,
   audio: Float32Array,
+  modelId: string,
   onProgress?: (p: TranscribeProgress) => void,
-  onTranscribing?: () => void,
-  modelId?: string
+  onTranscribing?: () => void
 ): Promise<Transcript> {
   return new Promise((resolve, reject) => {
     const w = ensureWorker();

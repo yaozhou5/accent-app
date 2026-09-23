@@ -1,6 +1,6 @@
 import { pipeline, env } from "@huggingface/transformers";
 import type { AutomaticSpeechRecognitionOutput, AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
-import { WHISPER_DTYPE, WHISPER_MODEL_ID } from "./model";
+import { WHISPER_DTYPE } from "./model";
 import { chunksToSentences } from "./sentences";
 import type { TranscriptChunk } from "./types";
 
@@ -24,8 +24,8 @@ type ProgressPayload = {
 type InMessage = {
   id: string;
   audio: Float32Array;
-  /** Defaults to WHISPER_MODEL_ID — only the dev model-comparison tool overrides this. */
-  modelId?: string;
+  /** Always resolved by the caller — this worker has no window/screen access to pick a device-appropriate default itself. */
+  modelId: string;
 };
 
 type OutMessage =
@@ -77,7 +77,7 @@ self.onmessage = async (event: MessageEvent<InMessage>) => {
   const { id, audio, modelId } = event.data;
   let transcriber: AutomaticSpeechRecognitionPipeline;
   try {
-    transcriber = await getTranscriber(id, modelId ?? WHISPER_MODEL_ID);
+    transcriber = await getTranscriber(id, modelId);
   } catch (err) {
     const message = `Model loading failed — ${describe(err)}`;
     console.error("[transcribe worker]", message, err);

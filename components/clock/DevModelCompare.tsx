@@ -35,14 +35,14 @@ export default function DevModelCompare({ run }: { run: Run }) {
       const transcript = await transcribe(
         requestId,
         audio,
+        modelId,
         (progress: TranscribeProgress) => {
           setState({
             phase: "downloading",
             percent: typeof progress.progress === "number" ? Math.round(progress.progress) : null,
           });
         },
-        () => setState({ phase: "transcribing" }),
-        modelId
+        () => setState({ phase: "transcribing" })
       );
       setState({ phase: "done", text: transcript.text });
     } catch (err) {
