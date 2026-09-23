@@ -13,27 +13,6 @@ function metaSuffix(run: Run): string {
   return " · not marked yet";
 }
 
-type ResultLine = { headline: string; sub: string | null; tone: "positive" | "none" };
-
-/** Names the warm-up itself, not just the raw timestamp. */
-function resultLine(run: Run): ResultLine | null {
-  if (run.pointStatus === "marked" && run.pointMs !== null) {
-    if (run.pointMs === 0) {
-      return { headline: "You said it in your first sentence. No warm-up at all.", sub: null, tone: "positive" };
-    }
-    const warmupSeconds = Math.floor(run.pointMs / 1000);
-    return {
-      headline: `${warmupSeconds} second${warmupSeconds === 1 ? "" : "s"} of warm-up before you said what you do.`,
-      sub: `out of ${formatClock(run.durationMs)}`,
-      tone: "positive",
-    };
-  }
-  if (run.pointStatus === "none") {
-    return { headline: "You never said what you do.", sub: null, tone: "none" };
-  }
-  return null;
-}
-
 export default function RunItem({
   run,
   repNumber,
@@ -61,9 +40,8 @@ export default function RunItem({
     return () => URL.revokeObjectURL(audioUrl);
   }, [audioUrl]);
 
-  // Briefly flashes the result line and the timeline marker whenever the
-  // chosen point changes — never on first mount/load, only on an actual
-  // change of choice.
+  // Briefly flashes the timeline marker whenever the chosen point changes —
+  // never on first mount/load, only on an actual change of choice.
   const choiceKey = `${run.pointStatus}:${run.pointMs}`;
   const prevChoiceKeyRef = useRef(choiceKey);
   const [flash, setFlash] = useState(false);
@@ -81,7 +59,6 @@ export default function RunItem({
     transcript && run.pointStatus === "marked"
       ? transcript.sentences.findIndex((s) => Math.round(s.start * 1000) === run.pointMs)
       : -1;
-  const result = resultLine(run);
 
   return (
     <div className={styles.card}>
@@ -114,15 +91,6 @@ export default function RunItem({
             <p className={styles.markHint}>
               Click the sentence. Everything before it is how long it took you to get there.
             </p>
-
-            {result && (
-              <p
-                className={`${styles.markResult} ${result.tone === "none" ? styles.markResultNone : ""} ${flash ? styles.flash : ""}`}
-              >
-                {result.headline}
-                {result.sub && <span className={styles.markResultSub}> {result.sub}</span>}
-              </p>
-            )}
 
             {transcript.sentences.length > 0 ? (
               <p className={styles.transcript}>
