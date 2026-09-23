@@ -442,26 +442,31 @@
   font-size: 13.5px;
   color: var(--muted);
 }
-.wrap .confirmBar {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
+.wrap .confirmRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-  padding: 14px 16px;
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 6px;
+  align-items: baseline;
+  gap: 10px;
+  margin: 2px 0 10px;
 }
-.wrap .confirmBarText {
-  margin: 0;
+.wrap .confirmRowText {
   font-family: var(--sans);
-  font-size: 14.5px;
-  color: var(--ink);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.wrap .confirmRowBtn {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--card);
+  background: var(--mark);
+  border: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wrap .confirmRowBtn:hover {
+  background: var(--ink);
 }
 .wrap .transcribeRow {
   display: flex;

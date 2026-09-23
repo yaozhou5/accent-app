@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import { formatClock, formatDate } from "@/lib/clock/format";
 import type { Run, TranscribeState } from "@/lib/clock/types";
@@ -15,12 +15,12 @@ function metaSuffix(run: Run): string {
 
 type Draft = { type: "point"; ms: number } | { type: "none" };
 
-/** The sticky confirm-bar copy for the current draft choice. */
-function confirmBarText(draft: Draft): string {
-  if (draft.type === "none") return "You never said what you do.";
-  if (draft.ms === 0) return "This is where you said what you do — right at the start.";
+/** The compact confirm-row copy for the current draft choice — the highlight already shows where. */
+function confirmRowText(draft: Draft): string {
+  if (draft.type === "none") return "Never said it.";
+  if (draft.ms === 0) return "Said it right at the start.";
   const seconds = Math.floor(draft.ms / 1000);
-  return `This is where you said what you do — ${seconds} second${seconds === 1 ? "" : "s"} in.`;
+  return `Said it ${seconds} second${seconds === 1 ? "" : "s"} in.`;
 }
 
 export default function RunItem({
@@ -129,38 +129,57 @@ export default function RunItem({
             </p>
 
             {transcript.sentences.length > 0 ? (
-              <p className={styles.transcript}>
+              <div className={styles.transcript}>
                 {transcript.sentences.map((sentence, i) => {
                   const sentencePointMs = Math.round(sentence.start * 1000);
                   const active = i === activeIndex;
                   const dimmed = activeIndex !== -1 && i < activeIndex;
                   const chunkClass = `${styles.chunk} ${active ? styles.chunkActive : ""} ${dimmed ? styles.chunkDimmed : ""}`;
-                  return isPicking ? (
-                    <button
-                      key={i}
-                      type="button"
-                      className={chunkClass}
-                      onClick={() => setDraft({ type: "point", ms: sentencePointMs })}
-                    >
-                      {sentence.text}
-                    </button>
-                  ) : (
-                    <span key={i} className={`${chunkClass} ${styles.chunkStatic}`}>
-                      {sentence.text}
-                    </span>
+                  return (
+                    <Fragment key={i}>
+                      {isPicking ? (
+                        <button
+                          type="button"
+                          className={chunkClass}
+                          onClick={() => setDraft({ type: "point", ms: sentencePointMs })}
+                        >
+                          {sentence.text}
+                        </button>
+                      ) : (
+                        <span className={`${chunkClass} ${styles.chunkStatic}`}>{sentence.text}</span>
+                      )}
+                      {isPicking && active && draft?.type === "point" && (
+                        <div className={styles.confirmRow}>
+                          <span className={styles.confirmRowText}>{confirmRowText(draft)}</span>
+                          <button type="button" className={styles.confirmRowBtn} onClick={handleConfirm}>
+                            Confirm
+                          </button>
+                        </div>
+                      )}
+                    </Fragment>
                   );
                 })}
-              </p>
+              </div>
             ) : (
-              <p className={styles.transcript}>
+              <div className={styles.transcript}>
                 {isPicking ? (
-                  <button
-                    type="button"
-                    className={`${styles.chunk} ${draft?.type === "point" ? styles.chunkActive : ""}`}
-                    onClick={() => setDraft({ type: "point", ms: 0 })}
-                  >
-                    {transcript.text}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className={`${styles.chunk} ${draft?.type === "point" ? styles.chunkActive : ""}`}
+                      onClick={() => setDraft({ type: "point", ms: 0 })}
+                    >
+                      {transcript.text}
+                    </button>
+                    {draft?.type === "point" && (
+                      <div className={styles.confirmRow}>
+                        <span className={styles.confirmRowText}>{confirmRowText(draft)}</span>
+                        <button type="button" className={styles.confirmRowBtn} onClick={handleConfirm}>
+                          Confirm
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <span
                     className={`${styles.chunk} ${styles.chunkStatic} ${run.pointStatus === "marked" ? styles.chunkActive : ""}`}
@@ -168,19 +187,29 @@ export default function RunItem({
                     {transcript.text}
                   </span>
                 )}
-              </p>
+              </div>
             )}
 
             {isPicking ? (
-              <div className={styles.transcriptActions}>
-                <button
-                  type="button"
-                  className={`${styles.quietLink} ${draft?.type === "none" ? styles.quietLinkActive : ""}`}
-                  onClick={() => setDraft({ type: "none" })}
-                >
-                  I never said it
-                </button>
-              </div>
+              <>
+                <div className={styles.transcriptActions}>
+                  <button
+                    type="button"
+                    className={`${styles.quietLink} ${draft?.type === "none" ? styles.quietLinkActive : ""}`}
+                    onClick={() => setDraft({ type: "none" })}
+                  >
+                    I never said it
+                  </button>
+                </div>
+                {draft?.type === "none" && (
+                  <div className={styles.confirmRow}>
+                    <span className={styles.confirmRowText}>{confirmRowText(draft)}</span>
+                    <button type="button" className={styles.confirmRowBtn} onClick={handleConfirm}>
+                      Confirm
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className={styles.transcriptActions}>
                 <span className={styles.confirmedLine}>
@@ -190,15 +219,6 @@ export default function RunItem({
                 </span>
                 <button type="button" className={styles.quietLink} onClick={handleChange}>
                   Change
-                </button>
-              </div>
-            )}
-
-            {isPicking && draft && (
-              <div className={styles.confirmBar}>
-                <p className={styles.confirmBarText}>{confirmBarText(draft)}</p>
-                <button type="button" className={styles.btn} onClick={handleConfirm}>
-                  Confirm
                 </button>
               </div>
             )}
