@@ -138,7 +138,6 @@ export default function RunItem({
                       onClick={() => onMarkPoint(run.id, sentencePointMs)}
                     >
                       {sentence.text}
-                      {active && <span className={styles.chunkTag}>what you do · {formatClock(run.pointMs ?? 0)}</span>}
                     </button>
                   );
                 })}
