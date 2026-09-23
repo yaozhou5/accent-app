@@ -10,6 +10,7 @@ import { loadScriptDraft, saveScriptDraft } from "@/lib/clock/scriptDraft";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
 import type { Run, TranscribeState } from "@/lib/clock/types";
+import EmailCapture from "./EmailCapture";
 import ModelIntro from "./ModelIntro";
 import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorder";
 import RunItem from "./RunItem";
@@ -174,6 +175,7 @@ export default function ClockApp() {
 
   const todayCount = runs.filter((r) => isToday(r.createdAt)).length;
   const repDelta = repDeltaText(runs);
+  const hasConfirmedRun = runs.some((r) => r.pointStatus !== "unmarked");
 
   return (
     <div ref={topRef}>
@@ -264,6 +266,8 @@ export default function ClockApp() {
           ))}
         </div>
       )}
+
+      {loaded && hasConfirmedRun && <EmailCapture runIndex={runs.length} />}
     </div>
   );
 }
