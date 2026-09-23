@@ -16,7 +16,12 @@ import RunItem from "./RunItem";
 import ScriptStep from "./ScriptStep";
 import TimeToPointChart from "./TimeToPointChart";
 
-type SaveFailure = { downloadUrl: string; durationMs: number };
+type SaveFailure = { downloadUrl: string; durationMs: number; errorText: string };
+
+function describeError(err: unknown): string {
+  if (err instanceof DOMException || err instanceof Error) return `${err.name}: ${err.message}`;
+  return String(err);
+}
 
 /** "First rep: 0:41. Latest: 0:13." — only when both ends of the run history have a marked point. */
 function repDeltaText(runs: Run[]): string | null {
@@ -134,8 +139,18 @@ export default function ClockApp() {
         setRuns((prev) => [run, ...prev]);
         setSaveFailure(null);
         void runTranscription(run, preDecodedAudio);
-      } catch {
-        setSaveFailure({ downloadUrl: URL.createObjectURL(data.blob), durationMs });
+      } catch (err) {
+        console.error("Failed to save run:", err);
+        if (navigator.storage?.estimate) {
+          try {
+            console.error("Storage estimate at failure:", await navigator.storage.estimate());
+          } catch (estErr) {
+            console.error("navigator.storage.estimate() failed:", estErr);
+          }
+        } else {
+          console.error("navigator.storage.estimate() is not supported in this browser.");
+        }
+        setSaveFailure({ downloadUrl: URL.createObjectURL(data.blob), durationMs, errorText: describeError(err) });
       }
     },
     [runTranscription, scriptDraft]
@@ -207,8 +222,7 @@ export default function ClockApp() {
       {saveFailure && (
         <div className={styles.warning}>
           <p>
-            Couldn’t save that {Math.floor(saveFailure.durationMs / 1000)}-second run — storage might be full or
-            unavailable.
+            Couldn’t save that {Math.floor(saveFailure.durationMs / 1000)}-second run — {saveFailure.errorText}
           </p>
           <a href={saveFailure.downloadUrl} download="accent-clock-run.webm">
             Download the recording instead
