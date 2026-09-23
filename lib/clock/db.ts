@@ -34,6 +34,7 @@ export function isDbAvailable(): boolean {
  * field — treat them as unmarked. Runs saved before sentence-splitting
  * existed have `chunks` but no `sentences` — derive them here so old
  * transcripts get clickable whole sentences too, without a migration.
+ * Runs saved before the script step existed have no `script` field at all.
  */
 function normalizeRun(run: Run): Run {
   let next = run;
@@ -41,6 +42,7 @@ function normalizeRun(run: Run): Run {
   if (next.transcript && !next.transcript.sentences) {
     next = { ...next, transcript: { ...next.transcript, sentences: chunksToSentences(next.transcript.chunks) } };
   }
+  if (next.script === undefined) next = { ...next, script: null };
   return next;
 }
 

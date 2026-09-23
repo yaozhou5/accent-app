@@ -64,6 +64,13 @@ export default function RunItem({
       <audio controls preload="none" src={audioUrl} className={styles.player} />
 
       <div className={styles.transcriptArea}>
+        {run.script && (
+          <div className={styles.scriptCompareBlock}>
+            <p className={styles.scriptCompareLabel}>What you planned</p>
+            <p className={styles.scriptCompareText}>{run.script}</p>
+          </div>
+        )}
+        {run.script && transcript && <p className={styles.scriptCompareLabel}>What you said</p>}
         {transcript ? (
           <>
             <h2 className={styles.markQuestion}>Which sentence says what your company does?</h2>

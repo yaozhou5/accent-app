@@ -6,12 +6,14 @@ import { decodeAudio } from "@/lib/clock/decodeAudio";
 import { deleteAllRuns, deleteRun, isDbAvailable, listRuns, saveRun, updateRun } from "@/lib/clock/db";
 import { formatClock, isToday } from "@/lib/clock/format";
 import { hasSeenModelIntro, markModelIntroSeen } from "@/lib/clock/modelIntro";
+import { loadScriptDraft, saveScriptDraft } from "@/lib/clock/scriptDraft";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
 import type { Run, TranscribeState } from "@/lib/clock/types";
 import ModelIntro from "./ModelIntro";
 import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorder";
 import RunItem from "./RunItem";
+import ScriptStep from "./ScriptStep";
 import TimeToPointChart from "./TimeToPointChart";
 
 type SaveFailure = { downloadUrl: string; durationMs: number };
@@ -34,6 +36,8 @@ export default function ClockApp() {
   const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
   const [transcribeStates, setTranscribeStates] = useState<Record<string, TranscribeState>>({});
+  const [scriptDraft, setScriptDraft] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
   const idCounter = useRef(0);
   const recorderRef = useRef<RecorderHandle | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
@@ -45,6 +49,14 @@ export default function ClockApp() {
       .then(setRuns)
       .catch(() => setRuns([]))
       .finally(() => setLoaded(true));
+    loadScriptDraft()
+      .then(setScriptDraft)
+      .catch(() => {});
+  }, []);
+
+  const handleScriptChange = useCallback((text: string) => {
+    setScriptDraft(text);
+    saveScriptDraft(text).catch(() => {});
   }, []);
 
   const runTranscription = useCallback(async (run: Run, preDecodedAudio?: Float32Array) => {
@@ -112,6 +124,9 @@ export default function ClockApp() {
         mimeType: data.mimeType,
         blob: data.blob,
         transcript: null,
+        // A copy, not a reference — this run keeps the script as it read at
+        // the moment of recording, even if the draft is edited afterwards.
+        script: scriptDraft.trim() || null,
       };
       try {
         await saveRun(run);
@@ -122,7 +137,7 @@ export default function ClockApp() {
         setSaveFailure({ downloadUrl: URL.createObjectURL(data.blob), durationMs });
       }
     },
-    [runTranscription]
+    [runTranscription, scriptDraft]
   );
 
   const handleDelete = useCallback((id: string) => {
@@ -169,10 +184,13 @@ export default function ClockApp() {
     <div ref={topRef}>
       {loaded && todayCount > 0 && <p className={styles.repToday}>Rep {todayCount} today</p>}
 
+      {/* Must never be visible while the timer runs — hidden outright, not just dimmed, the moment recording starts. */}
+      {!isRecording && <ScriptStep value={scriptDraft} onChange={handleScriptChange} />}
+
       {introSeen === false ? (
         <ModelIntro onContinue={handleContinueFromIntro} />
       ) : introSeen === true ? (
-        <Recorder ref={recorderRef} onFinished={handleFinished} />
+        <Recorder ref={recorderRef} onFinished={handleFinished} onRecordingChange={setIsRecording} />
       ) : null}
 
       <p className={styles.recorderNote}>

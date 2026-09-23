@@ -19,10 +19,10 @@ export type RecorderHandle = {
 
 type Status = "unsupported" | "idle" | "requesting" | "denied" | "recording" | "error";
 
-const Recorder = forwardRef<RecorderHandle, { onFinished: (run: FinishedRecording) => void }>(function Recorder(
-  { onFinished },
-  ref
-) {
+const Recorder = forwardRef<
+  RecorderHandle,
+  { onFinished: (run: FinishedRecording) => void; onRecordingChange?: (isRecording: boolean) => void }
+>(function Recorder({ onFinished, onRecordingChange }, ref) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -36,6 +36,13 @@ const Recorder = forwardRef<RecorderHandle, { onFinished: (run: FinishedRecordin
   useEffect(() => {
     if (!isRecordingSupported()) setStatus("unsupported");
   }, []);
+
+  // Lets the parent (ClockApp) hide anything that must never be visible
+  // mid-recording — the script step, in particular — without it having to
+  // know anything about this component's internal status machine.
+  useEffect(() => {
+    onRecordingChange?.(status === "recording");
+  }, [status, onRecordingChange]);
 
   const stopTimer = useCallback(() => {
     if (intervalRef.current !== null) {

@@ -54,6 +54,65 @@
   margin: 0 0 10px;
 }
 
+/* Script step */
+.wrap .scriptStep {
+  margin-bottom: 16px;
+}
+.wrap .scriptToggle {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 14px 18px;
+}
+.wrap .scriptToggle:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.wrap .scriptToggleIcon {
+  font-family: var(--sans);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--mark);
+}
+.wrap .scriptBody {
+  margin-top: 10px;
+  padding: 18px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.wrap .scriptTextarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+.wrap .scriptHint {
+  margin: 10px 2px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .wrap .card {
   background: var(--card);
   border: 1px solid var(--rule);
@@ -259,6 +318,28 @@
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--rule);
+}
+.wrap .scriptCompareBlock {
+  margin: 0 0 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.wrap .scriptCompareLabel {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.wrap .scriptCompareText {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0;
+  white-space: pre-wrap;
 }
 .wrap .markQuestion {
   font-family: var(--serif);

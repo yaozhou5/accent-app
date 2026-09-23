@@ -23,6 +23,8 @@ export type Run = {
   mimeType: string;
   blob: Blob;
   transcript: Transcript | null;
+  /** A copy of the script draft as it stood when this run was recorded, or null if none was written. */
+  script: string | null;
 };
 
 export type TranscribeState =
