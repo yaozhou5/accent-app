@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import { formatClock, formatDate } from "@/lib/clock/format";
 import type { Run, TranscribeState } from "@/lib/clock/types";
@@ -11,6 +11,27 @@ function metaSuffix(run: Run): string {
   if (run.pointStatus === "marked" && run.pointMs !== null) return ` · said it at ${formatClock(run.pointMs)}`;
   if (run.pointStatus === "none") return " · never said it";
   return " · not marked yet";
+}
+
+type ResultLine = { headline: string; sub: string | null; tone: "positive" | "none" };
+
+/** Names the warm-up itself, not just the raw timestamp. */
+function resultLine(run: Run): ResultLine | null {
+  if (run.pointStatus === "marked" && run.pointMs !== null) {
+    if (run.pointMs === 0) {
+      return { headline: "You said it in your first sentence. No warm-up at all.", sub: null, tone: "positive" };
+    }
+    const warmupSeconds = Math.floor(run.pointMs / 1000);
+    return {
+      headline: `${warmupSeconds} second${warmupSeconds === 1 ? "" : "s"} of warm-up before you said what you do.`,
+      sub: `out of ${formatClock(run.durationMs)}`,
+      tone: "positive",
+    };
+  }
+  if (run.pointStatus === "none") {
+    return { headline: "You never said what you do.", sub: null, tone: "none" };
+  }
+  return null;
 }
 
 export default function RunItem({
@@ -40,11 +61,27 @@ export default function RunItem({
     return () => URL.revokeObjectURL(audioUrl);
   }, [audioUrl]);
 
+  // Briefly flashes the result line and the timeline marker whenever the
+  // chosen point changes — never on first mount/load, only on an actual
+  // change of choice.
+  const choiceKey = `${run.pointStatus}:${run.pointMs}`;
+  const prevChoiceKeyRef = useRef(choiceKey);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (prevChoiceKeyRef.current === choiceKey) return;
+    prevChoiceKeyRef.current = choiceKey;
+    setFlash(true);
+    const timer = setTimeout(() => setFlash(false), 500);
+    return () => clearTimeout(timer);
+  }, [choiceKey]);
+
   const transcript = run.transcript;
   const activeIndex =
     transcript && run.pointStatus === "marked"
       ? transcript.sentences.findIndex((s) => Math.round(s.start * 1000) === run.pointMs)
       : -1;
+  const result = resultLine(run);
 
   return (
     <div className={styles.card}>
@@ -59,7 +96,7 @@ export default function RunItem({
         </button>
       </div>
 
-      <RunTimeline durationMs={run.durationMs} pointMs={run.pointMs} pointStatus={run.pointStatus} />
+      <RunTimeline durationMs={run.durationMs} pointMs={run.pointMs} pointStatus={run.pointStatus} flash={flash} />
 
       <audio controls preload="none" src={audioUrl} className={styles.player} />
 
@@ -78,14 +115,13 @@ export default function RunItem({
               Click the sentence. Everything before it is how long it took you to get there.
             </p>
 
-            {run.pointStatus === "marked" && run.pointMs !== null && (
-              <p className={styles.markResult}>
-                You said what you do at {formatClock(run.pointMs)}.
-                <span className={styles.markResultSub}> out of {formatClock(run.durationMs)}</span>
+            {result && (
+              <p
+                className={`${styles.markResult} ${result.tone === "none" ? styles.markResultNone : ""} ${flash ? styles.flash : ""}`}
+              >
+                {result.headline}
+                {result.sub && <span className={styles.markResultSub}> {result.sub}</span>}
               </p>
-            )}
-            {run.pointStatus === "none" && (
-              <p className={`${styles.markResult} ${styles.markResultNone}`}>You never said what you do.</p>
             )}
 
             {transcript.sentences.length > 0 ? (

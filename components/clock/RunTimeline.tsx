@@ -1,3 +1,4 @@
+import styles from "@/app/clock/page.module.css";
 import { formatClock } from "@/lib/clock/format";
 import { TARGET_MS } from "@/lib/clock/recording";
 import type { PointStatus } from "@/lib/clock/types";
@@ -12,10 +13,13 @@ export default function RunTimeline({
   durationMs,
   pointMs,
   pointStatus,
+  flash = false,
 }: {
   durationMs: number;
   pointMs: number | null;
   pointStatus: PointStatus;
+  /** Briefly pulses the point marker — set true right after the point changes. */
+  flash?: boolean;
 }) {
   const scale = durationMs > 0 ? VIEW_WIDTH / durationMs : 0;
   const pointX = pointStatus === "marked" && pointMs !== null ? Math.min(pointMs * scale, VIEW_WIDTH) : null;
@@ -72,7 +76,15 @@ export default function RunTimeline({
         </>
       )}
       {pointX !== null && (
-        <line x1={pointX} y1="4" x2={pointX} y2={TRACK_Y + TRACK_HEIGHT + 4} stroke="var(--mark)" strokeWidth="2" />
+        <line
+          className={flash ? styles.timelineMarkerFlash : undefined}
+          x1={pointX}
+          y1="4"
+          x2={pointX}
+          y2={TRACK_Y + TRACK_HEIGHT + 4}
+          stroke="var(--mark)"
+          strokeWidth="2"
+        />
       )}
       <text x="0" y={VIEW_HEIGHT - 2} fontFamily="Archivo, sans-serif" fontSize="11" fill="var(--muted)">
         0:00
