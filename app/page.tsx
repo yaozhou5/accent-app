@@ -42,8 +42,8 @@ export default function LandingPage() {
             <h1>Talk your way to a clear pitch.</h1>
             <p className={styles.lede}>Practice out loud in 60 seconds, and find out what people actually heard.</p>
             <div className={styles.ctarow}>
-              <Link className={styles.cta} href="/listen">
-                Listen to someone’s 60 seconds
+              <Link className={styles.cta} href="/clock">
+                Try the clock
               </Link>
             </div>
             <p className={styles.trust}>Runs on your phone. Nothing leaves it unless you send it.</p>

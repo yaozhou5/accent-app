@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import { formatClock } from "@/lib/clock/format";
 import { MAX_RECORDING_MS, TARGET_MS, isRecordingSupported, pickAudioMimeType } from "@/lib/clock/recording";
@@ -12,9 +12,17 @@ export type FinishedRecording = {
   fallbackDurationMs: number;
 };
 
+export type RecorderHandle = {
+  /** Starts a new recording, as if the record button was tapped. No-ops if already recording. */
+  start: () => void;
+};
+
 type Status = "unsupported" | "idle" | "requesting" | "denied" | "recording" | "error";
 
-export default function Recorder({ onFinished }: { onFinished: (run: FinishedRecording) => void }) {
+const Recorder = forwardRef<RecorderHandle, { onFinished: (run: FinishedRecording) => void }>(function Recorder(
+  { onFinished },
+  ref
+) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -51,6 +59,11 @@ export default function Recorder({ onFinished }: { onFinished: (run: FinishedRec
   }, [stopTimer]);
 
   const start = useCallback(async () => {
+    // Guards against "Go again" (or a doubled click) re-entering while a
+    // recording is already in flight — anything else (idle, denied, error)
+    // is a legitimate place to (re)start from, same as the "Try again" button.
+    if (status === "recording" || status === "requesting") return;
+
     setErrorMessage(null);
     setStatus("requesting");
     try {
@@ -97,7 +110,9 @@ export default function Recorder({ onFinished }: { onFinished: (run: FinishedRec
         setErrorMessage(err instanceof Error ? err.message : "Couldn't start recording.");
       }
     }
-  }, [onFinished, stop, stopTimer]);
+  }, [status, onFinished, stop, stopTimer]);
+
+  useImperativeHandle(ref, () => ({ start }), [start]);
 
   if (status === "unsupported") {
     return (
@@ -153,4 +168,6 @@ export default function Recorder({ onFinished }: { onFinished: (run: FinishedRec
       {errorMessage && <p className={styles.recorderError}>{errorMessage}</p>}
     </div>
   );
-}
+});
+
+export default Recorder;

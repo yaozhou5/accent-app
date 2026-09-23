@@ -4,16 +4,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import { decodeAudio } from "@/lib/clock/decodeAudio";
 import { deleteAllRuns, deleteRun, isDbAvailable, listRuns, saveRun, updateRun } from "@/lib/clock/db";
+import { formatClock, isToday } from "@/lib/clock/format";
 import { hasSeenModelIntro, markModelIntroSeen } from "@/lib/clock/modelIntro";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
 import type { Run, TranscribeState } from "@/lib/clock/types";
 import ModelIntro from "./ModelIntro";
-import Recorder, { type FinishedRecording } from "./Recorder";
+import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorder";
 import RunItem from "./RunItem";
 import TimeToPointChart from "./TimeToPointChart";
 
 type SaveFailure = { downloadUrl: string; durationMs: number };
+
+/** "First rep: 0:41. Latest: 0:13." — only when both ends of the run history have a marked point. */
+function repDeltaText(runs: Run[]): string | null {
+  if (runs.length < 2) return null;
+  const latest = runs[0];
+  const first = runs[runs.length - 1];
+  if (first.pointStatus !== "marked" || first.pointMs === null) return null;
+  if (latest.pointStatus !== "marked" || latest.pointMs === null) return null;
+  return `First rep: ${formatClock(first.pointMs)}. Latest: ${formatClock(latest.pointMs)}.`;
+}
 
 export default function ClockApp() {
   const [runs, setRuns] = useState<Run[]>([]);
@@ -24,6 +35,8 @@ export default function ClockApp() {
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
   const [transcribeStates, setTranscribeStates] = useState<Record<string, TranscribeState>>({});
   const idCounter = useRef(0);
+  const recorderRef = useRef<RecorderHandle | null>(null);
+  const topRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setDbAvailable(isDbAvailable());
@@ -143,12 +156,23 @@ export default function ClockApp() {
     setIntroSeen(true);
   }, []);
 
+  const handleGoAgain = useCallback(() => {
+    recorderRef.current?.start();
+    const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    topRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  }, []);
+
+  const todayCount = runs.filter((r) => isToday(r.createdAt)).length;
+  const repDelta = repDeltaText(runs);
+
   return (
-    <div>
+    <div ref={topRef}>
+      {loaded && todayCount > 0 && <p className={styles.repToday}>Rep {todayCount} today</p>}
+
       {introSeen === false ? (
         <ModelIntro onContinue={handleContinueFromIntro} />
       ) : introSeen === true ? (
-        <Recorder onFinished={handleFinished} />
+        <Recorder ref={recorderRef} onFinished={handleFinished} />
       ) : null}
 
       <p className={styles.recorderNote}>
@@ -182,10 +206,15 @@ export default function ClockApp() {
         <div className={styles.card}>
           <p className={styles.step}>Time until you said what you do</p>
           <TimeToPointChart runs={runs} />
+          {repDelta && <p className={styles.repDelta}>{repDelta}</p>}
         </div>
       )}
 
-      {loaded && runs.length === 0 && <p className={styles.empty}>No runs yet. Record your first one above.</p>}
+      {loaded && runs.length === 0 && (
+        <p className={styles.empty}>
+          Most people need three or four goes before it gets crisp. Record as many as you like.
+        </p>
+      )}
 
       {runs.length > 0 && (
         <div className={styles.runsList}>
@@ -218,6 +247,7 @@ export default function ClockApp() {
               onMarkPoint={handleMarkPoint}
               onMarkNone={handleMarkNone}
               onClearPoint={handleClearPoint}
+              onGoAgain={handleGoAgain}
             />
           ))}
         </div>

@@ -22,6 +22,7 @@ export default function RunItem({
   onMarkPoint,
   onMarkNone,
   onClearPoint,
+  onGoAgain,
 }: {
   run: Run;
   repNumber: number;
@@ -31,6 +32,7 @@ export default function RunItem({
   onMarkPoint: (id: string, pointMs: number) => void;
   onMarkNone: (id: string) => void;
   onClearPoint: (id: string) => void;
+  onGoAgain: () => void;
 }) {
   const audioUrl = useMemo(() => URL.createObjectURL(run.blob), [run.blob]);
 
@@ -139,6 +141,12 @@ export default function RunItem({
             </button>
           </div>
         )}
+      </div>
+
+      <div className={styles.goAgainRow}>
+        <button className={styles.btn} onClick={onGoAgain}>
+          Go again
+        </button>
       </div>
     </div>
   );

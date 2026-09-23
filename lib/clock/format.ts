@@ -14,3 +14,9 @@ export function formatDate(ms: number): string {
     day: "numeric",
   });
 }
+
+export function isToday(ms: number): boolean {
+  const d = new Date(ms);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
