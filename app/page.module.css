@@ -855,8 +855,8 @@
   .wrap .navlink {
     display: none;
   }
-  /* With the plain nav links hidden above, only the pill buttons (The
-     clock, Listen) remain — wrap them onto their own row under the
+  /* With the plain nav links hidden above, only the pill buttons
+     (Practice, Listen) remain — wrap them onto their own row under the
      wordmark instead of letting them get squeezed or overflow on
      narrow phones. */
   .wrap nav .in {

@@ -39,6 +39,11 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/clock",
+        destination: "/practice",
+        permanent: true,
+      },
+      {
         source: "/onboard/:path*",
         destination: "/voice",
         permanent: false,

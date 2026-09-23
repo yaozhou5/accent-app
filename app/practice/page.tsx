@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClockApp from "@/components/clock/ClockApp";
-import styles from "./page.module.css";
+import styles from "@/app/clock/page.module.css";
 
 export const metadata: Metadata = {
-  title: "The clock — Accent",
+  title: "Practice — Accent",
   description: "Record, and see how long it takes you to say what you do.",
 };
 
-export default function ClockPage() {
+export default function PracticePage() {
   return (
     <div className="accent-legacy">
       <div className={styles.wrap}>
@@ -20,7 +20,7 @@ export default function ClockPage() {
           </div>
         </nav>
 
-        <h1>The clock.</h1>
+        <h1>Practice.</h1>
 
         <ClockApp />
 

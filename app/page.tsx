@@ -28,8 +28,8 @@ export default function LandingPage() {
             <Link className={styles.navlink} href="#faq">
               FAQ
             </Link>
-            <Link className={styles.navbtn} href="/clock">
-              The clock
+            <Link className={styles.navbtn} href="/practice">
+              Practice
             </Link>
             <Link className={styles.navbtn} href="/listen">
               Listen
@@ -42,8 +42,8 @@ export default function LandingPage() {
             <h1>Talk your way to a clear pitch.</h1>
             <p className={styles.lede}>Practice out loud in 60 seconds, and find out what people actually heard.</p>
             <div className={styles.ctarow}>
-              <Link className={styles.cta} href="/clock">
-                Try the clock
+              <Link className={styles.cta} href="/practice">
+                Try it
               </Link>
             </div>
             <p className={styles.trust}>Runs on your phone. Nothing leaves it unless you send it.</p>
@@ -146,7 +146,7 @@ export default function LandingPage() {
                 <rect x="40" y="9" width="32" height="12" fill="var(--flag)" />
                 <line x1="30" y1="3" x2="30" y2="27" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="3 2" />
               </svg>
-              <h3>The clock</h3>
+              <h3>Practice</h3>
               <p>How long until you say what you do. Not filler words. The thing that actually loses people.</p>
             </div>
 
@@ -353,7 +353,7 @@ export default function LandingPage() {
               <li>
                 <span className={`${styles.st} ${styles.on}`}>Live</span>
                 <span>
-                  The clock. Record yourself, get a transcript, and see how long it takes you to say what you do.
+                  Practice. Record yourself, get a transcript, and see how long it takes you to say what you do.
                 </span>
               </li>
               <li>
@@ -366,7 +366,7 @@ export default function LandingPage() {
               </li>
             </ul>
             <p>
-              I&apos;d rather tell you that than let you find out. The clock is ready to try now. If you&apos;d like to
+              I&apos;d rather tell you that than let you find out. Practice is ready to try now. If you&apos;d like to
               be a listener for someone else, say so and I&apos;ll send you the link.
             </p>
           </div>
@@ -374,8 +374,8 @@ export default function LandingPage() {
             <Link className={styles.cta} href="/listen">
               Listen to someone&apos;s sixty seconds
             </Link>
-            <Link className={`${styles.cta} ${styles.quiet}`} href="/clock">
-              Try the clock
+            <Link className={`${styles.cta} ${styles.quiet}`} href="/practice">
+              Try it
             </Link>
           </div>
         </section>
@@ -444,7 +444,7 @@ export default function LandingPage() {
         <section>
           <div className={styles.privacy}>
             <p>
-              The recording stays on your device. The clock, the transcript and the repeat check all run there: no
+              The recording stays on your device. Practice, the transcript and the repeat check all run there: no
               upload, no account needed to use any of it.
             </p>
             <p>

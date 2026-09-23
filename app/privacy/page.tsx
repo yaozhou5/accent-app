@@ -52,7 +52,7 @@ export default function PrivacyPage() {
 
         <h2>What stays on your device</h2>
         <p>
-          Your recordings are stored locally in your browser or on your phone. The clock, the transcript and the repeat
+          Your recordings are stored locally in your browser or on your phone. Practice, the transcript and the repeat
           check all run there. We do not receive that audio, cannot listen to it, and cannot recover it for you if you
           clear your browser data or lose the device.
         </p>
