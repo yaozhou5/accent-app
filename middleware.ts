@@ -26,8 +26,10 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Redirect logged-in users away from landing, login, signup
-    if (user && (path === "/" || AUTH_PAGES.some((p) => path.startsWith(p)))) {
+    // Redirect logged-in users away from login/signup — the landing page is
+    // fine for a signed-in visitor to see (e.g. checking it while logged in
+    // on another device), so it's not in this list.
+    if (user && AUTH_PAGES.some((p) => path.startsWith(p))) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
