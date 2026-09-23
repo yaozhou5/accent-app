@@ -20,13 +20,26 @@ export async function decodeAudio(blob: Blob): Promise<DecodedAudio> {
   if (!AudioContextCtor) {
     throw new Error("This browser can't decode audio.");
   }
-  const audioCtx = new AudioContextCtor({ sampleRate: TARGET_SAMPLE_RATE });
+  let audioCtx: AudioContext;
+  try {
+    audioCtx = new AudioContextCtor({ sampleRate: TARGET_SAMPLE_RATE });
+  } catch (err) {
+    console.error(`Failed to construct AudioContext at ${TARGET_SAMPLE_RATE}Hz:`, err);
+    throw new Error(
+      `Couldn't open an audio context at ${TARGET_SAMPLE_RATE}Hz — ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`
+    );
+  }
   try {
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     const { numberOfChannels, length } = audioBuffer;
     const audio =
       numberOfChannels === 1 ? audioBuffer.getChannelData(0).slice() : mixDown(audioBuffer, numberOfChannels, length);
     return { audio, durationMs: audioBuffer.duration * 1000 };
+  } catch (err) {
+    console.error("decodeAudioData failed:", err, { contextSampleRate: audioCtx.sampleRate, blobType: blob.type });
+    throw new Error(
+      `Couldn't decode the recording — ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`
+    );
   } finally {
     await audioCtx.close().catch(() => {});
   }

@@ -85,9 +85,10 @@ export default function ClockApp() {
         return next;
       });
     } catch (err) {
+      console.error("Transcription failed for run", run.id, err);
       setTranscribeStates((s) => ({
         ...s,
-        [run.id]: { phase: "error", message: err instanceof Error ? err.message : "Transcription failed." },
+        [run.id]: { phase: "error", message: err instanceof Error ? err.message : String(err) },
       }));
     }
   }, []);

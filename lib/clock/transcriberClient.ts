@@ -20,7 +20,12 @@ const pending = new Map<string, PendingEntry>();
 
 function ensureWorker(): Worker {
   if (worker) return worker;
-  worker = new Worker(new URL("./transcribe.worker.ts", import.meta.url), { type: "module" });
+  try {
+    worker = new Worker(new URL("./transcribe.worker.ts", import.meta.url), { type: "module" });
+  } catch (err) {
+    console.error("Failed to construct the transcription worker:", err);
+    throw new Error(`Couldn't start the transcription worker — ${err instanceof Error ? err.message : String(err)}`);
+  }
   worker.onmessage = (event: MessageEvent) => {
     const data = event.data as
       | { type: "progress"; id: string; progress: TranscribeProgress }
@@ -37,13 +42,22 @@ function ensureWorker(): Worker {
       entry.resolve({ text: data.text, chunks: data.chunks, sentences: data.sentences });
       pending.delete(data.id);
     } else if (data.type === "error") {
+      console.error("Transcription worker reported an error:", data.message);
       entry.reject(new Error(data.message));
       pending.delete(data.id);
     }
   };
   worker.onerror = (event) => {
+    console.error("Transcription worker crashed:", event.message, event);
     for (const [id, entry] of pending) {
       entry.reject(new Error(event.message || "Transcription worker crashed."));
+      pending.delete(id);
+    }
+  };
+  worker.onmessageerror = (event) => {
+    console.error("Transcription worker sent an unreadable message:", event);
+    for (const [id, entry] of pending) {
+      entry.reject(new Error("The transcription worker sent a message the page couldn't read."));
       pending.delete(id);
     }
   };

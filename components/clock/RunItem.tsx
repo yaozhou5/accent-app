@@ -237,7 +237,9 @@ export default function RunItem({
           <p className={styles.transcribeHint}>Transcribing…</p>
         ) : (
           <div className={styles.transcribeRow}>
-            <p className={styles.transcribeError}>Transcription failed. Your recording is still saved.</p>
+            <p className={styles.transcribeError}>
+              Transcription failed: {transcribeState.message} Your recording is still saved.
+            </p>
             <button className={styles.btn} onClick={() => onTranscribe(run)}>
               Try again
             </button>

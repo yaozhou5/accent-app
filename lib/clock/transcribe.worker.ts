@@ -41,16 +41,24 @@ const transcriberPromises = new Map<string, Promise<AutomaticSpeechRecognitionPi
 function getTranscriber(id: string, modelId: string): Promise<AutomaticSpeechRecognitionPipeline> {
   let promise = transcriberPromises.get(modelId);
   if (!promise) {
-    promise = pipeline("automatic-speech-recognition", modelId, {
-      // "auto" prefers WebGPU when the browser supports it and falls back
-      // to WASM otherwise. dtype is pinned (see ./model.ts) so the download
-      // size stays the same either way.
-      device: "auto",
-      dtype: WHISPER_DTYPE,
-      progress_callback: (progress: ProgressPayload) => {
-        post({ type: "progress", id, progress });
-      },
-    }) as Promise<AutomaticSpeechRecognitionPipeline>;
+    promise = (
+      pipeline("automatic-speech-recognition", modelId, {
+        // "auto" prefers WebGPU when the browser supports it and falls back
+        // to WASM otherwise. dtype is pinned (see ./model.ts) so the download
+        // size stays the same either way.
+        device: "auto",
+        dtype: WHISPER_DTYPE,
+        progress_callback: (progress: ProgressPayload) => {
+          post({ type: "progress", id, progress });
+        },
+      }) as Promise<AutomaticSpeechRecognitionPipeline>
+    ).catch((err) => {
+      // Don't leave a rejected promise cached — otherwise every future
+      // attempt (including the user's "Try again") replays this same
+      // rejection forever instead of actually retrying the load.
+      transcriberPromises.delete(modelId);
+      throw err;
+    });
     transcriberPromises.set(modelId, promise);
   }
   return promise;
@@ -60,10 +68,23 @@ function post(message: OutMessage) {
   (self as unknown as Worker).postMessage(message);
 }
 
+function describe(err: unknown): string {
+  if (err instanceof Error) return `${err.name}: ${err.message}`;
+  return String(err);
+}
+
 self.onmessage = async (event: MessageEvent<InMessage>) => {
   const { id, audio, modelId } = event.data;
+  let transcriber: AutomaticSpeechRecognitionPipeline;
   try {
-    const transcriber = await getTranscriber(id, modelId ?? WHISPER_MODEL_ID);
+    transcriber = await getTranscriber(id, modelId ?? WHISPER_MODEL_ID);
+  } catch (err) {
+    const message = `Model loading failed — ${describe(err)}`;
+    console.error("[transcribe worker]", message, err);
+    post({ type: "error", id, message });
+    return;
+  }
+  try {
     post({ type: "phase", id, phase: "transcribing" });
     const output = (await transcriber(audio, {
       chunk_length_s: 30,
@@ -78,6 +99,22 @@ self.onmessage = async (event: MessageEvent<InMessage>) => {
     const sentences = chunksToSentences(chunks);
     post({ type: "result", id, text: result.text ?? "", chunks, sentences });
   } catch (err) {
-    post({ type: "error", id, message: err instanceof Error ? err.message : String(err) });
+    const message = `Transcription failed — ${describe(err)}`;
+    console.error("[transcribe worker]", message, err);
+    post({ type: "error", id, message });
   }
 };
+
+// Safety nets for failures that don't go through the try/catch above at
+// all — e.g. a synchronous throw somewhere inside transformers.js/onnxruntime
+// during module init, or a rejected promise nobody awaited. These can't be
+// tied back to a specific pending request, so they're console-only: on iOS
+// this worker has been observed to fail with the UI silently reverting and
+// nothing in the console, so ruling out "it's failing here and staying
+// silent" is itself useful signal.
+self.addEventListener("error", (event) => {
+  console.error("[transcribe worker] uncaught error:", event.message, event.error);
+});
+self.addEventListener("unhandledrejection", (event) => {
+  console.error("[transcribe worker] unhandled rejection:", event.reason);
+});
