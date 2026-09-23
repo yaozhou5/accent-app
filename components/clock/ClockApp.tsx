@@ -161,11 +161,6 @@ export default function ClockApp() {
     updateRun(id, { pointMs: null, pointStatus: "none" }).catch(() => {});
   }, []);
 
-  const handleClearPoint = useCallback((id: string) => {
-    setRuns((prev) => prev.map((r) => (r.id === id ? { ...r, pointMs: null, pointStatus: "unmarked" } : r)));
-    updateRun(id, { pointMs: null, pointStatus: "unmarked" }).catch(() => {});
-  }, []);
-
   const handleContinueFromIntro = useCallback(() => {
     markModelIntroSeen();
     setIntroSeen(true);
@@ -264,7 +259,6 @@ export default function ClockApp() {
               onTranscribe={(r) => runTranscription(r)}
               onMarkPoint={handleMarkPoint}
               onMarkNone={handleMarkNone}
-              onClearPoint={handleClearPoint}
               onGoAgain={handleGoAgain}
             />
           ))}

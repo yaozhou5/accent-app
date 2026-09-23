@@ -58,7 +58,7 @@ export default function RunTimeline({
             x1={targetX}
             y1="2"
             x2={targetX}
-            y2={TRACK_Y + TRACK_HEIGHT + 6}
+            y2={TRACK_Y + TRACK_HEIGHT - 1}
             stroke="var(--ink)"
             strokeWidth="1.5"
             strokeDasharray="4 3"

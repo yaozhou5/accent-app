@@ -13,6 +13,16 @@ function metaSuffix(run: Run): string {
   return " · not marked yet";
 }
 
+type Draft = { type: "point"; ms: number } | { type: "none" };
+
+/** The sticky confirm-bar copy for the current draft choice. */
+function confirmBarText(draft: Draft): string {
+  if (draft.type === "none") return "You never said what you do.";
+  if (draft.ms === 0) return "This is where you said what you do — right at the start.";
+  const seconds = Math.floor(draft.ms / 1000);
+  return `This is where you said what you do — ${seconds} second${seconds === 1 ? "" : "s"} in.`;
+}
+
 export default function RunItem({
   run,
   repNumber,
@@ -21,7 +31,6 @@ export default function RunItem({
   onTranscribe,
   onMarkPoint,
   onMarkNone,
-  onClearPoint,
   onGoAgain,
 }: {
   run: Run;
@@ -31,7 +40,6 @@ export default function RunItem({
   onTranscribe: (run: Run) => void;
   onMarkPoint: (id: string, pointMs: number) => void;
   onMarkNone: (id: string) => void;
-  onClearPoint: (id: string) => void;
   onGoAgain: () => void;
 }) {
   const audioUrl = useMemo(() => URL.createObjectURL(run.blob), [run.blob]);
@@ -40,8 +48,8 @@ export default function RunItem({
     return () => URL.revokeObjectURL(audioUrl);
   }, [audioUrl]);
 
-  // Briefly flashes the timeline marker whenever the chosen point changes —
-  // never on first mount/load, only on an actual change of choice.
+  // Briefly flashes the timeline marker whenever the confirmed point
+  // changes — never on first mount/load, only on an actual change.
   const choiceKey = `${run.pointStatus}:${run.pointMs}`;
   const prevChoiceKeyRef = useRef(choiceKey);
   const [flash, setFlash] = useState(false);
@@ -54,10 +62,38 @@ export default function RunItem({
     return () => clearTimeout(timer);
   }, [choiceKey]);
 
+  // A picked-but-unconfirmed choice. Reset whenever Confirm actually saves
+  // it (run.pointStatus leaves "unmarked" and isChanging drops back out).
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [isChanging, setIsChanging] = useState(false);
+  const isPicking = run.pointStatus === "unmarked" || isChanging;
+
+  const handleConfirm = () => {
+    if (!draft) return;
+    if (draft.type === "point") onMarkPoint(run.id, draft.ms);
+    else onMarkNone(run.id);
+    setDraft(null);
+    setIsChanging(false);
+  };
+
+  const handleChange = () => {
+    setDraft(
+      run.pointStatus === "marked" && run.pointMs !== null ? { type: "point", ms: run.pointMs } : { type: "none" }
+    );
+    setIsChanging(true);
+  };
+
   const transcript = run.transcript;
+  const effectivePointMs = isPicking
+    ? draft?.type === "point"
+      ? draft.ms
+      : null
+    : run.pointStatus === "marked"
+      ? run.pointMs
+      : null;
   const activeIndex =
-    transcript && run.pointStatus === "marked"
-      ? transcript.sentences.findIndex((s) => Math.round(s.start * 1000) === run.pointMs)
+    transcript && effectivePointMs !== null
+      ? transcript.sentences.findIndex((s) => Math.round(s.start * 1000) === effectivePointMs)
       : -1;
 
   return (
@@ -98,39 +134,75 @@ export default function RunItem({
                   const sentencePointMs = Math.round(sentence.start * 1000);
                   const active = i === activeIndex;
                   const dimmed = activeIndex !== -1 && i < activeIndex;
-                  return (
+                  const chunkClass = `${styles.chunk} ${active ? styles.chunkActive : ""} ${dimmed ? styles.chunkDimmed : ""}`;
+                  return isPicking ? (
                     <button
                       key={i}
                       type="button"
-                      className={`${styles.chunk} ${active ? styles.chunkActive : ""} ${dimmed ? styles.chunkDimmed : ""}`}
-                      onClick={() => onMarkPoint(run.id, sentencePointMs)}
+                      className={chunkClass}
+                      onClick={() => setDraft({ type: "point", ms: sentencePointMs })}
                     >
                       {sentence.text}
                     </button>
+                  ) : (
+                    <span key={i} className={`${chunkClass} ${styles.chunkStatic}`}>
+                      {sentence.text}
+                    </span>
                   );
                 })}
               </p>
             ) : (
               <p className={styles.transcript}>
-                <button
-                  type="button"
-                  className={`${styles.chunk} ${run.pointStatus === "marked" ? styles.chunkActive : ""}`}
-                  onClick={() => onMarkPoint(run.id, 0)}
-                >
-                  {transcript.text}
-                </button>
+                {isPicking ? (
+                  <button
+                    type="button"
+                    className={`${styles.chunk} ${draft?.type === "point" ? styles.chunkActive : ""}`}
+                    onClick={() => setDraft({ type: "point", ms: 0 })}
+                  >
+                    {transcript.text}
+                  </button>
+                ) : (
+                  <span
+                    className={`${styles.chunk} ${styles.chunkStatic} ${run.pointStatus === "marked" ? styles.chunkActive : ""}`}
+                  >
+                    {transcript.text}
+                  </span>
+                )}
               </p>
             )}
-            <div className={styles.transcriptActions}>
-              <button className={styles.quietLink} onClick={() => onMarkNone(run.id)}>
-                I never said it
-              </button>
-              {run.pointStatus !== "unmarked" && (
-                <button className={styles.quietLink} onClick={() => onClearPoint(run.id)}>
-                  Clear
+
+            {isPicking ? (
+              <div className={styles.transcriptActions}>
+                <button
+                  type="button"
+                  className={`${styles.quietLink} ${draft?.type === "none" ? styles.quietLinkActive : ""}`}
+                  onClick={() => setDraft({ type: "none" })}
+                >
+                  I never said it
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className={styles.transcriptActions}>
+                <span className={styles.confirmedLine}>
+                  {run.pointStatus === "marked" && run.pointMs !== null
+                    ? `Confirmed — said it at ${formatClock(run.pointMs)}.`
+                    : "Confirmed — you never said it."}
+                </span>
+                <button type="button" className={styles.quietLink} onClick={handleChange}>
+                  Change
+                </button>
+              </div>
+            )}
+
+            {isPicking && draft && (
+              <div className={styles.confirmBar}>
+                <p className={styles.confirmBarText}>{confirmBarText(draft)}</p>
+                <button type="button" className={styles.btn} onClick={handleConfirm}>
+                  Confirm
+                </button>
+              </div>
+            )}
+
             {process.env.NODE_ENV === "development" && <DevModelCompare run={run} />}
           </>
         ) : transcribeState.phase === "idle" ? (

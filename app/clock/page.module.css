@@ -403,6 +403,15 @@
 .wrap .chunkActive:hover {
   background: var(--mark3);
 }
+.wrap .chunkStatic {
+  cursor: default;
+}
+.wrap .chunkStatic:hover {
+  background: none;
+}
+.wrap .chunkStatic.chunkActive:hover {
+  background: var(--mark3);
+}
 .wrap .transcriptActions {
   margin-top: 14px;
   display: flex;
@@ -422,6 +431,36 @@
   text-underline-offset: 2px;
 }
 .wrap .quietLink:hover {
+  color: var(--ink);
+}
+.wrap .quietLinkActive {
+  color: var(--mark);
+  font-weight: 600;
+}
+.wrap .confirmedLine {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.wrap .confirmBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.wrap .confirmBarText {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 14.5px;
   color: var(--ink);
 }
 .wrap .transcribeRow {
