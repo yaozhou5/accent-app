@@ -1,42 +1,74 @@
 import type { Metadata } from "next";
-import { Fraunces, JetBrains_Mono, DM_Sans, Newsreader, Archivo } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/react";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  subsets: ["latin"],
+// Self-hosted — see public/fonts/README.md for how these were produced.
+// Weight/style coverage matches what was previously requested from Google
+// Fonts (either via next/font/google's config below each block, or via the
+// removed <link> tags), so no font actually used in the app lost coverage.
+
+const fraunces = localFont({
+  src: [
+    { path: "../public/fonts/fraunces-300-normal.woff2", weight: "300", style: "normal" },
+    { path: "../public/fonts/fraunces-300-italic.woff2", weight: "300", style: "italic" },
+    { path: "../public/fonts/fraunces-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/fraunces-400-italic.woff2", weight: "400", style: "italic" },
+    { path: "../public/fonts/fraunces-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/fraunces-500-italic.woff2", weight: "500", style: "italic" },
+    { path: "../public/fonts/fraunces-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/fraunces-600-italic.woff2", weight: "600", style: "italic" },
+    { path: "../public/fonts/fraunces-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "../public/fonts/fraunces-700-italic.woff2", weight: "700", style: "italic" },
+  ],
   variable: "--font-fraunces",
   display: "swap",
 });
 
-const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
+// No bold/semibold ever appears alongside font-mono in the app, so just the
+// one weight — matches the previous next/font/google call, which also never
+// requested one (variable-font default).
+const jetbrains = localFont({
+  src: "../public/fonts/jetbrains-mono-400-normal.woff2",
+  weight: "400",
+  style: "normal",
   variable: "--font-jetbrains",
   display: "swap",
 });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
+// Weights cover Tailwind's font-medium/font-semibold/font-bold combined
+// with font-sans throughout the dashboard.
+const dmSans = localFont({
+  src: [
+    { path: "../public/fonts/dm-sans-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/dm-sans-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/dm-sans-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/dm-sans-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-dm-sans",
   display: "swap",
 });
 
-// Used by the ported static pages (/, /privacy, /terms) — see globals.css's
-// --serif/--sans tokens. Weights match what the original Google Fonts <link>
-// requested: Archivo:wght@400;500;600 and Newsreader's opsz,wght@...300;400;500.
-const newsreader = Newsreader({
-  weight: ["300", "400", "500"],
-  subsets: ["latin"],
+// Used by the ported static pages (/, /practice, /privacy, /terms, /listen)
+// — see globals.css's --serif/--sans tokens. Weights match the previous
+// next/font/google call exactly.
+const newsreader = localFont({
+  src: [
+    { path: "../public/fonts/newsreader-300-normal.woff2", weight: "300", style: "normal" },
+    { path: "../public/fonts/newsreader-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/newsreader-500-normal.woff2", weight: "500", style: "normal" },
+  ],
   variable: "--font-newsreader",
   display: "swap",
 });
 
-const archivo = Archivo({
-  weight: ["400", "500", "600"],
-  subsets: ["latin"],
+const archivo = localFont({
+  src: [
+    { path: "../public/fonts/archivo-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/archivo-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/archivo-600-normal.woff2", weight: "600", style: "normal" },
+  ],
   variable: "--font-archivo",
   display: "swap",
 });
@@ -76,11 +108,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,700,800,900&display=swap" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
-        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1A1A18" />
         <meta name="mobile-web-app-capable" content="yes" />
