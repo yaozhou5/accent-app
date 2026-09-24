@@ -10,8 +10,9 @@ type Chunk = { text: string; timestamp: [number, number] };
 // browser's Cache Storage, keyed by URL — so this only downloads once per
 // browser, same as any other cached static asset. Never point at local
 // model files; nothing here is bundled with the app.
+// useBrowserCache itself is set per-attempt in loadPipeline() below, not
+// here — it needs to be disabled for the no-cache fallback retry.
 env.allowLocalModels = false;
-env.useBrowserCache = true;
 
 type ProgressPayload = {
   status: string;
@@ -30,18 +31,52 @@ type InMessage = {
 
 type OutMessage =
   | { type: "progress"; id: string; progress: ProgressPayload }
-  | { type: "phase"; id: string; phase: "transcribing" }
+  | { type: "phase"; id: string; phase: "transcribing"; usedNoCacheFallback: boolean }
   | { type: "result"; id: string; text: string; chunks: TranscriptChunk[]; sentences: TranscriptChunk[] }
   | { type: "error"; id: string; message: string };
 
-// Keyed by model id so the dev comparison tool can hold more than one
-// model's pipeline in memory at once, each loaded (and cached) only once.
-const transcriberPromises = new Map<string, Promise<AutomaticSpeechRecognitionPipeline>>();
+const STALL_TIMEOUT_MS = 20_000;
 
-function getTranscriber(id: string, modelId: string): Promise<AutomaticSpeechRecognitionPipeline> {
-  let promise = transcriberPromises.get(modelId);
-  if (!promise) {
-    promise = (
+/**
+ * Thrown when a model load goes STALL_TIMEOUT_MS with no progress event at
+ * all — as opposed to a normal rejection (404, network error, etc). Safari
+ * in Private Browsing has a long-documented bug where `caches.open()` (what
+ * env.useBrowserCache routes through) just hangs forever instead of
+ * throwing, so a plain timeout is the only way to notice.
+ */
+class StallError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StallError";
+  }
+}
+
+/**
+ * Resets a `STALL_TIMEOUT_MS` timer on every progress event — a genuinely
+ * slow download keeps resetting it and is never interrupted; only a total
+ * absence of progress trips it. Late settlement after the timer already
+ * fired is ignored either way.
+ */
+function loadPipeline(
+  id: string,
+  modelId: string,
+  useBrowserCache: boolean
+): Promise<AutomaticSpeechRecognitionPipeline> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let stallTimer: ReturnType<typeof setTimeout>;
+    const armStallTimer = () => {
+      clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new StallError(`No download progress for ${STALL_TIMEOUT_MS / 1000} seconds.`));
+      }, STALL_TIMEOUT_MS);
+    };
+    armStallTimer();
+
+    env.useBrowserCache = useBrowserCache;
+    (
       pipeline("automatic-speech-recognition", modelId, {
         // "auto" prefers WebGPU when the browser supports it and falls back
         // to WASM otherwise. dtype is pinned (see ./model.ts) so the download
@@ -49,15 +84,56 @@ function getTranscriber(id: string, modelId: string): Promise<AutomaticSpeechRec
         device: "auto",
         dtype: WHISPER_DTYPE,
         progress_callback: (progress: ProgressPayload) => {
+          armStallTimer();
           post({ type: "progress", id, progress });
         },
       }) as Promise<AutomaticSpeechRecognitionPipeline>
-    ).catch((err) => {
-      // Don't leave a rejected promise cached — otherwise every future
-      // attempt (including the user's "Try again") replays this same
-      // rejection forever instead of actually retrying the load.
-      transcriberPromises.delete(modelId);
-      throw err;
+    ).then(
+      (p) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(stallTimer);
+        resolve(p);
+      },
+      (err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(stallTimer);
+        reject(err);
+      }
+    );
+  });
+}
+
+// Keyed by model id so the dev comparison tool can hold more than one
+// model's pipeline in memory at once, each loaded (and cached) only once.
+const transcriberPromises = new Map<string, Promise<AutomaticSpeechRecognitionPipeline>>();
+// Model ids that had to fall back to no-cache loading — the caller checks
+// this to tell the user the model won't persist to their next session.
+const noCacheFallbackModels = new Set<string>();
+
+function getTranscriber(id: string, modelId: string): Promise<AutomaticSpeechRecognitionPipeline> {
+  let promise = transcriberPromises.get(modelId);
+  if (!promise) {
+    promise = loadPipeline(id, modelId, true).catch(async (err) => {
+      if (!(err instanceof StallError)) {
+        // Don't leave a rejected promise cached — otherwise every future
+        // attempt (including the user's "Try again") replays this same
+        // rejection forever instead of actually retrying the load.
+        transcriberPromises.delete(modelId);
+        throw err;
+      }
+      // Likely Private Browsing: retry once with the cache disabled so the
+      // model can still load this session, just without persisting.
+      console.error("[transcribe worker] Model load stalled — retrying without the browser cache.", err);
+      try {
+        const p = await loadPipeline(id, modelId, false);
+        noCacheFallbackModels.add(modelId);
+        return p;
+      } catch (retryErr) {
+        transcriberPromises.delete(modelId);
+        throw retryErr;
+      }
     });
     transcriberPromises.set(modelId, promise);
   }
@@ -79,13 +155,16 @@ self.onmessage = async (event: MessageEvent<InMessage>) => {
   try {
     transcriber = await getTranscriber(id, modelId);
   } catch (err) {
-    const message = `Model loading failed — ${describe(err)}`;
+    const message =
+      err instanceof StallError
+        ? "Downloading the speech model stalled with no progress — this can happen in Private Browsing or on a very slow connection. Tap Try again."
+        : `Model loading failed — ${describe(err)}`;
     console.error("[transcribe worker]", message, err);
     post({ type: "error", id, message });
     return;
   }
   try {
-    post({ type: "phase", id, phase: "transcribing" });
+    post({ type: "phase", id, phase: "transcribing", usedNoCacheFallback: noCacheFallbackModels.has(modelId) });
     const output = (await transcriber(audio, {
       chunk_length_s: 30,
       return_timestamps: true,

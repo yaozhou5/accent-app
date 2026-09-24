@@ -12,7 +12,7 @@ type PendingEntry = {
   resolve: (t: Transcript) => void;
   reject: (e: Error) => void;
   onProgress?: (p: TranscribeProgress) => void;
-  onTranscribing?: () => void;
+  onTranscribing?: (usedNoCacheFallback: boolean) => void;
 };
 
 let worker: Worker | null = null;
@@ -29,7 +29,7 @@ function ensureWorker(): Worker {
   worker.onmessage = (event: MessageEvent) => {
     const data = event.data as
       | { type: "progress"; id: string; progress: TranscribeProgress }
-      | { type: "phase"; id: string; phase: "transcribing" }
+      | { type: "phase"; id: string; phase: "transcribing"; usedNoCacheFallback: boolean }
       | { type: "result"; id: string; text: string; chunks: Transcript["chunks"]; sentences: Transcript["sentences"] }
       | { type: "error"; id: string; message: string };
     const entry = pending.get(data.id);
@@ -37,7 +37,7 @@ function ensureWorker(): Worker {
     if (data.type === "progress") {
       entry.onProgress?.(data.progress);
     } else if (data.type === "phase") {
-      entry.onTranscribing?.();
+      entry.onTranscribing?.(data.usedNoCacheFallback);
     } else if (data.type === "result") {
       entry.resolve({ text: data.text, chunks: data.chunks, sentences: data.sentences });
       pending.delete(data.id);
@@ -69,7 +69,7 @@ export function transcribe(
   audio: Float32Array,
   modelId: string,
   onProgress?: (p: TranscribeProgress) => void,
-  onTranscribing?: () => void
+  onTranscribing?: (usedNoCacheFallback: boolean) => void
 ): Promise<Transcript> {
   return new Promise((resolve, reject) => {
     const w = ensureWorker();

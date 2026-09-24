@@ -49,6 +49,10 @@ export default function ClockApp() {
   const [transcribeStates, setTranscribeStates] = useState<Record<string, TranscribeState>>({});
   const [scriptDraft, setScriptDraft] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  // Set once a transcription had to fall back to loading the model without
+  // the browser cache (Private Browsing) — otherwise the next session's
+  // re-download looks like it's broken for no visible reason.
+  const [noCacheNotice, setNoCacheNotice] = useState(false);
   const idCounter = useRef(0);
   const recorderRef = useRef<RecorderHandle | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
@@ -112,7 +116,10 @@ export default function ClockApp() {
             },
           }));
         },
-        () => setTranscribeStates((s) => ({ ...s, [run.id]: { phase: "transcribing", modelLabel: model.label } }))
+        (usedNoCacheFallback) => {
+          setTranscribeStates((s) => ({ ...s, [run.id]: { phase: "transcribing", modelLabel: model.label } }));
+          if (usedNoCacheFallback) setNoCacheNotice(true);
+        }
       );
       setRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, transcript } : r)));
       updateRun(run.id, { transcript }).catch(() => {});
@@ -250,6 +257,13 @@ export default function ClockApp() {
         <p className={styles.warning}>
           This browser doesn’t support saving runs. Recording still works, but nothing will be kept after you leave the
           page.
+        </p>
+      )}
+
+      {noCacheNotice && (
+        <p className={styles.warning}>
+          Private Browsing doesn’t let this device save the speech model, so it downloaded fresh this time. Expect
+          another download next session.
         </p>
       )}
 
