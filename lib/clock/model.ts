@@ -25,21 +25,20 @@ export const DESKTOP_MODEL: ModelInfo = { id: "onnx-community/whisper-base.en", 
 export const MOBILE_MODEL: ModelInfo = { id: "onnx-community/whisper-tiny.en", label: "whisper-tiny.en", sizeMB: 43 };
 
 /**
- * Chosen by user agent + screen size, not feature detection — the limiting
- * factor is the device's per-tab memory budget, which isn't something
- * script can query directly. iOS is matched on UA regardless of screen
- * size (iPad included); the screen check separately catches other small
- * devices UA-sniffing wouldn't.
+ * Chosen by user agent, not feature detection or screen size — the
+ * limiting factor is WebKit's per-tab memory budget specifically (see
+ * MOBILE_MODEL above), not "small screen" as a general proxy for
+ * "constrained device". Android Chrome on a small phone handles the base
+ * model fine, so it isn't included here; iPad is, regardless of its
+ * (larger) screen, since it's still WebKit.
  */
-function isMobileDevice(): boolean {
+function isIOS(): boolean {
   if (typeof navigator === "undefined") return false;
-  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
-  const isSmallScreen = typeof screen !== "undefined" && Math.min(screen.width, screen.height) < 768;
-  return isIOS || isSmallScreen;
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
 }
 
 export function getModelForDevice(): ModelInfo {
-  return isMobileDevice() ? MOBILE_MODEL : DESKTOP_MODEL;
+  return isIOS() ? MOBILE_MODEL : DESKTOP_MODEL;
 }
 
 // Real sizes (encoder_model_quantized.onnx + decoder_model_merged_quantized.onnx
