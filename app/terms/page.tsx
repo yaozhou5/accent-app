@@ -23,9 +23,7 @@ export default function TermsPage() {
         </nav>
 
         <h1>Terms</h1>
-        <p className={styles.sub}>
-          Last updated <span className={styles.fill}>[date]</span>
-        </p>
+        <p className={styles.sub}>Last updated 27 September 2026</p>
 
         <div className={styles.note}>
           <p>
@@ -35,35 +33,9 @@ export default function TermsPage() {
         </div>
 
         <h2>Who you&apos;re dealing with</h2>
-        <div className={styles.idbox}>
-          <dl>
-            <dt>Trading name</dt>
-            <dd>Accent</dd>
-            <dt>Legal entity</dt>
-            <dd>
-              <span className={styles.fill}>[entity name and form, e.g. eenmanszaak / B.V.]</span>
-            </dd>
-            <dt>KvK number</dt>
-            <dd>
-              <span className={styles.fill}>[number]</span>
-            </dd>
-            <dt>VAT (BTW) number</dt>
-            <dd>
-              <span className={styles.fill}>[number, if registered]</span>
-            </dd>
-            <dt>Address</dt>
-            <dd>
-              <span className={styles.fill}>[registered address]</span>
-            </dd>
-            <dt>Email</dt>
-            <dd>
-              <span className={styles.fill}>[hello@yourdomain]</span>
-            </dd>
-          </dl>
-        </div>
         <p>
-          Dutch law requires a business website to show this. It&apos;s also just useful to know there&apos;s a real
-          person and a real address behind the thing you&apos;re using.
+          Dutch law requires a business website to show this. Our company registration details are in the footer of this
+          page.
         </p>
 
         <h2>What Accent is</h2>
@@ -151,10 +123,16 @@ export default function TermsPage() {
         </p>
 
         <footer>
-          <span>Accent</span>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/">Home</Link>
-          <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+          <div className={styles.footerLinks}>
+            <span>Accent</span>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/">Home</Link>
+            <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+          </div>
+          <p className={styles.legal}>
+            Accent is the trading name registered with the Dutch Chamber of Commerce (KvK) under number 98500562. The
+            registered address is held in the KvK register. Contact: hello@myaccent.io.
+          </p>
         </footer>
       </div>
     </div>

@@ -23,9 +23,7 @@ export default function PrivacyPage() {
         </nav>
 
         <h1>Privacy</h1>
-        <p className={styles.sub}>
-          Last updated <span className={styles.fill}>[date]</span>
-        </p>
+        <p className={styles.sub}>Last updated 27 September 2026</p>
 
         <div className={styles.note}>
           <p>
