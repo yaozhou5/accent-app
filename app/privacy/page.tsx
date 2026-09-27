@@ -41,13 +41,8 @@ export default function PrivacyPage() {
 
         <h2>Who is responsible</h2>
         <p>
-          The controller of your personal data is <span className={styles.fill}>[legal entity name]</span>, registered
-          in the Netherlands, Chamber of Commerce (KvK) number <span className={styles.fill}>[KvK number]</span>, at{" "}
-          <span className={styles.fill}>[registered address]</span>.
-        </p>
-        <p>
           For anything on this page, write to <span className={styles.fill}>[privacy@yourdomain]</span>. A person reads
-          it, and that person is currently me.
+          it, and that person is currently me. Our company registration details are in the footer of this page.
         </p>
 
         <h2>What stays on your device</h2>
@@ -190,10 +185,16 @@ export default function PrivacyPage() {
         </p>
 
         <footer>
-          <span>Accent</span>
-          <Link href="/terms">Terms</Link>
-          <Link href="/">Home</Link>
-          <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+          <div className={styles.footerLinks}>
+            <span>Accent</span>
+            <Link href="/terms">Terms</Link>
+            <Link href="/">Home</Link>
+            <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+          </div>
+          <p className={styles.legal}>
+            Accent is the trading name registered with the Dutch Chamber of Commerce (KvK) under number 98500562. The
+            registered address is held in the KvK register. Contact: hello@myaccent.io.
+          </p>
         </footer>
       </div>
     </div>

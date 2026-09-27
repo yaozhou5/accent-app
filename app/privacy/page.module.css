@@ -116,12 +116,19 @@
   padding: 24px 0 54px;
   font-size: 14.5px;
   color: var(--muted);
+}
+.wrap footer .footerLinks {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
 }
 .wrap footer a {
   text-decoration: none;
+}
+.wrap footer .legal {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
 }
 @media (max-width: 520px) {
   .wrap h1 {
