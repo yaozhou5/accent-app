@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import { decodeAudio } from "@/lib/clock/decodeAudio";
 import { deleteAllRuns, deleteRun, isDbAvailable, listRuns, saveRun, updateRun } from "@/lib/clock/db";
 import { formatClock, isToday } from "@/lib/clock/format";
 import { getModelForDevice } from "@/lib/clock/model";
 import { hasSeenModelIntro, markModelIntroSeen } from "@/lib/clock/modelIntro";
+import { computeStats, mergeForChart } from "@/lib/clock/progress";
 import { loadScriptDraft, saveScriptDraft } from "@/lib/clock/scriptDraft";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
@@ -15,7 +17,9 @@ import {
   markTranscriptionStarted,
   takeStaleTranscriptionRunId,
 } from "@/lib/clock/transcriptionGuard";
-import type { Run, TranscribeState } from "@/lib/clock/types";
+import type { ChartRun, Run, TranscribeState } from "@/lib/clock/types";
+import { createClient } from "@/lib/supabase/client";
+import { fetchPracticeRuns, syncPracticeRuns } from "@/lib/supabase/practice-runs";
 import ModelIntro from "./ModelIntro";
 import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorder";
 import RunItem from "./RunItem";
@@ -30,7 +34,7 @@ function describeError(err: unknown): string {
 }
 
 /** "First rep: 0:41. Latest: 0:13." — only when both ends of the run history have a marked point. */
-function repDeltaText(runs: Run[]): string | null {
+function repDeltaText(runs: ChartRun[]): string | null {
   if (runs.length < 2) return null;
   const latest = runs[0];
   const first = runs[runs.length - 1];
@@ -53,9 +57,36 @@ export default function ClockApp() {
   // the browser cache (Private Browsing) — otherwise the next session's
   // re-download looks like it's broken for no visible reason.
   const [noCacheNotice, setNoCacheNotice] = useState(false);
+  // null = auth state not checked yet. Deliberately not the default —
+  // showing "Save your progress" before we know whether someone's already
+  // signed in would flash incorrectly for returning users.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [syncedRuns, setSyncedRuns] = useState<ChartRun[]>([]);
   const idCounter = useRef(0);
   const recorderRef = useRef<RecorderHandle | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth
+      .getUser()
+      .then(({ data }) => setSignedIn(!!data.user))
+      .catch(() => setSignedIn(false));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => setSignedIn(!!session?.user));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!signedIn) {
+      setSyncedRuns([]);
+      return;
+    }
+    fetchPracticeRuns()
+      .then(setSyncedRuns)
+      .catch(() => {});
+  }, [signedIn]);
 
   useEffect(() => {
     setDbAvailable(isDbAvailable());
@@ -208,15 +239,35 @@ export default function ClockApp() {
     deleteAllRuns().catch(() => {});
   }, []);
 
-  const handleMarkPoint = useCallback((id: string, pointMs: number) => {
-    setRuns((prev) => prev.map((r) => (r.id === id ? { ...r, pointMs, pointStatus: "marked" } : r)));
-    updateRun(id, { pointMs, pointStatus: "marked" }).catch(() => {});
-  }, []);
+  // Completing a run's mark is also the moment it becomes sync-eligible —
+  // if signed in, upsert it in the background. Needs the full run (not
+  // just id/pointMs) for duration_ms, so this reads `runs` directly rather
+  // than using the functional setState form the rest of the file uses.
+  const handleMarkPoint = useCallback(
+    (id: string, pointMs: number) => {
+      const updated = runs.map((r) => (r.id === id ? { ...r, pointMs, pointStatus: "marked" as const } : r));
+      setRuns(updated);
+      updateRun(id, { pointMs, pointStatus: "marked" }).catch(() => {});
+      if (signedIn) {
+        const run = updated.find((r) => r.id === id);
+        if (run) syncPracticeRuns([run]).catch(() => {});
+      }
+    },
+    [runs, signedIn]
+  );
 
-  const handleMarkNone = useCallback((id: string) => {
-    setRuns((prev) => prev.map((r) => (r.id === id ? { ...r, pointMs: null, pointStatus: "none" } : r)));
-    updateRun(id, { pointMs: null, pointStatus: "none" }).catch(() => {});
-  }, []);
+  const handleMarkNone = useCallback(
+    (id: string) => {
+      const updated = runs.map((r) => (r.id === id ? { ...r, pointMs: null, pointStatus: "none" as const } : r));
+      setRuns(updated);
+      updateRun(id, { pointMs: null, pointStatus: "none" }).catch(() => {});
+      if (signedIn) {
+        const run = updated.find((r) => r.id === id);
+        if (run) syncPracticeRuns([run]).catch(() => {});
+      }
+    },
+    [runs, signedIn]
+  );
 
   const handleContinueFromIntro = useCallback(() => {
     markModelIntroSeen();
@@ -230,7 +281,14 @@ export default function ClockApp() {
   }, []);
 
   const todayCount = runs.filter((r) => isToday(r.createdAt)).length;
-  const repDelta = repDeltaText(runs);
+  // signedIn ? merge with synced runs (may include other devices) : local only.
+  // TimeToPointChart never receives synced-only runs unless signed in, so
+  // there's no risk of it (or anything else) trying to play one back — the
+  // run list below always renders from local `runs` alone, untouched.
+  const chartRuns = useMemo(() => (signedIn ? mergeForChart(runs, syncedRuns) : runs), [runs, syncedRuns, signedIn]);
+  const stats = useMemo(() => (signedIn ? computeStats(chartRuns) : null), [chartRuns, signedIn]);
+  const repDelta = repDeltaText(chartRuns);
+  const hasCompletedRun = runs.some((r) => r.pointStatus !== "unmarked");
 
   return (
     <div ref={topRef}>
@@ -250,8 +308,17 @@ export default function ClockApp() {
         shows how long it took you to get there.
       </p>
       <p className={styles.privacyNote}>
-        Everything stays in this browser. Clear your browser data and your runs are gone. Nothing syncs between devices.
+        {signedIn
+          ? "Recordings, transcripts and scripts stay in this browser — never uploaded. Signed in, so a few numbers about each run (when, how long, how long until you said it) sync to your account across devices."
+          : "Everything stays in this browser. Clear your browser data and your runs are gone. Nothing syncs between devices."}
       </p>
+
+      {signedIn === false && hasCompletedRun && (
+        <p className={styles.privacyNote}>
+          <Link href="/signup?redirect=/practice&utm_source=practice">Save your progress</Link> to keep it across
+          devices — still just the numbers, never the recording.
+        </p>
+      )}
 
       {!dbAvailable && (
         <p className={styles.warning}>
@@ -278,11 +345,17 @@ export default function ClockApp() {
         </div>
       )}
 
-      {loaded && runs.length >= 2 && (
+      {loaded && chartRuns.length >= 2 && (
         <div className={styles.card}>
           <p className={styles.step}>Time until you said what you do</p>
-          <TimeToPointChart runs={runs} />
+          <TimeToPointChart runs={chartRuns} />
           {repDelta && <p className={styles.repDelta}>{repDelta}</p>}
+          {stats && (
+            <p className={styles.repDelta}>
+              {stats.daysPracticed} day{stats.daysPracticed === 1 ? "" : "s"} practised
+              {stats.bestTimeMs !== null && <> · best {formatClock(stats.bestTimeMs)}</>}
+            </p>
+          )}
         </div>
       )}
 
