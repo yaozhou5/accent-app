@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
-import { getConsent, setConsent } from "@/lib/analytics-consent";
+import { clearPostHogStorage, getConsent, setConsent } from "@/lib/analytics-consent";
 import { createClient } from "@/lib/supabase/client";
 import { identifyUser } from "@/lib/identify-user";
 import styles from "./ConsentBanner.module.css";
@@ -38,6 +38,10 @@ export function ConsentBanner() {
 
   function handleReject() {
     setConsent("rejected");
+    posthog.stopSessionRecording();
+    posthog.reset();
+    posthog.set_config({ persistence: "memory" });
+    clearPostHogStorage();
     setVisible(false);
   }
 
