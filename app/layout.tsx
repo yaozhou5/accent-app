@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/react";
 import { PostHogProvider } from "@/components/PostHogProvider";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import "./globals.css";
 
 // Self-hosted — see public/fonts/README.md for how these were produced.
@@ -118,6 +119,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
         <PostHogProvider>{children}</PostHogProvider>
+        <ConsentBanner />
         <Analytics />
       </body>
     </html>
