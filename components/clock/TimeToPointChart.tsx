@@ -7,6 +7,10 @@ const LEFT = 40;
 const RIGHT = 672;
 const TOP = 24;
 const BASELINE = 150;
+// A marked run always draws something — without this, saying it right at
+// 0:00 (a genuinely good result, not a missing one) renders a 0-height
+// rect: invisible, indistinguishable from no data at all.
+const MIN_BAR_HEIGHT = 3;
 
 // ChartRun, not Run — this only ever needs id/createdAt/pointStatus/pointMs,
 // and runs synced from another device (lib/supabase/practice-runs.ts) have
@@ -45,7 +49,9 @@ export default function TimeToPointChart({ runs }: { runs: ChartRun[] }) {
       {ordered.map((run, i) => {
         const cx = LEFT + columnWidth * i + columnWidth / 2;
         const barHeight =
-          run.pointStatus === "marked" && run.pointMs !== null ? (run.pointMs / domainMax) * innerHeight : 0;
+          run.pointStatus === "marked" && run.pointMs !== null
+            ? Math.max((run.pointMs / domainMax) * innerHeight, MIN_BAR_HEIGHT)
+            : 0;
         return (
           <g key={run.id}>
             {run.pointStatus === "marked" ? (
