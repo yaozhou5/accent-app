@@ -26,13 +26,6 @@ export default function TermsPage() {
         <h1>Terms</h1>
         <p className={styles.sub}>Last updated 27 September 2026</p>
 
-        <div className={styles.note}>
-          <p>
-            Draft for review. Everything marked in red needs your real details, and this should be checked by someone
-            qualified before launch — it is not legal advice.
-          </p>
-        </div>
-
         <h2>Who you&apos;re dealing with</h2>
         <p>
           Dutch law requires a business website to show this. Our company registration details are in the footer of this

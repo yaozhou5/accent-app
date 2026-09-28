@@ -26,13 +26,6 @@ export default function PrivacyPage() {
         <h1>Privacy</h1>
         <p className={styles.sub}>Last updated 28 September 2026</p>
 
-        <div className={styles.note}>
-          <p>
-            Draft for review. Everything marked in red needs your real details, and this should be checked by someone
-            qualified before launch — it is not legal advice.
-          </p>
-        </div>
-
         <p>
           Accent helps you write and speak about your work in your own voice. Some of it runs entirely on your device.
           Some of it has to reach our servers and a few service providers to work. This page says which is which, what
