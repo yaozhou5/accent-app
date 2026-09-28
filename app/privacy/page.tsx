@@ -49,10 +49,8 @@ export default function PrivacyPage() {
           check all run there. We do not receive that audio, cannot listen to it, and cannot recover it for you if you
           clear your browser data or lose the device.
         </p>
-        <p>
-          A recording only leaves your device if you choose to send it to listeners. Nothing is uploaded in the
-          background.
-        </p>
+        {/* TODO: restore a sentence about when a recording leaves the device, once the listener-recording feature is real */}
+        <p>Nothing is uploaded in the background.</p>
 
         <h2>What we process, and why</h2>
         <table>
@@ -69,20 +67,7 @@ export default function PrivacyPage() {
               <td>Consent (Art. 6(1)(a)) — or performance of a contract where you&apos;re a customer</td>
               <td>Until you ask us to remove it</td>
             </tr>
-            <tr>
-              <td>A sixty-second recording you choose to send</td>
-              <td>To play it to the listeners you asked for and return their answers to you</td>
-              <td>Consent (Art. 6(1)(a))</td>
-              <td>
-                <span className={styles.fill}>[30 days]</span>, or until you delete it
-              </td>
-            </tr>
-            <tr>
-              <td>Listener answers</td>
-              <td>To show you what people understood</td>
-              <td>Consent (Art. 6(1)(a))</td>
-              <td>With your recording, on the same schedule</td>
-            </tr>
+            {/* TODO: restore the sent-recording and listener-answers rows once the listener-recording feature is real */}
             <tr>
               <td>Basic server logs</td>
               <td>Keeping the site up and secure</td>
@@ -101,12 +86,7 @@ export default function PrivacyPage() {
           why you can delete it at any time. Do not send a recording containing anything confidential.
         </p>
 
-        <h3>If you are a listener</h3>
-        <p>
-          When you listen to someone&apos;s sixty seconds, your answer is shown to that person. We show it{" "}
-          <span className={styles.fill}>[without your name / with the name you give]</span>. You are hearing someone
-          else&apos;s material — please don&apos;t record it, share it, or pass it on.
-        </p>
+        {/* TODO: restore the "If you are a listener" section once the listener-recording feature is real */}
 
         <h2>Who else sees it</h2>
         <p>

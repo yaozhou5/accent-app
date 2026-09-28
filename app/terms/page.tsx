@@ -39,10 +39,8 @@ export default function TermsPage() {
         </p>
 
         <h2>What Accent is</h2>
-        <p>
-          A tool for practising how you explain your work out loud. It records you, times you, and — if you ask it to —
-          sends a sixty-second recording to people who answer one question about what they understood.
-        </p>
+        {/* TODO: restore a sentence about sending a recording to listeners once the listener-recording feature is real */}
+        <p>A tool for practising how you explain your work out loud. It records you and times you.</p>
         <p>
           It is early software. Features are incomplete, things break, and the product may change substantially or stop
           existing. Where the site says something is being built, it isn&apos;t finished yet.
@@ -56,10 +54,10 @@ export default function TermsPage() {
         </p>
 
         <h2>Your recordings</h2>
+        {/* TODO: restore the listener-clip clause once the listener-recording feature is real */}
         <p>
           Your recordings are yours. We claim no ownership of them and no licence to use them beyond what&apos;s needed
-          to do the thing you asked for — playing a sixty-second clip to the listeners you requested, and returning
-          their answers to you.
+          to do the thing you asked for.
         </p>
         <p>We don&apos;t use your recordings, transcripts or anything you say to train machine-learning models.</p>
         <p>
@@ -73,10 +71,7 @@ export default function TermsPage() {
           or infringing, send confidential material you aren&apos;t entitled to share, try to identify or contact
           listeners without their agreement, or use the service to harass anyone.
         </p>
-        <p>
-          If you listen to someone else&apos;s recording, don&apos;t record it, republish it, or share what you heard.
-          People are sending unfinished work to strangers in good faith and the whole thing depends on that holding.
-        </p>
+        {/* TODO: restore the listener-etiquette paragraph once the listener-recording feature is real */}
         <p>We can suspend access if any of this is breached.</p>
 
         <h2>Cost</h2>
