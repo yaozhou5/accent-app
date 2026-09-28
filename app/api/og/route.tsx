@@ -3,20 +3,13 @@ import { ImageResponse } from "next/og";
 export const runtime = "edge";
 
 export async function GET() {
-  // Load Fraunces 700 via the Google Fonts CSS API (resolves to current font URL)
-  const cssRes = await fetch("https://fonts.googleapis.com/css2?family=Fraunces:wght@700&display=swap", {
-    headers: {
-      // Forces Google to return woff2 URLs
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-    },
-  });
-  const css = await cssRes.text();
-  const fontUrlMatch = css.match(/src: url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/);
-  let fraunces: ArrayBuffer | null = null;
-  if (fontUrlMatch) {
-    const fontRes = await fetch(fontUrlMatch[1]);
-    if (fontRes.ok) fraunces = await fontRes.arrayBuffer();
-  }
+  // A separate .ttf, not the woff2 self-hosted for next/font/local — the
+  // @vercel/og font parser bundled with this Next.js version can't read
+  // woff2 ("Unsupported OpenType signature wOF2"), only ttf/otf/woff.
+  // Loaded via new URL(..., import.meta.url) rather than fs, since this
+  // route runs on the edge.
+  const fontRes = await fetch(new URL("../../../public/fonts/fraunces-700-normal-og.ttf", import.meta.url));
+  const fraunces = fontRes.ok ? await fontRes.arrayBuffer() : null;
 
   return new ImageResponse(
     <div
