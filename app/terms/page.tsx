@@ -86,9 +86,9 @@ export default function TermsPage() {
           Dutch and EU law are unaffected by anything on this page.
         </p>
         <p>
-          <span className={styles.fill}>
-            [If you introduce paid plans, add a liability cap — commonly the amount paid in the preceding 12 months.]
-          </span>
+          Our total liability to you is limited to the amount you paid us in the 12 months before the claim, or €100 if
+          you paid nothing. This does not limit liability for intent or gross negligence, or anything else that cannot
+          be limited under Dutch law.
         </p>
 
         <h2>Ending it</h2>
@@ -105,9 +105,9 @@ export default function TermsPage() {
 
         <h2>Law and disputes</h2>
         <p>
-          Dutch law applies, and disputes go to the competent court in <span className={styles.fill}>[district]</span>.
-          If you&apos;re a consumer in the EU, you keep the protection of your own country&apos;s mandatory consumer law
-          and can bring a claim there. You can also use the European Commission&apos;s{" "}
+          Dutch law applies, and disputes go to the competent court in Rechtbank Midden-Nederland. If you&apos;re a
+          consumer in the EU, you keep the protection of your own country&apos;s mandatory consumer law and can bring a
+          claim there. You can also use the European Commission&apos;s{" "}
           <a href="https://ec.europa.eu/consumers/odr">online dispute resolution platform</a>.
         </p>
 
