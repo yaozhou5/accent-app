@@ -1,5 +1,5 @@
 import { TARGET_MS } from "@/lib/clock/recording";
-import type { Run } from "@/lib/clock/types";
+import type { ChartRun } from "@/lib/clock/types";
 
 const VIEW_WIDTH = 680;
 const VIEW_HEIGHT = 180;
@@ -8,7 +8,10 @@ const RIGHT = 672;
 const TOP = 24;
 const BASELINE = 150;
 
-export default function TimeToPointChart({ runs }: { runs: Run[] }) {
+// ChartRun, not Run — this only ever needs id/createdAt/pointStatus/pointMs,
+// and runs synced from another device (lib/supabase/practice-runs.ts) have
+// no blob to satisfy a stricter type with.
+export default function TimeToPointChart({ runs }: { runs: ChartRun[] }) {
   if (runs.length < 2) return null;
 
   const ordered = [...runs].sort((a, b) => a.createdAt - b.createdAt);

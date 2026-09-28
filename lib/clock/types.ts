@@ -27,6 +27,19 @@ export type Run = {
   script: string | null;
 };
 
+/**
+ * What TimeToPointChart and the progress stats actually need — nothing
+ * audio/transcript-shaped. A local Run already satisfies this structurally.
+ * Runs synced from another device (lib/supabase/practice-runs.ts) only
+ * ever exist in this shape — they have no blob to play back.
+ */
+export type ChartRun = {
+  id: string;
+  createdAt: number;
+  pointMs: number | null;
+  pointStatus: PointStatus;
+};
+
 export type TranscribeState =
   | { phase: "idle" }
   | { phase: "downloading"; percent: number | null; modelLabel: string }
