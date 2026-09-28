@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "@/app/listen/page.module.css";
+
+// public/clips/example.m4a — AAC audio in an .m4a container (what iPhone
+// Voice Memos and QuickTime export by default). Not checked into the repo
+// yet (see public/clips/README.md); checked for at runtime so dropping the
+// real file in later makes the player appear with no code change.
+const EXAMPLE_CLIP_SRC = "/clips/example.m4a";
 
 export default function ListenTask() {
   const [plays, setPlays] = useState(0);
   const [answer, setAnswer] = useState("");
   const [wonder, setWonder] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [clipAvailable, setClipAvailable] = useState(false);
+
+  useEffect(() => {
+    fetch(EXAMPLE_CLIP_SRC, { method: "HEAD" })
+      .then((res) => setClipAvailable(res.ok))
+      .catch(() => setClipAvailable(false));
+  }, []);
 
   const canSend = answer.trim().length >= 2;
 
@@ -40,10 +53,16 @@ export default function ListenTask() {
     <div>
       <div className={styles.card}>
         <p className={styles.step}>Step 1 · Play it once</p>
-        <audio controls preload="none" src="/clips/example.m4a" onPlay={() => setPlays((n) => n + 1)}>
-          Your browser can’t play audio. <a href="/clips/example.m4a">Download the clip</a> instead.
-        </audio>
-        <p className={styles.meta}>58 seconds · played {plays} times</p>
+        {clipAvailable ? (
+          <>
+            <audio controls preload="none" src={EXAMPLE_CLIP_SRC} onPlay={() => setPlays((n) => n + 1)}>
+              Your browser can’t play audio. <a href={EXAMPLE_CLIP_SRC}>Download the clip</a> instead.
+            </audio>
+            <p className={styles.meta}>58 seconds · played {plays} times</p>
+          </>
+        ) : (
+          <p className={styles.meta}>Example clip coming soon.</p>
+        )}
       </div>
 
       <div className={styles.card} style={{ marginTop: 16 }}>
