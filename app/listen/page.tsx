@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ListenTask from "@/components/ListenTask";
+import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function ListenPage() {
           <span>Accent</span>
           <Link href="/privacy">Privacy</Link>
           <Link href="/">Home</Link>
+          <CookieSettingsButton />
         </footer>
       </div>
     </div>

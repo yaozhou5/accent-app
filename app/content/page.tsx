@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { PRO_PRICE_SHORT, PRO_PRICE_LONG } from "@/lib/pricing";
+import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
@@ -381,6 +382,7 @@ export default function LandingPage() {
             <a href="mailto:hello@myaccent.io" className="no-underline" style={{ color: DIM }}>
               Contact
             </a>
+            <CookieSettingsButton className="no-underline" style={{ color: DIM }} />
           </div>
         </div>
       </footer>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -123,6 +124,7 @@ export default function TermsPage() {
             <Link href="/privacy">Privacy</Link>
             <Link href="/">Home</Link>
             <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+            <CookieSettingsButton />
           </div>
           <p className={styles.legal}>
             Accent is the trading name registered with the Dutch Chamber of Commerce (KvK) under number 98500562. The

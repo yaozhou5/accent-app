@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import HeroDevice from "@/components/HeroDevice";
 import RepToggle from "@/components/RepToggle";
+import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -468,6 +469,7 @@ export default function LandingPage() {
             <a href="/terms">Terms</a>
             <a href="/content">Content tool</a>
             <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
+            <CookieSettingsButton />
           </div>
         </footer>
       </div>
