@@ -70,11 +70,8 @@ export default function TermsPage() {
 
         <h2>Cost</h2>
         <p>
-          <span className={styles.fill}>
-            [Free during this phase. If and when there&apos;s a price, describe it here — amount, what&apos;s included,
-            VAT treatment, how to cancel. Paid consumer services in the EU also need a 14-day withdrawal right unless
-            the customer expressly waives it for immediately delivered digital content.]
-          </span>
+          Accent is free while it is in early access. If we introduce paid plans, we&apos;ll tell you in advance, and
+          you will never be charged unless you choose a plan yourself.
         </p>
 
         <h2>Availability and liability</h2>
