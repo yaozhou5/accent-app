@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { identifyUser } from "@/lib/identify-user";
+import { backfillPracticeRuns } from "@/lib/supabase/practice-runs";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -48,6 +49,9 @@ function LoginForm() {
       setError("Invalid or expired code.");
     } else {
       if (data.user) identifyUser(data.user);
+      // Upload any practice runs already sitting in this device's
+      // IndexedDB — safe to call unconditionally, no-ops if there are none.
+      backfillPracticeRuns().catch(() => {});
       // Save pending voice profile and send email report
       const pending = localStorage.getItem("pending_voice_profile");
       if (pending) {

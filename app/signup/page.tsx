@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { identifyUser } from "@/lib/identify-user";
+import { backfillPracticeRuns } from "@/lib/supabase/practice-runs";
 import posthog from "posthog-js";
 
-export default function SignupPage() {
+function SignupForm() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
@@ -15,6 +16,10 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [fromVoice, setFromVoice] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get("redirect") || "/dashboard";
+  const redirectTo = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
+  const fromPractice = redirectTo === "/practice";
 
   useEffect(() => {
     setFromVoice(!!localStorage.getItem("pending_voice_profile"));
@@ -49,6 +54,9 @@ export default function SignupPage() {
     if (error) setError("Invalid or expired code.");
     else {
       if (data.user) identifyUser(data.user);
+      // Upload any practice runs already sitting in this device's
+      // IndexedDB — safe to call unconditionally, no-ops if there are none.
+      backfillPracticeRuns().catch(() => {});
       // Capture attribution
       const ref = typeof document !== "undefined" ? document.referrer : "";
       const params =
@@ -94,10 +102,7 @@ export default function SignupPage() {
         }
         router.push("/voice/report");
       } else {
-        // No voice profile yet — straight to the product. The quiz is
-        // surfaced as a dismissible prompt on the dashboard instead of a
-        // mandatory gate before anyone sees anything.
-        router.push("/dashboard");
+        router.push(redirectTo);
       }
     }
   };
@@ -116,10 +121,18 @@ export default function SignupPage() {
           className="font-serif mb-2"
           style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18", fontFamily: "'Fraunces', Georgia, serif" }}
         >
-          {fromVoice ? "Save your voice profile" : "Start writing like you"}
+          {fromVoice
+            ? "Save your voice profile"
+            : fromPractice
+              ? "Save your practice progress"
+              : "Start writing like you"}
         </h1>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: "#A8A49C" }}>
-          {fromVoice ? "Create your account and start writing in your voice." : "Free account. No credit card."}
+          {fromVoice
+            ? "Create your account and start writing in your voice."
+            : fromPractice
+              ? "Free account. Just the numbers sync — never your recordings."
+              : "Free account. No credit card."}
         </p>
 
         {step === "email" ? (
@@ -194,5 +207,13 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }
