@@ -48,6 +48,11 @@ const nextConfig: NextConfig = {
         destination: "/voice",
         permanent: false,
       },
+      {
+        source: "/privacy-contact",
+        destination: "/privacy",
+        permanent: true,
+      },
     ];
   },
   // Required to support PostHog trailing slash API requests
