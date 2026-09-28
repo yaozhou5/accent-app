@@ -129,7 +129,7 @@ export default function RunItem({
             </p>
 
             {transcript.sentences.length > 0 ? (
-              <div className={styles.transcript}>
+              <div className={`${styles.transcript} ph-no-capture`}>
                 {transcript.sentences.map((sentence, i) => {
                   const sentencePointMs = Math.round(sentence.start * 1000);
                   const active = i === activeIndex;
@@ -161,7 +161,7 @@ export default function RunItem({
                 })}
               </div>
             ) : (
-              <div className={styles.transcript}>
+              <div className={`${styles.transcript} ph-no-capture`}>
                 {isPicking ? (
                   <>
                     <button
