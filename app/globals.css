@@ -55,6 +55,7 @@
   box-sizing: border-box;
 }
 .accent-legacy {
+  min-height: 100dvh;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
