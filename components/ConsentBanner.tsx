@@ -8,21 +8,31 @@ import { createClient } from "@/lib/supabase/client";
 import { identifyUser } from "@/lib/identify-user";
 import styles from "./ConsentBanner.module.css";
 
-// Dispatched by the "Cookie settings" footer link (added per-page) to
-// reopen the banner regardless of any stored choice.
+// Dispatched by a "Cookie settings" link (footer or elsewhere) to reopen
+// the banner regardless of any stored choice.
 export const REOPEN_CONSENT_EVENT = "cookie-settings:open";
 
+// "hidden" only during the brief pre-effect window (SSR-safe default,
+// avoids a hydration mismatch since localStorage isn't readable on the
+// server). After mount it's always "banner" or "tab" — never hidden
+// entirely, since a choice has to stay as reachable to withdraw as it was
+// to give. Most routes have no footer to hold a "Cookie settings" link
+// (dashboard, /write, /draft, /settings, /review, /voice, /login,
+// /signup, ...), so this component itself — already mounted globally in
+// app/layout.tsx — is what makes withdrawal reachable everywhere.
+type Mode = "hidden" | "banner" | "tab";
+
 export function ConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  const [mode, setMode] = useState<Mode>("hidden");
 
   useEffect(() => {
-    setVisible(getConsent() === null);
-    const reopen = () => setVisible(true);
+    setMode(getConsent() === null ? "banner" : "tab");
+    const reopen = () => setMode("banner");
     window.addEventListener(REOPEN_CONSENT_EVENT, reopen);
     return () => window.removeEventListener(REOPEN_CONSENT_EVENT, reopen);
   }, []);
 
-  if (!visible) return null;
+  if (mode === "hidden") return null;
 
   async function handleAccept() {
     setConsent("accepted");
@@ -33,7 +43,7 @@ export function ConsentBanner() {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) identifyUser(user);
-    setVisible(false);
+    setMode("tab");
   }
 
   function handleReject() {
@@ -42,7 +52,15 @@ export function ConsentBanner() {
     posthog.reset();
     posthog.set_config({ persistence: "memory" });
     clearPostHogStorage();
-    setVisible(false);
+    setMode("tab");
+  }
+
+  if (mode === "tab") {
+    return (
+      <button type="button" className={styles.tab} onClick={() => setMode("banner")}>
+        Cookie settings
+      </button>
+    );
   }
 
   return (
