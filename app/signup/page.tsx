@@ -54,7 +54,6 @@ export default function SignupPage() {
       const params =
         typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
       posthog.capture("signup_completed", {
-        email: email.trim().toLowerCase(),
         referrer: ref,
         utm_source: params.get("utm_source") || "",
         utm_medium: params.get("utm_medium") || "",
@@ -83,7 +82,7 @@ export default function SignupPage() {
             onboarding_completed: true,
           });
           localStorage.removeItem("pending_voice_profile");
-          posthog.capture("signup_completed_with_voice_profile", { email: email.trim().toLowerCase() });
+          posthog.capture("signup_completed_with_voice_profile");
           // Send the full voice report email
           await fetch("/api/send-voice-report", {
             method: "POST",
