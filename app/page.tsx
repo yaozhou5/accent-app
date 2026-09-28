@@ -445,8 +445,9 @@ export default function LandingPage() {
         <section>
           <div className={styles.privacy}>
             <p>
-              The recording stays on your device. Practice, the transcript and the repeat check all run there: no
-              upload, no account needed to use any of it.
+              The recording stays on your device. Practice, the transcript and the repeat check all run there: no upload
+              unless you choose to save your progress — and even then, just the numbers, never the recording. No account
+              needed to use any of it.
             </p>
             <p>
               Nothing is sent anywhere unless you choose to send it, and the only thing you can send is the 60 seconds.
