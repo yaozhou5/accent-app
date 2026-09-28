@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { getConsent, setConsent } from "@/lib/analytics-consent";
+import { createClient } from "@/lib/supabase/client";
+import { identifyUser } from "@/lib/identify-user";
 import styles from "./ConsentBanner.module.css";
 
 // Dispatched by the "Cookie settings" footer link (added per-page) to
@@ -21,8 +24,15 @@ export function ConsentBanner() {
 
   if (!visible) return null;
 
-  function handleAccept() {
+  async function handleAccept() {
     setConsent("accepted");
+    posthog.set_config({ persistence: "localStorage+cookie" });
+    posthog.startSessionRecording();
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) identifyUser(user);
     setVisible(false);
   }
 
