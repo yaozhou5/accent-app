@@ -57,7 +57,10 @@ async function toStoredRun(run: Run): Promise<StoredRun> {
  * Runs saved before the script step existed have no `script` field at all.
  * Runs saved before chips existed have no `selectedChipIds`/`criteriaOverrides`/
  * `aiCheckResults`. Runs saved under the old weekly-challenge system may
- * still carry a `challengeId` field — it's simply ignored now.
+ * still carry a `challengeId` field — it's simply ignored now. Runs saved
+ * before the two-step review flow existed have no `marks`/`selfRating`/
+ * `listenedAt` — a null `listenedAt` is also how a genuinely-new unreviewed
+ * run is told apart from one of these older, already-decided runs.
  * Runs saved before ArrayBuffer storage still hold `blob` directly — either
  * way this returns a run with a real Blob.
  */
@@ -77,6 +80,9 @@ function normalizeRun(run: AnyStoredRun): Run {
   if (next.selectedChipIds === undefined) next = { ...next, selectedChipIds: [] };
   if (next.criteriaOverrides === undefined) next = { ...next, criteriaOverrides: {} };
   if (next.aiCheckResults === undefined) next = { ...next, aiCheckResults: {} };
+  if (next.marks === undefined) next = { ...next, marks: [] };
+  if (next.selfRating === undefined) next = { ...next, selfRating: null };
+  if (next.listenedAt === undefined) next = { ...next, listenedAt: null };
   return next;
 }
 

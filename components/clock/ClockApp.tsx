@@ -237,6 +237,9 @@ export default function ClockApp() {
         selectedChipIds: Array.from(selectedChipIds),
         criteriaOverrides: {},
         aiCheckResults: {},
+        marks: [],
+        selfRating: null,
+        listenedAt: null,
       };
       try {
         await saveRun(run);
