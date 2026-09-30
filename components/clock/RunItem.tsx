@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import type { AiCheckResult } from "@/lib/clock/aiCheck";
 import { formatClock, formatDate } from "@/lib/clock/format";
-import type { MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
+import type { Mark, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
 import DevModelCompare from "./DevModelCompare";
 import RunChecklist from "./RunChecklist";
 import RunListen from "./RunListen";
@@ -42,6 +42,7 @@ export default function RunItem({
   onDoneListening,
   onSetMarkLabel,
   onRemoveMark,
+  onRestoreMark,
   onSetSelfRating,
 }: {
   run: Run;
@@ -58,6 +59,7 @@ export default function RunItem({
   onDoneListening: (runId: string) => void;
   onSetMarkLabel: (runId: string, markId: string, label: MarkLabel | null) => void;
   onRemoveMark: (runId: string, markId: string) => void;
+  onRestoreMark: (runId: string, mark: Mark) => void;
   onSetSelfRating: (runId: string, rating: SelfRating) => void;
 }) {
   const audioUrl = useMemo(() => URL.createObjectURL(run.blob), [run.blob]);
@@ -152,6 +154,7 @@ export default function RunItem({
           onMarkNone={() => onMarkNone(run.id)}
           onSetMarkLabel={(markId, label) => onSetMarkLabel(run.id, markId, label)}
           onRemoveMark={(markId) => onRemoveMark(run.id, markId)}
+          onRestoreMark={(mark) => onRestoreMark(run.id, mark)}
           onSetSelfRating={(rating) => onSetSelfRating(run.id, rating)}
         />
       )}

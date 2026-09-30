@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import posthog from "posthog-js";
 import styles from "@/app/clock/page.module.css";
 import { formatClock } from "@/lib/clock/format";
@@ -21,6 +21,8 @@ const LABEL_TEXT: Record<MarkLabel, string> = {
   too_much_background: "Too much background",
   rushed: "Rushed",
 };
+
+const UNDO_WINDOW_MS = 5000;
 
 type Draft = { type: "point"; ms: number } | { type: "none" };
 
@@ -56,6 +58,46 @@ function summaryLine(run: Run): string {
   return parts.join(" · ");
 }
 
+/** The four labels plus Remove, opened under whichever trigger (flag or list row) it belongs to. */
+function LabelRow({
+  mark,
+  onSetLabel,
+  onRemove,
+}: {
+  mark: Mark;
+  onSetLabel: (label: MarkLabel | null) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className={styles.markLabelRow}>
+      {LABEL_OPTIONS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={`${styles.linkBtn} ${mark.label === option.value ? styles.chipSelected : ""}`}
+          onClick={() => onSetLabel(mark.label === option.value ? null : option.value)}
+        >
+          {option.text}
+        </button>
+      ))}
+      <button type="button" className={styles.removeMarkLink} onClick={onRemove}>
+        Remove mark
+      </button>
+    </div>
+  );
+}
+
+function RemovedMarkNotice({ onUndo }: { onUndo: () => void }) {
+  return (
+    <span className={styles.markRemovedNotice}>
+      Mark removed ·{" "}
+      <button type="button" className={styles.linkBtn} onClick={onUndo}>
+        Undo
+      </button>
+    </span>
+  );
+}
+
 function MarkFlag({
   mark,
   isOpen,
@@ -70,28 +112,12 @@ function MarkFlag({
   onRemove: () => void;
 }) {
   return (
-    <span className={styles.markFlagWrap}>
+    <>
       <button type="button" className={styles.markFlag} onClick={onToggleOpen} aria-label="Mark options">
-        ⚑{mark.label ? ` ${LABEL_TEXT[mark.label]}` : ""}
+        ⚑ {mark.label ? LABEL_TEXT[mark.label] : "Mark"}
       </button>
-      {isOpen && (
-        <span className={styles.markLabelPicker}>
-          {LABEL_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`${styles.linkBtn} ${mark.label === option.value ? styles.chipSelected : ""}`}
-              onClick={() => onSetLabel(mark.label === option.value ? null : option.value)}
-            >
-              {option.text}
-            </button>
-          ))}
-          <button type="button" className={styles.deleteBtn} onClick={onRemove}>
-            Remove
-          </button>
-        </span>
-      )}
-    </span>
+      {isOpen && <LabelRow mark={mark} onSetLabel={onSetLabel} onRemove={onRemove} />}
+    </>
   );
 }
 
@@ -114,23 +140,7 @@ function MarkListRow({
         {formatClock(mark.ms)}
         {mark.label ? ` — ${LABEL_TEXT[mark.label]}` : ""}
       </button>
-      {isOpen && (
-        <span className={styles.markLabelPicker}>
-          {LABEL_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`${styles.linkBtn} ${mark.label === option.value ? styles.chipSelected : ""}`}
-              onClick={() => onSetLabel(mark.label === option.value ? null : option.value)}
-            >
-              {option.text}
-            </button>
-          ))}
-          <button type="button" className={styles.deleteBtn} onClick={onRemove}>
-            Remove
-          </button>
-        </span>
-      )}
+      {isOpen && <LabelRow mark={mark} onSetLabel={onSetLabel} onRemove={onRemove} />}
     </li>
   );
 }
@@ -144,6 +154,7 @@ export default function RunReview({
   onMarkNone,
   onSetMarkLabel,
   onRemoveMark,
+  onRestoreMark,
   onSetSelfRating,
 }: {
   run: Run;
@@ -154,12 +165,24 @@ export default function RunReview({
   onMarkNone: () => void;
   onSetMarkLabel: (markId: string, label: MarkLabel | null) => void;
   onRemoveMark: (markId: string) => void;
+  onRestoreMark: (mark: Mark) => void;
   onSetSelfRating: (rating: SelfRating) => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [isChanging, setIsChanging] = useState(false);
   const [openMarkId, setOpenMarkId] = useState<string | null>(null);
   const [previewedIndices, setPreviewedIndices] = useState<Set<number>>(new Set());
+  // Marks removed in the last few seconds, kept around only so Undo can
+  // bring them back — the removal itself already happened for real.
+  const [removedMarks, setRemovedMarks] = useState<Map<string, Mark>>(new Map());
+  const removeTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    const timers = removeTimersRef.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   const isPicking = run.pointStatus === "unmarked" || isChanging;
 
@@ -191,6 +214,33 @@ export default function RunReview({
     });
   };
 
+  const handleRemoveMark = (mark: Mark) => {
+    onRemoveMark(mark.id);
+    setOpenMarkId(null);
+    setRemovedMarks((prev) => new Map(prev).set(mark.id, mark));
+    const timer = setTimeout(() => {
+      removeTimersRef.current.delete(mark.id);
+      setRemovedMarks((prev) => {
+        const next = new Map(prev);
+        next.delete(mark.id);
+        return next;
+      });
+    }, UNDO_WINDOW_MS);
+    removeTimersRef.current.set(mark.id, timer);
+  };
+
+  const handleUndoRemove = (mark: Mark) => {
+    const timer = removeTimersRef.current.get(mark.id);
+    if (timer) clearTimeout(timer);
+    removeTimersRef.current.delete(mark.id);
+    setRemovedMarks((prev) => {
+      const next = new Map(prev);
+      next.delete(mark.id);
+      return next;
+    });
+    onRestoreMark(mark);
+  };
+
   const transcript = run.transcript;
   const effectivePointMs = isPicking
     ? draft?.type === "point"
@@ -207,6 +257,11 @@ export default function RunReview({
   const marksBySentence = useMemo(
     () => (transcript ? groupMarksBySentence(transcript.sentences, run.marks) : new Map<number, Mark[]>()),
     [transcript, run.marks]
+  );
+  const removedMarksBySentence = useMemo(
+    () =>
+      transcript ? groupMarksBySentence(transcript.sentences, [...removedMarks.values()]) : new Map<number, Mark[]>(),
+    [transcript, removedMarks]
   );
 
   return (
@@ -225,10 +280,8 @@ export default function RunReview({
         {run.script && transcript && <p className={styles.scriptCompareLabel}>What you said</p>}
         {transcript ? (
           <>
-            <h2 className={styles.markQuestion}>Which sentence says what your company does?</h2>
-            <p className={styles.markHint}>
-              Click the sentence. Everything before it is how long it took you to get there.
-            </p>
+            <h2 className={styles.markQuestion}>Which sentence is your point?</h2>
+            <p className={styles.markHint}>Tap it. Everything before it is how long it took you to get there.</p>
 
             {transcript.sentences.length > 0 ? (
               <div className={`${styles.transcript} ph-no-capture`}>
@@ -239,6 +292,7 @@ export default function RunReview({
                   const isRunway = dimmed && !isPicking;
                   const chunkClass = `${styles.chunk} ${active ? styles.chunkActive : ""} ${dimmed ? styles.chunkDimmed : ""} ${isRunway ? styles.chunkRunway : ""}`;
                   const marksHere = marksBySentence.get(i) ?? [];
+                  const removedHere = removedMarksBySentence.get(i) ?? [];
 
                   return (
                     <Fragment key={i}>
@@ -263,12 +317,15 @@ export default function RunReview({
                           mark={mark}
                           isOpen={openMarkId === mark.id}
                           onToggleOpen={() => setOpenMarkId(openMarkId === mark.id ? null : mark.id)}
-                          onSetLabel={(label) => onSetMarkLabel(mark.id, label)}
-                          onRemove={() => {
-                            onRemoveMark(mark.id);
+                          onSetLabel={(label) => {
+                            onSetMarkLabel(mark.id, label);
                             setOpenMarkId(null);
                           }}
+                          onRemove={() => handleRemoveMark(mark)}
                         />
+                      ))}
+                      {removedHere.map((mark) => (
+                        <RemovedMarkNotice key={mark.id} onUndo={() => handleUndoRemove(mark)} />
                       ))}
                       {isRunway && previewedIndices.has(i) && run.pointMs !== null && (
                         <p className={styles.runwayPreview}>
@@ -320,12 +377,15 @@ export default function RunReview({
                     mark={mark}
                     isOpen={openMarkId === mark.id}
                     onToggleOpen={() => setOpenMarkId(openMarkId === mark.id ? null : mark.id)}
-                    onSetLabel={(label) => onSetMarkLabel(mark.id, label)}
-                    onRemove={() => {
-                      onRemoveMark(mark.id);
+                    onSetLabel={(label) => {
+                      onSetMarkLabel(mark.id, label);
                       setOpenMarkId(null);
                     }}
+                    onRemove={() => handleRemoveMark(mark)}
                   />
+                ))}
+                {[...removedMarks.values()].map((mark) => (
+                  <RemovedMarkNotice key={mark.id} onUndo={() => handleUndoRemove(mark)} />
                 ))}
               </div>
             )}
@@ -391,7 +451,7 @@ export default function RunReview({
 
             {/* No transcript yet to anchor flags to — a plain list instead.
                 Switches to sentence flags automatically once transcript arrives. */}
-            {run.marks.length > 0 && (
+            {(run.marks.length > 0 || removedMarks.size > 0) && (
               <div className={styles.markListWrap}>
                 <p className={styles.scriptCompareLabel}>Marks</p>
                 <ul className={styles.markList}>
@@ -401,12 +461,17 @@ export default function RunReview({
                       mark={mark}
                       isOpen={openMarkId === mark.id}
                       onToggleOpen={() => setOpenMarkId(openMarkId === mark.id ? null : mark.id)}
-                      onSetLabel={(label) => onSetMarkLabel(mark.id, label)}
-                      onRemove={() => {
-                        onRemoveMark(mark.id);
+                      onSetLabel={(label) => {
+                        onSetMarkLabel(mark.id, label);
                         setOpenMarkId(null);
                       }}
+                      onRemove={() => handleRemoveMark(mark)}
                     />
+                  ))}
+                  {[...removedMarks.values()].map((mark) => (
+                    <li key={mark.id} className={styles.markListItem}>
+                      <RemovedMarkNotice onUndo={() => handleUndoRemove(mark)} />
+                    </li>
                   ))}
                 </ul>
               </div>

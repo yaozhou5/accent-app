@@ -20,7 +20,7 @@ import {
   markTranscriptionStarted,
   takeStaleTranscriptionRunId,
 } from "@/lib/clock/transcriptionGuard";
-import type { ChartRun, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
+import type { ChartRun, Mark, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
 import { createClient } from "@/lib/supabase/client";
 import { fetchPracticeRuns, syncPracticeRuns } from "@/lib/supabase/practice-runs";
 import ChipRow from "./ChipRow";
@@ -374,6 +374,14 @@ export default function ClockApp() {
     updateRun(runId, computePatch).catch(() => {});
   }, []);
 
+  // Undo — reinserts the exact mark object that was removed, same id and
+  // label, so it anchors to the same sentence it always did.
+  const handleRestoreMark = useCallback((runId: string, mark: Mark) => {
+    const computePatch = (r: Run) => ({ marks: [...r.marks, mark] });
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
+
   const handleSetSelfRating = useCallback((runId: string, rating: SelfRating) => {
     const patch = { selfRating: rating };
     setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...patch } : r)));
@@ -525,6 +533,7 @@ export default function ClockApp() {
               onDoneListening={handleDoneListening}
               onSetMarkLabel={handleSetMarkLabel}
               onRemoveMark={handleRemoveMark}
+              onRestoreMark={handleRestoreMark}
               onSetSelfRating={handleSetSelfRating}
             />
           ))}
