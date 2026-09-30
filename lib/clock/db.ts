@@ -55,6 +55,7 @@ async function toStoredRun(run: Run): Promise<StoredRun> {
  * existed have `chunks` but no `sentences` — derive them here so old
  * transcripts get clickable whole sentences too, without a migration.
  * Runs saved before the script step existed have no `script` field at all.
+ * Runs saved before challenges existed have no `challengeId`/`criteriaOverrides`.
  * Runs saved before ArrayBuffer storage still hold `blob` directly — either
  * way this returns a run with a real Blob.
  */
@@ -71,6 +72,8 @@ function normalizeRun(run: AnyStoredRun): Run {
     next = { ...next, transcript: { ...next.transcript, sentences: chunksToSentences(next.transcript.chunks) } };
   }
   if (next.script === undefined) next = { ...next, script: null };
+  if (next.challengeId === undefined) next = { ...next, challengeId: null };
+  if (next.criteriaOverrides === undefined) next = { ...next, criteriaOverrides: {} };
   return next;
 }
 

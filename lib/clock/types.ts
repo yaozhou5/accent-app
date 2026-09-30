@@ -25,6 +25,10 @@ export type Run = {
   transcript: Transcript | null;
   /** A copy of the script draft as it stood when this run was recorded, or null if none was written. */
   script: string | null;
+  /** Which weekly challenge (lib/clock/challenges.ts) this run was attempted under — set at recording start based on whether the challenge card was dismissed, not retroactively. null = free practice. */
+  challengeId: string | null;
+  /** The user's own yes/no answers for criteria automatic checking couldn't resolve — manual-type criteria, and a use_word that wasn't automatically detected. Keyed by criterion id. */
+  criteriaOverrides: Record<string, boolean>;
 };
 
 /**
