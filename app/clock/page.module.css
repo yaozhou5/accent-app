@@ -528,6 +528,41 @@
   color: var(--ink);
 }
 
+/* Weekly challenge */
+.wrap .challengeTitle {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+.wrap .challengeChecklist {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.wrap .challengeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wrap .challengeItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  color: var(--ink);
+}
+.wrap .challengeConfirm {
+  display: flex;
+  gap: 8px;
+}
+
 .wrap footer {
   border-top: 1px solid var(--rule);
   margin-top: 48px;

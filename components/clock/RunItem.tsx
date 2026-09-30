@@ -2,8 +2,10 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
+import type { Challenge } from "@/lib/clock/challenges";
 import { formatClock, formatDate } from "@/lib/clock/format";
 import type { Run, TranscribeState } from "@/lib/clock/types";
+import ChallengeChecklist from "./ChallengeChecklist";
 import DevModelCompare from "./DevModelCompare";
 import RunTimeline from "./RunTimeline";
 
@@ -27,20 +29,25 @@ export default function RunItem({
   run,
   repNumber,
   transcribeState,
+  challenge,
   onDelete,
   onTranscribe,
   onMarkPoint,
   onMarkNone,
   onGoAgain,
+  onSetCriterionOverride,
 }: {
   run: Run;
   repNumber: number;
   transcribeState: TranscribeState;
+  /** The challenge this run was recorded under (looked up from run.challengeId), or null for free practice. */
+  challenge: Challenge | null;
   onDelete: (id: string) => void;
   onTranscribe: (run: Run) => void;
   onMarkPoint: (id: string, pointMs: number) => void;
   onMarkNone: (id: string) => void;
   onGoAgain: () => void;
+  onSetCriterionOverride: (runId: string, criterionId: string, value: boolean) => void;
 }) {
   const audioUrl = useMemo(() => URL.createObjectURL(run.blob), [run.blob]);
 
@@ -247,6 +254,14 @@ export default function RunItem({
           </div>
         )}
       </div>
+
+      {run.challengeId && challenge && run.pointStatus !== "unmarked" && (
+        <ChallengeChecklist
+          challenge={challenge}
+          run={run}
+          onSetOverride={(criterionId, value) => onSetCriterionOverride(run.id, criterionId, value)}
+        />
+      )}
 
       <div className={styles.goAgainRow}>
         <button className={styles.btn} onClick={onGoAgain}>

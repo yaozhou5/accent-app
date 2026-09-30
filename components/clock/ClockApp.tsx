@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import posthog from "posthog-js";
 import styles from "@/app/clock/page.module.css";
+import { getChallengeById } from "@/lib/clock/challenges";
+import { getCurrentChallenge } from "@/lib/clock/challengeCheck";
+import { clearChallengeDismissed, isChallengeDismissed, markChallengeDismissed } from "@/lib/clock/challengeDismiss";
 import { decodeAudio } from "@/lib/clock/decodeAudio";
 import { deleteAllRuns, deleteRun, isDbAvailable, listRuns, saveRun, updateRun } from "@/lib/clock/db";
 import { formatClock, isToday } from "@/lib/clock/format";
@@ -20,6 +24,7 @@ import {
 import type { ChartRun, Run, TranscribeState } from "@/lib/clock/types";
 import { createClient } from "@/lib/supabase/client";
 import { fetchPracticeRuns, syncPracticeRuns } from "@/lib/supabase/practice-runs";
+import ChallengeCard from "./ChallengeCard";
 import ModelIntro from "./ModelIntro";
 import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorder";
 import RunItem from "./RunItem";
@@ -62,9 +67,18 @@ export default function ClockApp() {
   // signed in would flash incorrectly for returning users.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [syncedRuns, setSyncedRuns] = useState<ChartRun[]>([]);
+  // null = not determined yet (avoids a flash of the card before we've
+  // read localStorage, and avoids challenge_card_shown firing on the
+  // transient default before the real dismiss state is known).
+  const [challengeDismissed, setChallengeDismissed] = useState<boolean | null>(null);
   const idCounter = useRef(0);
   const recorderRef = useRef<RecorderHandle | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
+  const shownChallengeRef = useRef<string | null>(null);
+
+  // Computed once per mount, not on every render — stable across the
+  // session even if it's left open across a week boundary.
+  const currentChallenge = useMemo(() => getCurrentChallenge(), []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -91,6 +105,7 @@ export default function ClockApp() {
   useEffect(() => {
     setDbAvailable(isDbAvailable());
     setIntroSeen(hasSeenModelIntro());
+    setChallengeDismissed(currentChallenge ? isChallengeDismissed(currentChallenge.id) : false);
     listRuns()
       .then((loadedRuns) => {
         setRuns(loadedRuns);
@@ -120,12 +135,35 @@ export default function ClockApp() {
     loadScriptDraft()
       .then(setScriptDraft)
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentChallenge is memoized with [] deps, stable for the session
   }, []);
 
   const handleScriptChange = useCallback((text: string) => {
     setScriptDraft(text);
     saveScriptDraft(text).catch(() => {});
   }, []);
+
+  // Fires once per challenge id, only once we know for certain the card
+  // (not the dismissed reopen-link) is actually visible.
+  useEffect(() => {
+    if (currentChallenge && challengeDismissed === false && shownChallengeRef.current !== currentChallenge.id) {
+      shownChallengeRef.current = currentChallenge.id;
+      posthog.capture("challenge_card_shown", { challenge_id: currentChallenge.id });
+    }
+  }, [currentChallenge, challengeDismissed]);
+
+  const handleDismissChallenge = useCallback(() => {
+    if (!currentChallenge) return;
+    markChallengeDismissed(currentChallenge.id);
+    setChallengeDismissed(true);
+    posthog.capture("challenge_dismissed", { challenge_id: currentChallenge.id });
+  }, [currentChallenge]);
+
+  const handleReopenChallenge = useCallback(() => {
+    if (!currentChallenge) return;
+    clearChallengeDismissed(currentChallenge.id);
+    setChallengeDismissed(false);
+  }, [currentChallenge]);
 
   const runTranscription = useCallback(async (run: Run, preDecodedAudio?: Float32Array) => {
     const model = getModelForDevice();
@@ -205,6 +243,12 @@ export default function ClockApp() {
         // A copy, not a reference — this run keeps the script as it read at
         // the moment of recording, even if the draft is edited afterwards.
         script: scriptDraft.trim() || null,
+        // Tagged at recording start, not retroactively — the card can't be
+        // dismissed mid-recording (it's not rendered while isRecording is
+        // true), so reading the dismiss state here is equivalent to reading
+        // it the instant the recording began.
+        challengeId: currentChallenge && challengeDismissed === false ? currentChallenge.id : null,
+        criteriaOverrides: {},
       };
       try {
         await saveRun(run);
@@ -225,7 +269,7 @@ export default function ClockApp() {
         setSaveFailure({ downloadUrl: URL.createObjectURL(data.blob), durationMs, errorText: describeError(err) });
       }
     },
-    [runTranscription, scriptDraft]
+    [runTranscription, scriptDraft, currentChallenge, challengeDismissed]
   );
 
   const handleDelete = useCallback((id: string) => {
@@ -269,6 +313,20 @@ export default function ClockApp() {
     [runs, signedIn]
   );
 
+  const handleSetCriterionOverride = useCallback(
+    (runId: string, criterionId: string, value: boolean) => {
+      const updated = runs.map((r) =>
+        r.id === runId ? { ...r, criteriaOverrides: { ...r.criteriaOverrides, [criterionId]: value } } : r
+      );
+      setRuns(updated);
+      const run = updated.find((r) => r.id === runId);
+      if (!run) return;
+      updateRun(runId, { criteriaOverrides: run.criteriaOverrides }).catch(() => {});
+      if (signedIn) syncPracticeRuns([run]).catch(() => {});
+    },
+    [runs, signedIn]
+  );
+
   const handleContinueFromIntro = useCallback(() => {
     markModelIntroSeen();
     setIntroSeen(true);
@@ -293,6 +351,17 @@ export default function ClockApp() {
   return (
     <div ref={topRef}>
       {loaded && todayCount > 0 && <p className={styles.repToday}>Rep {todayCount} today</p>}
+
+      {/* Must never be visible while the timer runs — dismiss/reopen must stay unreachable mid-recording,
+          since handleFinished reads the dismiss state as of "the moment recording started". */}
+      {!isRecording && currentChallenge && challengeDismissed !== null && (
+        <ChallengeCard
+          challenge={currentChallenge}
+          dismissed={challengeDismissed}
+          onDismiss={handleDismissChallenge}
+          onReopen={handleReopenChallenge}
+        />
+      )}
 
       {/* Must never be visible while the timer runs — hidden outright, not just dimmed, the moment recording starts. */}
       {!isRecording && <ScriptStep value={scriptDraft} onChange={handleScriptChange} />}
@@ -391,11 +460,13 @@ export default function ClockApp() {
               run={run}
               repNumber={runs.length - i}
               transcribeState={transcribeStates[run.id] ?? { phase: "idle" }}
+              challenge={run.challengeId ? (getChallengeById(run.challengeId) ?? null) : null}
               onDelete={handleDelete}
               onTranscribe={(r) => runTranscription(r)}
               onMarkPoint={handleMarkPoint}
               onMarkNone={handleMarkNone}
               onGoAgain={handleGoAgain}
+              onSetCriterionOverride={handleSetCriterionOverride}
             />
           ))}
         </div>
