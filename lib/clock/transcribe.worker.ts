@@ -2,6 +2,7 @@ import { pipeline, env } from "@huggingface/transformers";
 import type { AutomaticSpeechRecognitionOutput, AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
 import { WHISPER_DTYPE } from "./model";
 import { chunksToSentences } from "./sentences";
+import { TRANSCRIBE_OPTIONS, dedupeChunkSeams } from "./transcribeChunks";
 import type { TranscriptChunk } from "./types";
 
 type Chunk = { text: string; timestamp: [number, number] };
@@ -165,18 +166,23 @@ self.onmessage = async (event: MessageEvent<InMessage>) => {
   }
   try {
     post({ type: "phase", id, phase: "transcribing", usedNoCacheFallback: noCacheFallbackModels.has(modelId) });
-    const output = (await transcriber(audio, {
-      chunk_length_s: 30,
-      return_timestamps: true,
-    })) as AutomaticSpeechRecognitionOutput | AutomaticSpeechRecognitionOutput[];
+    const output = (await transcriber(audio, TRANSCRIBE_OPTIONS)) as
+      | AutomaticSpeechRecognitionOutput
+      | AutomaticSpeechRecognitionOutput[];
     const result = Array.isArray(output) ? output[0] : output;
-    const chunks: TranscriptChunk[] = (result.chunks ?? []).map((chunk: Chunk) => ({
+    const rawChunks: TranscriptChunk[] = (result.chunks ?? []).map((chunk: Chunk) => ({
       text: chunk.text,
       start: chunk.timestamp?.[0] ?? 0,
       end: chunk.timestamp?.[1] ?? chunk.timestamp?.[0] ?? 0,
     }));
+    // Rebuilt from the deduped chunks, not result.text directly, so the
+    // one-word seam artifact a hard chunk cut can produce is gone from the
+    // full text too — chip detection and the ai_check payload both read
+    // this field, not just chunks/sentences.
+    const chunks = dedupeChunkSeams(rawChunks);
+    const text = chunks.map((c) => c.text).join("");
     const sentences = chunksToSentences(chunks);
-    post({ type: "result", id, text: result.text ?? "", chunks, sentences });
+    post({ type: "result", id, text, chunks, sentences });
   } catch (err) {
     const message = `Transcription failed — ${describe(err)}`;
     console.error("[transcribe worker]", message, err);
