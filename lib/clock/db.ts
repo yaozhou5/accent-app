@@ -103,15 +103,18 @@ export async function saveRun(run: Run): Promise<void> {
   await set(run.id, await toStoredRun(run), s);
 }
 
-/**
- * `patch` may be a function of the current record instead of a static
- * object — needed by any caller deriving the new value from a field that
- * already holds a collection (marks, criteriaOverrides, aiCheckResults):
- * reading that field from React state risks a stale snapshot (see
- * ClockApp.tsx), but `existing` here is always the record actually on
- * disk, read fresh on every call.
- */
-export async function updateRun(
+// get() and set() are each their own IndexedDB transaction, not one atomic
+// read-modify-write — two concurrent updateRun calls for the same id can
+// both get() before either set() lands, so the second call's patch is
+// computed from a base that doesn't yet include the first call's change,
+// and whichever set() commits last silently wins. Queued per id below so
+// concurrent calls run strictly one at a time: each one's get() is
+// guaranteed to see the previous one's set() already committed. A handful
+// of run ids exist per session at most, so this map is never meaningfully
+// large; a failed update still lets the next queued one proceed.
+const pendingUpdates = new Map<string, Promise<unknown>>();
+
+async function doUpdateRun(
   id: string,
   patch: Partial<Run> | ((existing: Run) => Partial<Run>)
 ): Promise<Run | undefined> {
@@ -124,6 +127,27 @@ export async function updateRun(
   const updated: Run = { ...existing, ...resolvedPatch };
   await set(id, await toStoredRun(updated), s);
   return updated;
+}
+
+/**
+ * `patch` may be a function of the current record instead of a static
+ * object — needed by any caller deriving the new value from a field that
+ * already holds a collection (marks, criteriaOverrides, aiCheckResults):
+ * reading that field from React state risks a stale snapshot (see
+ * ClockApp.tsx), but `existing` here is always the record actually on
+ * disk, read fresh at the moment this call's turn in the queue arrives.
+ */
+export function updateRun(
+  id: string,
+  patch: Partial<Run> | ((existing: Run) => Partial<Run>)
+): Promise<Run | undefined> {
+  const previous = pendingUpdates.get(id) ?? Promise.resolve();
+  const next = previous.then(() => doUpdateRun(id, patch));
+  pendingUpdates.set(
+    id,
+    next.catch(() => {})
+  );
+  return next;
 }
 
 export async function deleteRun(id: string): Promise<void> {
