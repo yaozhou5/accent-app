@@ -280,126 +280,113 @@ export default function ClockApp() {
     deleteAllRuns().catch(() => {});
   }, []);
 
-  // Completing a run's mark is also the moment it becomes sync-eligible —
-  // if signed in, upsert it in the background. Needs the full run (not
-  // just id/pointMs) for duration_ms, so this reads `runs` directly rather
-  // than using the functional setState form the rest of the file uses.
+  // Every handler below reads the CURRENT run two ways, never from the
+  // `runs` closure: setRuns(prev => ...) for React state, and updateRun's
+  // own fresh disk read for IndexedDB (its patch may be a function of the
+  // existing record for exactly this reason — see db.ts). A handler whose
+  // patch depends on a prior collection value (marks, criteriaOverrides,
+  // aiCheckResults) uses that function form; a handler whose patch is a
+  // fixed value (pointMs, selfRating, listenedAt) can share one literal
+  // patch object between both calls. Anything needing the post-patch run
+  // (Supabase sync, PostHog counts) reads it from updateRun's return value
+  // — the one place that's guaranteed fresh — never from `runs`.
   const handleMarkPoint = useCallback(
     (id: string, pointMs: number) => {
-      const updated = runs.map((r) => (r.id === id ? { ...r, pointMs, pointStatus: "marked" as const } : r));
-      setRuns(updated);
-      updateRun(id, { pointMs, pointStatus: "marked" }).catch(() => {});
-      if (signedIn) {
-        const run = updated.find((r) => r.id === id);
-        if (run) syncPracticeRuns([run]).catch(() => {});
-      }
+      const patch = { pointMs, pointStatus: "marked" as const };
+      setRuns((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+      updateRun(id, patch)
+        .then((updated) => {
+          if (updated && signedIn) syncPracticeRuns([updated]).catch(() => {});
+        })
+        .catch(() => {});
     },
-    [runs, signedIn]
+    [signedIn]
   );
 
   const handleMarkNone = useCallback(
     (id: string) => {
-      const updated = runs.map((r) => (r.id === id ? { ...r, pointMs: null, pointStatus: "none" as const } : r));
-      setRuns(updated);
-      updateRun(id, { pointMs: null, pointStatus: "none" }).catch(() => {});
-      if (signedIn) {
-        const run = updated.find((r) => r.id === id);
-        if (run) syncPracticeRuns([run]).catch(() => {});
-      }
+      const patch = { pointMs: null, pointStatus: "none" as const };
+      setRuns((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+      updateRun(id, patch)
+        .then((updated) => {
+          if (updated && signedIn) syncPracticeRuns([updated]).catch(() => {});
+        })
+        .catch(() => {});
     },
-    [runs, signedIn]
+    [signedIn]
   );
 
   const handleSetCriterionOverride = useCallback(
     (runId: string, criterionId: string, value: boolean) => {
-      const updated = runs.map((r) =>
-        r.id === runId ? { ...r, criteriaOverrides: { ...r.criteriaOverrides, [criterionId]: value } } : r
-      );
-      setRuns(updated);
-      const run = updated.find((r) => r.id === runId);
-      if (!run) return;
-      updateRun(runId, { criteriaOverrides: run.criteriaOverrides }).catch(() => {});
-      if (signedIn) syncPracticeRuns([run]).catch(() => {});
+      const computePatch = (r: Run) => ({ criteriaOverrides: { ...r.criteriaOverrides, [criterionId]: value } });
+      setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+      updateRun(runId, computePatch)
+        .then((updated) => {
+          if (updated && signedIn) syncPracticeRuns([updated]).catch(() => {});
+        })
+        .catch(() => {});
     },
-    [runs, signedIn]
+    [signedIn]
   );
 
   const handleSetAiCheckResult = useCallback(
     (runId: string, chipId: string, result: AiCheckResult) => {
-      const updated = runs.map((r) =>
-        r.id === runId ? { ...r, aiCheckResults: { ...r.aiCheckResults, [chipId]: result } } : r
-      );
-      setRuns(updated);
-      const run = updated.find((r) => r.id === runId);
-      if (!run) return;
-      updateRun(runId, { aiCheckResults: run.aiCheckResults }).catch(() => {});
-      if (signedIn) syncPracticeRuns([run]).catch(() => {});
+      const computePatch = (r: Run) => ({ aiCheckResults: { ...r.aiCheckResults, [chipId]: result } });
+      setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+      updateRun(runId, computePatch)
+        .then((updated) => {
+          if (updated && signedIn) syncPracticeRuns([updated]).catch(() => {});
+        })
+        .catch(() => {});
     },
-    [runs, signedIn]
+    [signedIn]
   );
 
   // Nothing below this point syncs to Supabase — marks, labels, and the
   // self-rating stay local, per the "no server calls in this flow" rule.
-  const handleAddMark = useCallback(
-    (runId: string, ms: number) => {
-      const updated = runs.map((r) =>
-        r.id === runId ? { ...r, marks: [...r.marks, { id: newMarkId(), ms, label: null }] } : r
-      );
-      setRuns(updated);
-      const run = updated.find((r) => r.id === runId);
-      if (run) updateRun(runId, { marks: run.marks }).catch(() => {});
-    },
-    [runs]
-  );
+  const handleAddMark = useCallback((runId: string, ms: number) => {
+    // Created once, outside computePatch — computePatch runs once against
+    // `prev` and once against updateRun's own fresh read, and both must
+    // append the exact same mark, not two different ones with new ids.
+    const mark = { id: newMarkId(), ms, label: null as MarkLabel | null };
+    const computePatch = (r: Run) => ({ marks: [...r.marks, mark] });
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
 
-  const handleDoneListening = useCallback(
-    (runId: string) => {
-      const listenedAt = Date.now();
-      const updated = runs.map((r) => (r.id === runId ? { ...r, listenedAt } : r));
-      setRuns(updated);
-      updateRun(runId, { listenedAt }).catch(() => {});
-      const run = updated.find((r) => r.id === runId);
-      posthog.capture("review_listen_done", { mark_count: run?.marks.length ?? 0 });
-    },
-    [runs]
-  );
+  const handleDoneListening = useCallback((runId: string) => {
+    const patch = { listenedAt: Date.now() };
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...patch } : r)));
+    updateRun(runId, patch)
+      .then((updated) => posthog.capture("review_listen_done", { mark_count: updated?.marks.length ?? 0 }))
+      .catch(() => {});
+  }, []);
 
-  const handleSetMarkLabel = useCallback(
-    (runId: string, markId: string, label: MarkLabel | null) => {
-      const updated = runs.map((r) =>
-        r.id === runId ? { ...r, marks: r.marks.map((m) => (m.id === markId ? { ...m, label } : m)) } : r
-      );
-      setRuns(updated);
-      const run = updated.find((r) => r.id === runId);
-      if (run) updateRun(runId, { marks: run.marks }).catch(() => {});
-    },
-    [runs]
-  );
+  const handleSetMarkLabel = useCallback((runId: string, markId: string, label: MarkLabel | null) => {
+    const computePatch = (r: Run) => ({ marks: r.marks.map((m) => (m.id === markId ? { ...m, label } : m)) });
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
 
-  const handleRemoveMark = useCallback(
-    (runId: string, markId: string) => {
-      const updated = runs.map((r) => (r.id === runId ? { ...r, marks: r.marks.filter((m) => m.id !== markId) } : r));
-      setRuns(updated);
-      const run = updated.find((r) => r.id === runId);
-      if (run) updateRun(runId, { marks: run.marks }).catch(() => {});
-    },
-    [runs]
-  );
+  const handleRemoveMark = useCallback((runId: string, markId: string) => {
+    const computePatch = (r: Run) => ({ marks: r.marks.filter((m) => m.id !== markId) });
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
 
-  const handleSetSelfRating = useCallback(
-    (runId: string, rating: SelfRating) => {
-      const updated = runs.map((r) => (r.id === runId ? { ...r, selfRating: rating } : r));
-      setRuns(updated);
-      updateRun(runId, { selfRating: rating }).catch(() => {});
-      const run = updated.find((r) => r.id === runId);
-      posthog.capture("review_rated", {
-        rating,
-        mark_count: run?.marks.length ?? 0,
-        labelled_count: run?.marks.filter((m) => m.label !== null).length ?? 0,
-      });
-    },
-    [runs]
-  );
+  const handleSetSelfRating = useCallback((runId: string, rating: SelfRating) => {
+    const patch = { selfRating: rating };
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...patch } : r)));
+    updateRun(runId, patch)
+      .then((updated) =>
+        posthog.capture("review_rated", {
+          rating,
+          mark_count: updated?.marks.length ?? 0,
+          labelled_count: updated?.marks.filter((m) => m.label !== null).length ?? 0,
+        })
+      )
+      .catch(() => {});
+  }, []);
 
   const handleContinueFromIntro = useCallback(() => {
     markModelIntroSeen();
