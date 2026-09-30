@@ -53,8 +53,9 @@ export default function PrivacyPage() {
         </p>
         <p>
           If you use the practice page and choose to save your progress, a few numbers about each practice — when it
-          happened, how long it took, how long until you said what you do — are sent to our server so you can see your
-          progress over time. The recording itself never is.
+          happened, how long it took, how long until you said what you do, and, for weeks with a challenge, which
+          challenge it was and which of its criteria you met — are sent to our server so you can see your progress over
+          time. The recording and transcript themselves never are.
         </p>
 
         <h2>What we process, and why</h2>
@@ -87,7 +88,10 @@ export default function PrivacyPage() {
               <td>Until you delete it or your account</td>
             </tr>
             <tr>
-              <td>Practice run stats (timestamp, duration, time-to-point) — only if you save your progress</td>
+              <td>
+                Practice run stats (timestamp, duration, time-to-point, which weekly challenge and which of its criteria
+                you met) — only if you save your progress
+              </td>
               <td>To show your practice history over time</td>
               <td>Contract (Art. 6(1)(b))</td>
               <td>Until you delete your account</td>
