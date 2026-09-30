@@ -2,11 +2,11 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
-import type { Challenge } from "@/lib/clock/challenges";
+import type { AiCheckResult } from "@/lib/clock/aiCheck";
 import { formatClock, formatDate } from "@/lib/clock/format";
 import type { Run, TranscribeState } from "@/lib/clock/types";
-import ChallengeChecklist from "./ChallengeChecklist";
 import DevModelCompare from "./DevModelCompare";
+import RunChecklist from "./RunChecklist";
 import RunTimeline from "./RunTimeline";
 
 function metaSuffix(run: Run): string {
@@ -29,25 +29,24 @@ export default function RunItem({
   run,
   repNumber,
   transcribeState,
-  challenge,
   onDelete,
   onTranscribe,
   onMarkPoint,
   onMarkNone,
   onGoAgain,
   onSetCriterionOverride,
+  onAiCheckResult,
 }: {
   run: Run;
   repNumber: number;
   transcribeState: TranscribeState;
-  /** The challenge this run was recorded under (looked up from run.challengeId), or null for free practice. */
-  challenge: Challenge | null;
   onDelete: (id: string) => void;
   onTranscribe: (run: Run) => void;
   onMarkPoint: (id: string, pointMs: number) => void;
   onMarkNone: (id: string) => void;
   onGoAgain: () => void;
   onSetCriterionOverride: (runId: string, criterionId: string, value: boolean) => void;
+  onAiCheckResult: (runId: string, chipId: string, result: AiCheckResult) => void;
 }) {
   const audioUrl = useMemo(() => URL.createObjectURL(run.blob), [run.blob]);
 
@@ -255,11 +254,11 @@ export default function RunItem({
         )}
       </div>
 
-      {run.challengeId && challenge && run.pointStatus !== "unmarked" && (
-        <ChallengeChecklist
-          challenge={challenge}
+      {run.selectedChipIds.length > 0 && run.pointStatus !== "unmarked" && (
+        <RunChecklist
           run={run}
-          onSetOverride={(criterionId, value) => onSetCriterionOverride(run.id, criterionId, value)}
+          onSetOverride={(chipId, value) => onSetCriterionOverride(run.id, chipId, value)}
+          onAiCheckResult={(chipId, result) => onAiCheckResult(run.id, chipId, result)}
         />
       )}
 

@@ -528,14 +528,54 @@
   color: var(--ink);
 }
 
-/* Weekly challenge */
-.wrap .challengeTitle {
-  font-family: var(--serif);
-  font-size: 18px;
-  line-height: 1.5;
-  color: var(--ink);
-  margin: 0 0 16px;
+/* Chips */
+.wrap .chipRow {
+  margin-bottom: 16px;
 }
+.wrap .chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.wrap .chipWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 220px;
+}
+.wrap .chip {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wrap .chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.wrap .chipSelected {
+  color: var(--card);
+  background: var(--mark);
+  border-color: var(--mark);
+}
+.wrap .chipSelected:hover {
+  color: var(--card);
+  border-color: var(--mark);
+}
+.wrap .chipBadge {
+  margin: 0 2px;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: normal;
+}
+
+/* Post-run checklist */
 .wrap .challengeChecklist {
   margin-top: 16px;
   padding-top: 14px;
@@ -553,10 +593,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   flex-wrap: wrap;
   font-size: 15px;
   color: var(--ink);
+}
+.wrap .challengeReason {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--muted);
 }
 .wrap .challengeConfirm {
   display: flex;
