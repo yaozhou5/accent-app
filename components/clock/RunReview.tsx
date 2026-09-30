@@ -7,7 +7,14 @@ import { formatClock } from "@/lib/clock/format";
 import { groupMarksBySentence, runwayLandingMs } from "@/lib/clock/marks";
 import { addPersonalCorrection } from "@/lib/clock/personalCorrections";
 import type { Mark, MarkLabel, Run, SelfRating, TranscribeState, WordFix } from "@/lib/clock/types";
-import { applyFixesToSentence, splitWords, stripEdgePunctuation } from "@/lib/clock/wordFixes";
+import {
+  applyFixesToSentence,
+  leadingPunct,
+  splitWords,
+  stripEdgePunctuation,
+  trailingPunct,
+  wrapWithEdgePunctuation,
+} from "@/lib/clock/wordFixes";
 import DevModelCompare from "./DevModelCompare";
 
 const LABEL_OPTIONS: { value: MarkLabel; text: string }[] = [
@@ -147,23 +154,41 @@ function MarkListRow({
   );
 }
 
-type RenderUnit = { start: number; end: number; text: string; fix: WordFix | null };
+type RenderUnit = { start: number; end: number; text: string; fix: WordFix | null; editing: boolean };
 
-/** Splices a sentence's fix spans into a flat left-to-right sequence of tappable units — plain words and fixed spans alike, each carrying the original word-index range it covers. */
-function buildRenderUnits(words: string[], fixes: WordFix[]): RenderUnit[] {
+/**
+ * Splices a sentence's fix spans into a flat left-to-right sequence of
+ * tappable units — plain words and fixed spans alike, each carrying the
+ * original word-index range it covers. When editingSpan is set (the span
+ * currently selected for in-place editing), it overrides any fix(es) it
+ * overlaps for rendering purposes — the input takes that slot instead.
+ */
+function buildRenderUnits(
+  words: string[],
+  fixes: WordFix[],
+  editingSpan: { start: number; end: number } | null
+): RenderUnit[] {
+  const relevantFixes: RenderUnit[] = (
+    editingSpan ? fixes.filter((f) => f.end < editingSpan.start || f.start > editingSpan.end) : fixes
+  ).map((f) => ({ start: f.start, end: f.end, text: f.text, fix: f, editing: false }));
+  const spans = editingSpan
+    ? [...relevantFixes, { start: editingSpan.start, end: editingSpan.end, text: "", fix: null, editing: true }].sort(
+        (a, b) => a.start - b.start
+      )
+    : relevantFixes;
+
   const units: RenderUnit[] = [];
-  const sorted = [...fixes].sort((a, b) => a.start - b.start);
   let i = 0;
-  for (const fix of sorted) {
-    while (i < fix.start) {
-      units.push({ start: i, end: i, text: words[i], fix: null });
+  for (const span of spans) {
+    while (i < span.start) {
+      units.push({ start: i, end: i, text: words[i], fix: null, editing: false });
       i++;
     }
-    units.push({ start: fix.start, end: fix.end, text: fix.text, fix });
-    i = fix.end + 1;
+    units.push(span);
+    i = span.end + 1;
   }
   while (i < words.length) {
-    units.push({ start: i, end: i, text: words[i], fix: null });
+    units.push({ start: i, end: i, text: words[i], fix: null, editing: false });
     i++;
   }
   return units;
@@ -172,11 +197,57 @@ function buildRenderUnits(words: string[], fixes: WordFix[]): RenderUnit[] {
 type WordSelection = { sentenceIndex: number; start: number; end: number; draftText: string };
 type ConfirmPrompt = { sentenceIndex: number; start: number; end: number; from: string; to: string };
 
-/** One sentence's Fix-words rendering — plain words and fixed spans as individually tappable units, the inline edit row, and the "Always fix?" prompt. Entirely separate from the point-picking/mark-flag rendering it replaces while Fix words is on. */
+/** Auto-width inline input: a hidden ghost span in the same grid cell sizes the cell to the text, the input stretches to fill it. Standard CSS-only auto-width trick — no measuring in JS. */
+function WordEditField({
+  value,
+  onChange,
+  onSave,
+  onCancel,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <span className={styles.wordEditSizer}>
+      <span aria-hidden="true" className={styles.wordEditGhost}>
+        {value || " "}
+      </span>
+      <input
+        type="text"
+        className={styles.wordEditInput}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSave();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          }
+        }}
+        onBlur={onCancel}
+        autoFocus
+      />
+    </span>
+  );
+}
+
+/**
+ * One sentence's Fix-words rendering — plain words and fixed spans as
+ * individually tappable inline spans (not buttons, so they keep normal text
+ * spacing), the actively-selected span becoming an in-place input, dimmed
+ * read-only mark flags, and the "Always fix?" line underneath. Entirely
+ * separate from the point-picking/mark-flag rendering it replaces while
+ * Fix words is on.
+ */
 function SentenceWordFixer({
   sentence,
   sentenceIndex,
   fixes,
+  marksHere,
   selection,
   confirmPrompt,
   onTapUnit,
@@ -189,6 +260,7 @@ function SentenceWordFixer({
   sentence: { text: string };
   sentenceIndex: number;
   fixes: WordFix[];
+  marksHere: Mark[];
   selection: WordSelection | null;
   confirmPrompt: ConfirmPrompt | null;
   onTapUnit: (sentenceIndex: number, unit: RenderUnit) => void;
@@ -199,57 +271,96 @@ function SentenceWordFixer({
   onConfirmNo: () => void;
 }) {
   const words = useMemo(() => splitWords(sentence.text), [sentence.text]);
-  const units = useMemo(() => buildRenderUnits(words, fixes), [words, fixes]);
   const activeSelection = selection && selection.sentenceIndex === sentenceIndex ? selection : null;
   const activePrompt = confirmPrompt && confirmPrompt.sentenceIndex === sentenceIndex ? confirmPrompt : null;
+  const units = useMemo(
+    () =>
+      buildRenderUnits(
+        words,
+        fixes,
+        activeSelection ? { start: activeSelection.start, end: activeSelection.end } : null
+      ),
+    [words, fixes, activeSelection]
+  );
 
   return (
-    <p className={styles.wordFixSentence}>
-      {units.map((unit) => {
-        const selected = activeSelection
-          ? unit.start >= activeSelection.start && unit.end <= activeSelection.end
-          : false;
-        const isAuto = unit.fix?.source === "auto";
-        const classes = [styles.wordUnit, isAuto ? styles.wordUnitAuto : "", selected ? styles.wordUnitSelected : ""]
-          .filter(Boolean)
-          .join(" ");
-        return (
-          <Fragment key={unit.start}>
-            <button type="button" className={classes} onClick={() => onTapUnit(sentenceIndex, unit)}>
-              {unit.text}
-            </button>{" "}
-            {activeSelection && activeSelection.end === unit.end && (
-              <span className={styles.wordEditRow}>
-                <input
-                  type="text"
-                  className={styles.wordEditInput}
-                  value={activeSelection.draftText}
-                  onChange={(e) => onDraftChange(e.target.value)}
-                  autoFocus
+    <>
+      <p className={styles.wordFixSentence}>
+        {units.map((unit) => {
+          if (unit.editing) {
+            const leading = leadingPunct(words[unit.start] ?? "");
+            const trailing = trailingPunct(words[unit.end] ?? "");
+            return (
+              <Fragment key={unit.start}>
+                {leading}
+                <WordEditField
+                  value={activeSelection?.draftText ?? ""}
+                  onChange={onDraftChange}
+                  onSave={onSave}
+                  onCancel={onCancel}
                 />
-                <button type="button" className={styles.confirmRowBtn} onClick={onSave}>
-                  Save
+                {trailing}
+                <button
+                  type="button"
+                  className={styles.wordEditConfirm}
+                  aria-label="Save"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onSave}
+                >
+                  ✓
                 </button>
-                <button type="button" className={styles.linkBtn} onClick={onCancel}>
-                  Cancel
-                </button>
+                {unit.end < words.length - 1 ? " " : ""}
+              </Fragment>
+            );
+          }
+          const isAuto = unit.fix?.source === "auto";
+          const classes = [styles.wordUnit, isAuto ? styles.wordUnitAuto : ""].filter(Boolean).join(" ");
+          return (
+            <Fragment key={unit.start}>
+              <span
+                role="button"
+                tabIndex={0}
+                className={classes}
+                // Prevents the currently-editing input (if any) from blurring
+                // — and so cancelling — before this tap's click handler runs,
+                // which would otherwise drop the extend-selection logic below.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onTapUnit(sentenceIndex, unit)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onTapUnit(sentenceIndex, unit);
+                  }
+                }}
+              >
+                {unit.text}
               </span>
-            )}
-            {activePrompt && activePrompt.end === unit.end && !activeSelection && (
-              <span className={styles.alwaysFixPrompt}>
-                Always fix &ldquo;{activePrompt.from}&rdquo; → &ldquo;{activePrompt.to}&rdquo;?{" "}
-                <button type="button" className={styles.linkBtn} onClick={onConfirmYes}>
-                  Yes
-                </button>
-                <button type="button" className={styles.linkBtn} onClick={onConfirmNo}>
-                  No
-                </button>
-              </span>
-            )}
-          </Fragment>
-        );
-      })}
-    </p>
+              {unit.end < words.length - 1 ? " " : ""}
+            </Fragment>
+          );
+        })}
+      </p>
+      {marksHere.length > 0 && (
+        <p className={`${styles.wordFixMarks} ${styles.dimmedInert}`}>
+          {marksHere.map((mark) => (
+            <span key={mark.id} className={styles.markFlag}>
+              ⚑ {mark.label ? LABEL_TEXT[mark.label] : "Mark"}
+            </span>
+          ))}
+        </p>
+      )}
+      {activePrompt && !activeSelection && (
+        <p className={styles.runwayPreview}>
+          Always fix &ldquo;{activePrompt.from}&rdquo; → &ldquo;{activePrompt.to}&rdquo;?{" "}
+          <button type="button" className={styles.linkBtn} onClick={onConfirmYes}>
+            Yes
+          </button>{" "}
+          <button type="button" className={styles.linkBtn} onClick={onConfirmNo}>
+            No
+          </button>
+        </p>
+      )}
+    </>
   );
 }
 
@@ -364,13 +475,15 @@ export default function RunReview({
     setConfirmPrompt(null);
   };
 
+  // Core text only, no edge punctuation — the input never shows it, it
+  // renders as plain text outside the input and is reattached on save.
   function prefillTextFor(sentenceIndex: number, start: number, end: number): string {
     const fixes = run.wordFixes[sentenceIndex] ?? [];
     const exact = fixes.find((f) => f.start === start && f.end === end);
-    if (exact) return exact.text;
+    if (exact) return stripEdgePunctuation(exact.text);
     if (!transcript) return "";
     const words = splitWords(transcript.sentences[sentenceIndex].text);
-    return words.slice(start, end + 1).join(" ");
+    return stripEdgePunctuation(words.slice(start, end + 1).join(" "));
   }
 
   const handleTapUnit = (sentenceIndex: number, unit: RenderUnit) => {
@@ -416,12 +529,13 @@ export default function RunReview({
     if (!selection || !transcript) return;
     const { sentenceIndex, start, end, draftText } = selection;
     const words = splitWords(transcript.sentences[sentenceIndex].text);
-    const originalRaw = words.slice(start, end + 1).join(" ");
-    onSetWordFix(sentenceIndex, { start, end, text: draftText, source: "manual" });
-    const from = stripEdgePunctuation(originalRaw);
-    const to = stripEdgePunctuation(draftText);
-    if (to.length > 0 && from.toLowerCase() !== to.toLowerCase()) {
-      setConfirmPrompt({ sentenceIndex, start, end, from, to });
+    // Edge punctuation always comes from the ORIGINAL transcript words, never
+    // from draftText (which never contains any) or a prior fix's text.
+    const fullText = wrapWithEdgePunctuation(words, start, end, draftText);
+    onSetWordFix(sentenceIndex, { start, end, text: fullText, source: "manual" });
+    const originalCore = stripEdgePunctuation(words.slice(start, end + 1).join(" "));
+    if (draftText.length > 0 && originalCore.toLowerCase() !== draftText.toLowerCase()) {
+      setConfirmPrompt({ sentenceIndex, start, end, from: originalCore, to: draftText });
     }
     setSelection(null);
   };
@@ -475,7 +589,9 @@ export default function RunReview({
         {transcript ? (
           <>
             <p className={styles.pointStatusLine}>
-              {isPicking ? (
+              {fixWordsMode ? (
+                "Tap a word to fix it. Tap the next word to select more."
+              ) : isPicking ? (
                 "Tap the sentence where you made your point."
               ) : run.pointStatus === "marked" && run.pointMs !== null ? (
                 <>
@@ -500,7 +616,7 @@ export default function RunReview({
                 className={`${styles.quietLink} ${fixWordsMode ? styles.quietLinkActive : ""}`}
                 onClick={handleToggleFixWords}
               >
-                Fix words
+                {fixWordsMode ? "Done" : "Fix words"}
               </button>
             )}
 
@@ -512,6 +628,7 @@ export default function RunReview({
                     sentence={sentence}
                     sentenceIndex={i}
                     fixes={run.wordFixes[i] ?? []}
+                    marksHere={marksBySentence.get(i) ?? []}
                     selection={selection}
                     confirmPrompt={confirmPrompt}
                     onTapUnit={handleTapUnit}
@@ -633,38 +750,40 @@ export default function RunReview({
               </div>
             )}
 
-            {isPicking ? (
-              <>
-                <div className={styles.transcriptActions}>
-                  <button
-                    type="button"
-                    className={`${styles.quietLink} ${draft?.type === "none" ? styles.quietLinkActive : ""}`}
-                    onClick={() => setDraft({ type: "none" })}
-                  >
-                    I never said it
-                  </button>
-                </div>
-                {draft?.type === "none" && (
-                  <div className={styles.confirmRow}>
-                    <span className={styles.confirmRowText}>{confirmRowText(draft)}</span>
-                    <button type="button" className={styles.confirmRowBtn} onClick={handleConfirm}>
-                      Confirm
+            <div className={fixWordsMode ? styles.dimmedInert : undefined}>
+              {isPicking ? (
+                <>
+                  <div className={styles.transcriptActions}>
+                    <button
+                      type="button"
+                      className={`${styles.quietLink} ${draft?.type === "none" ? styles.quietLinkActive : ""}`}
+                      onClick={() => setDraft({ type: "none" })}
+                    >
+                      I never said it
                     </button>
                   </div>
-                )}
-              </>
-            ) : (
-              <div className={styles.transcriptActions}>
-                <span className={styles.confirmedLine}>
-                  {run.pointStatus === "marked" && run.pointMs !== null
-                    ? `Confirmed — said it at ${formatClock(run.pointMs)}.`
-                    : "Confirmed — you never said it."}
-                </span>
-                <button type="button" className={styles.quietLink} onClick={handleChange}>
-                  Change
-                </button>
-              </div>
-            )}
+                  {draft?.type === "none" && (
+                    <div className={styles.confirmRow}>
+                      <span className={styles.confirmRowText}>{confirmRowText(draft)}</span>
+                      <button type="button" className={styles.confirmRowBtn} onClick={handleConfirm}>
+                        Confirm
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className={styles.transcriptActions}>
+                  <span className={styles.confirmedLine}>
+                    {run.pointStatus === "marked" && run.pointMs !== null
+                      ? `Confirmed — said it at ${formatClock(run.pointMs)}.`
+                      : "Confirmed — you never said it."}
+                  </span>
+                  <button type="button" className={styles.quietLink} onClick={handleChange}>
+                    Change
+                  </button>
+                </div>
+              )}
+            </div>
 
             {process.env.NODE_ENV === "development" && <DevModelCompare run={run} />}
           </>
@@ -725,7 +844,7 @@ export default function RunReview({
 
       {/* Independent of transcript/point state on purpose — a failed or
           still-running transcription must never block reaching "done". */}
-      <div className={styles.selfRatingRow}>
+      <div className={`${styles.selfRatingRow} ${fixWordsMode ? styles.dimmedInert : ""}`}>
         {run.selfRating === null ? (
           <>
             <h2 className={styles.markQuestion}>Did you say what you meant to say?</h2>

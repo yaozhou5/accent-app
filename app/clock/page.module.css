@@ -784,7 +784,9 @@
 
 /* Fix words mode (Review) — entirely separate from point-picking/mark-flag
    rendering, swapped in while the toggle is on so a tap never has two
-   possible meanings. */
+   possible meanings. Words render as plain inline text (spans, not
+   buttons) so spacing matches the normal transcript exactly — only a faint
+   dotted underline marks them as tappable. */
 .wrap .wordFixSentence {
   margin: 0 0 4px;
   font-family: var(--serif);
@@ -793,54 +795,80 @@
   color: var(--ink);
 }
 .wrap .wordUnit {
-  all: unset;
-  display: inline;
   cursor: pointer;
-  padding: 1px 2px;
-  border-radius: 3px;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+  border-radius: 2px;
 }
 .wrap .wordUnit:hover {
   background: var(--hl);
 }
 /* A word a "Your words" rule fixed automatically — tapping it undoes just this instance. */
 .wrap .wordUnitAuto {
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 3px;
+  text-decoration-color: var(--mark);
 }
-.wrap .wordUnitSelected {
+/* The selected word/span while editing — input + surrounding punctuation share this baseline. */
+.wrap .wordEditSizer {
+  display: inline-grid;
+  vertical-align: baseline;
   background: var(--mark3);
+  border-radius: 2px;
+  padding: 0 1px;
 }
-.wrap .wordEditRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 4px;
-  padding: 4px 8px;
-  background: var(--hl);
-  border-radius: 4px;
+.wrap .wordEditSizer > * {
+  grid-area: 1 / 1;
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.9;
+}
+.wrap .wordEditGhost {
+  visibility: hidden;
+  white-space: pre;
 }
 .wrap .wordEditInput {
-  font-family: var(--sans);
-  font-size: 13.5px;
+  width: 100%;
+  min-width: 1ch;
   color: var(--ink);
-  background: var(--paper, #fff);
-  border: 1px solid var(--muted);
-  border-radius: 3px;
-  padding: 3px 6px;
-  min-width: 80px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  outline: none;
 }
-.wrap .alwaysFixPrompt {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 4px;
-  padding: 4px 8px;
-  font-family: var(--sans);
-  font-size: 12.5px;
-  color: var(--muted);
-  background: var(--hl);
-  border-radius: 4px;
+/* Hidden on desktop — Enter already saves. Shown only on touch-primary
+   devices, where a soft keyboard's Enter key isn't always visible/available. */
+.wrap .wordEditConfirm {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .wrap .wordEditConfirm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 2px;
+    font-size: 13px;
+    color: var(--mark);
+    background: var(--hl);
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+}
+.wrap .wordFixMarks {
+  margin: 0 0 8px;
+}
+.wrap .wordFixMarks .markFlag {
+  cursor: default;
+}
+/* Dims and disables interaction for controls that don't apply while Fix
+   words is on (point-decision controls, mark flags, the rating question). */
+.wrap .dimmedInert {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 /* "Your words" list (/practice) */

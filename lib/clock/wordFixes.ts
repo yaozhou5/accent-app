@@ -11,11 +11,11 @@ export function normalizeWord(word: string): string {
   return word.toLowerCase().replace(/[^\w']/g, "");
 }
 
-function leadingPunct(word: string): string {
+export function leadingPunct(word: string): string {
   return word.match(/^[^\w']+/)?.[0] ?? "";
 }
 
-function trailingPunct(word: string): string {
+export function trailingPunct(word: string): string {
   return word.match(/[^\w']+$/)?.[0] ?? "";
 }
 
