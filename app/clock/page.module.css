@@ -369,6 +369,12 @@
   color: var(--muted);
   margin: 0 0 18px;
 }
+.wrap .pointStatusLine {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
 .wrap .transcript {
   margin: 0;
   font-family: var(--serif);

@@ -280,8 +280,25 @@ export default function RunReview({
         {run.script && transcript && <p className={styles.scriptCompareLabel}>What you said</p>}
         {transcript ? (
           <>
-            <h2 className={styles.markQuestion}>Which sentence is your point?</h2>
-            <p className={styles.markHint}>Tap it. Everything before it is how long it took you to get there.</p>
+            <p className={styles.pointStatusLine}>
+              {isPicking ? (
+                "Tap the sentence where you made your point."
+              ) : run.pointStatus === "marked" && run.pointMs !== null ? (
+                <>
+                  Your point · {formatClock(run.pointMs)} ·{" "}
+                  <button type="button" className={styles.quietLink} onClick={handleChange}>
+                    Change
+                  </button>
+                </>
+              ) : (
+                <>
+                  You never said it ·{" "}
+                  <button type="button" className={styles.quietLink} onClick={handleChange}>
+                    Change
+                  </button>
+                </>
+              )}
+            </p>
 
             {transcript.sentences.length > 0 ? (
               <div className={`${styles.transcript} ph-no-capture`}>
@@ -485,7 +502,7 @@ export default function RunReview({
       <div className={styles.selfRatingRow}>
         {run.selfRating === null ? (
           <>
-            <p className={styles.step}>Did you say what you meant to say?</p>
+            <h2 className={styles.markQuestion}>Did you say what you meant to say?</h2>
             <div className={styles.selfRatingButtons}>
               <button type="button" className={styles.btn} onClick={() => onSetSelfRating("yes")}>
                 Yes
