@@ -781,3 +781,85 @@
     animation: none;
   }
 }
+
+/* Fix words mode (Review) — entirely separate from point-picking/mark-flag
+   rendering, swapped in while the toggle is on so a tap never has two
+   possible meanings. */
+.wrap .wordFixSentence {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.9;
+  color: var(--ink);
+}
+.wrap .wordUnit {
+  all: unset;
+  display: inline;
+  cursor: pointer;
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+.wrap .wordUnit:hover {
+  background: var(--hl);
+}
+/* A word a "Your words" rule fixed automatically — tapping it undoes just this instance. */
+.wrap .wordUnitAuto {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+.wrap .wordUnitSelected {
+  background: var(--mark3);
+}
+.wrap .wordEditRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px;
+  padding: 4px 8px;
+  background: var(--hl);
+  border-radius: 4px;
+}
+.wrap .wordEditInput {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--paper, #fff);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  padding: 3px 6px;
+  min-width: 80px;
+}
+.wrap .alwaysFixPrompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px;
+  padding: 4px 8px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--hl);
+  border-radius: 4px;
+}
+
+/* "Your words" list (/practice) */
+.wrap .yourWordsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wrap .yourWordsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.wrap .yourWordsRow .removeMarkLink {
+  margin-left: 8px;
+}

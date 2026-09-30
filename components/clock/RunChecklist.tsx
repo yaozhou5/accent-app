@@ -6,6 +6,7 @@ import styles from "@/app/clock/page.module.css";
 import { checkWithAi, type AiCheckResult } from "@/lib/clock/aiCheck";
 import { checkSelectedChips, type CriterionStatus } from "@/lib/clock/chipCheck";
 import type { Run } from "@/lib/clock/types";
+import { correctedTranscriptText } from "@/lib/clock/wordFixes";
 
 function statusMark(status: CriterionStatus): string {
   if (status === "met") return "✓";
@@ -17,10 +18,12 @@ export default function RunChecklist({
   run,
   onSetOverride,
   onAiCheckResult,
+  onClearAiCheckResult,
 }: {
   run: Run;
   onSetOverride: (chipId: string, value: boolean) => void;
   onAiCheckResult: (chipId: string, result: AiCheckResult) => void;
+  onClearAiCheckResult: (chipId: string) => void;
 }) {
   const results = checkSelectedChips(run, run.criteriaOverrides);
   const metCount = results.filter((r) => r.status === "met").length;
@@ -34,7 +37,7 @@ export default function RunChecklist({
   // not already in flight.
   useEffect(() => {
     if (!run.transcript) return;
-    const transcriptText = run.transcript.text;
+    const transcriptText = correctedTranscriptText(run.transcript, run.wordFixes);
 
     for (const { chip } of results) {
       if (chip.type !== "ai_check") continue;
@@ -86,6 +89,8 @@ export default function RunChecklist({
       <ul className={styles.challengeList}>
         {results.map(({ chip, status, detail }) => {
           const isChecking = chip.type === "ai_check" && checking.has(chip.id);
+          const staleResult =
+            chip.type === "ai_check" && detail && run.wordFixesVersion > detail.wordFixesVersionAtCheck;
           return (
             <li key={chip.id} className={styles.challengeItem}>
               <span>
@@ -111,6 +116,11 @@ export default function RunChecklist({
                     No
                   </button>
                 </span>
+              )}
+              {staleResult && !isChecking && (
+                <button type="button" className={styles.quietLink} onClick={() => onClearAiCheckResult(chip.id)}>
+                  Re-check with your fixes
+                </button>
               )}
             </li>
           );

@@ -5,7 +5,9 @@ import posthog from "posthog-js";
 import styles from "@/app/clock/page.module.css";
 import { formatClock } from "@/lib/clock/format";
 import { groupMarksBySentence, runwayLandingMs } from "@/lib/clock/marks";
-import type { Mark, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
+import { addPersonalCorrection } from "@/lib/clock/personalCorrections";
+import type { Mark, MarkLabel, Run, SelfRating, TranscribeState, WordFix } from "@/lib/clock/types";
+import { applyFixesToSentence, splitWords, stripEdgePunctuation } from "@/lib/clock/wordFixes";
 import DevModelCompare from "./DevModelCompare";
 
 const LABEL_OPTIONS: { value: MarkLabel; text: string }[] = [
@@ -145,6 +147,112 @@ function MarkListRow({
   );
 }
 
+type RenderUnit = { start: number; end: number; text: string; fix: WordFix | null };
+
+/** Splices a sentence's fix spans into a flat left-to-right sequence of tappable units — plain words and fixed spans alike, each carrying the original word-index range it covers. */
+function buildRenderUnits(words: string[], fixes: WordFix[]): RenderUnit[] {
+  const units: RenderUnit[] = [];
+  const sorted = [...fixes].sort((a, b) => a.start - b.start);
+  let i = 0;
+  for (const fix of sorted) {
+    while (i < fix.start) {
+      units.push({ start: i, end: i, text: words[i], fix: null });
+      i++;
+    }
+    units.push({ start: fix.start, end: fix.end, text: fix.text, fix });
+    i = fix.end + 1;
+  }
+  while (i < words.length) {
+    units.push({ start: i, end: i, text: words[i], fix: null });
+    i++;
+  }
+  return units;
+}
+
+type WordSelection = { sentenceIndex: number; start: number; end: number; draftText: string };
+type ConfirmPrompt = { sentenceIndex: number; start: number; end: number; from: string; to: string };
+
+/** One sentence's Fix-words rendering — plain words and fixed spans as individually tappable units, the inline edit row, and the "Always fix?" prompt. Entirely separate from the point-picking/mark-flag rendering it replaces while Fix words is on. */
+function SentenceWordFixer({
+  sentence,
+  sentenceIndex,
+  fixes,
+  selection,
+  confirmPrompt,
+  onTapUnit,
+  onDraftChange,
+  onSave,
+  onCancel,
+  onConfirmYes,
+  onConfirmNo,
+}: {
+  sentence: { text: string };
+  sentenceIndex: number;
+  fixes: WordFix[];
+  selection: WordSelection | null;
+  confirmPrompt: ConfirmPrompt | null;
+  onTapUnit: (sentenceIndex: number, unit: RenderUnit) => void;
+  onDraftChange: (text: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  onConfirmYes: () => void;
+  onConfirmNo: () => void;
+}) {
+  const words = useMemo(() => splitWords(sentence.text), [sentence.text]);
+  const units = useMemo(() => buildRenderUnits(words, fixes), [words, fixes]);
+  const activeSelection = selection && selection.sentenceIndex === sentenceIndex ? selection : null;
+  const activePrompt = confirmPrompt && confirmPrompt.sentenceIndex === sentenceIndex ? confirmPrompt : null;
+
+  return (
+    <p className={styles.wordFixSentence}>
+      {units.map((unit) => {
+        const selected = activeSelection
+          ? unit.start >= activeSelection.start && unit.end <= activeSelection.end
+          : false;
+        const isAuto = unit.fix?.source === "auto";
+        const classes = [styles.wordUnit, isAuto ? styles.wordUnitAuto : "", selected ? styles.wordUnitSelected : ""]
+          .filter(Boolean)
+          .join(" ");
+        return (
+          <Fragment key={unit.start}>
+            <button type="button" className={classes} onClick={() => onTapUnit(sentenceIndex, unit)}>
+              {unit.text}
+            </button>{" "}
+            {activeSelection && activeSelection.end === unit.end && (
+              <span className={styles.wordEditRow}>
+                <input
+                  type="text"
+                  className={styles.wordEditInput}
+                  value={activeSelection.draftText}
+                  onChange={(e) => onDraftChange(e.target.value)}
+                  autoFocus
+                />
+                <button type="button" className={styles.confirmRowBtn} onClick={onSave}>
+                  Save
+                </button>
+                <button type="button" className={styles.linkBtn} onClick={onCancel}>
+                  Cancel
+                </button>
+              </span>
+            )}
+            {activePrompt && activePrompt.end === unit.end && !activeSelection && (
+              <span className={styles.alwaysFixPrompt}>
+                Always fix &ldquo;{activePrompt.from}&rdquo; → &ldquo;{activePrompt.to}&rdquo;?{" "}
+                <button type="button" className={styles.linkBtn} onClick={onConfirmYes}>
+                  Yes
+                </button>
+                <button type="button" className={styles.linkBtn} onClick={onConfirmNo}>
+                  No
+                </button>
+              </span>
+            )}
+          </Fragment>
+        );
+      })}
+    </p>
+  );
+}
+
 export default function RunReview({
   run,
   audioUrl,
@@ -156,6 +264,8 @@ export default function RunReview({
   onRemoveMark,
   onRestoreMark,
   onSetSelfRating,
+  onSetWordFix,
+  onRemoveWordFix,
 }: {
   run: Run;
   audioUrl: string;
@@ -167,11 +277,16 @@ export default function RunReview({
   onRemoveMark: (markId: string) => void;
   onRestoreMark: (mark: Mark) => void;
   onSetSelfRating: (rating: SelfRating) => void;
+  onSetWordFix: (sentenceIndex: number, fix: WordFix) => void;
+  onRemoveWordFix: (sentenceIndex: number, start: number, end: number) => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [isChanging, setIsChanging] = useState(false);
   const [openMarkId, setOpenMarkId] = useState<string | null>(null);
   const [previewedIndices, setPreviewedIndices] = useState<Set<number>>(new Set());
+  const [fixWordsMode, setFixWordsMode] = useState(false);
+  const [selection, setSelection] = useState<WordSelection | null>(null);
+  const [confirmPrompt, setConfirmPrompt] = useState<ConfirmPrompt | null>(null);
   // Marks removed in the last few seconds, kept around only so Undo can
   // bring them back — the removal itself already happened for real.
   const [removedMarks, setRemovedMarks] = useState<Map<string, Mark>>(new Map());
@@ -242,6 +357,85 @@ export default function RunReview({
   };
 
   const transcript = run.transcript;
+
+  const handleToggleFixWords = () => {
+    setFixWordsMode((prev) => !prev);
+    setSelection(null);
+    setConfirmPrompt(null);
+  };
+
+  function prefillTextFor(sentenceIndex: number, start: number, end: number): string {
+    const fixes = run.wordFixes[sentenceIndex] ?? [];
+    const exact = fixes.find((f) => f.start === start && f.end === end);
+    if (exact) return exact.text;
+    if (!transcript) return "";
+    const words = splitWords(transcript.sentences[sentenceIndex].text);
+    return words.slice(start, end + 1).join(" ");
+  }
+
+  const handleTapUnit = (sentenceIndex: number, unit: RenderUnit) => {
+    if (unit.fix?.source === "auto") {
+      onRemoveWordFix(sentenceIndex, unit.start, unit.end);
+      return;
+    }
+    setConfirmPrompt(null);
+    setSelection((prev) => {
+      if (prev && prev.sentenceIndex === sentenceIndex) {
+        if (unit.end === prev.start - 1) {
+          return {
+            sentenceIndex,
+            start: unit.start,
+            end: prev.end,
+            draftText: prefillTextFor(sentenceIndex, unit.start, prev.end),
+          };
+        }
+        if (unit.start === prev.end + 1) {
+          return {
+            sentenceIndex,
+            start: prev.start,
+            end: unit.end,
+            draftText: prefillTextFor(sentenceIndex, prev.start, unit.end),
+          };
+        }
+        if (unit.start >= prev.start && unit.end <= prev.end) return prev;
+      }
+      return {
+        sentenceIndex,
+        start: unit.start,
+        end: unit.end,
+        draftText: prefillTextFor(sentenceIndex, unit.start, unit.end),
+      };
+    });
+  };
+
+  const handleWordDraftChange = (text: string) => {
+    setSelection((prev) => (prev ? { ...prev, draftText: text } : prev));
+  };
+
+  const handleSaveWordEdit = () => {
+    if (!selection || !transcript) return;
+    const { sentenceIndex, start, end, draftText } = selection;
+    const words = splitWords(transcript.sentences[sentenceIndex].text);
+    const originalRaw = words.slice(start, end + 1).join(" ");
+    onSetWordFix(sentenceIndex, { start, end, text: draftText, source: "manual" });
+    const from = stripEdgePunctuation(originalRaw);
+    const to = stripEdgePunctuation(draftText);
+    if (to.length > 0 && from.toLowerCase() !== to.toLowerCase()) {
+      setConfirmPrompt({ sentenceIndex, start, end, from, to });
+    }
+    setSelection(null);
+  };
+
+  const handleCancelWordEdit = () => setSelection(null);
+
+  const handleConfirmYes = () => {
+    if (!confirmPrompt) return;
+    addPersonalCorrection({ from: confirmPrompt.from, to: confirmPrompt.to }).catch(() => {});
+    setConfirmPrompt(null);
+  };
+
+  const handleConfirmNo = () => setConfirmPrompt(null);
+
   const effectivePointMs = isPicking
     ? draft?.type === "point"
       ? draft.ms
@@ -300,7 +494,36 @@ export default function RunReview({
               )}
             </p>
 
-            {transcript.sentences.length > 0 ? (
+            {transcript.sentences.length > 0 && (
+              <button
+                type="button"
+                className={`${styles.quietLink} ${fixWordsMode ? styles.quietLinkActive : ""}`}
+                onClick={handleToggleFixWords}
+              >
+                Fix words
+              </button>
+            )}
+
+            {fixWordsMode && transcript.sentences.length > 0 ? (
+              <div className={`${styles.transcript} ph-no-capture`}>
+                {transcript.sentences.map((sentence, i) => (
+                  <SentenceWordFixer
+                    key={i}
+                    sentence={sentence}
+                    sentenceIndex={i}
+                    fixes={run.wordFixes[i] ?? []}
+                    selection={selection}
+                    confirmPrompt={confirmPrompt}
+                    onTapUnit={handleTapUnit}
+                    onDraftChange={handleWordDraftChange}
+                    onSave={handleSaveWordEdit}
+                    onCancel={handleCancelWordEdit}
+                    onConfirmYes={handleConfirmYes}
+                    onConfirmNo={handleConfirmNo}
+                  />
+                ))}
+              </div>
+            ) : transcript.sentences.length > 0 ? (
               <div className={`${styles.transcript} ph-no-capture`}>
                 {transcript.sentences.map((sentence, i) => {
                   const sentencePointMs = Math.round(sentence.start * 1000);
@@ -310,6 +533,9 @@ export default function RunReview({
                   const chunkClass = `${styles.chunk} ${active ? styles.chunkActive : ""} ${dimmed ? styles.chunkDimmed : ""} ${isRunway ? styles.chunkRunway : ""}`;
                   const marksHere = marksBySentence.get(i) ?? [];
                   const removedHere = removedMarksBySentence.get(i) ?? [];
+                  // Display-only — any saved word fixes, same text chip checks read. Sentence
+                  // timings/pointMs/marks below all still key off the ORIGINAL sentence.start/end.
+                  const displayText = applyFixesToSentence(sentence.text, run.wordFixes[i] ?? []);
 
                   return (
                     <Fragment key={i}>
@@ -319,14 +545,14 @@ export default function RunReview({
                           className={chunkClass}
                           onClick={() => setDraft({ type: "point", ms: sentencePointMs })}
                         >
-                          {sentence.text}
+                          {displayText}
                         </button>
                       ) : isRunway ? (
                         <button type="button" className={chunkClass} onClick={() => toggleRunwayPreview(i)}>
-                          {sentence.text}
+                          {displayText}
                         </button>
                       ) : (
-                        <span className={`${chunkClass} ${styles.chunkStatic}`}>{sentence.text}</span>
+                        <span className={`${chunkClass} ${styles.chunkStatic}`}>{displayText}</span>
                       )}
                       {marksHere.map((mark) => (
                         <MarkFlag

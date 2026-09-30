@@ -12,6 +12,7 @@ import { formatClock, isToday } from "@/lib/clock/format";
 import { getModelForDevice } from "@/lib/clock/model";
 import { hasSeenModelIntro, markModelIntroSeen } from "@/lib/clock/modelIntro";
 import { computeStats, mergeForChart } from "@/lib/clock/progress";
+import { loadPersonalCorrections } from "@/lib/clock/personalCorrections";
 import { loadScriptDraft, saveScriptDraft } from "@/lib/clock/scriptDraft";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
@@ -20,7 +21,8 @@ import {
   markTranscriptionStarted,
   takeStaleTranscriptionRunId,
 } from "@/lib/clock/transcriptionGuard";
-import type { ChartRun, Mark, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
+import type { ChartRun, Mark, MarkLabel, Run, SelfRating, TranscribeState, WordFix } from "@/lib/clock/types";
+import { autoApplyPersonalCorrections, setWordFixSpan, removeWordFixSpan } from "@/lib/clock/wordFixes";
 import { createClient } from "@/lib/supabase/client";
 import { fetchPracticeRuns, syncPracticeRuns } from "@/lib/supabase/practice-runs";
 import ChipRow from "./ChipRow";
@@ -29,6 +31,7 @@ import Recorder, { type FinishedRecording, type RecorderHandle } from "./Recorde
 import RunItem from "./RunItem";
 import ScriptStep from "./ScriptStep";
 import TimeToPointChart from "./TimeToPointChart";
+import YourWordsList from "./YourWordsList";
 
 type SaveFailure = { downloadUrl: string; durationMs: number; errorText: string };
 
@@ -184,8 +187,14 @@ export default function ClockApp() {
           if (usedNoCacheFallback) setNoCacheNotice(true);
         }
       );
-      setRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, transcript } : r)));
-      updateRun(run.id, { transcript }).catch(() => {});
+      // Auto-fix against the user's own corrections list, read fresh here
+      // rather than cached at mount so a rule added between takes applies
+      // immediately. wordFixesVersion deliberately stays untouched by this
+      // initial application — nothing has checked this run yet.
+      const corrections = await loadPersonalCorrections();
+      const wordFixes = autoApplyPersonalCorrections(transcript, corrections);
+      setRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, transcript, wordFixes } : r)));
+      updateRun(run.id, { transcript, wordFixes }).catch(() => {});
       setTranscribeStates((s) => {
         const next = { ...s };
         delete next[run.id];
@@ -246,6 +255,8 @@ export default function ClockApp() {
         marks: [],
         selfRating: null,
         listenedAt: null,
+        wordFixes: {},
+        wordFixesVersion: 0,
       };
       try {
         await saveRun(run);
@@ -331,7 +342,12 @@ export default function ClockApp() {
 
   const handleSetAiCheckResult = useCallback(
     (runId: string, chipId: string, result: AiCheckResult) => {
-      const computePatch = (r: Run) => ({ aiCheckResults: { ...r.aiCheckResults, [chipId]: result } });
+      // Stamped with the run's CURRENT wordFixesVersion (read fresh, not
+      // from closure) so a fix made after this check — but before this
+      // result actually lands — still marks the result stale, not current.
+      const computePatch = (r: Run) => ({
+        aiCheckResults: { ...r.aiCheckResults, [chipId]: { ...result, wordFixesVersionAtCheck: r.wordFixesVersion } },
+      });
       setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
       updateRun(runId, computePatch)
         .then((updated) => {
@@ -341,6 +357,20 @@ export default function ClockApp() {
     },
     [signedIn]
   );
+
+  // Deletes one chip's cached ai_check result so RunChecklist's existing
+  // "no result yet" guard lets its effect fire again exactly once — the
+  // only way aiCheckResults ever loses an entry, so this is the only path
+  // that can trigger a re-check. Never fires on its own.
+  const handleClearAiCheckResult = useCallback((runId: string, chipId: string) => {
+    const computePatch = (r: Run) => {
+      const next = { ...r.aiCheckResults };
+      delete next[chipId];
+      return { aiCheckResults: next };
+    };
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
 
   // Nothing below this point syncs to Supabase — marks, labels, and the
   // self-rating stay local, per the "no server calls in this flow" rule.
@@ -378,6 +408,27 @@ export default function ClockApp() {
   // label, so it anchors to the same sentence it always did.
   const handleRestoreMark = useCallback((runId: string, mark: Mark) => {
     const computePatch = (r: Run) => ({ marks: [...r.marks, mark] });
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
+
+  // Display-only — never touches pointMs/marks/sentence timings. Bumps
+  // wordFixesVersion so a stale ai_check result can tell it apart from a
+  // fix made before the check ran (see handleSetAiCheckResult).
+  const handleSetWordFix = useCallback((runId: string, sentenceIndex: number, fix: WordFix) => {
+    const computePatch = (r: Run) => ({
+      wordFixes: { ...r.wordFixes, [sentenceIndex]: setWordFixSpan(r.wordFixes[sentenceIndex] ?? [], fix) },
+      wordFixesVersion: r.wordFixesVersion + 1,
+    });
+    setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
+    updateRun(runId, computePatch).catch(() => {});
+  }, []);
+
+  const handleRemoveWordFix = useCallback((runId: string, sentenceIndex: number, start: number, end: number) => {
+    const computePatch = (r: Run) => ({
+      wordFixes: { ...r.wordFixes, [sentenceIndex]: removeWordFixSpan(r.wordFixes[sentenceIndex] ?? [], start, end) },
+      wordFixesVersion: r.wordFixesVersion + 1,
+    });
     setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...computePatch(r) } : r)));
     updateRun(runId, computePatch).catch(() => {});
   }, []);
@@ -529,16 +580,21 @@ export default function ClockApp() {
               onGoAgain={handleGoAgain}
               onSetCriterionOverride={handleSetCriterionOverride}
               onAiCheckResult={handleSetAiCheckResult}
+              onClearAiCheckResult={handleClearAiCheckResult}
               onAddMark={handleAddMark}
               onDoneListening={handleDoneListening}
               onSetMarkLabel={handleSetMarkLabel}
               onRemoveMark={handleRemoveMark}
               onRestoreMark={handleRestoreMark}
               onSetSelfRating={handleSetSelfRating}
+              onSetWordFix={handleSetWordFix}
+              onRemoveWordFix={handleRemoveWordFix}
             />
           ))}
         </div>
       )}
+
+      <YourWordsList />
     </div>
   );
 }

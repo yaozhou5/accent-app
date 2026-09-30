@@ -1,6 +1,7 @@
 import { getChipById } from "./chips";
 import type { Chip } from "./chips";
 import type { Run } from "./types";
+import { correctedTranscriptText } from "./wordFixes";
 
 export type CriterionStatus = "met" | "not_met" | "needs_confirmation";
 
@@ -8,7 +9,7 @@ export type CriterionResult = {
   chip: Chip;
   status: CriterionStatus;
   /** Only set for ai_check chips once a result exists, independent of any override. */
-  detail?: { reason: string; quote: string | null };
+  detail?: { reason: string; quote: string | null; wordFixesVersionAtCheck: number };
 };
 
 function normalizeTokens(text: string): string[] {
@@ -71,15 +72,19 @@ export function checkChip(chip: Chip, run: Run, overrides: Record<string, boolea
     case "point_before_half":
       if (run.pointStatus !== "marked" || run.pointMs === null) return "not_met";
       return run.pointMs < run.durationMs / 2 ? "met" : "not_met";
-    case "use_word":
+    case "use_word": {
       if (!run.transcript) return "needs_confirmation";
-      return transcriptContainsPhrase(run.transcript.text, chip.word) ? "met" : "needs_confirmation";
-    case "avoid_words":
+      const text = correctedTranscriptText(run.transcript, run.wordFixes);
+      return transcriptContainsPhrase(text, chip.word) ? "met" : "needs_confirmation";
+    }
+    case "avoid_words": {
       // No confirmation step here, unlike use_word: a missed detection
       // just means the safe default (not flagged) holds, not a false
       // failure the user has to correct.
       if (!run.transcript) return "needs_confirmation";
-      return chip.words.some((w) => transcriptContainsPhrase(run.transcript!.text, w)) ? "not_met" : "met";
+      const text = correctedTranscriptText(run.transcript, run.wordFixes);
+      return chip.words.some((w) => transcriptContainsPhrase(text, w)) ? "not_met" : "met";
+    }
     case "ai_check": {
       const result = run.aiCheckResults[chip.id];
       if (!result) return "needs_confirmation";

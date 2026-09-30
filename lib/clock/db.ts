@@ -62,7 +62,9 @@ async function toStoredRun(run: Run): Promise<StoredRun> {
  * `listenedAt` — a null `listenedAt` is also how a genuinely-new unreviewed
  * run is told apart from one of these older, already-decided runs.
  * Runs saved before ArrayBuffer storage still hold `blob` directly — either
- * way this returns a run with a real Blob.
+ * way this returns a run with a real Blob. Runs saved before word fixes
+ * existed have no `wordFixes`/`wordFixesVersion`, and any existing
+ * aiCheckResults entries predate `wordFixesVersionAtCheck`.
  */
 function normalizeRun(run: AnyStoredRun): Run {
   let next: Run;
@@ -83,6 +85,19 @@ function normalizeRun(run: AnyStoredRun): Run {
   if (next.marks === undefined) next = { ...next, marks: [] };
   if (next.selfRating === undefined) next = { ...next, selfRating: null };
   if (next.listenedAt === undefined) next = { ...next, listenedAt: null };
+  if (next.wordFixes === undefined) next = { ...next, wordFixes: {} };
+  if (next.wordFixesVersion === undefined) next = { ...next, wordFixesVersion: 0 };
+  if (Object.values(next.aiCheckResults).some((r) => r.wordFixesVersionAtCheck === undefined)) {
+    next = {
+      ...next,
+      aiCheckResults: Object.fromEntries(
+        Object.entries(next.aiCheckResults).map(([id, r]) => [
+          id,
+          { ...r, wordFixesVersionAtCheck: r.wordFixesVersionAtCheck ?? 0 },
+        ])
+      ),
+    };
+  }
   return next;
 }
 

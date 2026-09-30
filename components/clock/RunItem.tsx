@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import styles from "@/app/clock/page.module.css";
 import type { AiCheckResult } from "@/lib/clock/aiCheck";
 import { formatClock, formatDate } from "@/lib/clock/format";
-import type { Mark, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
+import type { Mark, MarkLabel, Run, SelfRating, TranscribeState, WordFix } from "@/lib/clock/types";
 import DevModelCompare from "./DevModelCompare";
 import RunChecklist from "./RunChecklist";
 import RunListen from "./RunListen";
@@ -38,12 +38,15 @@ export default function RunItem({
   onGoAgain,
   onSetCriterionOverride,
   onAiCheckResult,
+  onClearAiCheckResult,
   onAddMark,
   onDoneListening,
   onSetMarkLabel,
   onRemoveMark,
   onRestoreMark,
   onSetSelfRating,
+  onSetWordFix,
+  onRemoveWordFix,
 }: {
   run: Run;
   repNumber: number;
@@ -55,12 +58,15 @@ export default function RunItem({
   onGoAgain: () => void;
   onSetCriterionOverride: (runId: string, criterionId: string, value: boolean) => void;
   onAiCheckResult: (runId: string, chipId: string, result: AiCheckResult) => void;
+  onClearAiCheckResult: (runId: string, chipId: string) => void;
   onAddMark: (runId: string, ms: number) => void;
   onDoneListening: (runId: string) => void;
   onSetMarkLabel: (runId: string, markId: string, label: MarkLabel | null) => void;
   onRemoveMark: (runId: string, markId: string) => void;
   onRestoreMark: (runId: string, mark: Mark) => void;
   onSetSelfRating: (runId: string, rating: SelfRating) => void;
+  onSetWordFix: (runId: string, sentenceIndex: number, fix: WordFix) => void;
+  onRemoveWordFix: (runId: string, sentenceIndex: number, start: number, end: number) => void;
 }) {
   const audioUrl = useMemo(() => URL.createObjectURL(run.blob), [run.blob]);
 
@@ -156,6 +162,8 @@ export default function RunItem({
           onRemoveMark={(markId) => onRemoveMark(run.id, markId)}
           onRestoreMark={(mark) => onRestoreMark(run.id, mark)}
           onSetSelfRating={(rating) => onSetSelfRating(run.id, rating)}
+          onSetWordFix={(sentenceIndex, fix) => onSetWordFix(run.id, sentenceIndex, fix)}
+          onRemoveWordFix={(sentenceIndex, start, end) => onRemoveWordFix(run.id, sentenceIndex, start, end)}
         />
       )}
 
@@ -307,6 +315,7 @@ export default function RunItem({
           run={run}
           onSetOverride={(chipId, value) => onSetCriterionOverride(run.id, chipId, value)}
           onAiCheckResult={(chipId, result) => onAiCheckResult(run.id, chipId, result)}
+          onClearAiCheckResult={(chipId) => onClearAiCheckResult(run.id, chipId)}
         />
       )}
 
