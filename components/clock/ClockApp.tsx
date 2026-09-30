@@ -20,7 +20,7 @@ import {
   markTranscriptionStarted,
   takeStaleTranscriptionRunId,
 } from "@/lib/clock/transcriptionGuard";
-import type { ChartRun, Run, TranscribeState } from "@/lib/clock/types";
+import type { ChartRun, MarkLabel, Run, SelfRating, TranscribeState } from "@/lib/clock/types";
 import { createClient } from "@/lib/supabase/client";
 import { fetchPracticeRuns, syncPracticeRuns } from "@/lib/supabase/practice-runs";
 import ChipRow from "./ChipRow";
@@ -35,6 +35,12 @@ type SaveFailure = { downloadUrl: string; durationMs: number; errorText: string 
 function describeError(err: unknown): string {
   if (err instanceof DOMException || err instanceof Error) return `${err.name}: ${err.message}`;
   return String(err);
+}
+
+function newMarkId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `mark-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 /** "First rep: 0:41. Latest: 0:13." — only when both ends of the run history have a marked point. */
@@ -332,6 +338,69 @@ export default function ClockApp() {
     [runs, signedIn]
   );
 
+  // Nothing below this point syncs to Supabase — marks, labels, and the
+  // self-rating stay local, per the "no server calls in this flow" rule.
+  const handleAddMark = useCallback(
+    (runId: string, ms: number) => {
+      const updated = runs.map((r) =>
+        r.id === runId ? { ...r, marks: [...r.marks, { id: newMarkId(), ms, label: null }] } : r
+      );
+      setRuns(updated);
+      const run = updated.find((r) => r.id === runId);
+      if (run) updateRun(runId, { marks: run.marks }).catch(() => {});
+    },
+    [runs]
+  );
+
+  const handleDoneListening = useCallback(
+    (runId: string) => {
+      const listenedAt = Date.now();
+      const updated = runs.map((r) => (r.id === runId ? { ...r, listenedAt } : r));
+      setRuns(updated);
+      updateRun(runId, { listenedAt }).catch(() => {});
+      const run = updated.find((r) => r.id === runId);
+      posthog.capture("review_listen_done", { mark_count: run?.marks.length ?? 0 });
+    },
+    [runs]
+  );
+
+  const handleSetMarkLabel = useCallback(
+    (runId: string, markId: string, label: MarkLabel | null) => {
+      const updated = runs.map((r) =>
+        r.id === runId ? { ...r, marks: r.marks.map((m) => (m.id === markId ? { ...m, label } : m)) } : r
+      );
+      setRuns(updated);
+      const run = updated.find((r) => r.id === runId);
+      if (run) updateRun(runId, { marks: run.marks }).catch(() => {});
+    },
+    [runs]
+  );
+
+  const handleRemoveMark = useCallback(
+    (runId: string, markId: string) => {
+      const updated = runs.map((r) => (r.id === runId ? { ...r, marks: r.marks.filter((m) => m.id !== markId) } : r));
+      setRuns(updated);
+      const run = updated.find((r) => r.id === runId);
+      if (run) updateRun(runId, { marks: run.marks }).catch(() => {});
+    },
+    [runs]
+  );
+
+  const handleSetSelfRating = useCallback(
+    (runId: string, rating: SelfRating) => {
+      const updated = runs.map((r) => (r.id === runId ? { ...r, selfRating: rating } : r));
+      setRuns(updated);
+      updateRun(runId, { selfRating: rating }).catch(() => {});
+      const run = updated.find((r) => r.id === runId);
+      posthog.capture("review_rated", {
+        rating,
+        mark_count: run?.marks.length ?? 0,
+        labelled_count: run?.marks.filter((m) => m.label !== null).length ?? 0,
+      });
+    },
+    [runs]
+  );
+
   const handleContinueFromIntro = useCallback(() => {
     markModelIntroSeen();
     setIntroSeen(true);
@@ -465,6 +534,11 @@ export default function ClockApp() {
               onGoAgain={handleGoAgain}
               onSetCriterionOverride={handleSetCriterionOverride}
               onAiCheckResult={handleSetAiCheckResult}
+              onAddMark={handleAddMark}
+              onDoneListening={handleDoneListening}
+              onSetMarkLabel={handleSetMarkLabel}
+              onRemoveMark={handleRemoveMark}
+              onSetSelfRating={handleSetSelfRating}
             />
           ))}
         </div>
