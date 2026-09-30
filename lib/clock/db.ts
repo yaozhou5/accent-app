@@ -103,13 +103,25 @@ export async function saveRun(run: Run): Promise<void> {
   await set(run.id, await toStoredRun(run), s);
 }
 
-export async function updateRun(id: string, patch: Partial<Run>): Promise<Run | undefined> {
+/**
+ * `patch` may be a function of the current record instead of a static
+ * object — needed by any caller deriving the new value from a field that
+ * already holds a collection (marks, criteriaOverrides, aiCheckResults):
+ * reading that field from React state risks a stale snapshot (see
+ * ClockApp.tsx), but `existing` here is always the record actually on
+ * disk, read fresh on every call.
+ */
+export async function updateRun(
+  id: string,
+  patch: Partial<Run> | ((existing: Run) => Partial<Run>)
+): Promise<Run | undefined> {
   const s = store_();
   if (!s) throw new ClockDbUnavailableError();
   const existingRaw = await get<AnyStoredRun>(id, s);
   if (!existingRaw) return undefined;
   const existing = normalizeRun(existingRaw);
-  const updated: Run = { ...existing, ...patch };
+  const resolvedPatch = typeof patch === "function" ? patch(existing) : patch;
+  const updated: Run = { ...existing, ...resolvedPatch };
   await set(id, await toStoredRun(updated), s);
   return updated;
 }
