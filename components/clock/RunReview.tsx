@@ -95,6 +95,46 @@ function MarkFlag({
   );
 }
 
+function MarkListRow({
+  mark,
+  isOpen,
+  onToggleOpen,
+  onSetLabel,
+  onRemove,
+}: {
+  mark: Mark;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onSetLabel: (label: MarkLabel | null) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <li className={styles.markListItem}>
+      <button type="button" className={styles.markListTime} onClick={onToggleOpen}>
+        {formatClock(mark.ms)}
+        {mark.label ? ` — ${LABEL_TEXT[mark.label]}` : ""}
+      </button>
+      {isOpen && (
+        <span className={styles.markLabelPicker}>
+          {LABEL_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.linkBtn} ${mark.label === option.value ? styles.chipSelected : ""}`}
+              onClick={() => onSetLabel(mark.label === option.value ? null : option.value)}
+            >
+              {option.text}
+            </button>
+          ))}
+          <button type="button" className={styles.deleteBtn} onClick={onRemove}>
+            Remove
+          </button>
+        </span>
+      )}
+    </li>
+  );
+}
+
 export default function RunReview({
   run,
   audioUrl,
@@ -325,26 +365,53 @@ export default function RunReview({
 
             {process.env.NODE_ENV === "development" && <DevModelCompare run={run} />}
           </>
-        ) : transcribeState.phase === "idle" ? (
-          <button className={styles.btn} onClick={onTranscribe}>
-            Transcribe
-          </button>
-        ) : transcribeState.phase === "downloading" ? (
-          <p className={styles.transcribeHint}>
-            Downloading {transcribeState.modelLabel}
-            {transcribeState.percent !== null ? ` — ${transcribeState.percent}%` : "…"}
-          </p>
-        ) : transcribeState.phase === "transcribing" ? (
-          <p className={styles.transcribeHint}>Transcribing with {transcribeState.modelLabel}…</p>
         ) : (
-          <div className={styles.transcribeRow}>
-            <p className={styles.transcribeError}>
-              Transcription failed: {transcribeState.message} Your recording is still saved.
-            </p>
-            <button className={styles.btn} onClick={onTranscribe}>
-              Try again
-            </button>
-          </div>
+          <>
+            {transcribeState.phase === "idle" ? (
+              <button className={styles.btn} onClick={onTranscribe}>
+                Transcribe
+              </button>
+            ) : transcribeState.phase === "downloading" ? (
+              <p className={styles.transcribeHint}>
+                Downloading {transcribeState.modelLabel}
+                {transcribeState.percent !== null ? ` — ${transcribeState.percent}%` : "…"}
+              </p>
+            ) : transcribeState.phase === "transcribing" ? (
+              <p className={styles.transcribeHint}>Transcribing with {transcribeState.modelLabel}…</p>
+            ) : (
+              <div className={styles.transcribeRow}>
+                <p className={styles.transcribeError}>
+                  Transcription failed: {transcribeState.message} Your recording is still saved.
+                </p>
+                <button className={styles.btn} onClick={onTranscribe}>
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {/* No transcript yet to anchor flags to — a plain list instead.
+                Switches to sentence flags automatically once transcript arrives. */}
+            {run.marks.length > 0 && (
+              <div className={styles.markListWrap}>
+                <p className={styles.scriptCompareLabel}>Marks</p>
+                <ul className={styles.markList}>
+                  {run.marks.map((mark) => (
+                    <MarkListRow
+                      key={mark.id}
+                      mark={mark}
+                      isOpen={openMarkId === mark.id}
+                      onToggleOpen={() => setOpenMarkId(openMarkId === mark.id ? null : mark.id)}
+                      onSetLabel={(label) => onSetMarkLabel(mark.id, label)}
+                      onRemove={() => {
+                        onRemoveMark(mark.id);
+                        setOpenMarkId(null);
+                      }}
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
 
