@@ -1,12 +1,14 @@
-import { CHALLENGES } from "./challenges";
-import type { Challenge, Criterion } from "./challenges";
+import { getChipById } from "./chips";
+import type { Chip } from "./chips";
 import type { Run } from "./types";
 
 export type CriterionStatus = "met" | "not_met" | "needs_confirmation";
 
 export type CriterionResult = {
-  criterion: Criterion;
+  chip: Chip;
   status: CriterionStatus;
+  /** Only set for ai_check chips once a result exists, independent of any override. */
+  detail?: { reason: string; quote: string | null };
 };
 
 function normalizeTokens(text: string): string[] {
@@ -22,7 +24,9 @@ function normalizeTokens(text: string): string[] {
  * the transcript — not a substring check, which would false-positive on
  * partial words ("cat" inside "category") and can't express phrase
  * boundaries ("kind of" matching only when those two words are adjacent,
- * not whenever both appear anywhere in the transcript).
+ * not whenever both appear anywhere in the transcript). Also used
+ * server-side to verify an AI check's quoted phrase actually appears in
+ * the transcript, tolerant of case/punctuation/whitespace differences.
  *
  * For a single-word phrase only, also tolerates Whisper splitting one
  * word into two tokens ("upend" -> "up end") — confirmed against the
@@ -54,51 +58,44 @@ export function transcriptContainsPhrase(text: string, phrase: string): boolean 
 }
 
 /**
- * overrides holds the user's own answers — both for `manual` criteria and
- * for a `use_word` that automatic detection couldn't confirm — keyed by
- * criterion id. An override always wins over automatic detection.
+ * overrides holds the user's own answers — both for an ai_check the AI
+ * call couldn't resolve, and for a use_word it couldn't confirm — keyed
+ * by chip id. An override always wins over automatic detection.
  */
-export function checkCriterion(criterion: Criterion, run: Run, overrides: Record<string, boolean>): CriterionStatus {
-  if (criterion.id in overrides) return overrides[criterion.id] ? "met" : "not_met";
+export function checkChip(chip: Chip, run: Run, overrides: Record<string, boolean>): CriterionStatus {
+  if (chip.id in overrides) return overrides[chip.id] ? "met" : "not_met";
 
-  switch (criterion.type) {
+  switch (chip.type) {
     case "max_duration":
-      return run.durationMs <= criterion.seconds * 1000 ? "met" : "not_met";
+      return run.durationMs <= chip.seconds * 1000 ? "met" : "not_met";
     case "point_before_half":
       if (run.pointStatus !== "marked" || run.pointMs === null) return "not_met";
       return run.pointMs < run.durationMs / 2 ? "met" : "not_met";
     case "use_word":
       if (!run.transcript) return "needs_confirmation";
-      return transcriptContainsPhrase(run.transcript.text, criterion.word) ? "met" : "needs_confirmation";
+      return transcriptContainsPhrase(run.transcript.text, chip.word) ? "met" : "needs_confirmation";
     case "avoid_words":
       // No confirmation step here, unlike use_word: a missed detection
       // just means the safe default (not flagged) holds, not a false
       // failure the user has to correct.
       if (!run.transcript) return "needs_confirmation";
-      return criterion.words.some((w) => transcriptContainsPhrase(run.transcript!.text, w)) ? "not_met" : "met";
-    case "manual":
-      return "needs_confirmation";
+      return chip.words.some((w) => transcriptContainsPhrase(run.transcript!.text, w)) ? "not_met" : "met";
+    case "ai_check": {
+      const result = run.aiCheckResults[chip.id];
+      if (!result) return "needs_confirmation";
+      return result.met ? "met" : "not_met";
+    }
   }
 }
 
-export function checkAllCriteria(
-  challenge: Challenge,
-  run: Run,
-  overrides: Record<string, boolean>
-): CriterionResult[] {
-  return challenge.criteria.map((criterion) => ({ criterion, status: checkCriterion(criterion, run, overrides) }));
-}
-
-/**
- * The challenge whose weekStart is the most recent one on or before
- * today. Config is hand-edited with no admin UI — this means a week
- * nobody got around to adding a new entry for just keeps the previous
- * one showing, rather than the card disappearing.
- */
-export function getCurrentChallenge(now: Date = new Date()): Challenge | null {
-  const todayIso = now.toISOString().slice(0, 10);
-  const eligible = CHALLENGES.filter((c) => c.weekStart <= todayIso).sort((a, b) =>
-    a.weekStart < b.weekStart ? 1 : -1
-  );
-  return eligible[0] ?? null;
+/** Only the chips this run actually selected — resolved from their ids, frozen at record time. */
+export function checkSelectedChips(run: Run, overrides: Record<string, boolean>): CriterionResult[] {
+  return run.selectedChipIds
+    .map((id) => getChipById(id))
+    .filter((c): c is Chip => Boolean(c))
+    .map((chip) => ({
+      chip,
+      status: checkChip(chip, run, overrides),
+      detail: run.aiCheckResults[chip.id],
+    }));
 }
