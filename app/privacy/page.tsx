@@ -53,9 +53,9 @@ export default function PrivacyPage() {
         </p>
         <p>
           If you use the practice page and choose to save your progress, a few numbers about each practice — when it
-          happened, how long it took, how long until you said what you do, and, for weeks with a challenge, which
-          challenge it was and which of its criteria you met — are sent to our server so you can see your progress over
-          time. The recording and transcript themselves never are.
+          happened, how long it took, how long until you said what you do, and, if you selected any challenge chips,
+          which ones and which you met — are sent to our server so you can see your progress over time. The recording
+          and transcript themselves never are.
         </p>
 
         <h2>What we process, and why</h2>
@@ -89,8 +89,8 @@ export default function PrivacyPage() {
             </tr>
             <tr>
               <td>
-                Practice run stats (timestamp, duration, time-to-point, which weekly challenge and which of its criteria
-                you met) — only if you save your progress
+                Practice run stats (timestamp, duration, time-to-point, which challenge chips you selected and which you
+                met) — only if you save your progress
               </td>
               <td>To show your practice history over time</td>
               <td>Contract (Art. 6(1)(b))</td>
@@ -150,8 +150,9 @@ export default function PrivacyPage() {
         <h2>When you use an AI feature</h2>
         <p>
           When you ask Accent to review, coach, suggest or generate, the text involved is sent to Anthropic, which runs
-          the AI model. That can include your draft or note, your voice profile and short excerpts of your past drafts.
-          Your email address and account ID are never sent.
+          the AI model. That can include your draft or note, your voice profile and short excerpts of your past drafts,
+          and, if you select an AI-checked practice chip, that run&apos;s transcript — to check whether you met the
+          chip, not stored by us. Your email address and account ID are never sent.
         </p>
         <p>
           Anthropic processes this under its commercial terms, which do not allow it to train models on your content. We

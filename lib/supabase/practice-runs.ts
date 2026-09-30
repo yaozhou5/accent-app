@@ -1,18 +1,14 @@
 import { createClient } from "./client";
-import { checkAllCriteria } from "@/lib/clock/challengeCheck";
-import { getChallengeById } from "@/lib/clock/challenges";
+import { checkSelectedChips } from "@/lib/clock/chipCheck";
 import { listRuns } from "@/lib/clock/db";
 import { TARGET_MS } from "@/lib/clock/recording";
 import type { ChartRun, Run } from "@/lib/clock/types";
 
-/** Criterion ids currently met — nothing else about the run's content leaves the device. */
-function metCriteriaIds(run: Run): string[] {
-  if (!run.challengeId) return [];
-  const challenge = getChallengeById(run.challengeId);
-  if (!challenge) return [];
-  return checkAllCriteria(challenge, run, run.criteriaOverrides)
+/** Selected chip ids that are currently met — nothing else about the run's content leaves the device. */
+function metChipIds(run: Run): string[] {
+  return checkSelectedChips(run, run.criteriaOverrides)
     .filter((r) => r.status === "met")
-    .map((r) => r.criterion.id);
+    .map((r) => r.chip.id);
 }
 
 function toRow(run: Run, userId: string) {
@@ -24,8 +20,8 @@ function toRow(run: Run, userId: string) {
     point_ms: run.pointMs,
     point_status: run.pointStatus,
     target_ms: TARGET_MS,
-    challenge_id: run.challengeId,
-    criteria_met: metCriteriaIds(run),
+    selected_chip_ids: run.selectedChipIds,
+    criteria_met: metChipIds(run),
   };
 }
 
