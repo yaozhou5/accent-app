@@ -21,6 +21,16 @@ export default function RunListen({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMs, setCurrentMs] = useState(0);
 
+  // The listener-setup effect below only runs once (see its own comment),
+  // so `ended` must call through a ref, not the prop directly — otherwise
+  // it permanently captures whatever onDoneListening was at mount, before
+  // this run had any marks. No dependency array — kept current after every
+  // render, not just when onDoneListening's identity changes.
+  const onDoneListeningRef = useRef(onDoneListening);
+  useEffect(() => {
+    onDoneListeningRef.current = onDoneListening;
+  });
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -29,7 +39,7 @@ export default function RunListen({
     const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
       setIsPlaying(false);
-      onDoneListening();
+      onDoneListeningRef.current();
     };
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("play", handlePlay);
@@ -41,10 +51,9 @@ export default function RunListen({
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
     };
-    // onDoneListening is a stable useCallback from ClockApp for the
-    // lifetime of this run — safe to attach once rather than re-bind
-    // listeners on every parent re-render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Runs once — attaching directly to the audio element's own events,
+    // not to a value that changes per render, so there's nothing here that
+    // should ever need to re-subscribe.
   }, []);
 
   const togglePlay = () => {
