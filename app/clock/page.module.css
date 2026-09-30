@@ -608,6 +608,100 @@
   gap: 8px;
 }
 
+/* Listen back (Step 1) */
+.wrap .listenAudio {
+  display: none;
+}
+.wrap .listenHint {
+  margin: 10px 2px 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.wrap .listenControls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+.wrap .markBtn {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--card);
+  background: var(--flag);
+  border: 0;
+  padding: 14px 28px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.wrap .markBtn:hover {
+  opacity: 0.9;
+}
+
+/* Review (Step 2) — marks, labels, runway */
+.wrap .markFlagWrap {
+  position: relative;
+  display: inline-block;
+  margin: 0 4px;
+}
+.wrap .markFlag {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--flag);
+  background: none;
+  border: 1px solid var(--flag);
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wrap .markFlag:hover {
+  background: var(--hl);
+}
+.wrap .markLabelPicker {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: max-content;
+  max-width: 260px;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+.wrap .chunkRunway {
+  opacity: 0.55;
+  cursor: pointer;
+}
+.wrap .chunkRunway:hover {
+  opacity: 0.8;
+  background: var(--hl);
+}
+.wrap .runwayPreview {
+  flex-basis: 100%;
+  margin: 2px 0 8px;
+  font-size: 13px;
+  color: var(--mark);
+}
+
+/* Self-rating */
+.wrap .selfRatingRow {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.wrap .selfRatingButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .wrap footer {
   border-top: 1px solid var(--rule);
   margin-top: 48px;
