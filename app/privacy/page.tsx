@@ -127,7 +127,10 @@ export default function PrivacyPage() {
               <td>With the note</td>
             </tr>
             <tr>
-              <td>Analytics without cookies (pages viewed, buttons clicked)</td>
+              <td>
+                Analytics without cookies (pages viewed, buttons clicked, and practice counts such as number of takes
+                and days practised — never what you said)
+              </td>
               <td>To see which parts of the site work</td>
               <td>Legitimate interest (Art. 6(1)(f))</td>
               <td>Up to 1 year</td>

@@ -13,6 +13,7 @@ import { getModelForDevice } from "@/lib/clock/model";
 import { hasSeenModelIntro, markModelIntroSeen } from "@/lib/clock/modelIntro";
 import { computeStats, mergeForChart } from "@/lib/clock/progress";
 import { loadPersonalCorrections } from "@/lib/clock/personalCorrections";
+import { computeRetentionProps } from "@/lib/clock/retention";
 import { loadScriptDraft, saveScriptDraft } from "@/lib/clock/scriptDraft";
 import type { TranscribeProgress } from "@/lib/clock/transcriberClient";
 import { transcribe } from "@/lib/clock/transcriberClient";
@@ -263,6 +264,16 @@ export default function ClockApp() {
         setRuns((prev) => [run, ...prev]);
         setSaveFailure(null);
         void runTranscription(run, preDecodedAudio);
+        // Fires even if the user never reaches Review (see review_rated
+        // below) — lets retention be measured off every saved recording,
+        // not just ones someone sticks around to rate. Counts only, same
+        // capture path as every other event here.
+        listRuns()
+          .then((allRuns) => {
+            const retention = computeRetentionProps(allRuns, id);
+            posthog.capture("run_recorded", { duration_ms: durationMs, ...retention });
+          })
+          .catch(() => {});
       } catch (err) {
         console.error("Failed to save run:", err);
         if (navigator.storage?.estimate) {
@@ -437,13 +448,17 @@ export default function ClockApp() {
     const patch = { selfRating: rating };
     setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, ...patch } : r)));
     updateRun(runId, patch)
-      .then((updated) =>
+      .then(async (updated) => {
+        if (!updated) return;
+        const allRuns = await listRuns();
+        const retention = computeRetentionProps(allRuns, runId);
         posthog.capture("review_rated", {
           rating,
-          mark_count: updated?.marks.length ?? 0,
-          labelled_count: updated?.marks.filter((m) => m.label !== null).length ?? 0,
-        })
-      )
+          mark_count: updated.marks.length,
+          labelled_count: updated.marks.filter((m) => m.label !== null).length,
+          ...retention,
+        });
+      })
       .catch(() => {});
   }, []);
 
