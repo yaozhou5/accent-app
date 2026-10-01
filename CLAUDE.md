@@ -8,6 +8,7 @@
 - Use functional `setRuns((prev) => ...)` updates in ClockApp — never read the `runs` closure directly inside a handler; it goes stale when multiple calls land before a re-render.
 - Run the transcription fixture script after any change to `transcribe.worker.ts` or `transcribeChunks.ts`: `npx vitest run lib/clock/transcribeChunks.test.ts`.
 - Privacy: audio and transcripts must never leave the device without asking first. Analytics carry counts only, never content. If a change would affect what `/privacy` says, say so and propose the new wording.
+  - Approved exception: the "Give one specific example" chip sends the transcript to `/api/check-ai-chip` when the user selects it (opt-in, labelled on the chip).
 - At the end of each task, update "Current state" in this file to match reality.
 
 ## Current state
