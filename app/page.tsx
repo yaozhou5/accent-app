@@ -9,7 +9,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "Accent",
   description:
-    "The test every investor runs in the first minute, and the one thing you can't judge for yourself: Accent records it, times it, and shows you what you actually said.",
+    "Record yourself, listen back, and see how long it takes you to say what you mean. Your audio never leaves your device.",
 };
 
 export default function LandingPage() {

@@ -10,6 +10,8 @@ export type CriterionResult = {
   status: CriterionStatus;
   /** Only set for ai_check chips once a result exists, independent of any override. */
   detail?: { reason: string; quote: string | null; wordFixesVersionAtCheck: number };
+  /** Only set for avoid_words chips, and only the phrases that actually occurred — zero-count phrases are omitted. */
+  counts?: { phrase: string; count: number }[];
 };
 
 function normalizeTokens(text: string): string[] {
@@ -59,6 +61,35 @@ export function transcriptContainsPhrase(text: string, phrase: string): boolean 
 }
 
 /**
+ * Counts non-overlapping occurrences of a phrase, same matching rules as
+ * transcriptContainsPhrase (whole-word, case-insensitive, punctuation
+ * stripped, split-token tolerance for a single-word phrase) — used to show
+ * per-phrase counts on the filler-words chip rather than just met/not met.
+ */
+export function countPhraseOccurrences(text: string, phrase: string): number {
+  const tokens = normalizeTokens(text);
+  const phraseTokens = normalizeTokens(phrase);
+  if (phraseTokens.length === 0) return 0;
+
+  let count = 0;
+  let i = 0;
+  while (i <= tokens.length - phraseTokens.length) {
+    if (phraseTokens.every((pt, j) => tokens[i + j] === pt)) {
+      count++;
+      i += phraseTokens.length;
+      continue;
+    }
+    if (phraseTokens.length === 1 && i < tokens.length - 1 && tokens[i] + tokens[i + 1] === phraseTokens[0]) {
+      count++;
+      i += 2;
+      continue;
+    }
+    i++;
+  }
+  return count;
+}
+
+/**
  * overrides holds the user's own answers — both for an ai_check the AI
  * call couldn't resolve, and for a use_word it couldn't confirm — keyed
  * by chip id. An override always wins over automatic detection.
@@ -93,6 +124,15 @@ export function checkChip(chip: Chip, run: Run, overrides: Record<string, boolea
   }
 }
 
+/** Phrases that actually occurred in the (corrected) transcript, each with its count — zero-count phrases omitted. */
+function avoidWordsCounts(chip: Extract<Chip, { type: "avoid_words" }>, run: Run): { phrase: string; count: number }[] {
+  if (!run.transcript) return [];
+  const text = correctedTranscriptText(run.transcript, run.wordFixes);
+  return chip.words
+    .map((phrase) => ({ phrase, count: countPhraseOccurrences(text, phrase) }))
+    .filter((c) => c.count > 0);
+}
+
 /** Only the chips this run actually selected — resolved from their ids, frozen at record time. */
 export function checkSelectedChips(run: Run, overrides: Record<string, boolean>): CriterionResult[] {
   return run.selectedChipIds
@@ -102,5 +142,6 @@ export function checkSelectedChips(run: Run, overrides: Record<string, boolean>)
       chip,
       status: checkChip(chip, run, overrides),
       detail: run.aiCheckResults[chip.id],
+      counts: chip.type === "avoid_words" ? avoidWordsCounts(chip, run) : undefined,
     }));
 }

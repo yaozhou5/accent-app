@@ -33,25 +33,16 @@ export async function GET() {
       >
         <div
           style={{
+            display: "flex",
             fontSize: "56px",
             fontFamily: "Fraunces",
             fontWeight: 700,
-            color: "#1A1A18",
+            color: "#16201D",
             lineHeight: 1,
           }}
         >
-          accent
+          Acc<span style={{ color: "#0F6B57" }}>e</span>nt
         </div>
-        <div
-          style={{
-            width: "16px",
-            height: "16px",
-            borderRadius: "50%",
-            background: "#4A6CF7",
-            marginLeft: "6px",
-            marginTop: "14px",
-          }}
-        />
       </div>
 
       {/* Headline + subtext */}
@@ -72,7 +63,7 @@ export async function GET() {
             maxWidth: "1000px",
           }}
         >
-          Your voice. AI-assisted.
+          Get to the point.
         </div>
         <div
           style={{
@@ -82,7 +73,7 @@ export async function GET() {
             marginTop: "20px",
           }}
         >
-          AI that learns your voice. Every draft gets closer.
+          Practise saying what you mean, out loud.
         </div>
       </div>
 

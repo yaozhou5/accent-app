@@ -38,7 +38,7 @@ type StoredRun = Omit<Run, "blob"> & { audioBuffer: ArrayBuffer };
 
 // Runs saved before this change still have `blob` as a real Blob — read-time
 // normalization (below) upgrades them to the same in-memory shape either way.
-type AnyStoredRun = StoredRun | Run;
+export type AnyStoredRun = StoredRun | Run;
 
 function hasAudioBuffer(run: AnyStoredRun): run is StoredRun {
   return "audioBuffer" in run;
@@ -64,9 +64,19 @@ async function toStoredRun(run: Run): Promise<StoredRun> {
  * Runs saved before ArrayBuffer storage still hold `blob` directly — either
  * way this returns a run with a real Blob. Runs saved before word fixes
  * existed have no `wordFixes`/`wordFixesVersion`, and any existing
- * aiCheckResults entries predate `wordFixesVersionAtCheck`.
+ * aiCheckResults entries predate `wordFixesVersionAtCheck`. Runs saved
+ * while the filler-words chip was still called `no-basically` have that id
+ * in `selectedChipIds`/`criteriaOverrides` — remapped to `no-fillers` here
+ * so they still resolve via getChipById, without touching the stored
+ * override value itself.
  */
-function normalizeRun(run: AnyStoredRun): Run {
+const CHIP_ID_RENAMES: Record<string, string> = { "no-basically": "no-fillers" };
+
+function renameChipId(id: string): string {
+  return CHIP_ID_RENAMES[id] ?? id;
+}
+
+export function normalizeRun(run: AnyStoredRun): Run {
   let next: Run;
   if (hasAudioBuffer(run)) {
     const { audioBuffer, ...rest } = run;
@@ -82,6 +92,17 @@ function normalizeRun(run: AnyStoredRun): Run {
   if (next.selectedChipIds === undefined) next = { ...next, selectedChipIds: [] };
   if (next.criteriaOverrides === undefined) next = { ...next, criteriaOverrides: {} };
   if (next.aiCheckResults === undefined) next = { ...next, aiCheckResults: {} };
+  if (next.selectedChipIds.some((id) => id in CHIP_ID_RENAMES)) {
+    next = { ...next, selectedChipIds: next.selectedChipIds.map(renameChipId) };
+  }
+  if (Object.keys(next.criteriaOverrides).some((id) => id in CHIP_ID_RENAMES)) {
+    next = {
+      ...next,
+      criteriaOverrides: Object.fromEntries(
+        Object.entries(next.criteriaOverrides).map(([id, value]) => [renameChipId(id), value])
+      ),
+    };
+  }
   if (next.marks === undefined) next = { ...next, marks: [] };
   if (next.selfRating === undefined) next = { ...next, selfRating: null };
   if (next.listenedAt === undefined) next = { ...next, listenedAt: null };

@@ -26,10 +26,10 @@ const STATIC_CHIPS: Chip[] = [
   },
   {
     type: "avoid_words",
-    id: "no-basically",
-    label: 'No "basically"',
-    tryNext: 'Say it again, and pause where you\'d say "basically".',
-    words: ["basically"],
+    id: "no-fillers",
+    label: "No filler words",
+    tryNext: "Pause instead of filling. Silence sounds more confident than 'basically'.",
+    words: ["basically", "actually", "literally", "you know", "I mean", "sort of", "kind of", "so yeah"],
   },
   {
     type: "ai_check",

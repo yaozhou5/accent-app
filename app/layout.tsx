@@ -77,13 +77,15 @@ const archivo = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://myaccent.io"),
   title: "accent.",
-  description: "AI that learns your voice. Every draft gets closer.",
+  description:
+    "Record yourself, listen back, and see how long it takes you to say what you mean. Your audio never leaves your device.",
   icons: {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Your voice. AI-assisted.",
-    description: "AI that learns your voice. Every draft gets closer.",
+    title: "Accent: get to the point when you speak",
+    description:
+      "Record yourself, listen back, and see how long it takes you to say what you mean. Your audio never leaves your device.",
     url: "https://myaccent.io",
     siteName: "accent.",
     images: [{ url: "https://myaccent.io/api/og", width: 1200, height: 630 }],
@@ -91,8 +93,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Your voice. AI-assisted.",
-    description: "AI that learns your voice. Every draft gets closer.",
+    title: "Accent: get to the point when you speak",
+    description:
+      "Record yourself, listen back, and see how long it takes you to say what you mean. Your audio never leaves your device.",
     images: ["https://myaccent.io/api/og"],
   },
 };

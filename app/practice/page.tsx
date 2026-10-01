@@ -6,7 +6,7 @@ import styles from "@/app/clock/page.module.css";
 
 export const metadata: Metadata = {
   title: "Practice — Accent",
-  description: "Record, and see how long it takes you to say what you do.",
+  description: "Record yourself and see how long it takes you to say what you mean.",
 };
 
 export default function PracticePage() {

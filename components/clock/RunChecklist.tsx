@@ -87,7 +87,7 @@ export default function RunChecklist({
     <div className={styles.challengeChecklist}>
       <p className={styles.step}>This week&apos;s challenge</p>
       <ul className={styles.challengeList}>
-        {results.map(({ chip, status, detail }) => {
+        {results.map(({ chip, status, detail, counts }) => {
           const isChecking = chip.type === "ai_check" && checking.has(chip.id);
           const staleResult =
             chip.type === "ai_check" && detail && run.wordFixesVersion > detail.wordFixesVersionAtCheck;
@@ -106,6 +106,11 @@ export default function RunChecklist({
               </span>
               {status === "not_met" && chip.type === "ai_check" && detail?.reason && (
                 <span className={styles.challengeReason}>{detail.reason}</span>
+              )}
+              {status === "not_met" && chip.type === "avoid_words" && counts && counts.length > 0 && (
+                <span className={styles.challengeReason}>
+                  {counts.map((c) => `${c.phrase} ×${c.count}`).join(", ")}
+                </span>
               )}
               {status === "needs_confirmation" && !isChecking && (
                 <span className={styles.challengeConfirm}>
