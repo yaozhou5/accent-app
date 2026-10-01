@@ -13,12 +13,10 @@
 
 ## Current state
 
-**On `clock`, not yet on `master`/production:** commit `6a09499` (retention tracking — `run_recorded`/`review_rated` PostHog properties, `scripts/retention.sql`, privacy page wording). `master`'s HEAD is `ff3d6ad` (Fix words UX rework), last merged and deployed to production 2026-09-30.
+**On `clock`, not yet on `master`/production:** commit `b500631` ("No filler words" chip rename with per-phrase counts and an id migration for old runs; link preview / OG metadata and brand mark updated to the speaking-practice framing; investor- and writing-tool-framed page descriptions on `/` and `/practice` replaced). `master`'s HEAD is `ff3d6ad` (Fix words UX rework), last merged and deployed to production 2026-09-30. Deployed to a Vercel preview, not production.
 
 **Open items:**
 
-- "No filler words" chip rename — not done. `lib/clock/chips.ts` still has `id: "no-basically"`, label `'No "basically"'`, single word only (`words: ["basically"]`).
-- Link preview / OG metadata still says "Your voice. AI-assisted." — in `app/layout.tsx` (both metadata blocks) and `app/api/og/route.tsx`. Needs the speaking-practice update.
 - Practice page copy pass — not done:
   - `components/clock/ClockApp.tsx`'s instructions line above the chips still ends "...The clock shows how long it took you to get there."
   - `components/clock/ModelIntro.tsx` still names the model directly ("whisper-base.en") and its download size.
