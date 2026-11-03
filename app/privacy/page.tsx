@@ -27,9 +27,9 @@ export default function PrivacyPage() {
         <p className={styles.sub}>Last updated 28 September 2026</p>
 
         <p>
-          Accent helps you write and speak about your work in your own voice. Some of it runs entirely on your device.
-          Some of it has to reach our servers and a few service providers to work. This page says which is which, what
-          happens to your data, and how to make us stop.
+          Accent helps you write about your work in your own voice. Some of it runs entirely on your device. Some of it
+          has to reach our servers and a few service providers to work. This page says which is which, what happens to
+          your data, and how to make us stop.
         </p>
         <p>
           For anything on this page, write to hello@myaccent.io. A person reads it, and that person is currently me.
@@ -37,25 +37,13 @@ export default function PrivacyPage() {
 
         <h2>What stays on your device</h2>
         <p>
-          Practice runs in your browser. Your recordings, their transcripts and your practice script are stored on your
-          device and never sent to us. We cannot listen to them, and we cannot recover them if you clear your browser
-          data or lose the device.
-        </p>
-        <p>
-          To transcribe on your device, your browser downloads a speech-recognition model from Hugging Face the first
-          time you practise, and on some iPhones each time. That download tells Hugging Face your IP address and browser
-          type, like any file download. No audio or text is sent.
-        </p>
-        <p>
-          Your browser also keeps a few things so the site works. These are unsent notes in the compose box and, if you
-          take the voice quiz before signing up, your quiz answers. When you sign up, those answers are saved to your
+          Your browser keeps a few things so the site works. These are unsent notes in the compose box and, if you take
+          the voice quiz before signing up, your quiz answers. When you sign up, those answers are saved to your
           account. Nothing else stored on your device is read by us.
         </p>
         <p>
-          If you use the practice page and choose to save your progress, a few numbers about each practice — when it
-          happened, how long it took, how long until you said what you do, and, if you selected any challenge chips,
-          which ones and which you met — are sent to our server so you can see your progress over time. The recording
-          and transcript themselves never are.
+          If you used the earlier speaking practice feature, your practice stats are still stored in your account. Email
+          hello@myaccent.io to have them deleted.
         </p>
 
         <h2>What we process, and why</h2>
@@ -89,12 +77,12 @@ export default function PrivacyPage() {
             </tr>
             <tr>
               <td>
-                Practice run stats (timestamp, duration, time-to-point, which challenge chips you selected and which you
-                met) — only if you save your progress
+                If you used the earlier speaking practice feature, your practice stats are still stored in your account.
+                Email hello@myaccent.io to have them deleted.
               </td>
-              <td>To show your practice history over time</td>
+              <td>Kept from when the feature was live</td>
               <td>Contract (Art. 6(1)(b))</td>
-              <td>Until you delete your account</td>
+              <td>Until you ask us to delete it</td>
             </tr>
             <tr>
               <td>Results of AI features: reviews, coaching and learned writing patterns</td>
@@ -150,9 +138,8 @@ export default function PrivacyPage() {
         <h2>When you use an AI feature</h2>
         <p>
           When you ask Accent to review, coach, suggest or generate, the text involved is sent to Anthropic, which runs
-          the AI model. That can include your draft or note, your voice profile and short excerpts of your past drafts,
-          and, if you select an AI-checked practice chip, that run&apos;s transcript — to check whether you met the
-          chip, not stored by us. Your email address and account ID are never sent.
+          the AI model. That can include your draft or note, your voice profile and short excerpts of your past drafts.
+          Your email address and account ID are never sent.
         </p>
         <p>
           Anthropic processes this under its commercial terms, which do not allow it to train models on your content. We
@@ -218,8 +205,8 @@ export default function PrivacyPage() {
           </tbody>
         </table>
         <p>
-          Hugging Face (model download), YouTube and Vimeo (link previews) receive only what&apos;s described above.
-          They are independent services, not our processors.
+          YouTube and Vimeo (link previews) receive only what&apos;s described above. They are independent services, not
+          our processors.
         </p>
         <p>We do not sell personal data.</p>
         <p>
@@ -271,10 +258,7 @@ export default function PrivacyPage() {
         </p>
 
         <h2>Security</h2>
-        <p>
-          Data is encrypted in transit. Only I have access to what&apos;s stored. No system is perfectly secure, which
-          is one reason recordings stay on your device.
-        </p>
+        <p>Data is encrypted in transit. Only I have access to what&apos;s stored.</p>
 
         <h2>Changes</h2>
         <p>

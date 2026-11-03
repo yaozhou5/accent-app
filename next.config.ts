@@ -40,7 +40,17 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/clock",
-        destination: "/practice",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/practice",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/listen",
+        destination: "/",
         permanent: true,
       },
       {

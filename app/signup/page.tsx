@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { identifyUser } from "@/lib/identify-user";
-import { backfillPracticeRuns } from "@/lib/supabase/practice-runs";
 import posthog from "posthog-js";
 
 function SignupForm() {
@@ -19,7 +18,6 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect") || "/dashboard";
   const redirectTo = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
-  const fromPractice = redirectTo === "/practice";
 
   useEffect(() => {
     setFromVoice(!!localStorage.getItem("pending_voice_profile"));
@@ -54,9 +52,6 @@ function SignupForm() {
     if (error) setError("Invalid or expired code.");
     else {
       if (data.user) identifyUser(data.user);
-      // Upload any practice runs already sitting in this device's
-      // IndexedDB — safe to call unconditionally, no-ops if there are none.
-      backfillPracticeRuns().catch(() => {});
       // Capture attribution
       const ref = typeof document !== "undefined" ? document.referrer : "";
       const params =
@@ -121,18 +116,10 @@ function SignupForm() {
           className="font-serif mb-2"
           style={{ fontSize: 28, fontWeight: 400, color: "#1A1A18", fontFamily: "'Fraunces', Georgia, serif" }}
         >
-          {fromVoice
-            ? "Save your voice profile"
-            : fromPractice
-              ? "Save your practice progress"
-              : "Start writing like you"}
+          {fromVoice ? "Save your voice profile" : "Start writing like you"}
         </h1>
         <p className="font-sans mb-8" style={{ fontSize: 15, color: "#A8A49C" }}>
-          {fromVoice
-            ? "Create your account and start writing in your voice."
-            : fromPractice
-              ? "Free account. Just the numbers sync — never your recordings."
-              : "Free account. No credit card."}
+          {fromVoice ? "Create your account and start writing in your voice." : "Free account. No credit card."}
         </p>
 
         {step === "email" ? (

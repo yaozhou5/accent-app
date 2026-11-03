@@ -33,8 +33,10 @@ export default function TermsPage() {
         </p>
 
         <h2>What Accent is</h2>
-        {/* TODO: restore a sentence about sending a recording to listeners once the listener-recording feature is real */}
-        <p>A tool for practising how you explain your work out loud. It records you and times you.</p>
+        <p>
+          A writing tool. It helps you turn your thoughts into clearer writing while keeping your words, meaning and
+          personality, and it shows you what it changed.
+        </p>
         <p>
           It is early software. Features are incomplete, things break, and the product may change substantially or stop
           existing. Where the site says something is being built, it isn&apos;t finished yet.
@@ -42,30 +44,21 @@ export default function TermsPage() {
 
         <h2>What it isn&apos;t</h2>
         <p>
-          Accent gives you other people&apos;s reactions and some measurements of your own speech. It does not give
-          investment, financial, legal or business advice, and nothing it returns is a prediction about whether
-          you&apos;ll raise money or a judgement of your business. What you do with any of it is your decision.
+          It isn&apos;t a ghostwriter. Suggestions are only suggestions. You decide what stays, and you&apos;re
+          responsible for what you publish.
         </p>
 
-        <h2>Your recordings</h2>
-        {/* TODO: restore the listener-clip clause once the listener-recording feature is real */}
+        <h2>Your content</h2>
         <p>
-          Your recordings are yours. We claim no ownership of them and no licence to use them beyond what&apos;s needed
-          to do the thing you asked for.
-        </p>
-        <p>We don&apos;t use your recordings, transcripts or anything you say to train machine-learning models.</p>
-        <p>
-          Recordings are stored on your device. If you clear your browser data or lose the device, they&apos;re gone and
-          we can&apos;t get them back.
+          What you write stays yours. We don&apos;t claim any rights to it and we don&apos;t use it to train AI models.
+          We only process it to give you suggestions, as described in the privacy page.
         </p>
 
         <h2>Using it decently</h2>
         <p>
-          Please don&apos;t: send recordings of anyone who hasn&apos;t agreed to it, upload anything unlawful, abusive
-          or infringing, send confidential material you aren&apos;t entitled to share, try to identify or contact
-          listeners without their agreement, or use the service to harass anyone.
+          Please don&apos;t: upload anything unlawful, abusive or infringing, send confidential material you aren&apos;t
+          entitled to share, or use the service to harass anyone.
         </p>
-        {/* TODO: restore the listener-etiquette paragraph once the listener-recording feature is real */}
         <p>We can suspend access if any of this is breached.</p>
 
         <h2>Cost</h2>
