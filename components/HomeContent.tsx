@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { PRO_PRICE_SHORT, PRO_PRICE_LONG } from "@/lib/pricing";
 import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 
 const INK = "#1A1A18";
 const DIM = "rgba(26,26,24,0.50)";
-const FAINT = "#A8A49C";
 const BLUE = "#1a1a1a";
 const BORDER = "rgba(26,26,24,0.06)";
 
@@ -48,7 +46,6 @@ export default function HomeContent() {
 
   const s1 = useReveal(),
     s3 = useReveal(),
-    s4 = useReveal(),
     s6 = useReveal();
 
   return (
@@ -232,100 +229,15 @@ export default function HomeContent() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section style={{ background: "#F0ECE4" }}>
-        <div ref={s4.ref} style={s4.style} className="max-w-[640px] mx-auto px-6 py-12 md:py-20">
-          <h2
-            style={{
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: "clamp(24px, 3.6vw, 32px)",
-              fontWeight: 400,
-              color: INK,
-              textAlign: "center",
-              marginBottom: 12,
-            }}
-          >
-            Simple pricing
-          </h2>
-          <p
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 15,
-              color: DIM,
-              textAlign: "center",
-              marginBottom: 32,
-            }}
-          >
-            Start free. Go unlimited for {PRO_PRICE_LONG}.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div style={{ background: "#FAFAF7", padding: 28 }}>
-              <span
-                style={{
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: 11,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: FAINT,
-                  display: "block",
-                  marginBottom: 16,
-                }}
-              >
-                Free
-              </span>
-              <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {["3 pieces a month", "No credit card"].map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2"
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: INK }}
-                  >
-                    <span style={{ color: INK, flexShrink: 0 }}>&#10003;</span> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div style={{ background: "#1A1512", padding: 28 }}>
-              <span
-                style={{
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: 11,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#A8A49C",
-                  display: "block",
-                  marginBottom: 16,
-                }}
-              >
-                Pro — {PRO_PRICE_SHORT}
-              </span>
-              <ul className="space-y-2.5" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {[
-                  "Unlimited pieces",
-                  "A voice profile that learns how you write",
-                  "Edit history",
-                  "Reminders to keep writing",
-                ].map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2"
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#F0EAE0" }}
-                  >
-                    <span style={{ color: "#F0EAE0", flexShrink: 0 }}>&#10003;</span> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA */}
       <section ref={s6.ref} style={s6.style}>
         <div className="max-w-[520px] mx-auto px-6 py-14 md:py-20 text-center">
           <h2 className="font-serif mb-6" style={{ fontSize: "clamp(24px, 3.6vw, 36px)", lineHeight: 1.2 }}>
             Use AI to write. Stay in there afterwards.
           </h2>
+          <p className="font-sans mb-4" style={{ fontSize: 14, color: DIM }}>
+            Free while it&apos;s in early access.
+          </p>
           <Link
             href="/signup"
             className="no-underline inline-block px-8 py-4 font-sans font-semibold text-[16px] transition-transform hover:scale-[1.02] hover:-translate-y-px"
