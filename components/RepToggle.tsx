@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import styles from "@/app/page.module.css";
+import styles from "@/app/old-home/page.module.css";
 
 type RepKey = "r1" | "r12";
 

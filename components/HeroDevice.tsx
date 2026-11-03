@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import styles from "@/app/page.module.css";
+import styles from "@/app/old-home/page.module.css";
 
 const RING_CIRCUMFERENCE = 540.35;
 const REDUCED_MOTION_END = 171;

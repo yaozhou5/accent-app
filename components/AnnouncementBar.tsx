@@ -3,7 +3,7 @@
 import { useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
-import styles from "@/app/page.module.css";
+import styles from "@/app/old-home/page.module.css";
 
 const DISMISS_KEY = "accent-content-banner-dismissed";
 
