@@ -73,46 +73,63 @@
     .kicker { display: block; text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 14px; }
     h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 4vw, 42px); line-height: 1.15; letter-spacing: -0.02em; text-align: center; }
 
-    /* Concept illustration */
-    .flow { margin-top: 56px; display: grid; grid-template-columns: minmax(0, 300px) minmax(60px, 1fr) minmax(0, 400px); align-items: center; }
+    /* Concept prototype */
+    .flow { margin-top: 56px; position: relative; display: grid; grid-template-columns: minmax(0, 330px) minmax(56px, 1fr) minmax(0, 470px); align-items: center; }
     .sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-    .card { background: var(--paper); border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 10px 24px -14px rgba(26,26,24,0.25); padding: 12px 14px 14px; }
-    .card-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+    .card { background: var(--paper); border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 10px 24px -14px rgba(26,26,24,0.25); padding: 12px 14px 14px; cursor: default; transition: border-color .2s, box-shadow .2s, transform .2s, opacity .2s; outline: none; }
+    .card-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 9px; }
     .card-h svg { color: var(--ink); flex: none; }
-    .card-h .meta { margin-left: auto; font-family: var(--mono); font-weight: 400; font-size: 10px; color: var(--faint); letter-spacing: .04em; }
-    .sk { display: block; height: 6px; background: var(--skel); border-radius: 3px; }
-    .sk.l { background: var(--skel-2); }
-    .stack { display: grid; gap: 6px; }
-    .bubbles { display: grid; gap: 6px; }
-    .bubble { height: 14px; border-radius: 8px; background: var(--skel-2); }
-    .bubble.me { background: var(--skel); justify-self: end; }
-    .thumb { position: relative; height: 54px; background: #1b1b1a; display: flex; align-items: center; justify-content: center; }
-    .thumb .play { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; }
-    .thumb .bar { position: absolute; left: 8px; right: 8px; bottom: 6px; height: 2px; background: rgba(255,255,255,0.25); }
+    .card-h .meta { margin-left: auto; font-family: var(--mono); font-weight: 400; font-size: 10px; color: var(--faint); letter-spacing: .04em; white-space: nowrap; }
+    .card p { margin: 0; font-size: 12.5px; line-height: 1.5; color: #3A3935; }
+    .q { display: grid; gap: 6px; }
+    .q .who { font-family: var(--mono); font-size: 10px; color: var(--faint); letter-spacing: .03em; }
+    .q .said { background: var(--cream-2); padding: 7px 9px; font-size: 12.5px; line-height: 1.45; border-radius: 0 8px 8px 8px; }
+    .thumb { position: relative; height: 66px; background: linear-gradient(135deg, #22221f, #34322c); display: flex; align-items: center; padding: 0 10px; gap: 10px; color: #F3EEE6; }
+    .thumb .play { flex: none; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.92); display: flex; align-items: center; justify-content: center; }
+    .thumb .t { font-size: 12px; font-weight: 500; line-height: 1.3; }
+    .thumb .dur { position: absolute; right: 8px; top: 7px; font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.7); }
+    .thumb .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,0.18); }
     .thumb .bar::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 38%; background: #E8B86B; }
-    .log { display: grid; gap: 7px; }
-    .log-row { display: flex; align-items: center; gap: 8px; }
-    .chip { flex: none; height: 12px; width: 30px; border-radius: 2px; background: rgba(26,26,24,0.16); }
-    .chip.a { background: #E8D3A8; } .chip.b { background: #CBD9C7; }
-    .hl { background: #F3E2B8 !important; }
+    .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12.5px; line-height: 1.35; }
+    .log li { display: flex; align-items: baseline; gap: 8px; }
+    .tag { flex: none; font-family: var(--mono); font-size: 9.5px; letter-spacing: .03em; padding: 2px 5px; background: rgba(26,26,24,0.08); color: #3A3935; }
+    .tag.new { background: #E8D3A8; } .tag.fix { background: #CBD9C7; }
+    .doc .t { font-weight: 600; font-size: 12.5px; margin-bottom: 4px; }
+    mark { background: #F3E2B8; color: inherit; padding: 0 2px; }
 
-    .connector { width: 100%; height: 380px; display: block; overflow: visible; }
-    .connector path { fill: none; stroke: rgba(26,26,24,0.28); stroke-width: 1.4; vector-effect: non-scaling-stroke; stroke-dasharray: 3 5; animation: flow 1.6s linear infinite; }
+    .connector { width: 100%; height: 100%; display: block; overflow: visible; align-self: stretch; }
+    .connector path { fill: none; stroke: rgba(26,26,24,0.26); stroke-width: 1.4; stroke-dasharray: 3 5; animation: flow 1.6s linear infinite; transition: stroke .2s, stroke-width .2s; }
+    .connector path.on { stroke: #C9952E; stroke-width: 2; }
     @keyframes flow { to { stroke-dashoffset: -16; } }
 
     .issue { background: #fff; border: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(26,26,24,0.45), 0 2px 0 rgba(0,0,0,0.02); }
-    .issue-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    .issue-bar { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-bottom: 1px solid var(--line); background: #FAF8F4; }
     .issue-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--skel); }
-    .issue-bar .sk { margin-left: 10px; width: 46%; height: 8px; background: var(--skel-2); }
-    .issue-head { background: #111; color: #F3EEE6; padding: 26px 26px 22px; }
+    .issue-bar .from { margin-left: 10px; font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .issue-bar .from b { color: var(--ink); font-weight: 600; }
+    .issue-head { background: #111; color: #F3EEE6; padding: 22px 26px 20px; }
+    .issue-head .issue-no { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(243,238,230,0.55); margin-bottom: 10px; }
     .issue-head strong { display: block; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.05; letter-spacing: -0.02em; }
-    .issue-head span { display: block; margin-top: 6px; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 17px; color: #D9D1C3; }
-    .issue-body { padding: 18px 26px 24px; display: grid; gap: 16px; }
-    .piece { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; }
-    .piece .ico { width: 26px; height: 26px; border-radius: 50%; background: var(--cream-2); display: flex; align-items: center; justify-content: center; color: var(--ink); }
-    .piece .stack .sk:first-child { height: 8px; width: 55%; background: var(--skel); }
-    .caption { margin: 28px 0 0; text-align: center; font-size: 13px; color: var(--faint); }
+    .issue-head .sub { display: block; margin-top: 6px; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 17px; color: #D9D1C3; }
+    .issue-body { padding: 8px 26px 22px; }
+    .lede { margin: 14px 0 4px; font-family: var(--serif); font-size: 15px; line-height: 1.5; color: #3A3935; }
+    .piece { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px 10px; margin: 0 -10px; border-top: 1px solid var(--line); transition: background .2s; }
+    .piece:first-of-type { border-top: 0; }
+    .piece .ico { width: 26px; height: 26px; border-radius: 50%; background: var(--cream-2); display: flex; align-items: center; justify-content: center; color: var(--ink); transition: background .2s; }
+    .piece h4 { margin: 2px 0 4px; font-family: var(--serif); font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+    .piece p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #3A3935; }
+    .piece ul { margin: 2px 0 0; padding-left: 16px; font-size: 13.5px; line-height: 1.6; color: #3A3935; }
+    .piece .watch { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 600; padding: 6px 10px; background: #111; color: #fff; }
+    .signoff { margin: 6px 0 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--faint); }
 
+    /* Linked highlight between a source and the part of the issue it became */
+    .flow.linking .card { opacity: .5; }
+    .flow.linking .card.on { opacity: 1; border-color: #C9952E; box-shadow: 0 0 0 1px #C9952E, 0 14px 28px -14px rgba(26,26,24,0.35); transform: translateX(3px); }
+    .piece.on { background: #FBF3E2; }
+    .piece.on .ico { background: #F3E2B8; }
+    .hint { margin: 16px 0 0; text-align: center; font-size: 13px; color: var(--dim); }
+    .hint .tap { display: none; }
+    .caption { margin: 8px 0 0; text-align: center; font-size: 13px; color: var(--faint); }
     /* Supporting blocks */
     .band { background: var(--cream-2); }
     .blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; max-width: 760px; margin: 0 auto; }
@@ -165,13 +182,17 @@
       .flow { grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 460px; margin-left: auto; margin-right: auto; }
       .sources { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
       .connector { display: none; }
+      .sources .card { padding: 10px 11px 12px; }
+      .card p, .q .said, .log { font-size: 12px; }
+      .hint .hover { display: none; } .hint .tap { display: inline; }
       .down { display: flex !important; justify-content: center; padding: 18px 0; color: rgba(26,26,24,0.45); }
     }
     @media (max-width: 640px) {
       .section, .closing { padding: 72px 20px; }
       .nav-cta { display: none; }
       .blocks { grid-template-columns: minmax(0, 1fr); gap: 36px; }
-      .issue-body { padding: 16px 18px 20px; }
+      .issue-body { padding: 6px 18px 18px; }
+      .sources { grid-template-columns: minmax(0, 1fr); }
       .issue-head { padding: 22px 18px 18px; }
       .foot { justify-content: center; flex-wrap: wrap; gap: 12px 16px; }
       .foot .logo { font-size: 14px; }
@@ -213,93 +234,78 @@
     <section class="section" aria-labelledby="flow-title">
       <div class="wrap">
         <div class="reveal">
-          <span class="kicker">Concept illustration</span>
+          <span class="kicker">Concept prototype · sample content</span>
           <h2 id="flow-title">From scattered to one issue</h2>
         </div>
 
-        <div class="flow reveal">
+        <div class="flow reveal" id="flow">
           <ul class="sources" aria-label="What goes in">
-            <li class="card">
-              <div class="card-h">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>
-                Interviews
-              </div>
-              <div class="bubbles" aria-hidden="true">
-                <span class="bubble" style="width: 78%"></span>
-                <span class="bubble me" style="width: 56%"></span>
-                <span class="bubble" style="width: 66%"></span>
+            <li class="card" data-src="int" tabindex="0">
+              <div class="card-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>Interviews<span class="meta">Call · 32 min</span></div>
+              <div class="q">
+                <span class="who">Maya, Support lead</span>
+                <span class="said">“Half our tickets this month were people asking how to get their reports out.”</span>
               </div>
             </li>
-            <li class="card">
-              <div class="card-h">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M10 8.5v5l4-2.5-4-2.5zM8 21h8"/></svg>
-                Product demos
-              </div>
-              <div class="thumb" aria-hidden="true">
-                <span class="play"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 2l5 3-5 3z" fill="#111"/></svg></span>
+            <li class="card" data-src="demo" tabindex="0">
+              <div class="card-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M10 8.5v5l4-2.5-4-2.5zM8 21h8"/></svg>Product demos<span class="meta">Recording</span></div>
+              <div class="thumb">
+                <span class="play"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 2l5 3-5 3z" fill="#111"/></svg></span>
+                <span class="t">Walkthrough: the new export screen</span>
+                <span class="dur">4:12</span>
                 <span class="bar"></span>
               </div>
             </li>
-            <li class="card">
-              <div class="card-h">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>
-                Tech updates
-              </div>
-              <div class="log" aria-hidden="true">
-                <div class="log-row"><span class="chip a"></span><span class="sk" style="width: 70%"></span></div>
-                <div class="log-row"><span class="chip b"></span><span class="sk l" style="width: 52%"></span></div>
-                <div class="log-row"><span class="chip"></span><span class="sk l" style="width: 62%"></span></div>
-              </div>
+            <li class="card" data-src="tech" tabindex="0">
+              <div class="card-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>Tech updates<span class="meta">Changelog</span></div>
+              <ul class="log">
+                <li><span class="tag new">NEW</span>Export any report to CSV</li>
+                <li><span class="tag fix">FIX</span>Time zones in scheduled reports</li>
+                <li><span class="tag">CHG</span>Search includes archived projects</li>
+              </ul>
             </li>
-            <li class="card">
-              <div class="card-h">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
-                Notes and docs
-              </div>
-              <div class="stack" aria-hidden="true">
-                <span class="sk" style="width: 90%"></span>
-                <span class="sk hl" style="width: 74%"></span>
-                <span class="sk l" style="width: 82%"></span>
-              </div>
+            <li class="card doc" data-src="doc" tabindex="0">
+              <div class="card-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>Notes and docs<span class="meta">Planning doc</span></div>
+              <div class="t">Q1 priorities (draft)</div>
+              <p>1. <mark>Make reports easier to share outside the team.</mark> 2. Tidy up onboarding.</p>
             </li>
           </ul>
 
-          <svg class="connector" viewBox="0 0 100 380" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 47 C 60 47, 40 190, 100 190"/>
-            <path d="M0 142 C 60 142, 40 190, 100 190"/>
-            <path d="M0 238 C 60 238, 40 190, 100 190"/>
-            <path d="M0 333 C 60 333, 40 190, 100 190"/>
-          </svg>
+          <svg class="connector" id="connector" aria-hidden="true"></svg>
           <div class="down" style="display: none;" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
           </div>
 
-          <div class="issue">
-            <div class="issue-bar" aria-hidden="true"><i></i><i></i><i></i><span class="sk"></span></div>
+          <article class="issue" aria-label="Sample newsletter issue">
+            <div class="issue-bar" aria-hidden="true"><i></i><i></i><i></i><span class="from"><b>Fernwood</b> · The Fernwood Letter, issue 12</span></div>
             <div class="issue-head">
+              <span class="issue-no">The Fernwood Letter · Issue 12</span>
               <strong>One newsletter</strong>
-              <span>reads like one company</span>
+              <span class="sub">reads like one company</span>
             </div>
-            <div class="issue-body" aria-hidden="true">
-              <div class="piece">
-                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/></svg></span>
-                <div class="stack"><span class="sk"></span><span class="sk l" style="width: 96%"></span><span class="sk l" style="width: 80%"></span></div>
-              </div>
-              <div class="piece">
-                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7v10l8-5-8-5z"/></svg></span>
-                <div class="stack"><span class="sk"></span><span class="sk l" style="width: 88%"></span></div>
-              </div>
-              <div class="piece">
-                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></span>
-                <div class="stack"><span class="sk"></span><span class="sk l" style="width: 92%"></span><span class="sk l" style="width: 70%"></span></div>
-              </div>
-              <div class="piece">
-                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/></svg></span>
-                <div class="stack"><span class="sk"></span><span class="sk l" style="width: 84%"></span></div>
-              </div>
+            <div class="issue-body">
+              <p class="lede">This month, one theme kept coming up: getting reports out of the product and into other people’s hands.</p>
+              <section class="piece" data-src="int">
+                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg></span>
+                <div><h4>What customers keep asking</h4><p>Maya on support says half of this month’s tickets were about getting reports out. Here’s what she’s hearing.</p></div>
+              </section>
+              <section class="piece" data-src="demo">
+                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M10 8.5v5l4-2.5-4-2.5zM8 21h8"/></svg></span>
+                <div><h4>See the new export screen</h4><p>A short walkthrough of how exporting works now.</p><span class="watch"><svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 2l5 3-5 3z" fill="#fff"/></svg>Watch · 4:12</span></div>
+              </section>
+              <section class="piece" data-src="tech">
+                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></span>
+                <div><h4>Shipped this month</h4><ul><li>Export any report to CSV</li><li>Scheduled reports respect time zones</li><li>Search now covers archived projects</li></ul></div>
+              </section>
+              <section class="piece" data-src="doc">
+                <span class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>
+                <div><h4>What’s next</h4><p>Next quarter, the focus is making reports easier to share outside the team.</p></div>
+              </section>
+              <p class="signoff">Fernwood is a made-up company. All content here is sample text.</p>
             </div>
-          </div>
+          </article>
         </div>
+        <p class="hint"><span class="hover">Hover a source to see where it ends up.</span><span class="tap">Tap a source to see where it ends up.</span></p>
         <p class="caption">An illustration of the idea, not real product output.</p>
       </div>
     </section>
@@ -449,6 +455,54 @@
         entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
       }, { threshold: 0.12 });
       els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  <script>
+    // Prototype interaction: draw the connector lines and link each source to the part of the issue it became.
+    (function () {
+      var flow = document.getElementById('flow');
+      var svgEl = document.getElementById('connector');
+      var cards = flow.querySelectorAll('.card');
+      var issue = flow.querySelector('.issue');
+      var NS = 'http://www.w3.org/2000/svg';
+      function draw() {
+        if (getComputedStyle(svgEl).display === 'none') return;
+        var box = svgEl.getBoundingClientRect();
+        var w = box.width, h = box.height;
+        svgEl.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+        svgEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var key = c.getAttribute('data-src');
+          var r = c.getBoundingClientRect();
+          var piece = issue.querySelector('.piece[data-src="' + key + '"]');
+          var pr = piece.getBoundingClientRect();
+          var y1 = r.top + r.height / 2 - box.top;
+          var y2 = pr.top + Math.min(pr.height / 2, 22) - box.top;
+          var p = document.createElementNS(NS, 'path');
+          p.setAttribute('d', 'M0 ' + y1 + ' C ' + (w * 0.55) + ' ' + y1 + ', ' + (w * 0.45) + ' ' + y2 + ', ' + w + ' ' + y2);
+          p.setAttribute('data-src', key);
+          svgEl.appendChild(p);
+        });
+      }
+      function link(key) {
+        flow.classList.toggle('linking', !!key);
+        flow.querySelectorAll('[data-src]').forEach(function (el) {
+          el.classList.toggle('on', !!key && el.getAttribute('data-src') === key);
+        });
+      }
+      cards.forEach(function (c) {
+        var key = c.getAttribute('data-src');
+        c.addEventListener('mouseenter', function () { link(key); });
+        c.addEventListener('mouseleave', function () { link(null); });
+        c.addEventListener('focus', function () { link(key); });
+        c.addEventListener('blur', function () { link(null); });
+        c.addEventListener('click', function () { link(key); });
+      });
+      window.addEventListener('resize', draw);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+      window.addEventListener('load', draw);
+      new ResizeObserver(draw).observe(flow);
+      draw();
     })();
   </script>
 </body>
