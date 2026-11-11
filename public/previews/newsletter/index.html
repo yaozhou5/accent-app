@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- PREVIEW ONLY: company-newsletter concept test. Not linked from the site, not indexed,
+       no analytics, no network requests. The early-access form is a demo that saves and sends nothing. -->
+  <meta name="robots" content="noindex, nofollow">
+  <title>accent. · Company newsletter (preview)</title>
+  <link rel="icon" href="/favicon.svg">
+  <style>
+    @font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-300-normal.woff2") format("woff2"); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-600-italic.woff2") format("woff2"); font-weight: 600; font-style: italic; font-display: swap; }
+    @font-face { font-family: "DM Sans"; src: url("/fonts/dm-sans-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: "DM Sans"; src: url("/fonts/dm-sans-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: "DM Sans"; src: url("/fonts/dm-sans-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: "DM Mono"; src: url("/fonts/dm-mono-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+
+    :root {
+      --cream: #F5F0E8;
+      --cream-2: #F0ECE4;
+      --ink: #1A1A18;
+      --dim: rgba(26,26,24,0.62);
+      --faint: #8C877E;
+      --border: rgba(26,26,24,0.08);
+      --dark: #1A1512;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, -apple-system, sans-serif;
+      --mono: "DM Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--cream); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+    button { font: inherit; }
+
+    /* Nav (same behaviour as the live homepage: transparent over the hero, cream once scrolled) */
+    .nav { position: fixed; inset: 0 0 auto 0; height: 52px; z-index: 50; transition: background .3s, border-color .3s; border-bottom: 1px solid transparent; }
+    .nav.scrolled { background: rgba(245,240,232,0.92); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom-color: var(--border); }
+    .nav-inner { max-width: 960px; margin: 0 auto; height: 100%; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 20px; color: #fff; text-decoration: none; transition: color .3s; }
+    .nav-login { font-family: var(--sans); font-weight: 600; font-size: 13px; color: #fff; text-decoration: none; transition: color .3s; padding: 12px 4px; }
+    .nav.scrolled .logo, .nav.scrolled .nav-login { color: var(--ink); }
+
+    /* Hero (black, video background, as on the live site) */
+    .hero { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; text-align: center; min-height: min(100svh, 700px); background: #111; }
+    .hero video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+    .hero::after { content: ""; position: absolute; inset: 0; z-index: 2; background: linear-gradient(to bottom, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.64) 60%, rgba(0,0,0,0.84) 100%); }
+    .hero-inner { position: relative; z-index: 3; max-width: 760px; padding: 96px 24px 72px; }
+    h1 { margin: 0; font-family: var(--serif); font-weight: 300; font-size: clamp(30px, 6.4vw, 52px); line-height: 1.12; letter-spacing: -0.03em; color: #fff; }
+    h1 em { font-style: italic; font-weight: 600; }
+    .hero-sub { font-size: clamp(15px, 2.2vw, 18px); line-height: 1.6; color: rgba(255,255,255,0.82); margin: 20px auto 32px; max-width: 560px; }
+    .btn { display: inline-block; border: 0; border-radius: 0; cursor: pointer; font-family: var(--sans); font-weight: 600; text-decoration: none; transition: transform .15s; }
+    .btn:hover { transform: translateY(-1px) scale(1.02); }
+    .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+    .btn-light { background: var(--cream); color: #1a1a1a; padding: 14px 30px; font-size: 15px; }
+    .btn-dark { background: #1a1a1a; color: #fff; padding: 16px 32px; font-size: 16px; }
+    .hero .note { margin: 16px auto 0; max-width: 420px; font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.66); }
+
+    /* Sections */
+    .section { padding: 72px 24px; }
+    .wrap { max-width: 840px; margin: 0 auto; }
+    h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: clamp(26px, 3.8vw, 36px); line-height: 1.2; letter-spacing: -0.01em; text-align: center; }
+    .kicker { display: block; text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-bottom: 14px; }
+
+    /* Concept illustration */
+    .flow { margin: 36px auto 0; display: flex; align-items: center; justify-content: center; gap: 18px; }
+    .sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; width: 210px; }
+    .source { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border: 1px solid var(--ink); background: #FAFAF7; font-size: 15px; }
+    .source svg { flex: none; }
+    .arrow { flex: none; display: flex; color: var(--ink); }
+    .arrow .down { display: none; }
+    .output { background: #111; color: #F0EAE0; padding: 28px 24px; width: 210px; display: flex; flex-direction: column; gap: 6px; text-align: center; }
+    .output strong { font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.15; }
+    .output span.sub { font-size: 13px; color: #CFC8BC; }
+    .caption { margin: 22px 0 0; text-align: center; font-size: 13px; color: var(--faint); }
+
+    /* Supporting blocks */
+    .blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; max-width: 560px; }
+    .block h3 { margin: 0 0 8px; font-family: var(--serif); font-weight: 400; font-size: 22px; letter-spacing: -0.01em; }
+    .block p { margin: 0; font-size: 16px; line-height: 1.55; color: #3A3935; }
+
+    .cta { text-align: center; padding: 64px 24px 80px; }
+    .cta .note { margin: 14px auto 0; max-width: 420px; font-size: 13px; line-height: 1.5; color: var(--faint); }
+
+    footer { border-top: 1px solid var(--border); }
+    .foot { max-width: 840px; margin: 0 auto; padding: 32px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .foot .logo { color: var(--ink); font-size: 16px; }
+    .foot nav { display: flex; gap: 24px; font-size: 12px; }
+    .foot nav a { color: var(--dim); text-decoration: none; }
+    .foot nav a:hover { color: var(--ink); }
+
+    /* Demo early-access form */
+    dialog { width: min(440px, calc(100vw - 32px)); border: 0; padding: 0; background: var(--cream); color: var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,0.35); }
+    dialog::backdrop { background: rgba(10,10,10,0.6); }
+    .dlg { padding: 26px 26px 28px; display: flex; flex-direction: column; gap: 16px; }
+    .dlg-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .demo-pill { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; background: #FCE9C8; color: #6B4A12; padding: 5px 9px; }
+    .close { background: none; border: 0; width: 44px; height: 44px; margin: -10px -12px -10px 0; cursor: pointer; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
+    .dlg h2 { text-align: left; font-size: 24px; }
+    .dlg p { margin: 0; font-size: 15px; line-height: 1.6; }
+    .dlg .muted { color: var(--dim); font-size: 14px; }
+    .demo-note { font-size: 13px !important; line-height: 1.5; color: #6B4A12 !important; background: #FCE9C8; padding: 10px 12px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .optional { font-weight: 400; color: var(--faint); }
+    input[type=email], textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: #FAFAF7; border: 1px solid rgba(26,26,24,0.18); border-radius: 0; padding: 12px 14px; }
+    textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+    input:focus, textarea:focus { outline: 2px solid var(--ink); outline-offset: 0; border-color: var(--ink); }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row { align-items: center; }
+    .skip { background: none; border: 0; padding: 12px 8px; font-size: 15px; color: var(--dim); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .skip:hover { color: var(--ink); }
+    label.q { font-weight: 400; font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+    .dlg .btn-dark { padding: 14px 24px; font-size: 15px; }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 720px) {
+      .section { padding: 56px 20px; }
+      .flow { flex-direction: column; gap: 12px; }
+      .sources, .output { width: 100%; }
+      .arrow .right { display: none; }
+      .arrow .down { display: block; }
+      .blocks { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+      .foot { justify-content: center; flex-wrap: wrap; gap: 12px 16px; font-size: 13px; }
+      .foot .logo { font-size: 14px; }
+      .foot nav { gap: 16px; font-size: 13px; }
+      .dlg { padding: 22px 20px 24px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .btn, .nav, .logo, .nav-login { transition: none; } .btn:hover { transform: none; } }
+  </style>
+</head>
+<body>
+
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="logo" href="/">accent</a>
+      <a class="nav-login" href="/login">Log in</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <video autoplay muted loop playsinline preload="auto" src="/hero.mp4" aria-hidden="true"></video>
+      <div class="hero-inner">
+        <h1>Interviews, demos and updates.<br><em>One newsletter.</em></h1>
+        <p class="hero-sub">Pull your team's knowledge together into a newsletter, with less work.</p>
+        <button class="btn btn-light" type="button" data-open-form>Join the early-access list</button>
+        <p class="note">We're developing this. Leave your email to hear when it's ready to try.</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="flow-title">
+      <div class="wrap">
+        <span class="kicker">Concept illustration</span>
+        <h2 id="flow-title">From scattered to one issue</h2>
+
+        <div class="flow">
+          <ul class="sources" aria-label="What goes in">
+            <li class="source">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>
+              Interviews
+            </li>
+            <li class="source">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M10 8.5v5l4-2.5-4-2.5zM8 21h8"/></svg>
+              Product demos
+            </li>
+            <li class="source">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>
+              Tech updates
+            </li>
+            <li class="source">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+              Notes and docs
+            </li>
+          </ul>
+
+          <div class="arrow" aria-hidden="true">
+            <svg class="right" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg>
+            <svg class="down" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+          </div>
+
+          <div class="output">
+            <strong>One newsletter</strong>
+            <span class="sub">reads like one company</span>
+          </div>
+        </div>
+        <p class="caption">An illustration of the idea, not real product output.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top: 0;" aria-label="Why">
+      <div class="wrap blocks">
+        <div class="block">
+          <h3>Less pulling together</h3>
+          <p>Start from what people already said and shared, not a blank page.</p>
+        </div>
+        <div class="block">
+          <h3>One voice</h3>
+          <p>Many contributors, one newsletter that sounds like your company.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <button class="btn btn-dark" type="button" data-open-form>Join the early-access list</button>
+      <p class="note">We're developing this. Leave your email to hear when it's ready to try.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot">
+      <a class="logo" href="/">accent</a>
+      <nav aria-label="Footer">
+        <a href="/privacy">Privacy</a>
+        <a href="mailto:hello@myaccent.io">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Demo early-access form: nothing is stored, sent or tracked. -->
+  <dialog id="ea" aria-labelledby="ea-title">
+    <div class="dlg">
+      <div class="dlg-top">
+        <span class="demo-pill">Demo · saves and sends nothing</span>
+        <button class="close" type="button" data-close aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <!-- Step 1: email -->
+      <form id="step-email" novalidate>
+        <div class="dlg" style="padding: 0;">
+          <h2 id="ea-title">Join the early-access list</h2>
+          <p class="muted">We're developing this. Leave your email to hear when it's ready to try.</p>
+          <div>
+            <label for="ea-email">Email</label>
+            <input id="ea-email" name="email" type="email" autocomplete="email" required placeholder="you@email.com" aria-describedby="ea-err">
+            <p id="ea-err" class="muted" style="color:#9B2C1F; margin-top:6px;" hidden>Please enter a valid email address.</p>
+          </div>
+          <div class="row"><button class="btn btn-dark" type="submit">Join the list</button></div>
+          <p class="demo-note">Preview only: this form doesn't save or send your email.</p>
+        </div>
+      </form>
+
+      <!-- Step 2: mock confirmation + optional question -->
+      <form id="step-question" hidden>
+        <div class="dlg" style="padding: 0;">
+          <h2 tabindex="-1" id="ea-thanks">Thanks, you're on the list.</h2>
+          <p>We'll email you when there's something to try.</p>
+          <p class="demo-note">Demo: nothing was saved, so you're not actually on a list yet and no email will be sent.</p>
+          <div>
+            <label for="ea-answer" class="q"><strong>Optional.</strong> Think about your last newsletter. What took the most time to pull together?</label>
+            <textarea id="ea-answer" name="answer"></textarea>
+          </div>
+          <div class="row">
+            <button class="btn btn-dark" type="submit">Send</button>
+            <button class="skip" type="button" data-close>Skip</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Step 3: after Send -->
+      <div id="step-done" hidden>
+        <div class="dlg" style="padding: 0;">
+          <h2 tabindex="-1" id="ea-done">Thanks for telling us.</h2>
+          <p class="demo-note">Demo: your answer wasn't saved or sent.</p>
+          <div class="row"><button class="btn btn-dark" type="button" data-close>Close</button></div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (function () {
+      // Nav background on scroll, like the live homepage.
+      var nav = document.getElementById('nav');
+      function onScroll() { nav.classList.toggle('scrolled', window.scrollY > 60); }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+
+      // Demo form. Deliberately no fetch, no storage, no analytics: values only live in the inputs
+      // and are cleared whenever the dialog closes.
+      var dlg = document.getElementById('ea');
+      var stepEmail = document.getElementById('step-email');
+      var stepQ = document.getElementById('step-question');
+      var stepDone = document.getElementById('step-done');
+      var email = document.getElementById('ea-email');
+      var err = document.getElementById('ea-err');
+
+      function show(step) {
+        [stepEmail, stepQ, stepDone].forEach(function (s) { s.hidden = s !== step; });
+      }
+      function reset() {
+        stepEmail.reset(); stepQ.reset(); err.hidden = true; email.removeAttribute('aria-invalid'); show(stepEmail);
+      }
+      document.querySelectorAll('[data-open-form]').forEach(function (b) {
+        b.addEventListener('click', function () { reset(); dlg.showModal(); email.focus(); });
+      });
+      dlg.addEventListener('click', function (e) {
+        if (e.target.closest('[data-close]')) dlg.close();
+        else if (e.target === dlg) dlg.close(); // click on the backdrop
+      });
+      dlg.addEventListener('close', reset);
+
+      stepEmail.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!email.checkValidity() || !email.value.trim()) {
+          err.hidden = false; email.setAttribute('aria-invalid', 'true'); email.focus(); return;
+        }
+        show(stepQ);
+        document.getElementById('ea-thanks').focus();
+      });
+      stepQ.addEventListener('submit', function (e) {
+        e.preventDefault();
+        show(stepDone);
+        document.getElementById('ea-done').focus();
+      });
+    })();
+  </script>
+</body>
+</html>
