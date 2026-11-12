@@ -455,7 +455,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
-          credentials: 'omit'
+          credentials: 'same-origin'
         }).then(function (r) {
           return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; });
         });
