@@ -179,7 +179,19 @@
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .skip { background: none; border: 0; padding: 12px 8px; font-size: 15px; color: var(--dim); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
     .skip:hover { color: var(--ink); }
-    label.q { font-weight: 400; font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+    .opts { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+    .opts legend { padding: 0; margin-bottom: 10px; }
+    .opt { display: flex; align-items: center; gap: 12px; margin: 0; font-weight: 400; font-size: 15px; line-height: 1.35; padding: 12px 14px; background: var(--paper); border: 1px solid rgba(26,26,24,0.16); cursor: pointer; transition: border-color .15s, background .15s; }
+    .opt:hover { border-color: rgba(26,26,24,0.4); }
+    .opt input { appearance: none; -webkit-appearance: none; flex: none; width: 18px; height: 18px; margin: 0; border: 1.5px solid rgba(26,26,24,0.45); border-radius: 50%; display: grid; place-items: center; }
+    .opt input::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); transform: scale(0); transition: transform .12s; }
+    .opt input:checked { border-color: var(--ink); }
+    .opt input:checked::after { transform: scale(1); }
+    .opt:has(input:checked) { border-color: var(--ink); background: #fff; }
+    .opt input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    #ea-other-wrap textarea { min-height: 84px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    label.q, legend.q { font-weight: 400; font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
     .dlg .btn-dark { padding: 14px 24px; font-size: 15px; }
     [hidden] { display: none !important; }
 
@@ -381,8 +393,19 @@
           <h2 tabindex="-1" id="ea-thanks">Thanks, you're on the list.</h2>
           <p>We'll email you when there's something to try.</p>
           <div id="ea-qblock">
-            <label for="ea-answer" class="q"><strong>Optional.</strong> Think about your last newsletter. What took the most time to pull together?</label>
-            <textarea id="ea-answer" name="answer" maxlength="2000"></textarea>
+            <fieldset class="opts">
+              <legend class="q"><strong>Optional.</strong> Think about your last newsletter. What took the most time to pull together?</legend>
+              <label class="opt"><input type="radio" name="choice" value="Chasing people for their updates"><span>Chasing people for their updates</span></label>
+              <label class="opt"><input type="radio" name="choice" value="Turning notes and recordings into writing"><span>Turning notes and recordings into writing</span></label>
+              <label class="opt"><input type="radio" name="choice" value="Deciding what to include"><span>Deciding what to include</span></label>
+              <label class="opt"><input type="radio" name="choice" value="Making it sound like one company"><span>Making it sound like one company</span></label>
+              <label class="opt"><input type="radio" name="choice" value="Formatting and layout"><span>Formatting and layout</span></label>
+              <label class="opt"><input type="radio" name="choice" value="Other"><span>Something else</span></label>
+            </fieldset>
+            <div id="ea-other-wrap" hidden>
+              <label for="ea-answer" class="sr-only">What else took the most time?</label>
+              <textarea id="ea-answer" name="answer" maxlength="1900" placeholder="Tell us what it was"></textarea>
+            </div>
             <p id="ea-ans-err" class="form-err" role="alert" hidden></p>
           </div>
           <div class="row" id="ea-qactions">
@@ -447,6 +470,7 @@
         err.hidden = true; saveErr.hidden = true; ansErr.hidden = true;
         email.removeAttribute('aria-invalid');
         qblock.hidden = false; qactions.hidden = false; closeOnly.hidden = true;
+        document.getElementById('ea-other-wrap').hidden = true;
         setBusy(joinBtn, false, 'Join the list'); setBusy(sendBtn, false, 'Send');
         show(stepEmail);
       }
@@ -505,13 +529,29 @@
         });
       });
 
+      stepQ.addEventListener('change', function (e) {
+        if (e.target.name !== 'choice') return;
+        ansErr.hidden = true;
+        var isOther = e.target.value === 'Other';
+        document.getElementById('ea-other-wrap').hidden = !isOther;
+        if (isOther) answer.focus();
+      });
+
       stepQ.addEventListener('submit', function (e) {
         e.preventDefault();
         if (busy) return;
         ansErr.hidden = true;
-        var text = answer.value.trim();
-        if (!text) {
-          ansErr.textContent = 'Type an answer, or choose Skip.'; ansErr.hidden = false; answer.focus(); return;
+        var picked = stepQ.querySelector('input[name="choice"]:checked');
+        if (!picked) {
+          ansErr.textContent = 'Pick an option, or choose Skip.'; ansErr.hidden = false; return;
+        }
+        var text = picked.value;
+        if (text === 'Other') {
+          var other = answer.value.trim();
+          if (!other) {
+            ansErr.textContent = 'Tell us what it was, or pick another option.'; ansErr.hidden = false; answer.focus(); return;
+          }
+          text = 'Other: ' + other;
         }
         setBusy(sendBtn, true, 'Sending…');
         post('/api/newsletter-early-access/answer', { token: answerToken, answer: text }).then(function (res) {
