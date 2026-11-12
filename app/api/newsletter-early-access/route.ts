@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { earlyAccessClient, earlyAccessEnvironment, isTestEmail, normaliseEmail } from "@/lib/newsletter-early-access";
+import {
+  earlyAccessClient,
+  earlyAccessEnvironment,
+  isTestEmail,
+  normaliseEmail,
+  describeError,
+} from "@/lib/newsletter-early-access";
 
 // Join the newsletter early-access list.
 // The response is the same whether the email is new or already on the list, so it
@@ -81,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, answerToken: tok.data.answer_token });
   } catch (error) {
-    console.error("Newsletter early access: save error:", JSON.stringify(error));
+    console.error("Newsletter early access: save error:", describeError(error));
     return NextResponse.json({ error: "save_failed" }, { status: 500 });
   }
 }

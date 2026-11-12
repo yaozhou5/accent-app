@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { MAX_ANSWER_LENGTH, earlyAccessClient, isUuid } from "@/lib/newsletter-early-access";
+import { MAX_ANSWER_LENGTH, earlyAccessClient, isUuid, describeError } from "@/lib/newsletter-early-access";
 
 // Save the optional answer for a signup, using the one-time token returned when
 // the person joined. The signup itself is already saved; this never touches it.
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Newsletter early access: answer save error:", JSON.stringify(error));
+    console.error("Newsletter early access: answer save error:", describeError(error));
     return NextResponse.json({ error: "save_failed" }, { status: 500 });
   }
 }
