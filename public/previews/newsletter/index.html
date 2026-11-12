@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- PREVIEW ONLY: company-newsletter concept test. Not linked from the site, not indexed,
-       no analytics, no network requests. The early-access form is a demo that saves and sends nothing. -->
+       no analytics. The early-access form posts only to this site's own /api/newsletter-early-access
+       routes (stored in Accent's Supabase, separate from accounts). No emails are sent. -->
   <meta name="robots" content="noindex, nofollow">
   <title>accent. · Company newsletter (preview)</title>
   <link rel="icon" href="/favicon.svg">
@@ -156,7 +157,7 @@
     .reveal { opacity: 0; transform: translateY(18px); transition: opacity .75s ease, transform .75s ease; }
     .reveal.in { opacity: 1; transform: none; }
 
-    /* Demo early-access form */
+    /* Early-access form */
     dialog { width: min(440px, calc(100vw - 32px)); border: 0; padding: 0; background: var(--cream); color: var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,0.35); }
     dialog::backdrop { background: rgba(10,10,10,0.6); }
     .dlg { padding: 26px 26px 28px; display: flex; flex-direction: column; gap: 16px; }
@@ -167,6 +168,10 @@
     .dlg p { margin: 0; font-size: 15px; line-height: 1.6; }
     .dlg .muted { color: var(--dim); font-size: 14px; }
     .demo-note { font-size: 13px !important; line-height: 1.5; color: #6B4A12 !important; background: #FCE9C8; padding: 10px 12px; }
+    .form-err { margin: 0; font-size: 14px !important; line-height: 1.5; color: #9B2C1F; }
+    .consent { margin: 0; font-size: 12.5px !important; line-height: 1.5; color: var(--dim); }
+    .consent a { color: var(--ink); text-underline-offset: 2px; }
+    .btn[disabled] { opacity: .6; cursor: progress; transform: none; box-shadow: none; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
     input[type=email], textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--paper); border: 1px solid rgba(26,26,24,0.18); border-radius: 0; padding: 12px 14px; }
     textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
@@ -344,11 +349,11 @@
     </div>
   </footer>
 
-  <!-- Demo early-access form: nothing is stored, sent or tracked. -->
+  <!-- Early-access form: saves the email (and optional answer) via /api/newsletter-early-access. Nothing is sent or tracked. -->
   <dialog id="ea" aria-labelledby="ea-title">
     <div class="dlg">
       <div class="dlg-top">
-        <span class="demo-pill">Demo · saves and sends nothing</span>
+        <span class="demo-pill" id="ea-env" hidden>Preview · not the live site</span><span aria-hidden="true"></span>
         <button class="close" type="button" data-close aria-label="Close">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
@@ -364,25 +369,27 @@
             <input id="ea-email" name="email" type="email" autocomplete="email" required placeholder="you@email.com" aria-describedby="ea-err">
             <p id="ea-err" class="muted" style="color:#9B2C1F; margin-top:6px;" hidden>Please enter a valid email address.</p>
           </div>
-          <div class="row"><button class="btn btn-dark" type="submit">Join the list</button></div>
-          <p class="demo-note">Preview only: this form doesn't save or send your email.</p>
+          <p id="ea-save-err" class="form-err" role="alert" hidden></p>
+          <div class="row"><button class="btn btn-dark" type="submit" id="ea-join">Join the list</button></div>
+          <p class="consent">We'll only use this to tell you when it's ready. You can ask us to remove it anytime. <a href="/privacy">Privacy policy</a></p>
         </div>
       </form>
 
-      <!-- Step 2: mock confirmation + optional question -->
+      <!-- Step 2: confirmation (only after a successful save) + optional question -->
       <form id="step-question" hidden>
         <div class="dlg" style="padding: 0;">
           <h2 tabindex="-1" id="ea-thanks">Thanks, you're on the list.</h2>
           <p>We'll email you when there's something to try.</p>
-          <p class="demo-note">Demo: nothing was saved, so you're not actually on a list yet and no email will be sent.</p>
-          <div>
+          <div id="ea-qblock">
             <label for="ea-answer" class="q"><strong>Optional.</strong> Think about your last newsletter. What took the most time to pull together?</label>
-            <textarea id="ea-answer" name="answer"></textarea>
+            <textarea id="ea-answer" name="answer" maxlength="2000"></textarea>
+            <p id="ea-ans-err" class="form-err" role="alert" hidden></p>
           </div>
-          <div class="row">
-            <button class="btn btn-dark" type="submit">Send</button>
+          <div class="row" id="ea-qactions">
+            <button class="btn btn-dark" type="submit" id="ea-send">Send</button>
             <button class="skip" type="button" data-close>Skip</button>
           </div>
+          <div class="row" id="ea-closeonly" hidden><button class="btn btn-dark" type="button" data-close>Close</button></div>
         </div>
       </form>
 
@@ -390,7 +397,6 @@
       <div id="step-done" hidden>
         <div class="dlg" style="padding: 0;">
           <h2 tabindex="-1" id="ea-done">Thanks for telling us.</h2>
-          <p class="demo-note">Demo: your answer wasn't saved or sent.</p>
           <div class="row"><button class="btn btn-dark" type="button" data-close>Close</button></div>
         </div>
       </div>
@@ -405,42 +411,124 @@
       window.addEventListener('scroll', onScroll, { passive: true });
       onScroll();
 
-      // Demo form. Deliberately no fetch, no storage, no analytics: values only live in the inputs
-      // and are cleared whenever the dialog closes.
+      // Early-access form. Posts only to this site's own API routes; no analytics, no storage
+      // in the browser. Confirmation is shown only after the server confirms the save.
       var dlg = document.getElementById('ea');
       var stepEmail = document.getElementById('step-email');
       var stepQ = document.getElementById('step-question');
       var stepDone = document.getElementById('step-done');
       var email = document.getElementById('ea-email');
       var err = document.getElementById('ea-err');
+      var saveErr = document.getElementById('ea-save-err');
+      var joinBtn = document.getElementById('ea-join');
+      var answer = document.getElementById('ea-answer');
+      var ansErr = document.getElementById('ea-ans-err');
+      var sendBtn = document.getElementById('ea-send');
+      var qblock = document.getElementById('ea-qblock');
+      var qactions = document.getElementById('ea-qactions');
+      var closeOnly = document.getElementById('ea-closeonly');
+      var answerToken = null;
+      var busy = false;
+
+      // Make it obvious when this isn't the production site.
+      var host = location.hostname;
+      if (host !== 'myaccent.io' && host !== 'www.myaccent.io') document.getElementById('ea-env').hidden = false;
+
+      var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
       function show(step) {
         [stepEmail, stepQ, stepDone].forEach(function (s) { s.hidden = s !== step; });
       }
-      function reset() {
-        stepEmail.reset(); stepQ.reset(); err.hidden = true; email.removeAttribute('aria-invalid'); show(stepEmail);
+      function setBusy(btn, on, label) {
+        busy = on; btn.disabled = on; btn.textContent = label;
       }
+      function reset() {
+        stepEmail.reset(); stepQ.reset(); answerToken = null;
+        err.hidden = true; saveErr.hidden = true; ansErr.hidden = true;
+        email.removeAttribute('aria-invalid');
+        qblock.hidden = false; qactions.hidden = false; closeOnly.hidden = true;
+        setBusy(joinBtn, false, 'Join the list'); setBusy(sendBtn, false, 'Send');
+        show(stepEmail);
+      }
+      function post(url, data) {
+        return fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+          credentials: 'omit'
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; });
+        });
+      }
+
       document.querySelectorAll('[data-open-form]').forEach(function (b) {
         b.addEventListener('click', function () { reset(); dlg.showModal(); email.focus(); });
       });
       dlg.addEventListener('click', function (e) {
+        if (busy) return;
         if (e.target.closest('[data-close]')) dlg.close();
         else if (e.target === dlg) dlg.close(); // click on the backdrop
       });
+      dlg.addEventListener('cancel', function (e) { if (busy) e.preventDefault(); });
       dlg.addEventListener('close', reset);
 
       stepEmail.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!email.checkValidity() || !email.value.trim()) {
+        if (busy) return;
+        saveErr.hidden = true;
+        var value = email.value.trim();
+        if (!value || !EMAIL_RE.test(value)) {
           err.hidden = false; email.setAttribute('aria-invalid', 'true'); email.focus(); return;
         }
-        show(stepQ);
-        document.getElementById('ea-thanks').focus();
+        err.hidden = true; email.removeAttribute('aria-invalid');
+        setBusy(joinBtn, true, 'Saving…');
+        post('/api/newsletter-early-access', { email: value }).then(function (res) {
+          setBusy(joinBtn, false, 'Join the list');
+          if (res.status === 200 && res.body && res.body.ok) {
+            answerToken = res.body.answerToken || null;
+            if (!answerToken) { qblock.hidden = true; qactions.hidden = true; closeOnly.hidden = false; }
+            show(stepQ);
+            document.getElementById('ea-thanks').focus();
+          } else if (res.status === 400) {
+            err.hidden = false; email.setAttribute('aria-invalid', 'true'); email.focus();
+          } else if (res.status === 429) {
+            saveErr.textContent = 'Too many tries from this connection. Please wait a little and try again.';
+            saveErr.hidden = false;
+          } else {
+            saveErr.textContent = "Sorry, we couldn't save your email just now. Please try again in a moment.";
+            saveErr.hidden = false;
+          }
+        }).catch(function () {
+          setBusy(joinBtn, false, 'Join the list');
+          saveErr.textContent = "We couldn't reach the server, so your email wasn't saved. Check your connection and try again.";
+          saveErr.hidden = false;
+        });
       });
+
       stepQ.addEventListener('submit', function (e) {
         e.preventDefault();
-        show(stepDone);
-        document.getElementById('ea-done').focus();
+        if (busy) return;
+        ansErr.hidden = true;
+        var text = answer.value.trim();
+        if (!text) {
+          ansErr.textContent = 'Type an answer, or choose Skip.'; ansErr.hidden = false; answer.focus(); return;
+        }
+        setBusy(sendBtn, true, 'Sending…');
+        post('/api/newsletter-early-access/answer', { token: answerToken, answer: text }).then(function (res) {
+          setBusy(sendBtn, false, 'Send');
+          if (res.status === 200 && res.body && res.body.ok) {
+            show(stepDone); document.getElementById('ea-done').focus();
+          } else {
+            ansErr.textContent = res.status === 429
+              ? "Too many tries. You're still on the list. Please try again later, or skip."
+              : "Your answer couldn't be saved. You're still on the list. Try again, or skip.";
+            ansErr.hidden = false;
+          }
+        }).catch(function () {
+          setBusy(sendBtn, false, 'Send');
+          ansErr.textContent = "We couldn't reach the server. You're still on the list. Try again, or skip.";
+          ansErr.hidden = false;
+        });
       });
     })();
   </script>

@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         </nav>
 
         <h1>Privacy</h1>
-        <p className={styles.sub}>Last updated 28 September 2026</p>
+        <p className={styles.sub}>Last updated 12 November 2026</p>
 
         <p>
           Accent helps you write and speak about your work in your own voice. Some of it runs entirely on your device.
@@ -112,8 +112,11 @@ export default function PrivacyPage() {
               <td>90 days, then deleted automatically</td>
             </tr>
             <tr>
-              <td>Contact, waitlist and interest forms</td>
-              <td>To reply to you</td>
+              <td>Contact, waitlist, interest and early-access forms</td>
+              <td>
+                To reply to you, and to tell you when a feature you signed up for is ready. Optional survey answers help
+                us decide what to build
+              </td>
               <td>Consent (Art. 6(1)(a))</td>
               <td>Until you ask us to remove it</td>
             </tr>
