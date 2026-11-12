@@ -3,11 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- PREVIEW ONLY: company-newsletter concept test. Not linked from the site, not indexed,
-       no analytics. The early-access form posts only to this site's own /api/newsletter-early-access
-       routes (stored in Accent's Supabase, separate from accounts). No emails are sent. -->
-  <meta name="robots" content="noindex, nofollow">
-  <title>accent. · Company newsletter (preview)</title>
+  <!-- Homepage: company-newsletter concept. Served at "/" by a beforeFiles rewrite in next.config.ts
+       (remove that rewrite to restore the previous homepage, app/page.tsx). Standalone static page:
+       no analytics. The early-access form posts only to /api/newsletter-early-access (Accent's Supabase,
+       separate from accounts). No emails are sent. -->
+  <meta name="description" content="Turn what your team already shares into a newsletter draft, without piecing it together by hand.">
+  <meta property="og:title" content="Interviews, demos and updates. One newsletter.">
+  <meta property="og:description" content="Turn what your team already shares into a newsletter draft, without piecing it together by hand.">
+  <meta property="og:url" content="https://myaccent.io/">
+  <meta property="og:type" content="website">
+  <title>accent. · Interviews, demos and updates. One newsletter.</title>
   <link rel="icon" href="/favicon.svg">
   <style>
     @font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-300-normal.woff2") format("woff2"); font-weight: 300; font-style: normal; font-display: swap; }

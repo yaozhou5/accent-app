@@ -15,16 +15,21 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
-      },
-    ];
+    return {
+      // The company-newsletter concept page is the homepage. It's a standalone static file
+      // (public/newsletter/index.html). Remove this rule to restore the previous homepage (app/page.tsx).
+      beforeFiles: [{ source: "/", destination: "/newsletter/index.html" }],
+      afterFiles: [
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://eu-assets.i.posthog.com/static/:path*",
+        },
+        {
+          source: "/ingest/:path*",
+          destination: "https://eu.i.posthog.com/:path*",
+        },
+      ],
+    };
   },
   async redirects() {
     return [
