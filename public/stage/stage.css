@@ -1,0 +1,51 @@
+@font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-300-normal.woff2") format("woff2"); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("/fonts/fraunces-600-italic.woff2") format("woff2"); font-weight: 600; font-style: italic; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("/fonts/dm-sans-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("/fonts/dm-sans-500-normal.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "DM Mono"; src: url("/fonts/dm-mono-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+
+:root {
+  --paper: #F5F0E8;
+  --ink: #1A1A18;
+  --dim: rgba(26, 26, 24, 0.5);
+  --faint: rgba(26, 26, 24, 0.28);
+  --line: rgba(26, 26, 24, 0.1);
+  --live: #9B2C1F;
+  --sans: "DM Sans", system-ui, sans-serif;
+  --serif: "Fraunces", Georgia, serif;
+  --mono: "DM Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); }
+body { font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+
+/* The writing is the whole screen. */
+.page { min-height: 100%; display: flex; justify-content: center; }
+.sheet {
+  width: 100%; max-width: 760px; padding: 18vh 32px 40vh;
+  font-family: var(--serif); font-weight: 300; font-size: clamp(21px, 2.1vw, 27px);
+  line-height: 1.6; letter-spacing: -0.003em; white-space: pre-wrap; word-wrap: break-word;
+}
+
+/* Quiet chrome, pinned to the corners. */
+.corner { position: fixed; z-index: 5; display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--dim); }
+.corner.tl { top: 22px; left: 26px; }
+.corner.tr { top: 18px; right: 22px; }
+.mark { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 19px; color: var(--ink); text-decoration: none; }
+.mark i { color: var(--live); font-style: inherit; }
+.mono { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); display: inline-block; }
+.is-live .dot { background: var(--live); animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: 0.35; } }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+.pill { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 7px 14px; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); transition: border-color .2s, background .2s; }
+.pill:hover { border-color: rgba(26,26,24,.3); }
+.pill.live { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pill.live .dot { background: #E05A47; }
+.ghost { background: none; border: 0; padding: 6px 4px; color: var(--dim); }
+.ghost:hover { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) { .is-live .dot { animation: none; } }

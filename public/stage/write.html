@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>The stage · writing</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/stage/stage.css">
+<style>
+  .page { padding-right: 0; transition: padding-right .35s ease; }
+  body.with-cards .page { padding-right: 300px; }
+  textarea.sheet {
+    display: block; border: 0; outline: 0; resize: none; background: transparent; color: var(--ink);
+    min-height: 100vh; height: auto; overflow: hidden; caret-color: var(--live);
+  }
+  textarea.sheet::placeholder { color: var(--faint); font-style: normal; }
+
+  .watchers { display: none; }
+  body.is-live .watchers { display: inline; }
+
+  /* Suggestions: small cards along the right edge. */
+  aside {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 300px; padding: 76px 22px 24px;
+    border-left: 1px solid var(--line); background: rgba(245,240,232,.92); backdrop-filter: blur(6px);
+    transform: translateX(100%); transition: transform .35s ease; overflow-y: auto; z-index: 4;
+  }
+  body.with-cards aside { transform: none; }
+  aside h2 { margin: 0 0 14px; font-weight: 400; color: var(--dim); }
+  .empty { font-size: 14px; color: var(--faint); line-height: 1.5; }
+  .card {
+    position: relative; background: #FBF8F3; border: 1px solid var(--line); border-radius: 3px;
+    padding: 12px 34px 12px 14px; margin-bottom: 10px; font-family: var(--serif); font-size: 17px; line-height: 1.4;
+    cursor: pointer; animation: arrive .45s ease both;
+  }
+  .card:hover { border-color: rgba(26,26,24,.28); }
+  .card small { display: block; margin-top: 6px; font-family: var(--sans); font-size: 11px; color: var(--faint); }
+  .card .x { position: absolute; top: 6px; right: 6px; border: 0; background: none; color: var(--faint); font-size: 16px; padding: 4px 6px; }
+  .card .x:hover { color: var(--ink); }
+  @keyframes arrive { from { opacity: 0; transform: translateY(-6px); } }
+
+  .badge { min-width: 18px; height: 18px; border-radius: 9px; background: var(--live); color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center; padding: 0 5px; }
+  .badge.on { display: inline-flex; }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--ink); color: var(--paper); font-size: 13px; padding: 9px 14px; border-radius: 4px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; }
+  .toast.on { opacity: 1; }
+  .conn { font-size: 12px; color: var(--live); }
+
+  @media (max-width: 860px) {
+    body.with-cards .page { padding-right: 0; }
+    aside { width: 86vw; }
+    .corner.tr { gap: 8px; }
+    .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="corner tl"><a class="mark" href="/stage" title="Start a new stage">accent<i>.</i></a><span class="mono">the stage</span></div>
+  <div class="corner tr">
+    <span class="conn" id="conn"></span>
+    <span class="watchers mono" id="watchers">0 watching</span>
+    <button class="ghost hide-sm" id="copy" type="button">Copy audience link</button>
+    <button class="ghost" id="cardsBtn" type="button" aria-expanded="false">Suggestions <span class="badge" id="badge">0</span></button>
+    <button class="pill" id="live" type="button" aria-pressed="false"><span class="dot"></span><span id="liveLabel">Go live</span></button>
+  </div>
+
+  <main class="page">
+    <textarea class="sheet" id="sheet" spellcheck="false" autocomplete="off" placeholder="Begin. Nobody sees this until you go live." aria-label="Your writing"></textarea>
+  </main>
+
+  <aside id="cards" aria-label="Audience suggestions">
+    <h2 class="mono">From the audience</h2>
+    <p class="empty" id="empty">Suggestions from people watching appear here. Click one to drop it in at your cursor.</p>
+    <div id="list"></div>
+  </aside>
+  <div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+import { createBus, roomFromSecret, diff } from "/stage/bus.js";
+
+const secret = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
+const local = new URLSearchParams(location.search).has("local");
+const room = await roomFromSecret(secret);
+const watchUrl = location.origin + "/stage/watch/" + room + (local ? "?local=1" : "");
+
+const sheet = document.getElementById("sheet");
+const liveBtn = document.getElementById("live");
+const liveLabel = document.getElementById("liveLabel");
+const watchers = document.getElementById("watchers");
+const list = document.getElementById("list");
+const empty = document.getElementById("empty");
+const badge = document.getElementById("badge");
+const cardsBtn = document.getElementById("cardsBtn");
+const toast = document.getElementById("toast");
+const conn = document.getElementById("conn");
+
+let live = false;
+let seq = 0;
+let sent = "";       // what the audience has been told the text is
+let unread = 0;
+
+function say(msg) { toast.textContent = msg; toast.classList.add("on"); clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove("on"), 1800); }
+function grow() { sheet.style.height = "auto"; sheet.style.height = Math.max(sheet.scrollHeight, innerHeight) + "px"; }
+
+const bus = await createBus(room, "writer");
+
+function snapshot() { bus.send("snap", { seq, text: sheet.value, caret: sheet.selectionEnd, live }); }
+
+bus.on("hello", () => { if (live) snapshot(); else bus.send("state", { live: false }); });
+bus.on("resync", () => { if (live) snapshot(); });
+bus.on("suggest", (p) => {
+  const text = String(p && p.text || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!text) return;
+  addCard(text);
+});
+bus.onAudience((n) => { watchers.textContent = n === 1 ? "1 watching" : n + " watching"; });
+bus.onStatus((s) => { conn.textContent = s === "SUBSCRIBED" ? "" : (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") ? "Reconnecting…" : ""; });
+
+// Every keystroke, deletion and paste becomes one small edit, sent the moment it happens.
+// Pauses need no encoding: the audience simply sees nothing arrive.
+sheet.addEventListener("input", () => {
+  grow();
+  if (!live) return;
+  const op = diff(sent, sheet.value);
+  if (!op.del && !op.ins) return;
+  sent = sheet.value;
+  seq++;
+  bus.send("op", { seq, ...op, caret: sheet.selectionEnd });
+});
+let caretT;
+document.addEventListener("selectionchange", () => {
+  if (!live || document.activeElement !== sheet) return;
+  clearTimeout(caretT);
+  caretT = setTimeout(() => bus.send("caret", { seq, caret: sheet.selectionEnd }), 60);
+});
+
+liveBtn.addEventListener("click", () => {
+  live = !live;
+  document.body.classList.toggle("is-live", live);
+  liveBtn.classList.toggle("live", live);
+  liveBtn.setAttribute("aria-pressed", String(live));
+  liveLabel.textContent = live ? "Live" : "Go live";
+  if (live) { sent = sheet.value; seq++; snapshot(); say("You're live. The audience sees every keystroke."); }
+  else { bus.send("state", { live: false }); say("Paused. The audience sees a still page."); }
+  sheet.focus();
+});
+
+document.getElementById("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(watchUrl); say("Audience link copied"); }
+  catch { prompt("Audience link", watchUrl); }
+});
+
+function toggleCards(open) {
+  const on = open ?? !document.body.classList.contains("with-cards");
+  document.body.classList.toggle("with-cards", on);
+  cardsBtn.setAttribute("aria-expanded", String(on));
+  if (on) { unread = 0; badge.classList.remove("on"); }
+}
+cardsBtn.addEventListener("click", () => toggleCards());
+
+function addCard(text) {
+  empty.hidden = true;
+  const card = document.createElement("div");
+  card.className = "card";
+  card.title = "Click to insert at your cursor";
+  const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  card.innerHTML = `<span></span><small>${time}</small><button class="x" type="button" aria-label="Dismiss">×</button>`;
+  card.firstChild.textContent = text;
+  card.addEventListener("click", (e) => {
+    if (e.target.closest(".x")) { card.remove(); if (!list.children.length) empty.hidden = false; return; }
+    const s = sheet.selectionStart, eIdx = sheet.selectionEnd;
+    sheet.focus();
+    sheet.setRangeText(text, s, eIdx, "end");
+    sheet.dispatchEvent(new Event("input"));
+    card.remove(); if (!list.children.length) empty.hidden = false;
+  });
+  list.prepend(card);
+  if (!document.body.classList.contains("with-cards")) { unread++; badge.textContent = unread; badge.classList.add("on"); }
+}
+
+addEventListener("beforeunload", (e) => { if (live || sheet.value) { e.preventDefault(); e.returnValue = ""; } });
+addEventListener("resize", grow);
+await bus.ready;
+sheet.focus();
+grow();
+window.__stage = { room, watchUrl };
+</script>
+</body>
+</html>

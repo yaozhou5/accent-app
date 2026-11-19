@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
       // (public/newsletter/index.html). Remove this rule to restore the previous homepage (app/page.tsx).
       beforeFiles: [{ source: "/", destination: "/newsletter/index.html" }],
       afterFiles: [
+        // The stage: standalone live-writing pages (public/stage), no analytics.
+        { source: "/stage", destination: "/stage/index.html" },
+        { source: "/stage/write/:secret", destination: "/stage/write.html" },
+        { source: "/stage/watch/:room", destination: "/stage/watch.html" },
         {
           source: "/ingest/static/:path*",
           destination: "https://eu-assets.i.posthog.com/static/:path*",
