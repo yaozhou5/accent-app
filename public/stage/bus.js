@@ -113,3 +113,39 @@ export function diff(a, b) {
 export function apply(text, op) {
   return text.slice(0, op.at) + op.ins + text.slice(op.at + op.del);
 }
+
+// ---- Line identity -------------------------------------------------------
+// A "line" is a paragraph (text between newlines). Each gets a short id that
+// survives edits, so audience notes stay attached as the text shifts.
+
+export function newLineId() {
+  return Math.random().toString(36).slice(2, 8);
+}
+
+const count = (s, ch) => { let n = 0; for (const c of s) if (c === ch) n++; return n; };
+
+// Given the line ids for `before`, return the ids after applying `op`.
+export function shiftLineIds(ids, before, op) {
+  const startLine = count(before.slice(0, op.at), "\n");
+  const removedNL = count(before.slice(op.at, op.at + op.del), "\n");
+  const insertedNL = count(op.ins, "\n");
+  const head = ids.slice(0, startLine);
+  // If the edit starts at the beginning of a line and swallows it whole (deleting a line,
+  // or an empty line), the surviving content belongs to the last affected line: keep its id.
+  const lineStartAt = before.lastIndexOf("\n", op.at - 1) + 1;
+  const kept = (op.at === lineStartAt && removedNL > 0 ? ids[startLine + removedNL] : ids[startLine]) ?? newLineId();
+  const tail = ids.slice(startLine + removedNL + 1);
+  const fresh = Array.from({ length: insertedNL }, newLineId);
+  // Pressing Enter at the very start of a line pushes that line down: it keeps its id
+  // and the new (empty) line above it gets the fresh id.
+  const pushDown = op.del === 0 && insertedNL > 0 && op.at === lineStartAt && op.ins.endsWith("\n");
+  const mid = pushDown ? [...fresh, kept] : [kept, ...fresh];
+  return [...head, ...mid, ...tail];
+}
+
+export function lineRanges(text) {
+  const out = [];
+  let start = 0;
+  for (const line of text.split("\n")) { out.push({ start, end: start + line.length, text: line }); start += line.length + 1; }
+  return out;
+}

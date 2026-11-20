@@ -8,13 +8,14 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/stage/stage.css">
 <style>
-  .sheet { padding-bottom: 46vh; min-height: 100vh; }
+  .sheet { padding-bottom: 50vh; min-height: 100vh; position: relative; }
+  .ln { min-height: 1.6em; border-radius: 3px; margin: 0 -8px; padding: 0 8px; cursor: pointer; transition: background .2s; -webkit-tap-highlight-color: transparent; }
+  .ln:hover { background: rgba(26,26,24,.035); }
+  .ln.open { background: #EEF1FE; }
+  .ln.mine { box-shadow: inset 2px 0 0 #4B6CF8; }
   .sheet .fresh { animation: ink .5s ease-out both; }
   @keyframes ink { from { opacity: 0; } }
-  .caret {
-    display: inline-block; width: 2px; height: 1.15em; margin: 0 -1px; vertical-align: -0.2em;
-    background: var(--live); border-radius: 1px;
-  }
+  .caret { display: inline-block; width: 2px; height: 1.15em; margin: 0 -1px; vertical-align: -0.2em; background: var(--live); border-radius: 1px; }
   .caret.idle { animation: blink 1.1s steps(1) infinite; }
   .caret.thinking { animation: slow 2.4s ease-in-out infinite; }
   @keyframes blink { 50% { opacity: 0; } }
@@ -22,91 +23,128 @@
 
   .waiting {
     position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-    font-family: var(--serif); font-weight: 300; font-size: clamp(20px, 2vw, 24px); color: var(--dim); padding: 24px;
-    transition: opacity .4s; pointer-events: none;
+    font-family: var(--serif); font-weight: 300; font-size: clamp(20px, 2vw, 24px); color: var(--dim); padding: 24px; transition: opacity .4s; pointer-events: none;
   }
   .waiting.gone { opacity: 0; }
   .waiting em { display: block; margin-top: 10px; font-family: var(--sans); font-style: normal; font-size: 13px; color: var(--faint); }
-
+  .hint { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); font-size: 12.5px; color: var(--faint); transition: opacity .6s; pointer-events: none; z-index: 4; white-space: nowrap; }
+  .hint.gone { opacity: 0; }
   .state { display: inline-flex; align-items: center; gap: 8px; }
 
+  /* The popover sits right under the tapped line. */
+  .pop {
+    position: absolute; z-index: 7; font-family: var(--sans); font-size: 14px; font-weight: 400; line-height: 1.4;
+    background: #FBF8F3; border: 1px solid rgba(26,26,24,.16); border-radius: 12px; padding: 8px; box-shadow: 0 14px 30px -18px rgba(26,26,24,.4);
+    white-space: normal; animation: pop .18s ease-out both;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px); } }
+  .pop .acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pop .acts button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 9px 4px; color: var(--ink); font-size: 13.5px; }
+  .pop .acts button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .pop form { display: flex; gap: 6px; margin-top: 8px; }
+  .pop input { flex: 1; min-width: 0; border: 1px solid rgba(26,26,24,.2); border-radius: 8px; padding: 9px 10px; font: inherit; font-size: 16px; background: #fff; color: var(--ink); }
+  .pop form button { border: 0; border-radius: 8px; background: var(--ink); color: var(--paper); padding: 0 14px; font-size: 13.5px; }
+  .pop .done { margin: 8px 4px 2px; font-size: 12.5px; color: var(--dim); }
+
+  .dock {
+    position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: min(460px, calc(100vw - 28px)); display: flex; gap: 6px; align-items: center; z-index: 6;
+  }
+  .reacts { display: flex; gap: 2px; background: rgba(251,248,243,.94); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 999px; padding: 3px; box-shadow: 0 10px 30px -18px rgba(26,26,24,.35); }
+  .reacts button { border: 0; background: none; font-size: 21px; width: 40px; height: 40px; border-radius: 50%; line-height: 1; transition: transform .15s, opacity .2s; }
+  .reacts button:active { transform: scale(1.25); }
+  .reacts button:disabled { opacity: .35; }
   form.suggest {
-    position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-    width: min(440px, calc(100vw - 32px)); display: flex; align-items: center; gap: 6px;
-    background: rgba(251,248,243,.94); backdrop-filter: blur(6px);
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 5px 5px 18px; z-index: 6;
-    box-shadow: 0 10px 30px -18px rgba(26,26,24,.35);
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; background: rgba(251,248,243,.94); backdrop-filter: blur(6px);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 4px 4px 14px; box-shadow: 0 10px 30px -18px rgba(26,26,24,.35);
   }
   form.suggest input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; color: var(--ink); padding: 8px 0; }
   form.suggest input::placeholder { color: var(--faint); }
-  form.suggest button { border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 13px; padding: 9px 14px; }
-  form.suggest button:disabled { opacity: .35; cursor: default; }
-  .sent { position: fixed; left: 50%; bottom: calc(max(22px, env(safe-area-inset-bottom)) + 58px); transform: translateX(-50%); font-size: 12.5px; color: var(--dim); opacity: 0; transition: opacity .3s; z-index: 6; }
+  form.suggest button { border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 13px; padding: 10px 13px; }
+  form.suggest button:disabled { opacity: .35; }
+  .sent { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 60px); transform: translateX(-50%); font-size: 12.5px; color: var(--dim); opacity: 0; transition: opacity .3s; z-index: 6; white-space: nowrap; }
   .sent.on { opacity: 1; }
-  @media (max-width: 600px) { .sheet { padding-top: 92px; } .corner.tl .mono { display: none; } }
-  @media (prefers-reduced-motion: reduce) { .caret, .sheet .fresh { animation: none !important; } }
+  @media (max-width: 600px) { .sheet { padding-top: 96px; } .corner.tl .mono { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .caret, .sheet .fresh, .pop { animation: none !important; } }
 </style>
 </head>
 <body>
   <div class="corner tl"><span class="mark">accent<i>.</i></span><span class="mono">the stage</span></div>
-  <div class="corner tr"><span class="state mono" id="state"><span class="dot"></span><span id="stateLabel">Not live</span></span></div>
+  <div class="corner tr"><span class="state mono"><span class="dot"></span><span id="stateLabel">Not live</span></span></div>
 
   <main class="page"><div class="sheet" id="sheet" aria-live="off"></div></main>
   <div class="waiting" id="waiting">The page is still empty.<em>You'll see the writing appear the moment they go live.</em></div>
+  <div class="hint gone" id="hint">Tap a line to react to it</div>
 
   <p class="sent" id="sent" role="status"></p>
-  <form class="suggest" id="suggest" autocomplete="off">
-    <input id="word" maxlength="80" placeholder="Suggest a word or phrase" aria-label="Suggest a word or phrase to the writer">
-    <button id="send" type="submit" disabled>Send</button>
-  </form>
+  <div class="dock">
+    <div class="reacts" role="group" aria-label="React">
+      <button type="button" data-e="eyes" aria-label="Watching">👀</button>
+      <button type="button" data-e="heart" aria-label="Love">❤️</button>
+      <button type="button" data-e="laugh" aria-label="Funny">😂</button>
+    </div>
+    <form class="suggest" id="suggest" autocomplete="off">
+      <input id="word" maxlength="80" placeholder="Suggest a word" aria-label="Suggest a word or phrase to the writer">
+      <button id="send" type="submit" disabled>Send</button>
+    </form>
+  </div>
 
 <script type="module">
 import { createBus, apply } from "/stage/bus.js";
 
 const room = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
-const sheet = document.getElementById("sheet");
-const waiting = document.getElementById("waiting");
-const stateLabel = document.getElementById("stateLabel");
-const form = document.getElementById("suggest");
-const word = document.getElementById("word");
-const send = document.getElementById("send");
-const sent = document.getElementById("sent");
+const $ = (id) => document.getElementById(id);
+const sheet = $("sheet"), waiting = $("waiting"), stateLabel = $("stateLabel"), hint = $("hint");
+const form = $("suggest"), word = $("word"), send = $("send"), sent = $("sent");
 
-let text = "";
-let seq = -1;      // last applied edit; -1 = no snapshot yet
-let caret = 0;
-let live = false;
+// A stable anonymous id per tab, so the writer can keep one note per person per line.
+let me = sessionStorage.getItem("stage-me");
+if (!me) { me = Math.random().toString(36).slice(2, 10); sessionStorage.setItem("stage-me", me); }
+
+let text = "", ids = [], seq = -1, caret = 0, live = false;
 let typingT, thinkT;
+const myNotes = new Map();   // lineId -> type
+let openLine = null;          // line with the popover open
+let suggesting = false;
 
 const caretEl = document.createElement("span");
 caretEl.className = "caret idle";
+const pop = document.createElement("div");
+pop.className = "pop";
 
-// Draw the text with the writer's caret inside it; freshly typed characters fade in.
+// Each line is its own tappable block, with the caret and freshly typed characters inside.
 function render(freshFrom = -1, freshLen = 0) {
-  const c = Math.max(0, Math.min(caret, text.length));
   sheet.textContent = "";
-  const parts = [];
-  if (freshLen > 0 && freshFrom >= 0) {
-    const fEnd = freshFrom + freshLen;
-    const cut = [0, freshFrom, fEnd, text.length, c].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
-    for (let i = 0; i < cut.length - 1; i++) parts.push([cut[i], cut[i + 1]]);
-  } else {
-    parts.push([0, c], [c, text.length]);
-  }
-  for (const [a, b] of parts) {
-    if (a === c) sheet.append(caretEl);
-    if (b <= a) continue;
-    const s = text.slice(a, b);
-    if (freshLen > 0 && a >= freshFrom && b <= freshFrom + freshLen) {
-      const span = document.createElement("span"); span.className = "fresh"; span.textContent = s; sheet.append(span);
-    } else sheet.append(s);
-  }
-  if (c === text.length && caretEl.parentNode !== sheet) sheet.append(caretEl);
+  const c = Math.max(0, Math.min(caret, text.length));
+  let start = 0;
+  text.split("\n").forEach((line, i) => {
+    const end = start + line.length;
+    const id = ids[i] || "";
+    const div = document.createElement("div");
+    div.className = "ln" + (myNotes.has(id) ? " mine" : "") + (id && id === openLine ? " open" : "");
+    div.dataset.line = id;
+    const cuts = new Set([start, end]);
+    const hasCaret = c >= start && c <= end;
+    if (hasCaret) cuts.add(c);
+    if (freshLen > 0) { cuts.add(Math.max(start, Math.min(end, freshFrom))); cuts.add(Math.max(start, Math.min(end, freshFrom + freshLen))); }
+    const pts = [...cuts].sort((a, b) => a - b);
+    for (let k = 0; k < pts.length; k++) {
+      const a = pts[k], b = pts[k + 1];
+      if (hasCaret && a === c && !div.contains(caretEl)) div.append(caretEl);
+      if (b === undefined || b <= a) continue;
+      const s = text.slice(a, b);
+      if (freshLen > 0 && a >= freshFrom && b <= freshFrom + freshLen) { const sp = document.createElement("span"); sp.className = "fresh"; sp.textContent = s; div.append(sp); }
+      else div.append(s);
+    }
+    if (!line && !div.contains(caretEl)) div.append("​");
+    sheet.append(div);
+    start = end + 1;
+  });
+  placePop();
   waiting.classList.toggle("gone", live || text.length > 0);
   follow();
 }
 
-// While keys arrive the caret holds still; when they stop it blinks; a long pause slows it to a breath.
 function typed() {
   caretEl.className = "caret";
   clearTimeout(typingT); clearTimeout(thinkT);
@@ -115,8 +153,9 @@ function typed() {
 }
 
 function follow() {
+  if (openLine) return;                      // don't scroll away while someone is reacting
   const r = caretEl.getBoundingClientRect();
-  if (r.bottom > innerHeight - 140 || r.top < 80) caretEl.scrollIntoView({ block: "center", behavior: "smooth" });
+  if (r.bottom > innerHeight - 150 || r.top < 80) caretEl.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 function setLive(on) {
@@ -124,33 +163,123 @@ function setLive(on) {
   document.body.classList.toggle("is-live", on);
   stateLabel.textContent = on ? "Live" : (text ? "Paused" : "Not live");
   caretEl.style.visibility = on ? "visible" : "hidden";
+  if (on && !sessionStorage.getItem("stage-hint")) { hint.classList.remove("gone"); setTimeout(() => hint.classList.add("gone"), 5000); sessionStorage.setItem("stage-hint", "1"); }
 }
 
+// ---- Line popover: Love / Unclear / Cut / Suggest ---------------------------------
+const KINDS = [["love", "Love"], ["unclear", "Unclear"], ["cut", "Cut"], ["suggest", "Suggest"]];
+const lineText = (id) => { const i = ids.indexOf(id); return i < 0 ? "" : text.split("\n")[i]; };
+
+// The popover lives outside the text (re-rendering the text never touches it, so a
+// phone keyboard stays open while the writer keeps typing). It just follows its line.
+function placePop() {
+  if (!openLine) return;
+  const host = sheet.querySelector(`.ln[data-line="${openLine}"]`);
+  if (!host) { closePop(); return; }
+  const r = host.getBoundingClientRect(), s = sheet.getBoundingClientRect();
+  const cs = getComputedStyle(sheet);
+  const left = s.left + parseFloat(cs.paddingLeft) - 8, width = s.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) + 16;
+  pop.style.top = (r.bottom + scrollY + 6) + "px";
+  pop.style.left = (left + scrollX) + "px";
+  pop.style.width = width + "px";
+  if (!pop.isConnected) document.body.append(pop);
+}
+addEventListener("resize", placePop);
+
+function openPop(lineId) { openLine = lineId; suggesting = false; buildPop(); render(); }
+function closePop() { openLine = null; suggesting = false; pop.remove(); }
+
+function buildPop(doneMsg) {
+  pop.textContent = "";
+  const acts = document.createElement("div"); acts.className = "acts";
+  for (const [k, l] of KINDS) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = l; b.dataset.k = k;
+    b.setAttribute("aria-pressed", String(k === "suggest" ? suggesting : myNotes.get(openLine) === k));
+    acts.append(b);
+  }
+  pop.append(acts);
+  if (suggesting) {
+    const f = document.createElement("form");
+    const inp = document.createElement("input");
+    inp.maxLength = 400; inp.setAttribute("aria-label", "Your wording for this line");
+    inp.value = lineText(openLine);
+    const go = document.createElement("button"); go.type = "submit"; go.textContent = "Send";
+    f.append(inp, go); pop.append(f);
+    f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.replace(/\s+/g, " ").trim(); if (v) sendNote("suggest", v); });
+    setTimeout(() => { inp.focus(); inp.select(); }, 30);
+  }
+  if (doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = doneMsg; pop.append(d); }
+}
+
+let lastNote = 0;
+function sendNote(type, suggestion = "") {
+  if (!live || !openLine) return;
+  if (Date.now() - lastNote < 1200) return;
+  lastNote = Date.now();
+  const line = openLine;
+  bus.send("note", { lineId: line, snapshot: lineText(line), author: me, type, text: suggestion });
+  myNotes.set(line, type);
+  suggesting = false;
+  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: "Sent. Your wording is with the writer." }[type]);
+  render();
+  setTimeout(() => { if (openLine === line && pop.querySelector(".done")) { closePop(); render(); } }, 1600);
+}
+
+pop.addEventListener("click", (e) => {
+  e.stopPropagation();                         // the buttons get rebuilt below; don't let "outside click" close us
+  const b = e.target.closest(".acts button");
+  if (!b) return;
+  if (b.dataset.k === "suggest") { suggesting = !suggesting; buildPop(); render(); }
+  else sendNote(b.dataset.k);
+});
+
+sheet.addEventListener("click", (e) => {
+  if (e.target.closest(".pop")) return;
+  const ln = e.target.closest(".ln");
+  if (!ln || !live || !ln.dataset.line) return;
+  if (!lineText(ln.dataset.line).trim()) return;             // nothing to react to on an empty line
+  if (openLine === ln.dataset.line) { closePop(); render(); } else openPop(ln.dataset.line);
+});
+document.addEventListener("click", (e) => { if (openLine && !e.target.closest(".pop") && !e.target.closest(".ln")) { closePop(); render(); } });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && openLine) { closePop(); render(); } });
+
+// ---- Live connection ----------------------------------------------------------------
 const bus = await createBus(room, "audience");
 
-let connected = false;
-bus.onStatus((st) => {
-  connected = st === "SUBSCRIBED";
-  if (!connected && (st === "CHANNEL_ERROR" || st === "TIMED_OUT" || st === "CLOSED")) stateLabel.textContent = "Connecting…";
-  else if (connected) setLive(live);
-});
 bus.on("snap", (p) => {
   text = String(p.text || ""); seq = p.seq; caret = p.caret ?? text.length;
+  ids = Array.isArray(p.ids) ? p.ids : text.split("\n").map(() => "");
   setLive(!!p.live); render();
 });
-bus.on("state", (p) => { setLive(!!p.live); render(); });
+bus.on("state", (p) => { setLive(!!p.live); if (!p.live) closePop(); render(); });
 bus.on("op", (p) => {
-  if (seq < 0) return;                                  // waiting for a snapshot
-  if (p.seq !== seq + 1) { seq = -1; bus.send("resync", {}); return; }  // missed something
+  if (seq < 0) return;
+  if (p.seq !== seq + 1) { seq = -1; bus.send("resync", {}); return; }
   seq = p.seq;
   text = apply(text, p);
+  if (Array.isArray(p.ids)) ids = p.ids;
   caret = p.caret ?? p.at + p.ins.length;
+  for (const id of [...myNotes.keys()]) if (!ids.includes(id)) myNotes.delete(id);
   if (!live) setLive(true);
   render(p.ins.length ? p.at : -1, p.ins.length);
   typed();
 });
 bus.on("caret", (p) => { if (p.seq === seq) { caret = p.caret; render(); } });
+bus.onStatus((st) => {
+  if (st === "CHANNEL_ERROR" || st === "TIMED_OUT" || st === "CLOSED") stateLabel.textContent = "Connecting…";
+  else if (st === "SUBSCRIBED") setLive(live);
+});
 
+// ---- Reactions: one tap, at most one per 2 seconds ---------------------------------
+const reactBtns = [...document.querySelectorAll(".reacts button")];
+reactBtns.forEach((b) => b.addEventListener("click", () => {
+  if (!live) { flash("They're not live yet"); return; }
+  bus.send("react", { e: b.dataset.e, author: me });
+  reactBtns.forEach((x) => (x.disabled = true));
+  setTimeout(() => reactBtns.forEach((x) => (x.disabled = false)), 2000);
+}));
+
+// ---- Freeform suggestion (unchanged) ------------------------------------------------
 word.addEventListener("input", () => { send.disabled = !word.value.trim(); });
 let lastSent = 0;
 form.addEventListener("submit", (e) => {

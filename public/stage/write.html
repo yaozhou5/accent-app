@@ -8,131 +8,345 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/stage/stage.css">
 <style>
-  .page { padding-right: 0; transition: padding-right .35s ease; }
+  .page { transition: padding .35s ease; }
   body.with-cards .page { padding-right: 300px; }
+  body.revising .page { padding-right: 280px; }
+  body.revising.with-cards .page { padding-right: 580px; }
+
+  /* The editor is a textarea over a mirror of the same text. The mirror draws
+     underlines/highlights per line; the textarea stays the only thing you type in. */
+  .editor { position: relative; width: 100%; max-width: 760px; }
+  .editor .sheet { max-width: none; }
   textarea.sheet {
-    display: block; border: 0; outline: 0; resize: none; background: transparent; color: var(--ink);
+    position: relative; z-index: 2; display: block; border: 0; outline: 0; resize: none; background: transparent; color: var(--ink);
     min-height: 100vh; height: auto; overflow: hidden; caret-color: var(--live);
   }
-  textarea.sheet::placeholder { color: var(--faint); font-style: normal; }
+  textarea.sheet::placeholder { color: var(--faint); }
+  .mirror { position: absolute; inset: 0; z-index: 1; color: transparent; pointer-events: none; }
+  .mirror .ml { min-height: 1.6em; }
+  .mirror .mt { border-radius: 2px; transition: background .3s, text-decoration-color .3s; }
+  .ml.marked .mt { text-decoration: underline dotted; text-decoration-color: rgba(26,26,24,.28); text-decoration-thickness: 1.5px; text-underline-offset: 7px; }
+  body.revising .ml.marked .mt { background: #F3E2B8; text-decoration-color: transparent; }
+  body.revising .ml.marked.focus .mt { background: #EBCF8F; }
+  .ml.gone .mt { background: transparent !important; }
+
+  /* Gutter: tiny counts in Writing mode, full notes in Revising mode. */
+  .gutter { position: absolute; top: 0; left: calc(100% - 4px); width: 250px; z-index: 3; pointer-events: none; }
+  .count {
+    position: absolute; left: 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--dim);
+    border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; background: var(--paper); white-space: nowrap;
+  }
+  body.revising .count { display: none; }
+  .notes { position: absolute; left: 0; width: 250px; display: none; flex-direction: column; gap: 6px; pointer-events: auto; transition: opacity .5s; }
+  body.revising .notes { display: flex; }
+  .notes.fading { opacity: 0; }
+  .note {
+    background: #FBF8F3; border: 1px solid var(--line); border-radius: 4px; padding: 9px 11px; font-size: 12.5px; line-height: 1.4;
+    animation: arrive .35s ease both;
+  }
+  .note .kind { color: var(--dim); }
+  .note.love .kind { color: #3B6D11; }
+  .note.cut .kind { color: var(--live); }
+  .note .alt { display: block; margin-top: 4px; font-family: var(--serif); font-size: 15px; color: var(--ink); }
+  .note .stale { display: block; margin-top: 4px; font-size: 11px; color: var(--faint); }
+  .note .acts { display: flex; gap: 6px; margin-top: 7px; }
+  .note button { border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 3px 9px; font-size: 12px; }
+  .note button:hover { border-color: rgba(26,26,24,.35); }
+  .note button.skip { border-color: transparent; background: none; color: var(--dim); }
+  @keyframes arrive { from { opacity: 0; transform: translateY(-4px); } }
+
+  .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+  .modes button { border: 0; background: none; border-radius: 999px; padding: 5px 11px; color: var(--dim); font-size: 13px; }
+  .modes button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .modes .n { font-family: var(--mono); font-size: 11px; margin-left: 4px; }
 
   .watchers { display: none; }
   body.is-live .watchers { display: inline; }
 
-  /* Suggestions: small cards along the right edge. */
+  /* Freeform suggestions (unchanged from v1). */
   aside {
     position: fixed; top: 0; right: 0; bottom: 0; width: 300px; padding: 76px 22px 24px;
-    border-left: 1px solid var(--line); background: rgba(245,240,232,.92); backdrop-filter: blur(6px);
-    transform: translateX(100%); transition: transform .35s ease; overflow-y: auto; z-index: 4;
+    border-left: 1px solid var(--line); background: rgba(245,240,232,.94); backdrop-filter: blur(6px);
+    transform: translateX(100%); transition: transform .35s ease; overflow-y: auto; z-index: 6;
   }
   body.with-cards aside { transform: none; }
   aside h2 { margin: 0 0 14px; font-weight: 400; color: var(--dim); }
   .empty { font-size: 14px; color: var(--faint); line-height: 1.5; }
   .card {
     position: relative; background: #FBF8F3; border: 1px solid var(--line); border-radius: 3px;
-    padding: 12px 34px 12px 14px; margin-bottom: 10px; font-family: var(--serif); font-size: 17px; line-height: 1.4;
-    cursor: pointer; animation: arrive .45s ease both;
+    padding: 12px 34px 12px 14px; margin-bottom: 10px; font-family: var(--serif); font-size: 17px; line-height: 1.4; cursor: pointer; animation: arrive .45s ease both;
   }
   .card:hover { border-color: rgba(26,26,24,.28); }
   .card small { display: block; margin-top: 6px; font-family: var(--sans); font-size: 11px; color: var(--faint); }
   .card .x { position: absolute; top: 6px; right: 6px; border: 0; background: none; color: var(--faint); font-size: 16px; padding: 4px 6px; }
-  .card .x:hover { color: var(--ink); }
-  @keyframes arrive { from { opacity: 0; transform: translateY(-6px); } }
-
   .badge { min-width: 18px; height: 18px; border-radius: 9px; background: var(--live); color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center; padding: 0 5px; }
   .badge.on { display: inline-flex; }
+
+  /* Reactions float up from the lower right and fade. Never block anything. */
+  .floats { position: fixed; right: 40px; bottom: 30px; width: 120px; height: 60vh; pointer-events: none; z-index: 8; }
+  .float { position: absolute; bottom: 0; font-size: 30px; animation: rise 2.6s ease-out forwards; }
+  @keyframes rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 12% { opacity: 1; transform: translateY(-20px) scale(1); } 100% { transform: translateY(-48vh) scale(1); opacity: 0; } }
 
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--ink); color: var(--paper); font-size: 13px; padding: 9px 14px; border-radius: 4px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; }
   .toast.on { opacity: 1; }
   .conn { font-size: 12px; color: var(--live); }
 
+  @media (max-width: 1100px) {
+    body.revising .page { padding-right: 0; justify-content: flex-start; }
+    .gutter { left: auto; right: 8px; width: 230px; }
+    .notes { width: 230px; }
+  }
   @media (max-width: 860px) {
     body.with-cards .page { padding-right: 0; }
     aside { width: 86vw; }
-    .corner.tr { gap: 8px; }
     .hide-sm { display: none; }
   }
+  @media (prefers-reduced-motion: reduce) { .float { animation-duration: 1.2s; } }
 </style>
 </head>
 <body>
-  <div class="corner tl"><a class="mark" href="/stage" title="Start a new stage">accent<i>.</i></a><span class="mono">the stage</span></div>
+  <div class="corner tl"><a class="mark" href="/stage" title="Start a new stage">accent<i>.</i></a><span class="mono hide-sm">the stage</span></div>
   <div class="corner tr">
     <span class="conn" id="conn"></span>
     <span class="watchers mono" id="watchers">0 watching</span>
+    <div class="modes" role="group" aria-label="Mode">
+      <button type="button" id="mWrite" aria-pressed="true">Writing</button>
+      <button type="button" id="mRevise" aria-pressed="false">Revising<span class="n" id="noteCount"></span></button>
+    </div>
     <button class="ghost hide-sm" id="copy" type="button">Copy audience link</button>
     <button class="ghost" id="cardsBtn" type="button" aria-expanded="false">Suggestions <span class="badge" id="badge">0</span></button>
     <button class="pill" id="live" type="button" aria-pressed="false"><span class="dot"></span><span id="liveLabel">Go live</span></button>
   </div>
 
   <main class="page">
-    <textarea class="sheet" id="sheet" spellcheck="false" autocomplete="off" placeholder="Begin. Nobody sees this until you go live." aria-label="Your writing"></textarea>
+    <div class="editor" id="editor">
+      <div class="sheet mirror" id="mirror" aria-hidden="true"></div>
+      <textarea class="sheet" id="sheet" spellcheck="false" autocomplete="off" placeholder="Begin. Nobody sees this until you go live." aria-label="Your writing"></textarea>
+      <div class="gutter" id="gutter"></div>
+    </div>
   </main>
 
-  <aside id="cards" aria-label="Audience suggestions">
+  <aside id="cards" aria-label="Freeform suggestions">
     <h2 class="mono">From the audience</h2>
-    <p class="empty" id="empty">Suggestions from people watching appear here. Click one to drop it in at your cursor.</p>
+    <p class="empty" id="empty">Freeform suggestions appear here. Click one to drop it in at your cursor.</p>
     <div id="list"></div>
   </aside>
+  <div class="floats" id="floats" aria-hidden="true"></div>
   <div class="toast" id="toast" role="status"></div>
 
 <script type="module">
-import { createBus, roomFromSecret, diff } from "/stage/bus.js";
+import { createBus, roomFromSecret, diff, shiftLineIds, newLineId, lineRanges } from "/stage/bus.js";
 
 const secret = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
 const local = new URLSearchParams(location.search).has("local");
 const room = await roomFromSecret(secret);
 const watchUrl = location.origin + "/stage/watch/" + room + (local ? "?local=1" : "");
 
-const sheet = document.getElementById("sheet");
-const liveBtn = document.getElementById("live");
-const liveLabel = document.getElementById("liveLabel");
-const watchers = document.getElementById("watchers");
-const list = document.getElementById("list");
-const empty = document.getElementById("empty");
-const badge = document.getElementById("badge");
-const cardsBtn = document.getElementById("cardsBtn");
-const toast = document.getElementById("toast");
-const conn = document.getElementById("conn");
+const $ = (id) => document.getElementById(id);
+const sheet = $("sheet"), mirror = $("mirror"), gutter = $("gutter");
+const liveBtn = $("live"), liveLabel = $("liveLabel"), watchers = $("watchers");
+const list = $("list"), empty = $("empty"), badge = $("badge"), cardsBtn = $("cardsBtn");
+const toast = $("toast"), conn = $("conn"), floats = $("floats");
 
 let live = false;
 let seq = 0;
-let sent = "";       // what the audience has been told the text is
+let sent = "";              // what the audience has been told
+let prev = "";              // last text we tracked line ids against
+let ids = [newLineId()];    // one id per line of `prev`
 let unread = 0;
+let revising = false;
+
+// notes: Map<author|lineId, {author, lineId, snapshot, type, text, at}>
+const notes = new Map();
+const fadingLines = new Set();
+const lastReact = new Map();
 
 function say(msg) { toast.textContent = msg; toast.classList.add("on"); clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove("on"), 1800); }
-function grow() { sheet.style.height = "auto"; sheet.style.height = Math.max(sheet.scrollHeight, innerHeight) + "px"; }
+function grow() { sheet.style.height = "auto"; const h = Math.max(sheet.scrollHeight, innerHeight) + "px"; sheet.style.height = h; mirror.style.height = h; }
 
 const bus = await createBus(room, "writer");
 
-function snapshot() { bus.send("snap", { seq, text: sheet.value, caret: sheet.selectionEnd, live }); }
+function snapshot() { bus.send("snap", { seq, text: sheet.value, ids, caret: sheet.selectionEnd, live }); }
 
 bus.on("hello", () => { if (live) snapshot(); else bus.send("state", { live: false }); });
 bus.on("resync", () => { if (live) snapshot(); });
 bus.on("suggest", (p) => {
   const text = String(p && p.text || "").replace(/\s+/g, " ").trim().slice(0, 80);
-  if (!text) return;
-  addCard(text);
+  if (text) addCard(text);
+});
+bus.on("note", (p) => {
+  if (!live || !p || !ids.includes(p.lineId)) return;
+  const type = ["love", "unclear", "cut", "suggest"].includes(p.type) ? p.type : null;
+  if (!type) return;
+  const author = String(p.author || "").slice(0, 24);
+  const text = type === "suggest" ? String(p.text || "").replace(/\s+/g, " ").trim().slice(0, 400) : "";
+  if (type === "suggest" && !text) return;
+  // At most one note per audience member per line: a new one replaces their previous one.
+  notes.set(author + "|" + p.lineId, { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() });
+  draw();
+});
+bus.on("react", (p) => {
+  const e = { eyes: "👀", heart: "❤️", laugh: "😂" }[p && p.e];
+  if (!e) return;
+  const who = String(p.author || "");
+  const now = Date.now();
+  if (now - (lastReact.get(who) || 0) < 2000) return;   // one per viewer per 2 s
+  lastReact.set(who, now);
+  const el = document.createElement("span");
+  el.className = "float"; el.textContent = e;
+  el.style.left = Math.round(Math.random() * 80) + "px";
+  floats.append(el);
+  setTimeout(() => el.remove(), 2700);
 });
 bus.onAudience((n) => { watchers.textContent = n === 1 ? "1 watching" : n + " watching"; });
-bus.onStatus((s) => { conn.textContent = s === "SUBSCRIBED" ? "" : (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") ? "Reconnecting…" : ""; });
+bus.onStatus((s) => { conn.textContent = (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") ? "Reconnecting…" : ""; });
 
-// Every keystroke, deletion and paste becomes one small edit, sent the moment it happens.
-// Pauses need no encoding: the audience simply sees nothing arrive.
-sheet.addEventListener("input", () => {
+// Track every edit: keep line ids attached to the right lines, then tell the audience.
+function onEdit() {
+  const now = sheet.value;
+  if (now !== prev) {
+    ids = shiftLineIds(ids, prev, diff(prev, now));
+    prev = now;
+    pruneNotes();
+  }
   grow();
+  draw();
   if (!live) return;
-  const op = diff(sent, sheet.value);
+  const op = diff(sent, now);
   if (!op.del && !op.ins) return;
-  sent = sheet.value;
-  seq++;
-  bus.send("op", { seq, ...op, caret: sheet.selectionEnd });
-});
+  sent = now; seq++;
+  bus.send("op", { seq, ...op, caret: sheet.selectionEnd, ids });
+}
+sheet.addEventListener("input", onEdit);
+
+// Notes on lines that no longer exist fade out quietly.
+function pruneNotes() {
+  const alive = new Set(ids);
+  const dead = new Set();
+  for (const [k, n] of notes) if (!alive.has(n.lineId)) { dead.add(n.lineId); notes.delete(k); }
+  for (const id of dead) {
+    const el = gutter.querySelector(`.notes[data-line="${id}"]`);
+    if (el) { el.classList.add("fading"); setTimeout(() => el.remove(), 550); fadingLines.add(id); setTimeout(() => fadingLines.delete(id), 600); }
+  }
+}
+
+function groupsFor(lineId) {
+  const g = new Map();
+  for (const n of notes.values()) {
+    if (n.lineId !== lineId) continue;
+    const key = n.type + "|" + (n.type === "suggest" ? n.text.toLowerCase() : "");
+    if (!g.has(key)) g.set(key, { type: n.type, text: n.text, snapshot: n.snapshot, keys: [], at: n.at });
+    const grp = g.get(key);
+    grp.keys.push(n.author + "|" + n.lineId);
+    grp.at = Math.max(grp.at, n.at);
+  }
+  return [...g.values()].sort((a, b) => b.keys.length - a.keys.length || a.at - b.at);
+}
+
+function label(g) {
+  const n = g.keys.length, many = n > 1 ? ` · ${n}` : "";
+  if (g.type === "love") return `Loved this${many}`;
+  if (g.type === "unclear") return `Unclear${many}`;
+  if (g.type === "cut") return `Cut?${many}`;
+  return n > 1 ? `${n} suggest` : "Suggested";
+}
+
+// Redraw the mirror (underlines/highlights) and the gutter (counts or margin notes).
+function draw() {
+  const ranges = lineRanges(sheet.value);
+  const marked = new Set([...notes.values()].map((n) => n.lineId));
+  mirror.textContent = "";
+  ranges.forEach((r, i) => {
+    const div = document.createElement("div");
+    div.className = "ml" + (marked.has(ids[i]) ? " marked" : "");
+    div.dataset.line = ids[i];
+    const span = document.createElement("span");
+    span.className = "mt";
+    span.textContent = r.text || "​";
+    div.append(span);
+    mirror.append(div);
+  });
+  // Keep fading note stacks; rebuild the rest.
+  for (const el of [...gutter.children]) if (!el.classList.contains("fading")) el.remove();
+  let lowest = 0;
+  const total = notes.size;
+  $("noteCount").textContent = total ? String(total) : "";
+  ranges.forEach((r, i) => {
+    const id = ids[i];
+    if (!marked.has(id)) return;
+    const lineEl = mirror.children[i];
+    const top = lineEl.offsetTop;
+    const groups = groupsFor(id);
+    const n = groups.reduce((s, g) => s + g.keys.length, 0);
+    const c = document.createElement("span");
+    c.className = "count"; c.style.top = (top + 6) + "px";
+    c.textContent = n === 1 ? "1 note" : n + " notes";
+    gutter.append(c);
+
+    const box = document.createElement("div");
+    box.className = "notes"; box.dataset.line = id;
+    box.style.top = Math.max(top, lowest) + "px";
+    box.addEventListener("mouseenter", () => lineEl.classList.add("focus"));
+    box.addEventListener("mouseleave", () => lineEl.classList.remove("focus"));
+    for (const g of groups) {
+      const el = document.createElement("div");
+      el.className = "note " + g.type;
+      const kind = document.createElement("span"); kind.className = "kind"; kind.textContent = label(g); el.append(kind);
+      if (g.type === "suggest") { const alt = document.createElement("span"); alt.className = "alt"; alt.textContent = g.text; el.append(alt); }
+      if ((g.type === "suggest" || g.type === "cut") && g.snapshot !== r.text) {
+        const st = document.createElement("span"); st.className = "stale"; st.textContent = "This line has changed since."; el.append(st);
+      }
+      const acts = document.createElement("div"); acts.className = "acts";
+      if (g.type === "suggest" || g.type === "cut") {
+        const use = document.createElement("button"); use.type = "button";
+        use.textContent = g.type === "cut" ? "Cut line" : "Use";
+        use.addEventListener("click", () => applyNote(id, g));
+        acts.append(use);
+      }
+      const skip = document.createElement("button"); skip.type = "button"; skip.className = "skip"; skip.textContent = "Skip";
+      skip.addEventListener("click", () => { g.keys.forEach((k) => notes.delete(k)); draw(); });
+      acts.append(skip);
+      el.append(acts);
+      box.append(el);
+    }
+    gutter.append(box);
+    if (revising) lowest = Math.max(top, lowest) + box.offsetHeight + 10;
+  });
+}
+
+// Use: apply the note as an ordinary edit, so the audience watches it happen live.
+function applyNote(lineId, g) {
+  const i = ids.indexOf(lineId);
+  if (i < 0) return;
+  const r = lineRanges(sheet.value)[i];
+  if (g.type === "suggest") {
+    sheet.setRangeText(g.text, r.start, r.end, "end");
+  } else {
+    const end = r.end < sheet.value.length ? r.end + 1 : r.end;
+    const start = end === r.end && r.start > 0 ? r.start - 1 : r.start;
+    sheet.setRangeText("", start, end, "start");
+  }
+  for (const k of [...notes.keys()]) if (notes.get(k).lineId === lineId && (g.type === "cut" || g.keys.includes(k))) notes.delete(k);
+  onEdit();
+  say(g.type === "cut" ? "Line cut. The audience saw it go." : "Suggestion used. The audience saw it change.");
+}
+
 let caretT;
 document.addEventListener("selectionchange", () => {
   if (!live || document.activeElement !== sheet) return;
   clearTimeout(caretT);
   caretT = setTimeout(() => bus.send("caret", { seq, caret: sheet.selectionEnd }), 60);
 });
+
+function setMode(rev) {
+  revising = rev;
+  document.body.classList.toggle("revising", rev);
+  $("mWrite").setAttribute("aria-pressed", String(!rev));
+  $("mRevise").setAttribute("aria-pressed", String(rev));
+  draw();
+}
+$("mWrite").addEventListener("click", () => { setMode(false); sheet.focus(); });
+$("mRevise").addEventListener("click", () => setMode(true));
 
 liveBtn.addEventListener("click", () => {
   live = !live;
@@ -145,7 +359,7 @@ liveBtn.addEventListener("click", () => {
   sheet.focus();
 });
 
-document.getElementById("copy").addEventListener("click", async () => {
+$("copy").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(watchUrl); say("Audience link copied"); }
   catch { prompt("Audience link", watchUrl); }
 });
@@ -155,6 +369,7 @@ function toggleCards(open) {
   document.body.classList.toggle("with-cards", on);
   cardsBtn.setAttribute("aria-expanded", String(on));
   if (on) { unread = 0; badge.classList.remove("on"); }
+  setTimeout(draw, 380);
 }
 cardsBtn.addEventListener("click", () => toggleCards());
 
@@ -168,10 +383,9 @@ function addCard(text) {
   card.firstChild.textContent = text;
   card.addEventListener("click", (e) => {
     if (e.target.closest(".x")) { card.remove(); if (!list.children.length) empty.hidden = false; return; }
-    const s = sheet.selectionStart, eIdx = sheet.selectionEnd;
     sheet.focus();
-    sheet.setRangeText(text, s, eIdx, "end");
-    sheet.dispatchEvent(new Event("input"));
+    sheet.setRangeText(text, sheet.selectionStart, sheet.selectionEnd, "end");
+    onEdit();
     card.remove(); if (!list.children.length) empty.hidden = false;
   });
   list.prepend(card);
@@ -179,11 +393,11 @@ function addCard(text) {
 }
 
 addEventListener("beforeunload", (e) => { if (live || sheet.value) { e.preventDefault(); e.returnValue = ""; } });
-addEventListener("resize", grow);
+addEventListener("resize", () => { grow(); draw(); });
 await bus.ready;
 sheet.focus();
-grow();
-window.__stage = { room, watchUrl };
+grow(); draw();
+window.__stage = { room, watchUrl, get ids() { return ids; }, get notes() { return [...notes.values()]; } };
 </script>
 </body>
 </html>
