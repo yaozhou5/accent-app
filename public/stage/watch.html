@@ -41,7 +41,8 @@
     white-space: normal; animation: pop .18s ease-out both;
   }
   @keyframes pop { from { opacity: 0; transform: translateY(-4px); } }
-  .pop .acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pop .acts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .pop label { display: block; margin: 9px 2px -2px; font-size: 11.5px; color: var(--dim); }
   .pop .acts button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 9px 4px; color: var(--ink); font-size: 13.5px; }
   .pop .acts button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
   .pop form { display: flex; gap: 6px; margin-top: 8px; }
@@ -174,7 +175,8 @@ function setLive(on) {
 }
 
 // ---- Line popover: Love / Unclear / Cut / Suggest ---------------------------------
-const KINDS = [["love", "Love"], ["unclear", "Unclear"], ["cut", "Cut"], ["suggest", "Suggest"]];
+const KINDS = [["love", "Love"], ["unclear", "Unclear"], ["cut", "Cut"], ["suggest", "Suggest"], ["note", "Note"]];
+const COMPOSE = new Set(["suggest", "note"]);   // these open a text field; `suggesting` holds which one
 const lineText = (id) => { const i = ids.indexOf(id); return i < 0 ? "" : text.split("\n")[i]; };
 
 // The popover lives outside the text (re-rendering the text never touches it, so a
@@ -209,22 +211,30 @@ function buildPop(doneMsg) {
   const acts = document.createElement("div"); acts.className = "acts";
   for (const [k, l] of KINDS) {
     const b = document.createElement("button"); b.type = "button"; b.textContent = l; b.dataset.k = k;
-    b.setAttribute("aria-pressed", String(k === "suggest" ? suggesting : myNotes.get(openLine) === k));
-    if (orphan && k !== "suggest") b.disabled = true;
+    b.setAttribute("aria-pressed", String(COMPOSE.has(k) ? suggesting === k : myNotes.get(openLine) === k));
+    if (orphan && !COMPOSE.has(k)) b.disabled = true;
     acts.append(b);
   }
   pop.append(acts);
   if (suggesting) {
+    const kind = suggesting;
     const f = document.createElement("form");
     const inp = document.createElement("input");
-    inp.maxLength = 400; inp.setAttribute("aria-label", "Your wording for this line");
-    inp.value = orphan ? openSnap : lineText(openLine);
+    inp.maxLength = 400;
+    if (kind === "note") {
+      // A comment about the line, never wording for it: starts empty and is never put into the text.
+      const lab = document.createElement("label"); lab.textContent = "Note on this line"; pop.append(lab);
+      inp.setAttribute("aria-label", "Note on this line"); inp.placeholder = "Say something about this line…"; inp.value = "";
+    } else {
+      inp.setAttribute("aria-label", "Your wording for this line");
+      inp.value = orphan ? openSnap : lineText(openLine);
+    }
     const go = document.createElement("button"); go.type = "submit"; go.textContent = "Send";
     f.append(inp, go); pop.append(f);
-    f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.replace(/\s+/g, " ").trim(); if (v) sendNote("suggest", v); });
-    setTimeout(() => { inp.focus(); inp.select(); }, 30);
+    f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.replace(/\s+/g, " ").trim(); if (v) sendNote(kind, v); });
+    setTimeout(() => { inp.focus(); if (kind === "suggest") inp.select(); }, 30);
   }
-  if (orphan && !doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = "The writer just removed this line. You can still suggest wording."; pop.append(d); }
+  if (orphan && !doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = "The writer just removed this line. You can still send wording or a note."; pop.append(d); }
   if (doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = doneMsg; pop.append(d); }
 }
 
@@ -234,11 +244,11 @@ function sendNote(type, suggestion = "") {
   if (Date.now() - lastNote < 1200) return;
   lastNote = Date.now();
   const line = openLine;
-  if (orphan && type !== "suggest") return;
+  if (orphan && !COMPOSE.has(type)) return;
   bus.send("note", { lineId: line, snapshot: orphan ? openSnap : lineText(line), author: me, type, text: suggestion });
-  if (!orphan) myNotes.set(line, type);
+  if (!orphan && type !== "note") myNotes.set(line, type);
   suggesting = false;
-  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your wording is with the writer." }[type]);
+  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your wording is with the writer.", note: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your note is in the writer's margin." }[type]);
   render();
   setTimeout(() => { if (openLine === line && pop.querySelector(".done")) { closePop(); render(); } }, 1600);
 }
@@ -247,7 +257,7 @@ pop.addEventListener("click", (e) => {
   e.stopPropagation();                         // the buttons get rebuilt below; don't let "outside click" close us
   const b = e.target.closest(".acts button");
   if (!b) return;
-  if (b.dataset.k === "suggest") { suggesting = !suggesting; buildPop(); render(); }
+  if (COMPOSE.has(b.dataset.k)) { suggesting = suggesting === b.dataset.k ? false : b.dataset.k; buildPop(); render(); }
   else sendNote(b.dataset.k);
 });
 
@@ -266,12 +276,22 @@ sheet.addEventListener("click", (e) => {
 document.addEventListener("click", (e) => { if (openLine && !e.target.closest(".pop") && !e.target.closest(".ln")) { closePop(); render(); } });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && openLine) { closePop(); render(); } });
 
+// Lines without an id can't take notes. Ask the writer for a fresh copy (at most every 5 s).
+let askedIds = 0;
+function askForIds() {
+  const n = text.split("\n").length;
+  if (ids.length >= n && ids.slice(0, n).every(Boolean)) return;
+  if (Date.now() - askedIds < 5000) return;
+  askedIds = Date.now(); seq = -1; bus.send("resync", {});
+}
+
 // ---- Live connection ----------------------------------------------------------------
 const bus = await createBus(room, "audience");
 
 bus.on("snap", (p) => {
   text = String(p.text || ""); seq = p.seq; caret = p.caret ?? text.length;
   ids = Array.isArray(p.ids) ? p.ids : text.split("\n").map(() => "");
+  askForIds();
   setLive(!!p.live); render();
 });
 bus.on("state", (p) => { setLive(!!p.live); if (!p.live) closePop(); render(); });
@@ -281,6 +301,7 @@ bus.on("op", (p) => {
   seq = p.seq;
   text = apply(text, p);
   if (Array.isArray(p.ids)) ids = p.ids;
+  askForIds();
   caret = p.caret ?? p.at + p.ins.length;
   lastOp = Date.now(); clearTimeout(activeT); activeT = setTimeout(() => render(), 2600);
   for (const id of [...myNotes.keys()]) if (!ids.includes(id)) myNotes.delete(id);

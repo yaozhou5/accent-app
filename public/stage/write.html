@@ -30,6 +30,13 @@
   .ml.t-unclear { --c: 214 158 46; }
   .ml.t-suggest { --c: 75 108 248; }
   .ml.t-cut { --c: 155 44 31; }
+  .ml.t-note { --c: 90 86 80; }
+  .count.t-note { color: var(--ink); border-color: rgba(26,26,24,.25); }
+  .count { pointer-events: auto; cursor: pointer; }
+  .notes.peek { display: flex; margin-top: 24px; z-index: 6; }
+  .note.k-note .alt { font-family: var(--sans); font-size: 13.5px; line-height: 1.45; }
+  .dupe { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 7; background: var(--live); color: #fff; font-size: 13px; padding: 7px 14px; border-radius: 6px; display: none; }
+  .dupe.on { display: block; }
   .ml.marked .mt { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: rgb(var(--c) / calc(.25 + .6 * var(--w))); text-decoration-thickness: calc(1.5px + 1.5px * var(--w)); text-underline-offset: 7px; }
   body.revising .ml.marked .mt { background: rgb(var(--c) / calc(.1 + .28 * var(--w))); text-decoration-color: transparent; }
   body.revising .ml.marked.focus .mt { background: rgb(var(--c) / calc(.2 + .3 * var(--w))); }
@@ -37,7 +44,7 @@
   .count.t-suggest { color: #3550C4; border-color: rgba(75,108,248,.35); }
   .count.t-cut { color: var(--live); border-color: rgba(155,44,31,.35); }
   .count.love-only { color: #3B6D11; border-color: transparent; background: none; }
-  .note.love { background: none; border: 0; padding: 2px 11px; font-size: 12px; animation: none; }
+  .note.k-love { background: none; border: 0; padding: 2px 11px; font-size: 12px; animation: none; }
   .ml.gone .mt { background: transparent !important; }
 
   /* Gutter: tiny counts in Writing mode, full notes in Revising mode. */
@@ -55,8 +62,8 @@
     animation: arrive .35s ease both;
   }
   .note .kind { color: var(--dim); }
-  .note.love .kind { color: #3B6D11; }
-  .note.cut .kind { color: var(--live); }
+  .note.k-love .kind { color: #3B6D11; }
+  .note.k-cut .kind { color: var(--live); }
   .note .alt { display: block; margin-top: 4px; font-family: var(--serif); font-size: 15px; color: var(--ink); }
   .note .stale { display: block; margin-top: 4px; font-size: 11px; color: var(--faint); }
   .note .acts { display: flex; gap: 6px; margin-top: 7px; }
@@ -149,6 +156,7 @@
   </aside>
   <div class="floats" id="floats" aria-hidden="true"></div>
   <div class="toast" id="toast" role="status"></div>
+  <div class="dupe" id="dupe" role="alert">This stage is open in another writer tab. Close one so they don't overwrite each other.</div>
 
 <script type="module">
 import { createBus, roomFromSecret, diff, shiftLineIds, newLineId, lineRanges } from "/stage/bus.js";
@@ -169,6 +177,16 @@ let seq = 0;
 let sent = "";              // what the audience has been told
 let prev = "";              // last text we tracked line ids against
 let ids = [newLineId()];    // one id per line of `prev`
+let peekLine = null;        // Writing mode: the line whose notes you opened from its badge
+// Every line always has an id, even if something upstream went wrong.
+function fixIds(text) {
+  const n = text.split("\n").length;
+  ids = ids.slice(0, n).map((id) => id || newLineId());
+  while (ids.length < n) ids.push(newLineId());
+}
+// Your draft is kept in this browser only, so a reload never loses it.
+const draftKey = "stage-draft:" + room;
+function saveDraft() { try { localStorage.setItem(draftKey, sheet.value); } catch {} }
 let unread = 0;
 let revising = false;
 
@@ -182,8 +200,12 @@ function grow() { sheet.style.height = "auto"; const h = Math.max(sheet.scrollHe
 
 const bus = await createBus(room, "writer");
 
-function snapshot() { bus.send("snap", { seq, text: sheet.value, ids, caret: sheet.selectionEnd, live }); }
+function snapshot() { fixIds(sheet.value); bus.send("snap", { seq, text: sheet.value, ids, caret: sheet.selectionEnd, live }); }
 
+const dupe = $("dupe");
+const otherWriter = () => { dupe.classList.add("on"); clearTimeout(dupe.t); dupe.t = setTimeout(() => dupe.classList.remove("on"), 8000); };
+bus.on("snap", otherWriter);
+bus.on("op", otherWriter);
 bus.on("hello", () => { if (live) snapshot(); else bus.send("state", { live: false }); });
 bus.on("resync", () => { if (live) snapshot(); });
 bus.on("suggest", (p) => {
@@ -192,18 +214,20 @@ bus.on("suggest", (p) => {
 });
 bus.on("note", (p) => {
   if (!live || !p) return;
-  const type = ["love", "unclear", "cut", "suggest"].includes(p.type) ? p.type : null;
+  const type = ["love", "unclear", "cut", "suggest", "note"].includes(p.type) ? p.type : null;
   if (!type) return;
   const author = String(p.author || "").slice(0, 24);
-  const text = type === "suggest" ? String(p.text || "").replace(/\s+/g, " ").trim().slice(0, 400) : "";
-  if (type === "suggest" && !text) return;
+  const text = (type === "suggest" || type === "note") ? String(p.text || "").replace(/\s+/g, " ").trim().slice(0, 400) : "";
+  if ((type === "suggest" || type === "note") && !text) return;
   if (!ids.includes(p.lineId)) {
     // The line was deleted while they were tapping it. A suggestion is still worth having.
     if (type === "suggest") addCard(text, "For a line you removed");
+    if (type === "note") addCard(text, "Note on a line you removed");
     return;
   }
   // At most one note per audience member per line: a new one replaces their previous one.
-  notes.set(author + "|" + p.lineId, { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() });
+  // Comments sit beside a reaction rather than replacing it.
+  notes.set(author + "|" + p.lineId + (type === "note" ? "|note" : ""), { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() });
   draw();
 });
 bus.on("react", (p) => {
@@ -229,6 +253,8 @@ function onEdit() {
   if (now !== prev) {
     ids = shiftLineIds(ids, prev, diff(prev, now));
     prev = now;
+    fixIds(now);
+    clearTimeout(onEdit.t); onEdit.t = setTimeout(saveDraft, 400);
     pruneNotes();
   }
   grow();
@@ -256,10 +282,10 @@ function groupsFor(lineId) {
   const g = new Map();
   for (const n of notes.values()) {
     if (n.lineId !== lineId) continue;
-    const key = n.type + "|" + (n.type === "suggest" ? n.text.toLowerCase() : "");
+    const key = n.type + "|" + ((n.type === "suggest" || n.type === "note") ? n.text.toLowerCase() : "");
     if (!g.has(key)) g.set(key, { type: n.type, text: n.text, snapshot: n.snapshot, keys: [], at: n.at });
     const grp = g.get(key);
-    grp.keys.push(n.author + "|" + n.lineId);
+    grp.keys.push(n.author + "|" + n.lineId + (n.type === "note" ? "|note" : ""));
     grp.at = Math.max(grp.at, n.at);
   }
   return [...g.values()].sort((a, b) => b.keys.length - a.keys.length || a.at - b.at);
@@ -270,6 +296,7 @@ function label(g) {
   if (g.type === "love") return `Loved this${many}`;
   if (g.type === "unclear") return `Unclear${many}`;
   if (g.type === "cut") return `Cut?${many}`;
+  if (g.type === "note") return n > 1 ? `Note · ${n}` : "Note";
   return n > 1 ? `${n} suggest` : "Suggested";
 }
 
@@ -279,11 +306,11 @@ function draw() {
   // Per line: which change-notes it has (loves are counted apart and never mark the line).
   const per = new Map();
   for (const n of notes.values()) {
-    if (!per.has(n.lineId)) per.set(n.lineId, { love: 0, unclear: 0, cut: 0, suggest: 0, people: new Set() });
+    if (!per.has(n.lineId)) per.set(n.lineId, { love: 0, unclear: 0, cut: 0, suggest: 0, note: 0, people: new Set() });
     const p = per.get(n.lineId); p[n.type]++; if (n.type !== "love") p.people.add(n.author);
   }
-  const ask = (id) => { const p = per.get(id); return p ? p.unclear + p.cut + p.suggest : 0; };
-  const lead = (p) => ["suggest", "cut", "unclear"].sort((a, b) => p[b] - p[a])[0];
+  const ask = (id) => { const p = per.get(id); return p ? p.unclear + p.cut + p.suggest + p.note : 0; };
+  const lead = (p) => ["suggest", "cut", "unclear", "note"].sort((a, b) => p[b] - p[a])[0];
   const marked = new Set([...per.keys()]);
   mirror.textContent = "";
   ranges.forEach((r, i) => {
@@ -311,23 +338,26 @@ function draw() {
     const groups = groupsFor(id).sort((a, b) => (a.type === "love") - (b.type === "love"));
     const p = per.get(id);
     const parts = ["suggest", "unclear", "cut"].filter((t) => p[t]).map((t) => `${p[t]} ${t}`);
+    if (p.note) parts.push(p.note === 1 ? "1 note" : `${p.note} notes`);
     if (p.love) parts.push(`♥ ${p.love}`);
     const c = document.createElement("span");
     c.className = "count " + (ask(id) ? "t-" + lead(p) : "love-only"); c.style.top = (top + 6) + "px";
     c.textContent = parts.join(" · ");
+    c.title = "Show these notes";
+    c.addEventListener("click", () => { peekLine = peekLine === id ? null : id; draw(); });
     gutter.append(c);
 
     const box = document.createElement("div");
-    box.className = "notes"; box.dataset.line = id;
+    box.className = "notes" + (!revising && peekLine === id ? " peek" : ""); box.dataset.line = id;
     box.style.top = Math.max(top, lowest) + "px";
     box.addEventListener("mouseenter", () => lineEl.classList.add("focus"));
     box.addEventListener("mouseleave", () => lineEl.classList.remove("focus"));
     for (const g of groups) {
       const el = document.createElement("div");
-      el.className = "note " + g.type;
+      el.className = "note k-" + g.type;
       const kind = document.createElement("span"); kind.className = "kind"; kind.textContent = g.type === "love" ? "♥ " + label(g) : label(g); el.append(kind);
       if (g.type === "love") { box.append(el); continue; }
-      if (g.type === "suggest") { const alt = document.createElement("span"); alt.className = "alt"; alt.textContent = g.text; el.append(alt); }
+      if (g.type === "suggest" || g.type === "note") { const alt = document.createElement("span"); alt.className = "alt"; alt.textContent = g.text; el.append(alt); }
       if ((g.type === "suggest" || g.type === "cut") && g.snapshot !== r.text) {
         const st = document.createElement("span"); st.className = "stale"; st.textContent = "This line has changed since."; el.append(st);
       }
@@ -434,6 +464,10 @@ function addCard(text, context = "") {
 addEventListener("beforeunload", (e) => { if (live || sheet.value) { e.preventDefault(); e.returnValue = ""; } });
 addEventListener("resize", () => { grow(); draw(); });
 await bus.ready;
+try {
+  const saved = localStorage.getItem(draftKey);
+  if (saved && !sheet.value) { sheet.value = saved; prev = saved; ids = saved.split("\n").map(() => newLineId()); say("Your draft is back."); }
+} catch {}
 sheet.focus();
 grow(); draw();
 window.__stage = { room, watchUrl, get ids() { return ids; }, get notes() { return [...notes.values()]; } };
