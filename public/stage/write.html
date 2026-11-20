@@ -178,6 +178,11 @@ let sent = "";              // what the audience has been told
 let prev = "";              // last text we tracked line ids against
 let ids = [newLineId()];    // one id per line of `prev`
 let peekLine = null;        // Writing mode: the line whose notes you opened from its badge
+// Which tab is the writer: every message carries this tab's id and when it went live.
+// The audience follows the most recent tab to go live and ignores the rest.
+const writerId = Math.random().toString(36).slice(2, 10);
+let liveSince = 0;
+const send = (type, p) => bus.send(type, { ...p, w: writerId, since: liveSince });
 // Every line always has an id, even if something upstream went wrong.
 function fixIds(text) {
   const n = text.split("\n").length;
@@ -200,13 +205,26 @@ function grow() { sheet.style.height = "auto"; const h = Math.max(sheet.scrollHe
 
 const bus = await createBus(room, "writer");
 
-function snapshot() { fixIds(sheet.value); bus.send("snap", { seq, text: sheet.value, ids, caret: sheet.selectionEnd, live }); }
+function snapshot() { fixIds(sheet.value); send("snap", { seq, text: sheet.value, ids, caret: sheet.selectionEnd, live }); }
 
 const dupe = $("dupe");
-const otherWriter = () => { dupe.classList.add("on"); clearTimeout(dupe.t); dupe.t = setTimeout(() => dupe.classList.remove("on"), 8000); };
+// Another writer tab for this stage. If it went live after us, it wins and this tab pauses.
+function otherWriter(p) {
+  if (!p || p.w === writerId) return;
+  if (live && p.w && p.since > liveSince) {
+    live = false;
+    document.body.classList.remove("is-live"); liveBtn.classList.remove("live");
+    liveBtn.setAttribute("aria-pressed", "false"); liveLabel.textContent = "Go live";
+    dupe.textContent = "This stage went live in another tab, so this tab is paused. Your text here is safe.";
+  } else {
+    dupe.textContent = "This stage is also open in an older tab. The audience follows this one; close the other.";
+  }
+  dupe.classList.add("on"); clearTimeout(dupe.t); dupe.t = setTimeout(() => dupe.classList.remove("on"), 10000);
+}
 bus.on("snap", otherWriter);
 bus.on("op", otherWriter);
-bus.on("hello", () => { if (live) snapshot(); else bus.send("state", { live: false }); });
+bus.on("state", otherWriter);
+bus.on("hello", () => { if (live) snapshot(); else send("state", { live: false }); });
 bus.on("resync", () => { if (live) snapshot(); });
 bus.on("suggest", (p) => {
   const text = String(p && p.text || "").replace(/\s+/g, " ").trim().slice(0, 80);
@@ -214,6 +232,7 @@ bus.on("suggest", (p) => {
 });
 bus.on("note", (p) => {
   if (!live || !p) return;
+  const ack = () => send("got", { author: String(p.author || ""), lineId: p.lineId, type: p.type });
   const type = ["love", "unclear", "cut", "suggest", "note"].includes(p.type) ? p.type : null;
   if (!type) return;
   const author = String(p.author || "").slice(0, 24);
@@ -223,12 +242,14 @@ bus.on("note", (p) => {
     // The line was deleted while they were tapping it. A suggestion is still worth having.
     if (type === "suggest") addCard(text, "For a line you removed");
     if (type === "note") addCard(text, "Note on a line you removed");
+    if (type === "suggest" || type === "note") ack();
     return;
   }
   // At most one note per audience member per line: a new one replaces their previous one.
   // Comments sit beside a reaction rather than replacing it.
   notes.set(author + "|" + p.lineId + (type === "note" ? "|note" : ""), { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() });
   draw();
+  ack();
 });
 bus.on("react", (p) => {
   const e = { eyes: "👀", heart: "❤️", laugh: "😂" }[p && p.e];
@@ -263,7 +284,7 @@ function onEdit() {
   const op = diff(sent, now);
   if (!op.del && !op.ins) return;
   sent = now; seq++;
-  bus.send("op", { seq, ...op, caret: sheet.selectionEnd, ids });
+  send("op", { seq, ...op, caret: sheet.selectionEnd, ids });
 }
 sheet.addEventListener("input", onEdit);
 
@@ -400,7 +421,7 @@ let caretT;
 document.addEventListener("selectionchange", () => {
   if (!live || document.activeElement !== sheet) return;
   clearTimeout(caretT);
-  caretT = setTimeout(() => bus.send("caret", { seq, caret: sheet.selectionEnd }), 60);
+  caretT = setTimeout(() => send("caret", { seq, caret: sheet.selectionEnd }), 60);
 });
 
 function setMode(rev) {
@@ -419,8 +440,8 @@ liveBtn.addEventListener("click", () => {
   liveBtn.classList.toggle("live", live);
   liveBtn.setAttribute("aria-pressed", String(live));
   liveLabel.textContent = live ? "Live" : "Go live";
-  if (live) { sent = sheet.value; seq++; snapshot(); say("You're live. The audience sees every keystroke."); }
-  else { bus.send("state", { live: false }); say("Paused. The audience sees a still page."); }
+  if (live) { liveSince = Date.now(); dupe.classList.remove("on"); sent = sheet.value; seq++; snapshot(); say("You're live. The audience sees every keystroke."); }
+  else { send("state", { live: false }); say("Paused. The audience sees a still page."); }
   sheet.focus();
 });
 

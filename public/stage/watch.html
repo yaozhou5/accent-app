@@ -66,7 +66,7 @@
   form.suggest input::placeholder { color: var(--faint); }
   form.suggest button { border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 13px; padding: 10px 13px; }
   form.suggest button:disabled { opacity: .35; }
-  .sent { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 60px); transform: translateX(-50%); font-size: 12.5px; color: var(--dim); opacity: 0; transition: opacity .3s; z-index: 6; white-space: nowrap; }
+  .sent { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 60px); transform: translateX(-50%); font-size: 12.5px; color: var(--paper); background: var(--ink); padding: 6px 12px; border-radius: 999px; opacity: 0; transition: opacity .3s; z-index: 6; white-space: nowrap; pointer-events: none; }
   .sent.on { opacity: 1; }
   @media (max-width: 600px) { .sheet { padding-top: 96px; } .corner.tl .mono { display: none; } }
   @media (prefers-reduced-motion: reduce) { .caret, .sheet .fresh, .pop { animation: none !important; } }
@@ -74,7 +74,7 @@
 </head>
 <body>
   <div class="corner tl"><span class="mark">accent<i>.</i></span><span class="mono">the stage</span></div>
-  <div class="corner tr"><span class="state mono"><span class="dot"></span><span id="stateLabel">Not live</span></span></div>
+  <div class="corner tr"><span class="state mono"><span class="dot"></span><span id="stateLabel">Connecting…</span></span></div>
 
   <main class="page"><div class="sheet" id="sheet" aria-live="off"></div></main>
   <div class="waiting" id="waiting">The page is still empty.<em>You'll see the writing appear the moment they go live.</em></div>
@@ -239,6 +239,7 @@ function buildPop(doneMsg) {
 }
 
 let lastNote = 0;
+const waitingAck = new Map();   // "lineId|type" -> timer
 function sendNote(type, suggestion = "") {
   if (!live || !openLine) return;
   if (Date.now() - lastNote < 1200) return;
@@ -247,6 +248,9 @@ function sendNote(type, suggestion = "") {
   if (orphan && !COMPOSE.has(type)) return;
   bus.send("note", { lineId: line, snapshot: orphan ? openSnap : lineText(line), author: me, type, text: suggestion });
   if (!orphan && type !== "note") myNotes.set(line, type);
+  const k = line + "|" + type;
+  clearTimeout(waitingAck.get(k));
+  waitingAck.set(k, setTimeout(() => { waitingAck.delete(k); flash("Not delivered. The writer may have reloaded. Try again."); }, 4000));
   suggesting = false;
   buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your wording is with the writer.", note: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your note is in the writer's margin." }[type]);
   render();
@@ -287,15 +291,35 @@ function askForIds() {
 
 // ---- Live connection ----------------------------------------------------------------
 const bus = await createBus(room, "audience");
+bus.on("got", (p) => {
+  if (!fromWriter(p) || p.author !== me) return;
+  const k = p.lineId + "|" + p.type;
+  if (!waitingAck.has(k)) return;
+  clearTimeout(waitingAck.get(k)); waitingAck.delete(k);
+  flash("Delivered ✓");
+});
+
+// Follow one writer tab: the most recent to go live. Messages from older tabs
+// (or from a tab still on the old code, which sends no id) are ignored.
+let owner = null;
+function fromWriter(p) {
+  if (!p) return false;
+  if (!p.w) return !owner;
+  if (!owner || p.w === owner.w) { owner = owner || { w: p.w, since: p.since || 0 }; owner.since = Math.max(owner.since, p.since || 0); return true; }
+  if ((p.since || 0) > owner.since) { owner = { w: p.w, since: p.since }; return true; }
+  return false;
+}
 
 bus.on("snap", (p) => {
+  if (!fromWriter(p)) return;
   text = String(p.text || ""); seq = p.seq; caret = p.caret ?? text.length;
   ids = Array.isArray(p.ids) ? p.ids : text.split("\n").map(() => "");
   askForIds();
   setLive(!!p.live); render();
 });
-bus.on("state", (p) => { setLive(!!p.live); if (!p.live) closePop(); render(); });
+bus.on("state", (p) => { if (!fromWriter(p)) return; setLive(!!p.live); if (!p.live) closePop(); render(); });
 bus.on("op", (p) => {
+  if (!fromWriter(p)) return;
   if (seq < 0) return;
   if (p.seq !== seq + 1) { seq = -1; bus.send("resync", {}); return; }
   seq = p.seq;
@@ -309,7 +333,7 @@ bus.on("op", (p) => {
   render(p.ins.length ? p.at : -1, p.ins.length);
   typed();
 });
-bus.on("caret", (p) => { if (p.seq === seq) { caret = p.caret; render(); } });
+bus.on("caret", (p) => { if (!fromWriter(p)) return; if (p.seq === seq) { caret = p.caret; render(); } });
 bus.onStatus((st) => {
   if (st === "CHANNEL_ERROR" || st === "TIMED_OUT" || st === "CLOSED") stateLabel.textContent = "Connecting…";
   else if (st === "SUBSCRIBED") setLive(live);
@@ -338,12 +362,18 @@ form.addEventListener("submit", (e) => {
   word.value = ""; send.disabled = true;
   flash("Sent to the writer");
 });
-function flash(m) { sent.textContent = m; sent.classList.add("on"); clearTimeout(flash.t); flash.t = setTimeout(() => sent.classList.remove("on"), 1800); }
+function flash(m) { sent.textContent = m; sent.classList.add("on"); clearTimeout(flash.t); flash.t = setTimeout(() => sent.classList.remove("on"), 2600); }
 
-setLive(false); render();
+render();
 await bus.ready;
 bus.send("hello", {});
-setTimeout(() => { if (seq < 0) bus.send("hello", {}); }, 2500);
+// Ask again every second until the writer answers; after 6 s with no answer, they're simply not live.
+let tries = 0;
+const helloT = setInterval(() => {
+  if (seq >= 0 || owner) return clearInterval(helloT);
+  if (++tries >= 6) { clearInterval(helloT); setLive(false); return; }
+  bus.send("hello", {});
+}, 1000);
 </script>
 </body>
 </html>
