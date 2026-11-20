@@ -25,6 +25,13 @@
   .pop .log { margin: 9px 2px 0; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; color: var(--dim); }
   .pop .log b { font-weight: 500; color: var(--ink); }
   .pop .log p { margin: 0 0 4px; }
+  /* Your own notes, shown in full right under the line you sent them on. */
+  .mynote { margin: 2px 0 10px; padding: 4px 10px; border-left: 2px solid #4B6CF8; font-family: var(--sans); font-size: 13.5px; line-height: 1.45; color: #3550C4; background: rgba(75,108,248,.05); border-radius: 0 4px 4px 0; }
+  .mynote p { margin: 0; }
+  .mynote p + p { margin-top: 3px; }
+  .mygone { margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--sans); font-size: 13px; color: var(--dim); }
+  .mygone h3 { margin: 0 0 8px; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .mygone .was { font-family: var(--serif); text-decoration: line-through; color: var(--faint); }
   .crowd { font-size: 11px; color: var(--dim); margin-left: 10px; letter-spacing: .06em; }
   .sheet .fresh { animation: ink .5s ease-out both; }
   @keyframes ink { from { opacity: 0; } }
@@ -123,6 +130,16 @@ const logKey = "stage-sent:" + location.pathname;
 const sentLog = new Map(JSON.parse(sessionStorage.getItem(logKey) || "[]"));   // lineId -> [{type, text}]
 const crowd = new Map();       // lineId -> Map(author -> Set(types))
 const KIND_WORD = { love: "♥", unclear: "unclear", cut: "cut", suggest: "suggest", note: "note" };
+function myNoteEl(arr) {
+  const el = document.createElement("div"); el.className = "mynote";
+  for (const m of arr) {
+    const p = document.createElement("p");
+    p.textContent = m.type === "love" ? "You loved this line" : m.type === "unclear" ? "You marked this unclear" : m.type === "cut" ? "You'd cut this line"
+      : m.type === "suggest" ? "You suggested: “" + m.text + "”" : "You: " + m.text;
+    el.append(p);
+  }
+  return el;
+}
 function tagFor(id) {
   const parts = [];
   const mine = sentLog.get(id) || [];
@@ -173,8 +190,21 @@ function render(freshFrom = -1, freshLen = 0) {
     }
     if (!line && !div.contains(caretEl)) div.append("​");
     sheet.append(div);
+    const mine = id && sentLog.get(id);
+    if (mine && mine.length) sheet.append(myNoteEl(mine));
     start = end + 1;
   });
+  // Notes you left on lines the writer has since removed: keep them visible at the end.
+  const gone = [...sentLog.entries()].filter(([id, arr]) => arr.length && !ids.includes(id));
+  if (gone.length && text) {
+    const box = document.createElement("div"); box.className = "mygone";
+    const h = document.createElement("h3"); h.textContent = "Your notes on lines the writer removed"; box.append(h);
+    for (const [, arr] of gone) {
+      const was = document.createElement("p"); was.className = "was"; was.textContent = arr[arr.length - 1].snap || "(a line)"; box.append(was);
+      box.append(myNoteEl(arr));
+    }
+    sheet.append(box);
+  }
   placePop();
   waiting.classList.toggle("gone", live || text.length > 0);
   follow();
@@ -308,7 +338,7 @@ function sendNote(type, suggestion = "") {
     // One reaction per line (it replaces your last); notes and suggestions add up.
     let arr = (sentLog.get(line) || []).filter((m) => (type === "note" ? true : m.type === "note"));
     if (type === "note") arr = [...(sentLog.get(line) || [])];
-    arr.push({ type, text: suggestion });
+    arr.push({ type, text: suggestion, snap: orphan ? openSnap : lineText(line) });
     sentLog.set(line, arr);
     try { sessionStorage.setItem(logKey, JSON.stringify([...sentLog])); } catch {}
   }
