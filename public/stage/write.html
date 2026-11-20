@@ -25,9 +25,19 @@
   .mirror { position: absolute; inset: 0; z-index: 1; color: transparent; pointer-events: none; }
   .mirror .ml { min-height: 1.6em; }
   .mirror .mt { border-radius: 2px; transition: background .3s, text-decoration-color .3s; }
-  .ml.marked .mt { text-decoration: underline dotted; text-decoration-color: rgba(26,26,24,.28); text-decoration-thickness: 1.5px; text-underline-offset: 7px; }
-  body.revising .ml.marked .mt { background: #F3E2B8; text-decoration-color: transparent; }
-  body.revising .ml.marked.focus .mt { background: #EBCF8F; }
+  /* Only notes that ask for a change mark a line. Colour = what they ask; strength = how many of the room asked. */
+  .ml { --c: 26 26 24; --w: .5; }
+  .ml.t-unclear { --c: 214 158 46; }
+  .ml.t-suggest { --c: 75 108 248; }
+  .ml.t-cut { --c: 155 44 31; }
+  .ml.marked .mt { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: rgb(var(--c) / calc(.25 + .6 * var(--w))); text-decoration-thickness: calc(1.5px + 1.5px * var(--w)); text-underline-offset: 7px; }
+  body.revising .ml.marked .mt { background: rgb(var(--c) / calc(.1 + .28 * var(--w))); text-decoration-color: transparent; }
+  body.revising .ml.marked.focus .mt { background: rgb(var(--c) / calc(.2 + .3 * var(--w))); }
+  .count.t-unclear { color: #8A6414; border-color: rgba(214,158,46,.45); }
+  .count.t-suggest { color: #3550C4; border-color: rgba(75,108,248,.35); }
+  .count.t-cut { color: var(--live); border-color: rgba(155,44,31,.35); }
+  .count.love-only { color: #3B6D11; border-color: transparent; background: none; }
+  .note.love { background: none; border: 0; padding: 2px 11px; font-size: 12px; animation: none; }
   .ml.gone .mt { background: transparent !important; }
 
   /* Gutter: tiny counts in Writing mode, full notes in Revising mode. */
@@ -206,7 +216,8 @@ bus.on("react", (p) => {
   floats.append(el);
   setTimeout(() => el.remove(), 2700);
 });
-bus.onAudience((n) => { watchers.textContent = n === 1 ? "1 watching" : n + " watching"; });
+let audience = 1;
+bus.onAudience((n) => { audience = Math.max(1, n); draw(); watchers.textContent = n === 1 ? "1 watching" : n + " watching"; });
 bus.onStatus((s) => { conn.textContent = (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") ? "Reconnecting…" : ""; });
 
 // Track every edit: keep line ids attached to the right lines, then tell the audience.
@@ -262,11 +273,21 @@ function label(g) {
 // Redraw the mirror (underlines/highlights) and the gutter (counts or margin notes).
 function draw() {
   const ranges = lineRanges(sheet.value);
-  const marked = new Set([...notes.values()].map((n) => n.lineId));
+  // Per line: which change-notes it has (loves are counted apart and never mark the line).
+  const per = new Map();
+  for (const n of notes.values()) {
+    if (!per.has(n.lineId)) per.set(n.lineId, { love: 0, unclear: 0, cut: 0, suggest: 0, people: new Set() });
+    const p = per.get(n.lineId); p[n.type]++; if (n.type !== "love") p.people.add(n.author);
+  }
+  const ask = (id) => { const p = per.get(id); return p ? p.unclear + p.cut + p.suggest : 0; };
+  const lead = (p) => ["suggest", "cut", "unclear"].sort((a, b) => p[b] - p[a])[0];
+  const marked = new Set([...per.keys()]);
   mirror.textContent = "";
   ranges.forEach((r, i) => {
     const div = document.createElement("div");
-    div.className = "ml" + (marked.has(ids[i]) ? " marked" : "");
+    const p = per.get(ids[i]);
+    div.className = "ml" + (ask(ids[i]) ? " marked t-" + lead(p) : "");
+    if (p) div.style.setProperty("--w", Math.min(1, p.people.size / audience).toFixed(2));
     div.dataset.line = ids[i];
     const span = document.createElement("span");
     span.className = "mt";
@@ -277,18 +298,20 @@ function draw() {
   // Keep fading note stacks; rebuild the rest.
   for (const el of [...gutter.children]) if (!el.classList.contains("fading")) el.remove();
   let lowest = 0;
-  const total = notes.size;
+  const total = [...notes.values()].filter((n) => n.type !== "love").length;
   $("noteCount").textContent = total ? String(total) : "";
   ranges.forEach((r, i) => {
     const id = ids[i];
     if (!marked.has(id)) return;
     const lineEl = mirror.children[i];
     const top = lineEl.offsetTop;
-    const groups = groupsFor(id);
-    const n = groups.reduce((s, g) => s + g.keys.length, 0);
+    const groups = groupsFor(id).sort((a, b) => (a.type === "love") - (b.type === "love"));
+    const p = per.get(id);
+    const parts = ["suggest", "unclear", "cut"].filter((t) => p[t]).map((t) => `${p[t]} ${t}`);
+    if (p.love) parts.push(`♥ ${p.love}`);
     const c = document.createElement("span");
-    c.className = "count"; c.style.top = (top + 6) + "px";
-    c.textContent = n === 1 ? "1 note" : n + " notes";
+    c.className = "count " + (ask(id) ? "t-" + lead(p) : "love-only"); c.style.top = (top + 6) + "px";
+    c.textContent = parts.join(" · ");
     gutter.append(c);
 
     const box = document.createElement("div");
@@ -299,7 +322,8 @@ function draw() {
     for (const g of groups) {
       const el = document.createElement("div");
       el.className = "note " + g.type;
-      const kind = document.createElement("span"); kind.className = "kind"; kind.textContent = label(g); el.append(kind);
+      const kind = document.createElement("span"); kind.className = "kind"; kind.textContent = g.type === "love" ? "♥ " + label(g) : label(g); el.append(kind);
+      if (g.type === "love") { box.append(el); continue; }
       if (g.type === "suggest") { const alt = document.createElement("span"); alt.className = "alt"; alt.textContent = g.text; el.append(alt); }
       if ((g.type === "suggest" || g.type === "cut") && g.snapshot !== r.text) {
         const st = document.createElement("span"); st.className = "stale"; st.textContent = "This line has changed since."; el.append(st);
