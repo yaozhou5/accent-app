@@ -35,6 +35,15 @@
   .count { pointer-events: auto; cursor: pointer; }
   .notes.peek { display: flex; margin-top: 24px; z-index: 6; }
   .note.k-note .alt { font-family: var(--sans); font-size: 13.5px; line-height: 1.45; }
+  .recap { position: fixed; inset: 0; z-index: 8; background: rgba(26,26,24,.28); display: flex; align-items: flex-start; justify-content: center; padding: 70px 16px 24px; overflow-y: auto; }
+  .recap[hidden] { display: none; }
+  .recap-card { width: min(720px, 100%); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 20px 24px 22px; box-shadow: 0 18px 50px rgba(26,26,24,.18); }
+  .recap-head { display: flex; justify-content: space-between; align-items: center; }
+  .recap-head h2 { margin: 0; font-weight: 400; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  .recap-head button { border: 0; background: none; font-size: 20px; color: var(--dim); padding: 2px 6px; }
+  .recap pre { white-space: pre-wrap; word-wrap: break-word; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--ink); margin: 14px 0 18px; max-height: 60vh; overflow-y: auto; }
+  .recap-acts { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .recap-note { font-size: 11.5px; color: var(--faint); }
   .dupe { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 7; background: var(--live); color: #fff; font-size: 13px; padding: 7px 14px; border-radius: 6px; display: none; }
   .dupe.on { display: block; }
   .ml.marked .mt { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: rgb(var(--c) / calc(.25 + .6 * var(--w))); text-decoration-thickness: calc(1.5px + 1.5px * var(--w)); text-underline-offset: 7px; }
@@ -137,6 +146,7 @@
       <button type="button" id="mRevise" aria-pressed="false">Revising<span class="n" id="noteCount"></span></button>
     </div>
     <button class="ghost hide-sm" id="copy" type="button">Copy audience link</button>
+    <button class="ghost" id="wrapBtn" type="button">Wrap up</button>
     <button class="ghost" id="cardsBtn" type="button" aria-expanded="false">Suggestions <span class="badge" id="badge">0</span></button>
     <button class="pill" id="live" type="button" aria-pressed="false"><span class="dot"></span><span id="liveLabel">Go live</span></button>
   </div>
@@ -156,6 +166,20 @@
   </aside>
   <div class="floats" id="floats" aria-hidden="true"></div>
   <div class="toast" id="toast" role="status"></div>
+  <div class="recap" id="recap" role="dialog" aria-modal="true" aria-labelledby="recapTitle" hidden>
+    <div class="recap-card">
+      <div class="recap-head">
+        <h2 id="recapTitle" class="mono">Session recap</h2>
+        <button type="button" id="recapClose" aria-label="Close recap">×</button>
+      </div>
+      <pre id="recapText"></pre>
+      <div class="recap-acts">
+        <button type="button" class="pill" id="recapCopy">Copy as markdown</button>
+        <button type="button" class="ghost" id="recapDownload">Download .md</button>
+        <span class="recap-note">Kept in this browser only. Nothing is stored on a server.</span>
+      </div>
+    </div>
+  </div>
   <div class="dupe" id="dupe" role="alert">This stage is open in another writer tab. Close one so they don't overwrite each other.</div>
 
 <script type="module">
@@ -191,7 +215,7 @@ function fixIds(text) {
 }
 // Your draft is kept in this browser only, so a reload never loses it.
 const draftKey = "stage-draft:" + room;
-function saveDraft() { try { localStorage.setItem(draftKey, sheet.value); } catch {} }
+function saveDraft() { try { localStorage.setItem(draftKey, sheet.value); } catch {} saveSession(); }
 let unread = 0;
 let revising = false;
 
@@ -199,6 +223,20 @@ let revising = false;
 const notes = new Map();
 const fadingLines = new Set();
 const lastReact = new Map();
+// Everything the recap needs. A note's outcome: open, used, cut, skipped, or line removed.
+const history = new Map();
+const stats = { peak: 0, reacts: { "👀": 0, "❤️": 0, "😂": 0 }, freeform: [], started: Date.now() };
+const sessionKey = "stage-session:" + room;
+function saveSession() {
+  try {
+    localStorage.setItem(sessionKey, JSON.stringify({ ids, notes: [...notes], history: [...history], stats }));
+  } catch {}
+}
+const saveSoon = () => { clearTimeout(saveSoon.t); saveSoon.t = setTimeout(saveSession, 300); };
+function settle(keys, status) {
+  for (const k of keys) { const h = history.get(k); if (h && h.status === "open") h.status = status; }
+  saveSoon();
+}
 
 function say(msg) { toast.textContent = msg; toast.classList.add("on"); clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove("on"), 1800); }
 function grow() { sheet.style.height = "auto"; const h = Math.max(sheet.scrollHeight, innerHeight) + "px"; sheet.style.height = h; mirror.style.height = h; }
@@ -228,7 +266,7 @@ bus.on("hello", () => { if (live) snapshot(); else send("state", { live: false }
 bus.on("resync", () => { if (live) snapshot(); });
 bus.on("suggest", (p) => {
   const text = String(p && p.text || "").replace(/\s+/g, " ").trim().slice(0, 80);
-  if (text) addCard(text);
+  if (text) { addCard(text); stats.freeform.push(text); saveSoon(); }
 });
 bus.on("note", (p) => {
   if (!live || !p) return;
@@ -242,12 +280,20 @@ bus.on("note", (p) => {
     // The line was deleted while they were tapping it. A suggestion is still worth having.
     if (type === "suggest") addCard(text, "For a line you removed");
     if (type === "note") addCard(text, "Note on a line you removed");
+    if (type === "suggest" || type === "note") {
+      history.set(author + "|" + p.lineId + "|" + type + "|" + Date.now(), { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now(), status: "line removed" });
+      saveSoon();
+    }
     if (type === "suggest" || type === "note") ack();
     return;
   }
   // At most one note per audience member per line: a new one replaces their previous one.
   // Comments sit beside a reaction rather than replacing it.
-  notes.set(author + "|" + p.lineId + (type === "note" ? "|note" : ""), { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() });
+  const key = author + "|" + p.lineId + (type === "note" ? "|note" : "");
+  const n = { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() };
+  notes.set(key, n);
+  history.set(key, { ...n, status: "open" });
+  saveSoon();
   draw();
   ack();
 });
@@ -258,6 +304,7 @@ bus.on("react", (p) => {
   const now = Date.now();
   if (now - (lastReact.get(who) || 0) < 2000) return;   // one per viewer per 2 s
   lastReact.set(who, now);
+  stats.reacts[e]++; saveSoon();
   const el = document.createElement("span");
   el.className = "float"; el.textContent = e;
   el.style.left = Math.round(Math.random() * 80) + "px";
@@ -265,7 +312,7 @@ bus.on("react", (p) => {
   setTimeout(() => el.remove(), 2700);
 });
 let audience = 1;
-bus.onAudience((n) => { audience = Math.max(1, n); draw(); watchers.textContent = n === 1 ? "1 watching" : n + " watching"; });
+bus.onAudience((n) => { audience = Math.max(1, n); if (n > stats.peak) { stats.peak = n; saveSoon(); } draw(); watchers.textContent = n === 1 ? "1 watching" : n + " watching"; });
 bus.onStatus((s) => { conn.textContent = (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") ? "Reconnecting…" : ""; });
 
 // Track every edit: keep line ids attached to the right lines, then tell the audience.
@@ -292,7 +339,7 @@ sheet.addEventListener("input", onEdit);
 function pruneNotes() {
   const alive = new Set(ids);
   const dead = new Set();
-  for (const [k, n] of notes) if (!alive.has(n.lineId)) { dead.add(n.lineId); notes.delete(k); }
+  for (const [k, n] of notes) if (!alive.has(n.lineId)) { dead.add(n.lineId); notes.delete(k); settle([k], "line removed"); }
   for (const id of dead) {
     const el = gutter.querySelector(`.notes[data-line="${id}"]`);
     if (el) { el.classList.add("fading"); setTimeout(() => el.remove(), 550); fadingLines.add(id); setTimeout(() => fadingLines.delete(id), 600); }
@@ -390,7 +437,7 @@ function draw() {
         acts.append(use);
       }
       const skip = document.createElement("button"); skip.type = "button"; skip.className = "skip"; skip.textContent = "Skip";
-      skip.addEventListener("click", () => { g.keys.forEach((k) => notes.delete(k)); draw(); });
+      skip.addEventListener("click", () => { settle(g.keys, "skipped"); g.keys.forEach((k) => notes.delete(k)); draw(); });
       acts.append(skip);
       el.append(acts);
       box.append(el);
@@ -412,8 +459,11 @@ function applyNote(lineId, g) {
     const start = end === r.end && r.start > 0 ? r.start - 1 : r.start;
     sheet.setRangeText("", start, end, "start");
   }
+  settle(g.keys, g.type === "cut" ? "cut" : "used");
+  const authors = g.keys.map((k) => k.split("|")[0]);
   for (const k of [...notes.keys()]) if (notes.get(k).lineId === lineId && (g.type === "cut" || g.keys.includes(k))) notes.delete(k);
   onEdit();
+  send("outcome", { authors, type: g.type });
   say(g.type === "cut" ? "Line cut. The audience saw it go." : "Suggestion used. The audience saw it change.");
 }
 
@@ -482,16 +532,86 @@ function addCard(text, context = "") {
   if (!document.body.classList.contains("with-cards")) { unread++; badge.textContent = unread; badge.classList.add("on"); }
 }
 
+// ---- Wrap up: one markdown recap of the session --------------------------------------
+function buildRecap() {
+  const text = sheet.value.trim();
+  const nowLines = sheet.value.split("\n");
+  const lineOf = (h) => { const i = ids.indexOf(h.lineId); return i >= 0 ? nowLines[i] : h.snapshot; };
+  const q = (t) => "“" + String(t || "").trim() + "”";
+  const all = [...history.values()];
+  const when = new Date(stats.started).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  const reacts = Object.entries(stats.reacts).filter(([, n]) => n).map(([e, n]) => `${e} ${n}`).join("  ");
+  const asks = all.filter((h) => h.type !== "love");
+  const out = [`# The stage · ${when}`, ""];
+  out.push([`${stats.peak} watching at most`, `${asks.length} notes`, `${all.filter((h) => h.type === "love").length} loves`, reacts].filter(Boolean).join(" · "), "");
+  out.push("## Final text", "", text || "_(empty)_", "");
+
+  const loves = new Map();
+  for (const h of all) if (h.type === "love") { const k = h.lineId; loves.set(k, { line: lineOf(h), n: (loves.get(k)?.n || 0) + 1 }); }
+  const top = [...loves.values()].filter((l) => l.line && l.line.trim()).sort((a, b) => b.n - a.n).slice(0, 5);
+  if (top.length) { out.push("## Most loved", ""); for (const l of top) out.push(`- ${q(l.line)} · ♥ ${l.n}`); out.push(""); }
+
+  // Group the same request on the same line, as the margin does.
+  const groups = new Map();
+  for (const h of asks) {
+    const k = [h.status, h.lineId, h.type, (h.text || "").toLowerCase()].join("|");
+    if (!groups.has(k)) groups.set(k, { ...h, n: 0 });
+    groups.get(k).n++;
+  }
+  const fmt = (g) => {
+    const who = g.n > 1 ? ` (${g.n} people)` : "";
+    if (g.type === "suggest") return `- ${q(g.snapshot)} → ${q(g.text)}${who}`;
+    if (g.type === "note") return `- On ${q(g.status === "open" ? lineOf(g) : g.snapshot)}: ${g.text}${who}`;
+    if (g.type === "cut") return `- Cut ${q(g.status === "open" ? lineOf(g) : g.snapshot)}${who}`;
+    return `- Unclear: ${q(g.status === "open" ? lineOf(g) : g.snapshot)}${who}`;
+  };
+  const sections = [["open", "Still open"], ["used", "Used"], ["cut", "Cut"], ["skipped", "Skipped"], ["line removed", "On lines you removed"]];
+  for (const [st, title] of sections) {
+    const gs = [...groups.values()].filter((g) => g.status === st).sort((a, b) => b.n - a.n || a.at - b.at);
+    if (!gs.length) continue;
+    out.push(`## ${title}`, ""); for (const g of gs) out.push(fmt(g)); out.push("");
+  }
+  if (stats.freeform.length) { out.push("## Freeform from the audience", ""); for (const t of stats.freeform) out.push(`- ${t}`); out.push(""); }
+  return out.join("\n").trim() + "\n";
+}
+const recap = $("recap"), recapText = $("recapText");
+function openRecap() { recapText.textContent = buildRecap(); recap.hidden = false; $("recapCopy").focus(); }
+function closeRecap() { recap.hidden = true; sheet.focus(); }
+$("wrapBtn").addEventListener("click", openRecap);
+$("recapClose").addEventListener("click", closeRecap);
+recap.addEventListener("click", (e) => { if (e.target === recap) closeRecap(); });
+addEventListener("keydown", (e) => { if (e.key === "Escape" && !recap.hidden) closeRecap(); });
+$("recapCopy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(recapText.textContent); say("Recap copied."); }
+  catch { const r = document.createRange(); r.selectNodeContents(recapText); getSelection().removeAllRanges(); getSelection().addRange(r); say("Selected. Press Cmd+C to copy."); }
+});
+$("recapDownload").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([recapText.textContent], { type: "text/markdown" }));
+  a.download = "stage-" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-") + ".md";
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
 addEventListener("beforeunload", (e) => { if (live || sheet.value) { e.preventDefault(); e.returnValue = ""; } });
 addEventListener("resize", () => { grow(); draw(); });
 await bus.ready;
 try {
   const saved = localStorage.getItem(draftKey);
-  if (saved && !sheet.value) { sheet.value = saved; prev = saved; ids = saved.split("\n").map(() => newLineId()); say("Your draft is back."); }
+  if (saved && !sheet.value) {
+    sheet.value = saved; prev = saved; ids = saved.split("\n").map(() => newLineId());
+    const ses = JSON.parse(localStorage.getItem(sessionKey) || "null");
+    if (ses && Array.isArray(ses.ids) && ses.ids.length === ids.length) {
+      ids = ses.ids;                                     // same line ids, so notes stay on their lines
+      for (const [k, n] of ses.notes || []) notes.set(k, n);
+      for (const [k, h] of ses.history || []) history.set(k, h);
+      Object.assign(stats, ses.stats || {});
+    }
+    say(notes.size ? "Your draft and notes are back." : "Your draft is back.");
+  }
 } catch {}
 sheet.focus();
 grow(); draw();
-window.__stage = { room, watchUrl, get ids() { return ids; }, get notes() { return [...notes.values()]; } };
+window.__stage = { room, watchUrl, get ids() { return ids; }, get notes() { return [...notes.values()]; }, recap: buildRecap };
 </script>
 </body>
 </html>

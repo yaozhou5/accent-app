@@ -291,6 +291,10 @@ function askForIds() {
 
 // ---- Live connection ----------------------------------------------------------------
 const bus = await createBus(room, "audience");
+bus.on("outcome", (p) => {
+  if (!fromWriter(p) || !Array.isArray(p.authors) || !p.authors.includes(me)) return;
+  flash(p.type === "cut" ? "The writer cut the line you flagged ✓" : "The writer used your wording ✓");
+});
 bus.on("got", (p) => {
   if (!fromWriter(p) || p.author !== me) return;
   const k = p.lineId + "|" + p.type;
