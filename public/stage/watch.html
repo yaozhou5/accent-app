@@ -16,6 +16,16 @@
   .ln.active:hover { background: transparent; }
   .pop .acts button:disabled { opacity: .35; }
   .ln.mine { box-shadow: inset 2px 0 0 #4B6CF8; }
+  .ln { position: relative; }
+  .ln[data-tag] { padding-right: 76px; }
+  .ln[data-tag]::after {
+    content: attr(data-tag); position: absolute; right: -2px; top: .35em; font-family: var(--mono); font-size: 10px; letter-spacing: .03em;
+    color: var(--dim); background: rgba(245,240,232,.92); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; line-height: 1.6; pointer-events: none;
+  }
+  .pop .log { margin: 9px 2px 0; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; color: var(--dim); }
+  .pop .log b { font-weight: 500; color: var(--ink); }
+  .pop .log p { margin: 0 0 4px; }
+  .crowd { font-size: 11px; color: var(--dim); margin-left: 10px; letter-spacing: .06em; }
   .sheet .fresh { animation: ink .5s ease-out both; }
   @keyframes ink { from { opacity: 0; } }
   .caret { display: inline-block; width: 2px; height: 1.15em; margin: 0 -1px; vertical-align: -0.2em; background: var(--live); border-radius: 1px; }
@@ -74,7 +84,7 @@
 </head>
 <body>
   <div class="corner tl"><span class="mark">accent<i>.</i></span><span class="mono">the stage</span></div>
-  <div class="corner tr"><span class="state mono"><span class="dot"></span><span id="stateLabel">Connecting…</span></span></div>
+  <div class="corner tr"><span class="state mono"><span class="dot"></span><span id="stateLabel">Connecting…</span></span><span class="crowd mono" id="crowd"></span></div>
 
   <main class="page"><div class="sheet" id="sheet" aria-live="off"></div></main>
   <div class="waiting" id="waiting">The page is still empty.<em>You'll see the writing appear the moment they go live.</em></div>
@@ -108,6 +118,21 @@ if (!me) { me = Math.random().toString(36).slice(2, 10); sessionStorage.setItem(
 let text = "", ids = [], seq = -1, caret = 0, live = false;
 let typingT, thinkT;
 const myNotes = new Map();   // lineId -> type
+// What I've sent, and what everyone else in the room is doing, per line.
+const logKey = "stage-sent:" + location.pathname;
+const sentLog = new Map(JSON.parse(sessionStorage.getItem(logKey) || "[]"));   // lineId -> [{type, text}]
+const crowd = new Map();       // lineId -> Map(author -> Set(types))
+const KIND_WORD = { love: "♥", unclear: "unclear", cut: "cut", suggest: "suggest", note: "note" };
+function tagFor(id) {
+  const parts = [];
+  const mine = sentLog.get(id) || [];
+  const others = crowd.get(id);
+  const counts = {};
+  if (others) for (const types of others.values()) for (const t of types) counts[t] = (counts[t] || 0) + 1;
+  for (const m of mine) counts[m.type] = (counts[m.type] || 0) + 1;
+  for (const t of ["love", "suggest", "note", "unclear", "cut"]) if (counts[t]) parts.push(t === "love" ? `♥ ${counts[t]}` : `${counts[t]} ${KIND_WORD[t]}`);
+  return parts.join(" · ");
+}
 let openLine = null;          // line with the popover open
 let openSnap = "";           // that line's text when it was tapped
 let orphan = false;           // the writer removed the open line
@@ -131,6 +156,8 @@ function render(freshFrom = -1, freshLen = 0) {
     const active = c >= start && c <= end && Date.now() - lastOp < 2500;
     div.className = "ln" + (active ? " active" : "") + (myNotes.has(id) ? " mine" : "") + (id && id === openLine ? " open" : "");
     div.dataset.line = id;
+    const tag = id ? tagFor(id) : "";
+    if (tag) div.dataset.tag = tag;
     const cuts = new Set([start, end]);
     const hasCaret = c >= start && c <= end;
     if (hasCaret) cuts.add(c);
@@ -206,6 +233,33 @@ addEventListener("resize", placePop);
 function openPop(lineId) { openLine = lineId; openSnap = lineText(lineId); orphan = false; suggesting = false; buildPop(); render(); }
 function closePop() { openLine = null; orphan = false; suggesting = false; pop.remove(); }
 
+function makeLog() {
+  const mine = sentLog.get(openLine) || [];
+  const others = crowd.get(openLine);
+  if (!mine.length && !others) return null;
+  const log = document.createElement("div"); log.className = "log";
+    for (const m of mine) {
+      const p = document.createElement("p");
+      const b = document.createElement("b"); b.textContent = "You · " + ({ love: "Loved this", unclear: "Unclear", cut: "Cut?", suggest: "Suggested", note: "Note" }[m.type]);
+      p.append(b); if (m.text) p.append(": " + m.text);
+      log.append(p);
+    }
+    if (others) {
+      const n = others.size;
+      const kinds = {}; for (const ts of others.values()) for (const t of ts) kinds[t] = (kinds[t] || 0) + 1;
+      const p = document.createElement("p");
+      p.textContent = (n === 1 ? "1 other person" : n + " other people") + " here: " + Object.entries(kinds).map(([t, c]) => (t === "love" ? "♥ " + c : c + " " + KIND_WORD[t])).join(" · ");
+      log.append(p);
+    }
+  return log;
+}
+// Someone else acted on the open line: refresh just the summary, never the buttons or what you're typing.
+function refreshLog() {
+  const old = pop.querySelector(".log"), fresh = makeLog();
+  if (old && fresh) old.replaceWith(fresh);
+  else if (old) old.remove();
+  else if (fresh) { const after = pop.querySelector(".done"); after ? pop.insertBefore(fresh, after) : pop.append(fresh); }
+}
 function buildPop(doneMsg) {
   pop.textContent = "";
   const acts = document.createElement("div"); acts.className = "acts";
@@ -234,6 +288,8 @@ function buildPop(doneMsg) {
     f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.replace(/\s+/g, " ").trim(); if (v) sendNote(kind, v); });
     setTimeout(() => { inp.focus(); if (kind === "suggest") inp.select(); }, 30);
   }
+  const log = makeLog();
+  if (log) pop.append(log);
   if (orphan && !doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = "The writer just removed this line. You can still send wording or a note."; pop.append(d); }
   if (doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = doneMsg; pop.append(d); }
 }
@@ -248,11 +304,19 @@ function sendNote(type, suggestion = "") {
   if (orphan && !COMPOSE.has(type)) return;
   bus.send("note", { lineId: line, snapshot: orphan ? openSnap : lineText(line), author: me, type, text: suggestion });
   if (!orphan && type !== "note") myNotes.set(line, type);
+  {
+    // One reaction per line (it replaces your last); notes and suggestions add up.
+    let arr = (sentLog.get(line) || []).filter((m) => (type === "note" ? true : m.type === "note"));
+    if (type === "note") arr = [...(sentLog.get(line) || [])];
+    arr.push({ type, text: suggestion });
+    sentLog.set(line, arr);
+    try { sessionStorage.setItem(logKey, JSON.stringify([...sentLog])); } catch {}
+  }
   const k = line + "|" + type;
   clearTimeout(waitingAck.get(k));
   waitingAck.set(k, setTimeout(() => { waitingAck.delete(k); flash("Not delivered. The writer may have reloaded. Try again."); }, 4000));
   suggesting = false;
-  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your wording is with the writer.", note: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your note is in the writer's margin." }[type]);
+  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your wording is with the writer.", note: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your note is with the writer." }[type]);
   render();
   setTimeout(() => { if (openLine === line && pop.querySelector(".done")) { closePop(); render(); } }, 1600);
 }
@@ -291,6 +355,20 @@ function askForIds() {
 
 // ---- Live connection ----------------------------------------------------------------
 const bus = await createBus(room, "audience");
+bus.on("note", (p) => {
+  if (!p || !p.lineId || p.author === me) return;
+  const who = String(p.author || "?");
+  if (!crowd.has(p.lineId)) crowd.set(p.lineId, new Map());
+  const m = crowd.get(p.lineId);
+  const set = m.get(who) || new Set();
+  if (p.type !== "note") for (const t of ["love", "unclear", "cut", "suggest"]) set.delete(t);   // reactions replace each other
+  set.add(p.type); m.set(who, set);
+  const i = ids.indexOf(p.lineId);
+  hint.textContent = (p.type === "love" ? "Someone loved line " : p.type === "note" ? "Someone left a note on line " : p.type === "suggest" ? "Someone suggested wording for line " : "Someone marked line ") + (i + 1) + (p.type === "unclear" ? " unclear" : p.type === "cut" ? " to cut" : "");
+  hint.classList.remove("gone"); clearTimeout(hint._t); hint._t = setTimeout(() => hint.classList.add("gone"), 2600);
+  render(); if (openLine === p.lineId) refreshLog();
+});
+bus.onAudience((n) => { $("crowd").textContent = n > 1 ? n + " watching" : ""; });
 bus.on("outcome", (p) => {
   if (!fromWriter(p) || !Array.isArray(p.authors) || !p.authors.includes(me)) return;
   flash(p.type === "cut" ? "The writer cut the line you flagged ✓" : "The writer used your wording ✓");
