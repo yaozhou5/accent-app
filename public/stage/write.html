@@ -79,6 +79,7 @@
     padding: 12px 34px 12px 14px; margin-bottom: 10px; font-family: var(--serif); font-size: 17px; line-height: 1.4; cursor: pointer; animation: arrive .45s ease both;
   }
   .card:hover { border-color: rgba(26,26,24,.28); }
+  .card .was { display: block; margin-bottom: 4px; font-family: var(--sans); font-size: 11px; color: var(--faint); }
   .card small { display: block; margin-top: 6px; font-family: var(--sans); font-size: 11px; color: var(--faint); }
   .card .x { position: absolute; top: 6px; right: 6px; border: 0; background: none; color: var(--faint); font-size: 16px; padding: 4px 6px; }
   .badge { min-width: 18px; height: 18px; border-radius: 9px; background: var(--live); color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center; padding: 0 5px; }
@@ -177,12 +178,17 @@ bus.on("suggest", (p) => {
   if (text) addCard(text);
 });
 bus.on("note", (p) => {
-  if (!live || !p || !ids.includes(p.lineId)) return;
+  if (!live || !p) return;
   const type = ["love", "unclear", "cut", "suggest"].includes(p.type) ? p.type : null;
   if (!type) return;
   const author = String(p.author || "").slice(0, 24);
   const text = type === "suggest" ? String(p.text || "").replace(/\s+/g, " ").trim().slice(0, 400) : "";
   if (type === "suggest" && !text) return;
+  if (!ids.includes(p.lineId)) {
+    // The line was deleted while they were tapping it. A suggestion is still worth having.
+    if (type === "suggest") addCard(text, "For a line you removed");
+    return;
+  }
   // At most one note per audience member per line: a new one replaces their previous one.
   notes.set(author + "|" + p.lineId, { author, lineId: p.lineId, snapshot: String(p.snapshot || "").slice(0, 2000), type, text, at: Date.now() });
   draw();
@@ -377,7 +383,7 @@ cardsBtn.addEventListener("click", () => toggleCards());
 $("cardsClose").addEventListener("click", () => { toggleCards(false); sheet.focus(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("with-cards")) toggleCards(false); });
 
-function addCard(text) {
+function addCard(text, context = "") {
   empty.hidden = true;
   const card = document.createElement("div");
   card.className = "card";
@@ -385,6 +391,7 @@ function addCard(text) {
   const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   card.innerHTML = `<span></span><small>${time}</small><button class="x" type="button" aria-label="Dismiss">×</button>`;
   card.firstChild.textContent = text;
+  if (context) { const w = document.createElement("span"); w.className = "was"; w.textContent = context; card.prepend(w); }
   card.addEventListener("click", (e) => {
     if (e.target.closest(".x")) { card.remove(); if (!list.children.length) empty.hidden = false; return; }
     sheet.focus();

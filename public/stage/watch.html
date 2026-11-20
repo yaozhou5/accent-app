@@ -12,6 +12,9 @@
   .ln { min-height: 1.6em; border-radius: 3px; margin: 0 -8px; padding: 0 8px; cursor: pointer; transition: background .2s; -webkit-tap-highlight-color: transparent; }
   .ln:hover { background: rgba(26,26,24,.035); }
   .ln.open { background: #EEF1FE; }
+  .ln.active { cursor: default; }
+  .ln.active:hover { background: transparent; }
+  .pop .acts button:disabled { opacity: .35; }
   .ln.mine { box-shadow: inset 2px 0 0 #4B6CF8; }
   .sheet .fresh { animation: ink .5s ease-out both; }
   @keyframes ink { from { opacity: 0; } }
@@ -105,6 +108,9 @@ let text = "", ids = [], seq = -1, caret = 0, live = false;
 let typingT, thinkT;
 const myNotes = new Map();   // lineId -> type
 let openLine = null;          // line with the popover open
+let openSnap = "";           // that line's text when it was tapped
+let orphan = false;           // the writer removed the open line
+let lastOp = 0, activeT;      // the line being typed right now isn't tappable yet
 let suggesting = false;
 
 const caretEl = document.createElement("span");
@@ -121,7 +127,8 @@ function render(freshFrom = -1, freshLen = 0) {
     const end = start + line.length;
     const id = ids[i] || "";
     const div = document.createElement("div");
-    div.className = "ln" + (myNotes.has(id) ? " mine" : "") + (id && id === openLine ? " open" : "");
+    const active = c >= start && c <= end && Date.now() - lastOp < 2500;
+    div.className = "ln" + (active ? " active" : "") + (myNotes.has(id) ? " mine" : "") + (id && id === openLine ? " open" : "");
     div.dataset.line = id;
     const cuts = new Set([start, end]);
     const hasCaret = c >= start && c <= end;
@@ -175,7 +182,15 @@ const lineText = (id) => { const i = ids.indexOf(id); return i < 0 ? "" : text.s
 function placePop() {
   if (!openLine) return;
   const host = sheet.querySelector(`.ln[data-line="${openLine}"]`);
-  if (!host) { closePop(); return; }
+  if (!host) {                                  // line removed mid-tap: keep the popover where it was
+    if (pop.isConnected && !orphan) {
+      const draft = pop.querySelector("input")?.value;
+      orphan = true; buildPop();
+      if (draft != null) { const i = pop.querySelector("input"); if (i) i.value = draft; }
+    }
+    else if (!pop.isConnected) closePop();
+    return;
+  }
   const r = host.getBoundingClientRect(), s = sheet.getBoundingClientRect();
   const cs = getComputedStyle(sheet);
   const left = s.left + parseFloat(cs.paddingLeft) - 8, width = s.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) + 16;
@@ -186,8 +201,8 @@ function placePop() {
 }
 addEventListener("resize", placePop);
 
-function openPop(lineId) { openLine = lineId; suggesting = false; buildPop(); render(); }
-function closePop() { openLine = null; suggesting = false; pop.remove(); }
+function openPop(lineId) { openLine = lineId; openSnap = lineText(lineId); orphan = false; suggesting = false; buildPop(); render(); }
+function closePop() { openLine = null; orphan = false; suggesting = false; pop.remove(); }
 
 function buildPop(doneMsg) {
   pop.textContent = "";
@@ -195,6 +210,7 @@ function buildPop(doneMsg) {
   for (const [k, l] of KINDS) {
     const b = document.createElement("button"); b.type = "button"; b.textContent = l; b.dataset.k = k;
     b.setAttribute("aria-pressed", String(k === "suggest" ? suggesting : myNotes.get(openLine) === k));
+    if (orphan && k !== "suggest") b.disabled = true;
     acts.append(b);
   }
   pop.append(acts);
@@ -202,12 +218,13 @@ function buildPop(doneMsg) {
     const f = document.createElement("form");
     const inp = document.createElement("input");
     inp.maxLength = 400; inp.setAttribute("aria-label", "Your wording for this line");
-    inp.value = lineText(openLine);
+    inp.value = orphan ? openSnap : lineText(openLine);
     const go = document.createElement("button"); go.type = "submit"; go.textContent = "Send";
     f.append(inp, go); pop.append(f);
     f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.replace(/\s+/g, " ").trim(); if (v) sendNote("suggest", v); });
     setTimeout(() => { inp.focus(); inp.select(); }, 30);
   }
+  if (orphan && !doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = "The writer just removed this line. You can still suggest wording."; pop.append(d); }
   if (doneMsg) { const d = document.createElement("p"); d.className = "done"; d.textContent = doneMsg; pop.append(d); }
 }
 
@@ -217,10 +234,11 @@ function sendNote(type, suggestion = "") {
   if (Date.now() - lastNote < 1200) return;
   lastNote = Date.now();
   const line = openLine;
-  bus.send("note", { lineId: line, snapshot: lineText(line), author: me, type, text: suggestion });
-  myNotes.set(line, type);
+  if (orphan && type !== "suggest") return;
+  bus.send("note", { lineId: line, snapshot: orphan ? openSnap : lineText(line), author: me, type, text: suggestion });
+  if (!orphan) myNotes.set(line, type);
   suggesting = false;
-  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: "Sent. Your wording is with the writer." }[type]);
+  buildPop({ love: "Sent. You loved this line.", unclear: "Sent. You marked it unclear.", cut: "Sent. You'd cut this line.", suggest: orphan ? "Sent. It lands in the writer's suggestions." : "Sent. Your wording is with the writer." }[type]);
   render();
   setTimeout(() => { if (openLine === line && pop.querySelector(".done")) { closePop(); render(); } }, 1600);
 }
@@ -238,6 +256,11 @@ sheet.addEventListener("click", (e) => {
   const ln = e.target.closest(".ln");
   if (!ln || !live || !ln.dataset.line) return;
   if (!lineText(ln.dataset.line).trim()) return;             // nothing to react to on an empty line
+  if (ln.classList.contains("active")) {                    // still being written
+    hint.textContent = "Still being written. Tap it once they move on."; hint.classList.remove("gone");
+    clearTimeout(hint._t); hint._t = setTimeout(() => hint.classList.add("gone"), 2200);
+    return;
+  }
   if (openLine === ln.dataset.line) { closePop(); render(); } else openPop(ln.dataset.line);
 });
 document.addEventListener("click", (e) => { if (openLine && !e.target.closest(".pop") && !e.target.closest(".ln")) { closePop(); render(); } });
@@ -259,6 +282,7 @@ bus.on("op", (p) => {
   text = apply(text, p);
   if (Array.isArray(p.ids)) ids = p.ids;
   caret = p.caret ?? p.at + p.ins.length;
+  lastOp = Date.now(); clearTimeout(activeT); activeT = setTimeout(() => render(), 2600);
   for (const id of [...myNotes.keys()]) if (!ids.includes(id)) myNotes.delete(id);
   if (!live) setLive(true);
   render(p.ins.length ? p.at : -1, p.ins.length);
