@@ -17,11 +17,8 @@
   .pop .acts button:disabled { opacity: .35; }
   .ln.mine { box-shadow: inset 2px 0 0 #4B6CF8; }
   .ln { position: relative; }
-  .ln[data-tag] { padding-right: 76px; }
-  .ln[data-tag]::after {
-    content: attr(data-tag); position: absolute; right: -2px; top: .35em; font-family: var(--mono); font-size: 10px; letter-spacing: .03em;
-    color: var(--dim); background: rgba(245,240,232,.92); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; line-height: 1.6; pointer-events: none;
-  }
+  /* Someone has left a note on this line. A tint only: no count, nothing to click. */
+  .ln.noted { text-decoration: underline; text-decoration-color: rgba(75,108,248,.30); text-decoration-thickness: 2px; text-underline-offset: 7px; }
   .pop .log { margin: 9px 2px 0; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; color: var(--dim); }
   .pop .log b { font-weight: 500; color: var(--ink); }
   .pop .log p { margin: 0 0 4px; }
@@ -83,6 +80,40 @@
   form.suggest input::placeholder { color: var(--faint); }
   form.suggest button { border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 13px; padding: 10px 13px; }
   form.suggest button:disabled { opacity: .35; }
+  .chat {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 58px);
+    width: min(460px, calc(100vw - 28px)); max-height: 34vh; z-index: 5; display: flex; flex-direction: column;
+    background: rgba(251,248,243,.94); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px -18px rgba(26,26,24,.35);
+  }
+  .chat[hidden] { display: none; }
+  .chat-head { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px 5px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .chat-head button { border: 0; background: none; font: inherit; color: var(--dim); text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 12px; padding: 2px 4px; }
+  .chat-feed { overflow-y: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .chat.min .chat-feed { display: none; }
+  .bubble { align-self: flex-start; max-width: 85%; background: #fff; border: 1px solid var(--line); border-radius: 12px 12px 12px 4px; padding: 5px 10px 6px; font-size: 14px; line-height: 1.4; color: var(--ink); word-wrap: break-word; }
+  .bubble b { display: block; font-weight: 500; font-size: 11px; color: var(--dim); margin-bottom: 1px; }
+  .bubble.mine { align-self: flex-end; background: var(--ink); color: var(--paper); border-color: var(--ink); border-radius: 12px 12px 4px 12px; }
+  .bubble.mine b { color: rgba(245,240,232,.6); }
+  .bubble.writer b { color: var(--live); }
+  form.suggest .who { flex: none; border: 0; background: rgba(26,26,24,.06); color: var(--dim); border-radius: 999px; padding: 6px 9px; font-size: 12px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  form.suggest { padding-left: 5px; }
+
+  /* The reveal: after Wrap up, everyone sees every note, by line, with outcomes. */
+  .reveal { position: fixed; inset: 0; z-index: 9; background: rgba(26,26,24,.3); display: flex; justify-content: center; align-items: flex-start; padding: 56px 12px 20px; overflow-y: auto; }
+  .reveal[hidden] { display: none; }
+  .reveal-card { width: min(640px, 100%); background: var(--paper); border-radius: 12px; padding: 18px 20px 20px; box-shadow: 0 18px 50px rgba(26,26,24,.2); }
+  .reveal-card header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .reveal-card h2 { margin: 0; font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  .reveal-card header button { border: 0; background: none; font-size: 20px; color: var(--dim); }
+  .reveal-card .lede { margin: 0 0 14px; font-size: 13px; color: var(--dim); }
+  .rg { margin-bottom: 16px; }
+  .rg .line { margin: 0 0 6px; padding-left: 9px; border-left: 2px solid var(--line); font-family: var(--serif); font-size: 16px; line-height: 1.4; }
+  .rg .line.removed { text-decoration: line-through; color: var(--faint); }
+  .rn { margin: 0 0 5px 11px; font-size: 13.5px; line-height: 1.45; }
+  .rn b { font-weight: 500; }
+  .rn .st { margin-left: 6px; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: rgba(26,26,24,.06); color: var(--dim); white-space: nowrap; }
+  .rn .st.used { background: #E3EFD6; color: #3B6D11; }
+  .rn .st.cut { background: #F4D9D4; color: var(--live); }
   .sent { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 60px); transform: translateX(-50%); font-size: 12.5px; color: var(--paper); background: var(--ink); padding: 6px 12px; border-radius: 999px; opacity: 0; transition: opacity .3s; z-index: 6; white-space: nowrap; pointer-events: none; }
   .sent.on { opacity: 1; }
   @media (max-width: 600px) { .sheet { padding-top: 96px; } .corner.tl .mono { display: none; } }
@@ -98,6 +129,17 @@
   <div class="hint gone" id="hint">Tap a line to react to it</div>
 
   <p class="sent" id="sent" role="status"></p>
+  <div class="chat" id="chat" hidden>
+    <div class="chat-head"><span>Room chat</span><button type="button" id="chatMin">Hide</button></div>
+    <div class="chat-feed" id="chatFeed" aria-live="polite"></div>
+  </div>
+  <div class="reveal" id="reveal" role="dialog" aria-modal="true" aria-labelledby="revealTitle" hidden>
+    <div class="reveal-card">
+      <header><h2 id="revealTitle">Notes from this session</h2><button type="button" id="revealClose" aria-label="Close">×</button></header>
+      <p class="lede">The writer wrapped up. Here is every note, by line, and what became of it.</p>
+      <div id="revealList"></div>
+    </div>
+  </div>
   <div class="dock">
     <div class="reacts" role="group" aria-label="React">
       <button type="button" data-e="eyes" aria-label="Watching">👀</button>
@@ -105,7 +147,8 @@
       <button type="button" data-e="laugh" aria-label="Funny">😂</button>
     </div>
     <form class="suggest" id="suggest" autocomplete="off">
-      <input id="word" maxlength="80" placeholder="Say something to the writer" aria-label="Say something to the writer">
+      <button type="button" class="who" id="who" title="Change your name"></button>
+      <input id="word" maxlength="200" placeholder="Say something to the room" aria-label="Say something to the room">
       <button id="send" type="submit" disabled>Send</button>
     </form>
   </div>
@@ -122,14 +165,16 @@ const form = $("suggest"), word = $("word"), send = $("send"), sent = $("sent");
 let me = sessionStorage.getItem("stage-me");
 if (!me) { me = Math.random().toString(36).slice(2, 10); sessionStorage.setItem("stage-me", me); }
 
+// The name the room sees in chat, and the name on your notes when the writer reveals them.
+let myName = sessionStorage.getItem("stage-name") || "";
+if (!myName) { myName = "Guest " + (10 + Math.floor(Math.random() * 90)); sessionStorage.setItem("stage-name", myName); }
+
 let text = "", ids = [], seq = -1, caret = 0, live = false;
 let typingT, thinkT;
 const myNotes = new Map();   // lineId -> type
 // What I've sent, and what everyone else in the room is doing, per line.
 const logKey = "stage-sent:" + location.pathname;
 const sentLog = new Map(JSON.parse(sessionStorage.getItem(logKey) || "[]"));   // lineId -> [{type, text}]
-const freeKey = "stage-free:" + location.pathname;
-const freeLog = JSON.parse(sessionStorage.getItem(freeKey) || "[]");   // what you sent from the box at the bottom
 const crowd = new Map();       // lineId -> Map(author -> Set(types))
 const KIND_WORD = { love: "♥", unclear: "unclear", cut: "cut", suggest: "suggest", note: "note" };
 function myNoteEl(arr) {
@@ -141,16 +186,6 @@ function myNoteEl(arr) {
     el.append(p);
   }
   return el;
-}
-function tagFor(id) {
-  const parts = [];
-  const mine = sentLog.get(id) || [];
-  const others = crowd.get(id);
-  const counts = {};
-  if (others) for (const types of others.values()) for (const t of types) counts[t] = (counts[t] || 0) + 1;
-  for (const m of mine) counts[m.type] = (counts[m.type] || 0) + 1;
-  for (const t of ["love", "suggest", "note", "unclear", "cut"]) if (counts[t]) parts.push(t === "love" ? `♥ ${counts[t]}` : `${counts[t]} ${KIND_WORD[t]}`);
-  return parts.join(" · ");
 }
 let openLine = null;          // line with the popover open
 let openSnap = "";           // that line's text when it was tapped
@@ -175,8 +210,7 @@ function render(freshFrom = -1, freshLen = 0) {
     const active = c >= start && c <= end && Date.now() - lastOp < 2500;
     div.className = "ln" + (active ? " active" : "") + (myNotes.has(id) ? " mine" : "") + (id && id === openLine ? " open" : "");
     div.dataset.line = id;
-    const tag = id ? tagFor(id) : "";
-    if (tag) div.dataset.tag = tag;
+    if (id && (crowd.has(id) || (sentLog.get(id) || []).length)) div.classList.add("noted");
     const cuts = new Set([start, end]);
     const hasCaret = c >= start && c <= end;
     if (hasCaret) cuts.add(c);
@@ -196,15 +230,6 @@ function render(freshFrom = -1, freshLen = 0) {
     if (mine && mine.length) sheet.append(myNoteEl(mine));
     start = end + 1;
   });
-  // What you've said to the writer from the box at the bottom, newest first.
-  if (freeLog.length && text) {
-    const box = document.createElement("div"); box.className = "mygone";
-    const h = document.createElement("h3"); h.textContent = "You said to the writer"; box.append(h);
-    const el = document.createElement("div"); el.className = "mynote";
-    for (const m of [...freeLog].reverse()) { const p = document.createElement("p"); p.textContent = m.text; el.append(p); }
-    box.append(el);
-    sheet.append(box);
-  }
   // Notes you left on lines the writer has since removed: keep them visible at the end.
   const gone = [...sentLog.entries()].filter(([id, arr]) => arr.length && !ids.includes(id));
   if (gone.length && text) {
@@ -276,20 +301,12 @@ function closePop() { openLine = null; orphan = false; suggesting = false; pop.r
 
 function makeLog() {
   const mine = sentLog.get(openLine) || [];
-  const others = crowd.get(openLine);
-  if (!mine.length && !others) return null;
+  if (!mine.length) return null;
   const log = document.createElement("div"); log.className = "log";
     for (const m of mine) {
       const p = document.createElement("p");
       const b = document.createElement("b"); b.textContent = "You · " + ({ love: "Loved this", unclear: "Unclear", cut: "Cut?", suggest: "Suggested", note: "Note" }[m.type]);
       p.append(b); if (m.text) p.append(": " + m.text);
-      log.append(p);
-    }
-    if (others) {
-      const n = others.size;
-      const kinds = {}; for (const ts of others.values()) for (const t of ts) kinds[t] = (kinds[t] || 0) + 1;
-      const p = document.createElement("p");
-      p.textContent = (n === 1 ? "1 other person" : n + " other people") + " here: " + Object.entries(kinds).map(([t, c]) => (t === "love" ? "♥ " + c : c + " " + KIND_WORD[t])).join(" · ");
       log.append(p);
     }
   return log;
@@ -343,7 +360,7 @@ function sendNote(type, suggestion = "") {
   lastNote = Date.now();
   const line = openLine;
   if (orphan && !COMPOSE.has(type)) return;
-  bus.send("note", { lineId: line, snapshot: orphan ? openSnap : lineText(line), author: me, type, text: suggestion });
+  bus.send("note", { lineId: line, snapshot: orphan ? openSnap : lineText(line), author: me, name: myName, type, text: suggestion });
   if (!orphan && type !== "note") myNotes.set(line, type);
   {
     // One reaction per line (it replaces your last); notes and suggestions add up.
@@ -404,12 +421,35 @@ bus.on("note", (p) => {
   const set = m.get(who) || new Set();
   if (p.type !== "note") for (const t of ["love", "unclear", "cut", "suggest"]) set.delete(t);   // reactions replace each other
   set.add(p.type); m.set(who, set);
-  const i = ids.indexOf(p.lineId);
-  hint.textContent = (p.type === "love" ? "Someone loved line " : p.type === "note" ? "Someone left a note on line " : p.type === "suggest" ? "Someone suggested wording for line " : "Someone marked line ") + (i + 1) + (p.type === "unclear" ? " unclear" : p.type === "cut" ? " to cut" : "");
-  hint.classList.remove("gone"); clearTimeout(hint._t); hint._t = setTimeout(() => hint.classList.add("gone"), 2600);
-  render(); if (openLine === p.lineId) refreshLog();
+  render();
 });
 bus.onAudience((n) => { $("crowd").textContent = n > 1 ? n + " watching" : ""; });
+bus.on("chat", (p) => {
+  if (!p || !p.text) return;
+  if (p.writer && !fromWriter(p)) return;
+  addBubble({ name: String(p.name || "").slice(0, 24), text: String(p.text).slice(0, 200), writer: !!p.writer }, false);
+});
+const STATUS = { used: "Used", cut: "Cut", skipped: "Skipped", open: "Open", "line removed": "Line removed" };
+const SAID = { love: "Loved this", unclear: "Unclear", cut: "Cut?", suggest: "Suggested", note: "Note" };
+bus.on("reveal", (p) => {
+  if (!fromWriter(p) || !Array.isArray(p.lines)) return;
+  const list = $("revealList"); list.textContent = "";
+  for (const g of p.lines) {
+    const box = document.createElement("section"); box.className = "rg";
+    const l = document.createElement("p"); l.className = "line" + (g.removed ? " removed" : ""); l.textContent = g.line || "(a line)"; box.append(l);
+    for (const n of g.notes || []) {
+      const r = document.createElement("p"); r.className = "rn";
+      const b = document.createElement("b"); b.textContent = n.author === me ? "You" : (n.name || "Someone"); r.append(b);
+      r.append(" · " + (SAID[n.type] || n.type) + (n.text ? (n.type === "suggest" ? ": “" + n.text + "”" : ": " + n.text) : ""));
+      const st = document.createElement("span"); st.className = "st " + (n.status || "").replace(" ", "-"); st.textContent = STATUS[n.status] || ""; if (st.textContent) r.append(st);
+      box.append(r);
+    }
+    list.append(box);
+  }
+  if (!p.lines.length) list.textContent = "No notes this time.";
+  closePop(); $("reveal").hidden = false;
+});
+$("revealClose").addEventListener("click", () => { $("reveal").hidden = true; });
 bus.on("outcome", (p) => {
   if (!fromWriter(p) || !Array.isArray(p.authors) || !p.authors.includes(me)) return;
   flash(p.type === "cut" ? "The writer cut the line you flagged ✓" : "The writer used your wording ✓");
@@ -471,22 +511,45 @@ reactBtns.forEach((b) => b.addEventListener("click", () => {
   setTimeout(() => reactBtns.forEach((x) => (x.disabled = false)), 2000);
 }));
 
-// ---- Freeform suggestion (unchanged) ------------------------------------------------
+// ---- Room chat: everyone sees it, the writer too. Ephemeral; never kept, never a note. ----
+const chat = $("chat"), chatFeed = $("chatFeed"), who = $("who");
+who.textContent = myName;
+let naming = false;
+who.addEventListener("click", () => {
+  naming = !naming;
+  word.placeholder = naming ? "Your name in the room" : "Say something to the room";
+  word.value = naming ? myName : ""; word.focus(); if (naming) word.select();
+  send.disabled = !word.value.trim();
+});
 word.addEventListener("input", () => { send.disabled = !word.value.trim(); });
+function addBubble(m, mine) {
+  const b = document.createElement("div");
+  b.className = "bubble" + (mine ? " mine" : "") + (m.writer ? " writer" : "");
+  const n = document.createElement("b"); n.textContent = mine ? "You" : (m.writer ? "Writer" : m.name || "Guest");
+  b.append(n, String(m.text || ""));
+  chatFeed.append(b);
+  while (chatFeed.children.length > 80) chatFeed.firstChild.remove();
+  chat.hidden = false;
+  chatFeed.scrollTop = chatFeed.scrollHeight;
+}
+$("chatMin").addEventListener("click", () => { const min = chat.classList.toggle("min"); $("chatMin").textContent = min ? "Show" : "Hide"; });
 let lastSent = 0;
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-  const v = word.value.replace(/\s+/g, " ").trim().slice(0, 80);
+  const v = word.value.replace(/\s+/g, " ").trim();
   if (!v) return;
-  const wait = 5000 - (Date.now() - lastSent);
-  if (wait > 0) { flash(`One moment… (${Math.ceil(wait / 1000)}s)`); return; }
-  bus.send("suggest", { text: v });
+  if (naming) {
+    myName = v.slice(0, 24); sessionStorage.setItem("stage-name", myName); who.textContent = myName;
+    naming = false; word.placeholder = "Say something to the room"; word.value = ""; send.disabled = true;
+    flash("You're " + myName + " in this room"); return;
+  }
+  const wait = 1500 - (Date.now() - lastSent);
+  if (wait > 0) return;
+  const m = { name: myName, author: me, text: v.slice(0, 200) };
+  bus.send("chat", m);
   lastSent = Date.now();
-  freeLog.push({ text: v, at: Date.now() });
-  try { sessionStorage.setItem(freeKey, JSON.stringify(freeLog)); } catch {}
-  render();
+  addBubble(m, true);
   word.value = ""; send.disabled = true;
-  flash("Sent to the writer");
 });
 function flash(m) { sent.textContent = m; sent.classList.add("on"); clearTimeout(flash.t); flash.t = setTimeout(() => sent.classList.remove("on"), 2600); }
 
