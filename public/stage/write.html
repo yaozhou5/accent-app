@@ -90,6 +90,9 @@
   }
   .card:hover { border-color: rgba(26,26,24,.28); }
   .card .was { display: block; margin-bottom: 4px; font-family: var(--sans); font-size: 11px; color: var(--faint); }
+  .card { cursor: default !important; }
+  .card .ins { margin-left: 10px; border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 2px 8px; font-family: var(--sans); font-size: 11.5px; color: var(--ink); cursor: pointer; }
+  .card .ins:hover { border-color: rgba(26,26,24,.35); }
   .card small { display: block; margin-top: 6px; font-family: var(--sans); font-size: 11px; color: var(--faint); }
   .card .x { position: absolute; top: 6px; right: 6px; border: 0; background: none; color: var(--faint); font-size: 16px; padding: 4px 6px; }
   .badge { min-width: 18px; height: 18px; border-radius: 9px; background: var(--live); color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center; padding: 0 5px; }
@@ -141,7 +144,7 @@
 
   <aside id="cards" aria-label="Freeform suggestions">
     <h2 class="mono">From the audience <button type="button" id="cardsClose" aria-label="Close suggestions">×</button></h2>
-    <p class="empty" id="empty">Freeform suggestions appear here. Click one to drop it in at your cursor.</p>
+    <p class="empty" id="empty">Freeform notes from the audience appear here. Use "Insert at cursor" to put one into your text.</p>
     <div id="list"></div>
   </aside>
   <div class="floats" id="floats" aria-hidden="true"></div>
@@ -411,15 +414,16 @@ function addCard(text, context = "") {
   empty.hidden = true;
   const card = document.createElement("div");
   card.className = "card";
-  card.title = "Click to insert at your cursor";
   const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  card.innerHTML = `<span></span><small>${time}</small><button class="x" type="button" aria-label="Dismiss">×</button>`;
+  card.innerHTML = `<span></span><small>${time}<button class="ins" type="button">Insert at cursor</button></small><button class="x" type="button" aria-label="Dismiss">×</button>`;
   card.firstChild.textContent = text;
   if (context) { const w = document.createElement("span"); w.className = "was"; w.textContent = context; card.prepend(w); }
   card.addEventListener("click", (e) => {
     if (e.target.closest(".x")) { card.remove(); if (!list.children.length) empty.hidden = false; return; }
+    if (!e.target.closest(".ins")) return;          // reading a card never changes your text
     sheet.focus();
-    sheet.setRangeText(text, sheet.selectionStart, sheet.selectionEnd, "end");
+    // insertText keeps it in the undo history, so Cmd+Z takes it back out.
+    if (!document.execCommand("insertText", false, text)) sheet.setRangeText(text, sheet.selectionStart, sheet.selectionEnd, "end");
     onEdit();
     card.remove(); if (!list.children.length) empty.hidden = false;
   });
