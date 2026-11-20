@@ -68,8 +68,8 @@
   .notes.fading { opacity: 0; }
   .note {
     background: #FBF8F3; border: 1px solid var(--line); border-radius: 4px; padding: 9px 11px; font-size: 12.5px; line-height: 1.4;
-    animation: arrive .35s ease both;
   }
+  .note.new { animation: arrive .35s ease both; }
   .note .kind { color: var(--dim); }
   .note.k-love .kind { color: #3B6D11; }
   .note.k-cut .kind { color: var(--live); }
@@ -223,6 +223,7 @@ let revising = false;
 const notes = new Map();
 const fadingLines = new Set();
 const lastReact = new Map();
+const shownNotes = new Set();   // margin notes already on screen, so redraws don't replay their arrival
 // Everything the recap needs. A note's outcome: open, used, cut, skipped, or line removed.
 const history = new Map();
 const stats = { peak: 0, reacts: { "👀": 0, "❤️": 0, "😂": 0 }, freeform: [], started: Date.now() };
@@ -422,7 +423,9 @@ function draw() {
     box.addEventListener("mouseleave", () => lineEl.classList.remove("focus"));
     for (const g of groups) {
       const el = document.createElement("div");
-      el.className = "note k-" + g.type;
+      const gid = id + "|" + g.type + "|" + (g.text || "").toLowerCase();
+      el.className = "note k-" + g.type + (shownNotes.has(gid) ? "" : " new");
+      shownNotes.add(gid);
       const kind = document.createElement("span"); kind.className = "kind"; kind.textContent = g.type === "love" ? "♥ " + label(g) : label(g); el.append(kind);
       if (g.type === "love") { box.append(el); continue; }
       if (g.type === "suggest" || g.type === "note") { const alt = document.createElement("span"); alt.className = "alt"; alt.textContent = g.text; el.append(alt); }
