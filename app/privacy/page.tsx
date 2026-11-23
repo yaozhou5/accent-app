@@ -1,28 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { CookieSettingsButton } from "@/components/CookieSettingsButton";
-import styles from "./page.module.css";
+import { LegalShell, legalStyles as styles } from "@/components/LegalShell";
 
 export const metadata: Metadata = {
   title: "Privacy — Accent",
 };
 
+const LEGAL = "Accent is operated by Accent AI, registered with the Netherlands Chamber of Commerce (KvK) under number 98500562, which is the controller of your personal data. Contact: hello@myaccent.io.";
+
 export default function PrivacyPage() {
   return (
-    <div className="accent-legacy">
-      <div className={styles.wrap}>
-        <nav>
-          <div className={styles.in}>
-            <Link className={styles.word} href="/">
-              Acc<em>e</em>nt
-            </Link>
-            <span className={styles.sp}></span>
-            <Link className={styles.back} href="/">
-              Back
-            </Link>
-          </div>
-        </nav>
-
+    <LegalShell legal={LEGAL}>
         <h1>Privacy</h1>
         <p className={styles.sub}>Last updated 23 November 2026</p>
 
@@ -45,13 +32,13 @@ export default function PrivacyPage() {
           watching link can join.
         </p>
         <p>
-          <strong>If you write:</strong> what you type is sent live, as you type it, to the people watching. It passes
+          <strong>If you write:</strong>{" "}what you type is sent live, as you type it, to the people watching. It passes
           through Supabase&apos;s realtime service and is not stored on our servers. Your draft and the notes you
           receive are saved in your own browser, so a reload doesn&apos;t lose them. Clearing your browser data deletes
           them.
         </p>
         <p>
-          <strong>If you watch:</strong> the room shows a name for you, one you choose or a default like
+          <strong>If you watch:</strong>{" "}the room shows a name for you, one you choose or a default like
           &ldquo;Guest 42&rdquo;. Reactions, notes and chat messages pass through the same realtime service:
         </p>
         <ul>
@@ -230,7 +217,7 @@ export default function PrivacyPage() {
           <li>link your activity to your account if you are signed in.</li>
         </ul>
         <p>
-          <strong>Reject</strong> is as easy as Accept, and the site works the same either way. You can change your
+          <strong>Reject</strong>{" "}is as easy as Accept, and the site works the same either way. You can change your
           choice at any time with the <em>Cookie settings</em> tab, which is always visible in the corner of the page.
           Withdrawing consent stops recording and clears the identifier.
         </p>
@@ -285,14 +272,14 @@ export default function PrivacyPage() {
         </p>
         <ul>
           <li>
-            <strong>Vercel</strong> is certified under the EU–US Data Privacy Framework and also uses the European
+            <strong>Vercel</strong>{" "}is certified under the EU–US Data Privacy Framework and also uses the European
             Commission&apos;s Standard Contractual Clauses.
           </li>
           <li>
-            <strong>Resend</strong> is certified under the EU–US Data Privacy Framework.
+            <strong>Resend</strong>{" "}is certified under the EU–US Data Privacy Framework.
           </li>
           <li>
-            <strong>Anthropic</strong> uses Standard Contractual Clauses.
+            <strong>Anthropic</strong>{" "}uses Standard Contractual Clauses.
           </li>
         </ul>
 
@@ -338,20 +325,6 @@ export default function PrivacyPage() {
           email.
         </p>
 
-        <footer>
-          <div className={styles.footerLinks}>
-            <span>Accent</span>
-            <Link href="/terms">Terms</Link>
-            <Link href="/">Home</Link>
-            <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
-            <CookieSettingsButton />
-          </div>
-          <p className={styles.legal}>
-            Accent is operated by Accent AI, registered with the Netherlands Chamber of Commerce (KvK) under number
-            98500562, which is the controller of your personal data. Contact: hello@myaccent.io.
-          </p>
-        </footer>
-      </div>
-    </div>
+    </LegalShell>
   );
 }

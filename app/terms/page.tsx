@@ -1,28 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CookieSettingsButton } from "@/components/CookieSettingsButton";
-import styles from "./page.module.css";
+import { LegalShell, legalStyles as styles } from "@/components/LegalShell";
 
 export const metadata: Metadata = {
   title: "Terms — Accent",
 };
 
+const LEGAL = "Accent is the trading name registered with the Dutch Chamber of Commerce (KvK) under number 98500562. The registered address is held in the KvK register. Contact: hello@myaccent.io.";
+
 export default function TermsPage() {
   return (
-    <div className="accent-legacy">
-      <div className={styles.wrap}>
-        <nav>
-          <div className={styles.in}>
-            <Link className={styles.word} href="/">
-              Acc<em>e</em>nt
-            </Link>
-            <span className={styles.sp}></span>
-            <Link className={styles.back} href="/">
-              Back
-            </Link>
-          </div>
-        </nav>
-
+    <LegalShell legal={LEGAL}>
         <h1>Terms</h1>
         <p className={styles.sub}>Last updated 27 September 2026</p>
 
@@ -108,20 +96,6 @@ export default function TermsPage() {
           <a href="https://ec.europa.eu/consumers/odr">online dispute resolution platform</a>.
         </p>
 
-        <footer>
-          <div className={styles.footerLinks}>
-            <span>Accent</span>
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/">Home</Link>
-            <a href="mailto:hello@myaccent.io">hello@myaccent.io</a>
-            <CookieSettingsButton />
-          </div>
-          <p className={styles.legal}>
-            Accent is the trading name registered with the Dutch Chamber of Commerce (KvK) under number 98500562. The
-            registered address is held in the KvK register. Contact: hello@myaccent.io.
-          </p>
-        </footer>
-      </div>
-    </div>
+    </LegalShell>
   );
 }
