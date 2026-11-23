@@ -24,15 +24,61 @@ export default function PrivacyPage() {
         </nav>
 
         <h1>Privacy</h1>
-        <p className={styles.sub}>Last updated 12 November 2026</p>
+        <p className={styles.sub}>Last updated 23 November 2026</p>
 
         <p>
-          Accent helps you write and speak about your work in your own voice. Some of it runs entirely on your device.
-          Some of it has to reach our servers and a few service providers to work. This page says which is which, what
-          happens to your data, and how to make us stop.
+          Accent is a live writing room: you write in front of other people, and no AI writes for you. Rooms aren&apos;t
+          open yet. Until they are, myaccent.io collects early-access sign-ups, and the previous version of Accent, a
+          writing and practice tool with AI features, keeps running for existing accounts while we shut it down.
+        </p>
+        <p>
+          This page covers all three: what stays on your device, what reaches our servers and a few service providers,
+          what happens to it, and how to make us stop.
         </p>
         <p>
           For anything on this page, write to hello@myaccent.io. A person reads it, and that person is currently me.
+        </p>
+
+        <h2>The live writing room (not open yet)</h2>
+        <p>
+          A room has two links: a private one for the writer, and a watching link the writer shares. Anyone with the
+          watching link can join.
+        </p>
+        <p>
+          <strong>If you write:</strong> what you type is sent live, as you type it, to the people watching. It passes
+          through Supabase&apos;s realtime service and is not stored on our servers. Your draft and the notes you
+          receive are saved in your own browser, so a reload doesn&apos;t lose them. Clearing your browser data deletes
+          them.
+        </p>
+        <p>
+          <strong>If you watch:</strong> the room shows a name for you, one you choose or a default like
+          &ldquo;Guest 42&rdquo;. Reactions, notes and chat messages pass through the same realtime service:
+        </p>
+        <ul>
+          <li>chat messages are shown to everyone in the room,</li>
+          <li>notes on a line go to the writer, and other watchers don&apos;t see them during the session, and</li>
+          <li>
+            when the writer wraps up, every note from the session is shown to the room, with the name of the person who
+            left it.
+          </li>
+        </ul>
+        <p>
+          We don&apos;t store chat, notes or reactions after the session. Your own notes stay in your browser tab until
+          you close it. Rooms use no AI and no analytics.
+        </p>
+        <p>
+          A room is an open channel. Anyone with the watching link can join, and someone technical could read notes in
+          transit even though the page doesn&apos;t show them to other watchers. Don&apos;t write or send anything you
+          wouldn&apos;t want the room to see. If any of this changes before rooms open, we&apos;ll update this section
+          first.
+        </p>
+
+        <h2>The previous Accent app</h2>
+        <p>
+          Until it&apos;s switched off, the earlier version of Accent still runs for people with accounts: writing with
+          AI reviews and coaching, a voice quiz, and speaking practice. Where the sections below mention drafts,
+          practice, the voice quiz or AI features, they describe that app. We&apos;ll update this page when it shuts
+          down.
         </p>
 
         <h2>What stays on your device</h2>
@@ -110,6 +156,14 @@ export default function PrivacyPage() {
               <td>To keep costs under control and fix failures</td>
               <td>Legitimate interest (Art. 6(1)(f))</td>
               <td>90 days, then deleted automatically</td>
+            </tr>
+            <tr>
+              <td>
+                Live room messages: text as it&apos;s typed, names, reactions, notes and chat
+              </td>
+              <td>To run the room</td>
+              <td>Contract (Art. 6(1)(b))</td>
+              <td>Not stored by us; passed on live, and kept only in your own browser</td>
             </tr>
             <tr>
               <td>Contact, waitlist, interest and early-access forms</td>
@@ -200,7 +254,7 @@ export default function PrivacyPage() {
             </tr>
             <tr>
               <td>Supabase</td>
-              <td>Database, sign-in and file storage</td>
+              <td>Database, sign-in, file storage and passing live room messages</td>
               <td>EU (Ireland)</td>
             </tr>
             <tr>
@@ -269,8 +323,7 @@ export default function PrivacyPage() {
 
         <h2>Children</h2>
         <p>
-          Accent is for adults working on a business. It isn&apos;t directed at children, and we don&apos;t knowingly
-          collect their data.
+          Accent is for adults. It isn&apos;t directed at children, and we don&apos;t knowingly collect their data.
         </p>
 
         <h2>Security</h2>
