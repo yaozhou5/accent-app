@@ -149,6 +149,25 @@
     .closing h2 { color: #fff; font-weight: 300; font-size: clamp(28px, 4.6vw, 44px); line-height: 1.1; letter-spacing: -0.03em; }
     .closing h2 em { font-style: italic; font-weight: 600; }
     .closing .btn { margin-top: 32px; }
+    /* Concept picture of the room: a writer typing, a few people watching. Not a real session. */
+    .room { position: relative; margin: 0 auto; max-width: 560px; background: #F5F0E8; color: #1A1A18; border-radius: 12px; padding: 16px 22px 26px; text-align: left; box-shadow: 0 20px 50px -24px rgba(0,0,0,.7); }
+    .room-tag { position: absolute; top: -11px; left: 18px; font-family: "DM Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; background: #fff; color: #6B6A66; border: 1px solid rgba(26,26,24,.14); border-radius: 999px; padding: 3px 10px; }
+    .room-bar { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: #6B6A66; margin-bottom: 14px; }
+    .room-live i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #9B2C1F; margin-right: 7px; vertical-align: 1px; animation: roomPulse 1.6s ease-in-out infinite; }
+    .room-watch b { display: inline-block; width: 16px; height: 16px; border-radius: 50%; margin-right: -5px; border: 2px solid #F5F0E8; vertical-align: -4px; animation: roomBob 3s ease-in-out infinite; }
+    .room-watch b:nth-child(1) { background: #4B6CF8; }
+    .room-watch b:nth-child(2) { background: #D69E2E; animation-delay: .4s; }
+    .room-watch b:nth-child(3) { background: #7C4DC4; animation-delay: .8s; margin-right: 8px; }
+    .room-line { font-family: "Fraunces", Georgia, serif; font-weight: 300; font-size: clamp(19px, 2.6vw, 24px); line-height: 1.4; margin: 0; min-height: 2.8em; }
+    .room-line.noted #roomText { text-decoration: underline dotted rgba(75,108,248,.7); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+    .room-caret { display: inline-block; width: 2px; height: 1.05em; background: #9B2C1F; vertical-align: -0.15em; margin-left: 2px; animation: roomBlink 1s steps(1) infinite; }
+    .room-heart { position: absolute; right: 112px; top: 10px; color: #c0392b; font-size: 16px; opacity: 0; }
+    .room-heart.up { animation: roomFloat 1.8s ease-out forwards; }
+    @keyframes roomBlink { 50% { opacity: 0; } }
+    @keyframes roomPulse { 50% { opacity: .35; } }
+    @keyframes roomBob { 50% { transform: translateY(-2px); } }
+    @keyframes roomFloat { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px); } }
+    @media (prefers-reduced-motion: reduce) { .room-caret, .room-live i, .room-watch b { animation: none; } }
     .closing .note { color: rgba(255,255,255,0.6); }
 
     footer { background: var(--cream); }
@@ -242,7 +261,7 @@
 
   <main>
     <section class="hero">
-      <video autoplay muted loop playsinline preload="auto" src="/hero.mp4" aria-hidden="true"></video>
+      <video autoplay muted loop playsinline preload="auto" src="/hero-h264.mp4" aria-hidden="true"></video>
       <div class="hero-inner">
         <span class="status"><i aria-hidden="true"></i>In development</span>
         <h1>Some things should still be written<br><em>by a human.</em></h1>
@@ -258,7 +277,12 @@
 
     <section class="closing">
       <div class="reveal">
-        <h2>Some things should still be written<br><em>by a human.</em></h2>
+        <div class="room" role="img" aria-label="Concept animation: a writer types a line while three people watch.">
+          <span class="room-tag">Concept</span>
+          <div class="room-bar"><span class="room-live"><i></i>Live</span><span class="room-watch"><b></b><b></b><b></b>3 watching</span></div>
+          <p class="room-line"><span id="roomText"></span><span class="room-caret"></span></p>
+          <span class="room-heart" id="roomHeart" aria-hidden="true">♥</span>
+        </div>
         <button class="btn btn-light" type="button" data-open-form>Join the early-access list</button>
         <p class="note">We're building this. Leave your email to hear when the first room opens.</p>
       </div>
@@ -498,6 +522,26 @@
         entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
       }, { threshold: 0.12 });
       els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  <script>
+    // Concept animation for the room in the closing block. Loops: type a line, a viewer marks it, clear, again.
+    (function () {
+      var el = document.getElementById('roomText'), line = el && el.parentNode, heart = document.getElementById('roomHeart');
+      if (!el) return;
+      var lines = ['The heron stands so still that the ducks forget him.', 'Some things should still be written by a human.', 'I start this sentence for the third time, and it is better.'];
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = lines[0]; return; }
+      var n = 0;
+      function play() {
+        var t = lines[n++ % lines.length], i = 0;
+        el.textContent = ''; line.classList.remove('noted');
+        (function step() {
+          if (i <= t.length) { el.textContent = t.slice(0, i++); setTimeout(step, 45 + Math.random() * 70); return; }
+          setTimeout(function () { line.classList.add('noted'); heart.classList.remove('up'); void heart.offsetWidth; heart.classList.add('up'); }, 700);
+          setTimeout(play, 4200);
+        })();
+      }
+      play();
     })();
   </script>
 </body>
